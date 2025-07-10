@@ -1,0 +1,91 @@
+<svg width="400" height="250" viewBox="0 0 400 250" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="robotGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#e5e7eb;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#9ca3af;stop-opacity:1" />
+    </linearGradient>
+    <radialGradient id="screenGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#047857;stop-opacity:1" />
+    </radialGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="400" height="250" fill="#f8fafc"/>
+  
+  <!-- Factory Floor -->
+  <rect x="0" y="200" width="400" height="50" fill="#64748b"/>
+  
+  <!-- Robotic Arms -->
+  <g id="robot1">
+    <rect x="80" y="160" width="8" height="40" fill="url(#robotGrad)"/>
+    <rect x="72" y="140" width="24" height="20" fill="url(#robotGrad)"/>
+    <rect x="88" y="125" width="8" height="25" fill="url(#robotGrad)"/>
+    <circle cx="92" cy="120" r="6" fill="#dc2626"/>
+  </g>
+  
+  <g id="robot2">
+    <rect x="200" y="160" width="8" height="40" fill="url(#robotGrad)"/>
+    <rect x="192" y="140" width="24" height="20" fill="url(#robotGrad)"/>
+    <rect x="208" y="125" width="8" height="25" fill="url(#robotGrad)"/>
+    <circle cx="212" cy="120" r="6" fill="#dc2626"/>
+  </g>
+  
+  <g id="robot3">
+    <rect x="320" y="160" width="8" height="40" fill="url(#robotGrad)"/>
+    <rect x="312" y="140" width="24" height="20" fill="url(#robotGrad)"/>
+    <rect x="328" y="125" width="8" height="25" fill="url(#robotGrad)"/>
+    <circle cx="332" cy="120" r="6" fill="#dc2626"/>
+  </g>
+  
+  <!-- Conveyor Belt -->
+  <rect x="20" y="180" width="360" height="15" fill="#374151"/>
+  <rect x="30" y="182" width="10" height="11" fill="#6b7280"/>
+  <rect x="50" y="182" width="10" height="11" fill="#6b7280"/>
+  <rect x="70" y="182" width="10" height="11" fill="#6b7280"/>
+  <rect x="110" y="182" width="10" height="11" fill="#6b7280"/>
+  <rect x="130" y="182" width="10" height="11" fill="#6b7280"/>
+  <rect x="150" y="182" width="10" height="11" fill="#6b7280"/>
+  <rect x="170" y="182" width="10" height="11" fill="#6b7280"/>
+  <rect x="230" y="182" width="10" height="11" fill="#6b7280"/>
+  <rect x="250" y="182" width="10" height="11" fill="#6b7280"/>
+  <rect x="270" y="182" width="10" height="11" fill="#6b7280"/>
+  <rect x="290" y="182" width="10" height="11" fill="#6b7280"/>
+  <rect x="350" y="182" width="10" height="11" fill="#6b7280"/>
+  <rect x="370" y="182" width="10" height="11" fill="#6b7280"/>
+  
+  <!-- Steel Parts Being Processed -->
+  <rect x="100" y="175" width="20" height="5" fill="#94a3b8"/>
+  <rect x="220" y="175" width="20" height="5" fill="#94a3b8"/>
+  <rect x="340" y="175" width="20" height="5" fill="#94a3b8"/>
+  
+  <!-- Control Screens -->
+  <rect x="30" y="80" width="60" height="40" fill="#1e293b"/>
+  <rect x="35" y="85" width="50" height="30" fill="url(#screenGlow)"/>
+  <text x="60" y="105" text-anchor="middle" fill="white" font-family="monospace" font-size="8">AUTO</text>
+  
+  <rect x="150" y="80" width="60" height="40" fill="#1e293b"/>
+  <rect x="155" y="85" width="50" height="30" fill="url(#screenGlow)"/>
+  <text x="180" y="105" text-anchor="middle" fill="white" font-family="monospace" font-size="8">PROD</text>
+  
+  <rect x="270" y="80" width="60" height="40" fill="#1e293b"/>
+  <rect x="275" y="85" width="50" height="30" fill="url(#screenGlow)"/>
+  <text x="300" y="105" text-anchor="middle" fill="white" font-family="monospace" font-size="8">QC</text>
+  
+  <!-- Company Banner -->
+  <rect x="120" y="40" width="160" height="20" fill="#1e40af"/>
+  <text x="200" y="54" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="12" font-weight="bold">동국제강 스마트팩토리</text>
+  
+  <!-- Sensors -->
+  <circle cx="140" cy="140" r="4" fill="#fbbf24"/>
+  <circle cx="260" cy="140" r="4" fill="#fbbf24"/>
+  
+  <!-- Data Transmission Lines -->
+  <line x1="140" y1="140" x2="180" y2="100" stroke="#10b981" stroke-width="2" stroke-dasharray="3,3"/>
+  <line x1="260" y1="140" x2="300" y2="100" stroke="#10b981" stroke-width="2" stroke-dasharray="3,3"/>
+  
+  <!-- Progress Indicators -->
+  <rect x="340" y="60" width="40" height="8" fill="#e5e7eb"/>
+  <rect x="340" y="60" width="28" height="8" fill="#10b981"/>
+  <text x="360" y="55" text-anchor="middle" fill="#374151" font-family="Arial, sans-serif" font-size="8">70%</text>
+</svg>

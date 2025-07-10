@@ -1,0 +1,70 @@
+<svg width="600" height="400" viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="buildingGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f3f4f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#d1d5db;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="glassGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#1e40af;stop-opacity:0.5" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Sky -->
+  <rect width="600" height="400" fill="#e0f2fe"/>
+  
+  <!-- Ground -->
+  <rect x="0" y="350" width="600" height="50" fill="#10b981"/>
+  
+  <!-- Main Building -->
+  <rect x="50" y="150" width="300" height="200" fill="url(#buildingGrad)" stroke="#9ca3af" stroke-width="2"/>
+  
+  <!-- Building Extension -->
+  <rect x="350" y="200" width="200" height="150" fill="url(#buildingGrad)" stroke="#9ca3af" stroke-width="2"/>
+  
+  <!-- Entrance -->
+  <rect x="150" y="280" width="80" height="70" fill="#1f2937"/>
+  <rect x="170" y="300" width="40" height="50" fill="url(#glassGrad)"/>
+  
+  <!-- Windows Grid -->
+  <rect x="80" y="180" width="25" height="30" fill="url(#glassGrad)"/>
+  <rect x="120" y="180" width="25" height="30" fill="url(#glassGrad)"/>
+  <rect x="260" y="180" width="25" height="30" fill="url(#glassGrad)"/>
+  <rect x="300" y="180" width="25" height="30" fill="url(#glassGrad)"/>
+  
+  <rect x="80" y="230" width="25" height="30" fill="url(#glassGrad)"/>
+  <rect x="120" y="230" width="25" height="30" fill="url(#glassGrad)"/>
+  <rect x="260" y="230" width="25" height="30" fill="url(#glassGrad)"/>
+  <rect x="300" y="230" width="25" height="30" fill="url(#glassGrad)"/>
+  
+  <!-- Extension Windows -->
+  <rect x="380" y="230" width="25" height="30" fill="url(#glassGrad)"/>
+  <rect x="420" y="230" width="25" height="30" fill="url(#glassGrad)"/>
+  <rect x="460" y="230" width="25" height="30" fill="url(#glassGrad)"/>
+  <rect x="500" y="230" width="25" height="30" fill="url(#glassGrad)"/>
+  
+  <rect x="380" y="280" width="25" height="30" fill="url(#glassGrad)"/>
+  <rect x="420" y="280" width="25" height="30" fill="url(#glassGrad)"/>
+  <rect x="460" y="280" width="25" height="30" fill="url(#glassGrad)"/>
+  <rect x="500" y="280" width="25" height="30" fill="url(#glassGrad)"/>
+  
+  <!-- Company Sign -->
+  <rect x="120" y="160" width="160" height="15" fill="#1e40af"/>
+  <text x="200" y="172" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="12" font-weight="bold">석영에스앤티</text>
+  
+  <!-- Flag Pole -->
+  <line x1="400" y1="120" x2="400" y2="200" stroke="#6b7280" stroke-width="3"/>
+  <rect x="400" y="120" width="40" height="25" fill="#dc2626"/>
+  
+  <!-- Parking lot lines -->
+  <rect x="20" y="370" width="80" height="20" fill="#6b7280" opacity="0.3"/>
+  <rect x="120" y="370" width="80" height="20" fill="#6b7280" opacity="0.3"/>
+  <rect x="220" y="370" width="80" height="20" fill="#6b7280" opacity="0.3"/>
+  
+  <!-- Trees -->
+  <circle cx="450" cy="340" r="15" fill="#059669"/>
+  <rect x="447" y="340" width="6" height="20" fill="#92400e"/>
+  
+  <circle cx="520" cy="340" r="12" fill="#059669"/>
+  <rect x="518" y="340" width="4" height="15" fill="#92400e"/>
+</svg>
