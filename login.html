@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>로그인 - 남경스틸(주)</title>
+  <meta name="description" content="남경스틸(주) 관리자 로그인 페이지입니다.">
+  <meta name="keywords" content="남경스틸, 로그인, 관리자">
+
+  <!-- Favicons -->
+  <link href="logo.jpg" rel="icon">
+  <link href="logo.jpg" rel="apple-touch-icon">
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com" rel="preconnect">
+  <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
+
+  <!-- Vendor CSS Files -->
+  <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+  <link href="assets/vendor/aos/aos.css" rel="stylesheet">
+
+  <!-- Main CSS File -->
+  <link href="assets/css/main.css" rel="stylesheet">
+  
+  <!-- Supabase JS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Database Manager -->
+  <script src="database.js"></script>
+
+  <style>
+    body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Roboto', sans-serif;
+    }
+
+    .login-container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+      padding: 40px;
+      max-width: 500px;
+      width: 100%;
+      margin: 20px;
+    }
+
+    .login-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .login-header h2 {
+      color: #333;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    .login-header p {
+      color: #666;
+      margin: 0;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .login-form .form-label {
+      color: #333;
+      font-weight: 500;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .login-form .form-control {
+      border: 2px solid #e1e5e9;
+      border-radius: 10px;
+      padding: 12px 15px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+    }
+
+    .login-form .form-control:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+
+    .btn-login {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-weight: 600;
+      padding: 12px 30px;
+      width: 100%;
+      font-size: 16px;
+      transition: all 0.3s ease;
+    }
+
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-login:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .error-message {
+      color: #dc3545;
+      font-size: 14px;
+      margin-top: 10px;
+      text-align: center;
+      display: none;
+    }
+
+    .back-link {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .back-link a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .back-link a:hover {
+      text-decoration: underline;
+    }
+
+    .logo {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+    }
+
+    .logo i {
+      color: white;
+      font-size: 24px;
+    }
+
+    .auth-tabs {
+      display: flex;
+      margin-bottom: 30px;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 2px solid #e1e5e9;
+    }
+
+    .auth-tab {
+      flex: 1;
+      padding: 12px;
+      background: #f8f9fa;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .auth-tab.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .auth-form {
+      display: none;
+    }
+
+    .auth-form.active {
+      display: block;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 15px;
+      align-items: start;
+    }
+
+    .form-row .form-group {
+      margin-bottom: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 70px;
+    }
+
+    .form-row .form-group .form-label {
+      height: 20px;
+      display: flex;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+
+    .form-row .form-group .form-control {
+      height: 40px;
+      display: flex;
+      align-items: center;
+    }
+
+    .form-row.single-column {
+      grid-template-columns: 1fr;
+    }
+
+    @media (max-width: 576px) {
+      .form-row {
+        grid-template-columns: 1fr;
+        gap: 15px;
+      }
+      
+      .login-container {
+        padding: 30px 20px;
+        margin: 10px;
+        max-width: 100%;
+      }
+    }
+
+    select.form-control {
+      background-color: white;
+      background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'%3E%3Cpath fill='%23666' d='M2 0L0 2h4zm0 5L0 3h4z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 12px;
+      padding-right: 35px;
+    }
+
+    .success-message {
+      color: #28a745;
+      font-size: 14px;
+      margin-top: 10px;
+      text-align: center;
+      display: none;
+    }
+
+    .form-section {
+      margin-bottom: 25px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 12px;
+      border: 1px solid #e9ecef;
+    }
+
+    .section-title {
+      color: #495057;
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 15px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e9ecef;
+    }
+
+    .form-control {
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 14px;
+      transition: all 0.2s ease;
+      background: white;
+    }
+
+    .form-control:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 0.15rem rgba(102, 126, 234, 0.15);
+      background: white;
+    }
+
+    .form-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: #495057;
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="login-container">
+    <div class="login-header">
+      <div class="logo">
+        <i class="bi bi-building"></i>
+      </div>
+      <h2>남경스틸(주)</h2>
+    </div>
+
+    <!-- 탭 메뉴 -->
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchTab('login')" type="button">로그인</button>
+      <button class="auth-tab" onclick="switchTab('register')" type="button">회원가입</button>
+    </div>
+
+    <!-- 로그인 폼 -->
+    <div id="loginForm" class="auth-form active login-form">
+      <form id="loginFormSubmit">
+        <div class="form-group">
+          <label for="loginEmail" class="form-label">이메일</label>
+          <input type="email" class="form-control" id="loginEmail" placeholder="이메일을 입력하세요" required>
+        </div>
+
+        <div class="form-group">
+          <label for="loginPassword" class="form-label">비밀번호</label>
+          <input type="password" class="form-control" id="loginPassword" placeholder="비밀번호를 입력하세요" required>
+        </div>
+
+        <button type="submit" class="btn btn-login" id="loginBtn">
+          <span class="btn-text">로그인</span>
+          <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+        </button>
+
+        <div class="error-message" id="loginErrorMessage">
+          이메일 또는 비밀번호가 올바르지 않습니다.
+        </div>
+      </form>
+    </div>
+
+    <!-- 회원가입 폼 -->
+    <div id="registerForm" class="auth-form">
+      <form id="registerFormSubmit">
+        <!-- 기본 정보 섹션 -->
+        <div class="form-section">
+          <h4 class="section-title">기본 정보</h4>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="registerName" class="form-label">이름 *</label>
+              <input type="text" class="form-control" id="registerName" placeholder="이름을 입력하세요" required>
+            </div>
+            <div class="form-group">
+              <label for="registerEmail" class="form-label">이메일 *</label>
+              <input type="email" class="form-control" id="registerEmail" placeholder="example@company.com" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="registerPassword" class="form-label">비밀번호 *</label>
+              <input type="password" class="form-control" id="registerPassword" placeholder="6자 이상 입력하세요" required>
+            </div>
+            <div class="form-group">
+              <label for="confirmPassword" class="form-label">비밀번호 확인 *</label>
+              <input type="password" class="form-control" id="confirmPassword" placeholder="비밀번호를 다시 입력하세요" required>
+            </div>
+          </div>
+        </div>
+
+        <!-- 회사 정보 섹션 -->
+        <div class="form-section">
+          <h4 class="section-title">회사 정보</h4>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="registerRole" class="form-label">권한 *</label>
+              <select class="form-control" id="registerRole" required>
+                <option value="">권한을 선택하세요</option>
+                <option value="employee">직원</option>
+                <option value="manager">관리자</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="registerPhone" class="form-label">연락처</label>
+              <input type="tel" class="form-control" id="registerPhone" placeholder="010-1234-5678">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="registerDepartment" class="form-label">소속 부서</label>
+              <select class="form-control" id="registerDepartment">
+                <option value="">부서를 선택하세요</option>
+                <option value="영업부">영업부</option>
+                <option value="생산부">생산부</option>
+                <option value="품질관리부">품질관리부</option>
+                <option value="관리부">관리부</option>
+                <option value="기술부">기술부</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="registerPosition" class="form-label">직책</label>
+              <select class="form-control" id="registerPosition">
+                <option value="">직책을 선택하세요</option>
+                <option value="사원">사원</option>
+                <option value="주임">주임</option>
+                <option value="대리">대리</option>
+                <option value="과장">과장</option>
+                <option value="차장">차장</option>
+                <option value="부장">부장</option>
+                <option value="이사">이사</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-login" id="registerBtn">
+          <span class="btn-text">회원가입</span>
+          <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+        </button>
+
+        <div class="error-message" id="registerErrorMessage">
+          입력 정보를 확인해주세요.
+        </div>
+
+        <div class="success-message" id="registerSuccessMessage">
+          회원가입이 완료되었습니다!
+        </div>
+      </form>
+    </div>
+
+    <div class="back-link">
+      <a href="index.html">
+        <i class="bi bi-arrow-left"></i> 홈페이지로 돌아가기
+      </a>
+    </div>
+  </div>
+
+  <!-- Vendor JS Files -->
+  <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/vendor/aos/aos.js"></script>
+
+  <!-- Main JS File -->
+  <script src="assets/js/main.js"></script>
+  
+  <!-- Auth JS File -->
+  <script src="shared-assets/js/auth.js"></script>
+
+  <script>
+    // 탭 전환 기능
+    function switchTab(tab) {
+      console.log('탭 전환:', tab);
+      
+      // 모든 탭 버튼에서 active 클래스 제거
+      const allTabs = document.querySelectorAll('.auth-tab');
+      allTabs.forEach(btn => btn.classList.remove('active'));
+      
+      // 모든 폼에서 active 클래스 제거
+      const allForms = document.querySelectorAll('.auth-form');
+      allForms.forEach(form => form.classList.remove('active'));
+      
+      // 클릭된 탭 활성화
+      if (event && event.target) {
+        event.target.classList.add('active');
+      }
+      
+      // 해당 폼 활성화
+      const targetForm = document.getElementById(tab + 'Form');
+      if (targetForm) {
+        targetForm.classList.add('active');
+        console.log(tab + ' 폼 활성화됨');
+      } else {
+        console.error(tab + ' 폼을 찾을 수 없음');
+      }
+    }
+    
+    // 직접 탭 전환 함수들 추가
+    function showLogin() {
+      switchTab('login');
+    }
+    
+    function showRegister() {
+      switchTab('register');
+    }
+
+    // 로그인 폼 처리
+    document.getElementById('loginFormSubmit').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+      const errorMessage = document.getElementById('loginErrorMessage');
+      const loginBtn = document.getElementById('loginBtn');
+      const btnText = loginBtn.querySelector('.btn-text');
+      const spinner = loginBtn.querySelector('.spinner-border');
+      
+      // 버튼 로딩 상태
+      loginBtn.disabled = true;
+      btnText.textContent = '로그인 중...';
+      spinner.classList.remove('d-none');
+      errorMessage.style.display = 'none';
+      
+      try {
+        // 데이터베이스에서 사용자 인증
+        if (!window.db || !window.db.authenticateUser) {
+          throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+        
+        const result = await window.db.authenticateUser(email, password);
+        
+        if (!result.success || !result.user) {
+          throw new Error(result.message || '로그인 정보가 올바르지 않습니다.');
+        }
+
+        // 로그인 성공
+        localStorage.setItem('currentUser', JSON.stringify(result.user));
+        localStorage.setItem('userRole', result.user.role);
+        localStorage.setItem('userName', result.user.name);
+        
+        btnText.textContent = '로그인 성공!';
+        spinner.classList.add('d-none');
+        
+        // 역할에 따른 페이지 이동
+        setTimeout(() => {
+          if (result.user.role === 'master_admin') {
+            window.location.href = 'master-dashboard.html';
+          } else {
+            window.location.href = 'employee-dashboard.html';
+          }
+        }, 1000);
+        
+      } catch (error) {
+        // 로그인 실패
+        console.error('로그인 오류:', error);
+        loginBtn.disabled = false;
+        btnText.textContent = '로그인';
+        spinner.classList.add('d-none');
+        errorMessage.style.display = 'block';
+        errorMessage.textContent = error.message || '로그인에 실패했습니다.';
+        
+        // 입력 필드 초기화
+        document.getElementById('loginPassword').value = '';
+        document.getElementById('loginEmail').focus();
+      }
+    });
+
+    // 회원가입 폼 처리
+    document.getElementById('registerFormSubmit').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const name = document.getElementById('registerName').value;
+      const email = document.getElementById('registerEmail').value;
+      const password = document.getElementById('registerPassword').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      const role = document.getElementById('registerRole').value;
+      const phone = document.getElementById('registerPhone').value;
+      const department = document.getElementById('registerDepartment').value;
+      const position = document.getElementById('registerPosition').value;
+      
+      const errorMessage = document.getElementById('registerErrorMessage');
+      const successMessage = document.getElementById('registerSuccessMessage');
+      const registerBtn = document.getElementById('registerBtn');
+      const btnText = registerBtn.querySelector('.btn-text');
+      const spinner = registerBtn.querySelector('.spinner-border');
+      
+      // 초기화
+      errorMessage.style.display = 'none';
+      successMessage.style.display = 'none';
+      
+      // 유효성 검사
+      if (!name || !email || !password || !role) {
+        errorMessage.textContent = '필수 항목을 모두 입력해주세요.';
+        errorMessage.style.display = 'block';
+        return;
+      }
+      
+      if (password !== confirmPassword) {
+        errorMessage.textContent = '비밀번호가 일치하지 않습니다.';
+        errorMessage.style.display = 'block';
+        return;
+      }
+      
+      if (password.length < 6) {
+        errorMessage.textContent = '비밀번호는 6자 이상이어야 합니다.';
+        errorMessage.style.display = 'block';
+        return;
+      }
+      
+      // 버튼 로딩 상태
+      registerBtn.disabled = true;
+      btnText.textContent = '가입 중...';
+      spinner.classList.remove('d-none');
+      
+      // 회원가입 처리 (시뮬레이션)
+      setTimeout(() => {
+        // 회원 정보를 localStorage에 저장
+        const newUser = {
+          id: Date.now(),
+          name: name,
+          email: email,
+          password: password,
+          role: role,
+          phone: phone,
+          department: department,
+          position: position,
+          registeredAt: new Date().toISOString(),
+          status: 'active'
+        };
+        
+        // 사용자 등록 처리
+        
+        // 데이터베이스에 사용자 등록
+        try {
+            const dbResult = await db.createUser({
+                username: newUser.email,
+                email: newUser.email,
+                phone: newUser.phone,
+                password: newUser.password, // 실제 환경에서는 해시화 필요
+                name: newUser.name,
+                role: newUser.role || 'employee',
+                department: newUser.department || '',
+                position: newUser.position || '',
+                company_domain: 'seokyoung-snt'
+            });
+            
+            if (!dbResult.success) {
+                throw new Error(dbResult.error || '데이터베이스 등록 실패');
+            }
+            
+            console.log('✅ 데이터베이스에 사용자 등록 완료');
+        } catch (dbError) {
+            console.error('❌ 데이터베이스 등록 오류:', dbError);
+            // 데이터베이스 등록 실패 시 오류 표시하고 중단
+            registerBtn.disabled = false;
+            btnText.textContent = '회원가입';
+            spinner.classList.add('d-none');
+            errorMessage.textContent = '데이터베이스 등록에 실패했습니다. 다시 시도해주세요.';
+            errorMessage.style.display = 'block';
+            return;
+        }
+        
+        // 성공 처리
+        btnText.textContent = '가입 완료!';
+        spinner.classList.add('d-none');
+        successMessage.style.display = 'block';
+        
+        // 폼 초기화
+        document.getElementById('registerFormSubmit').reset();
+        
+        // 3초 후 로그인 탭으로 전환
+        setTimeout(() => {
+          switchTab('login');
+          registerBtn.disabled = false;
+          btnText.textContent = '회원가입';
+          successMessage.style.display = 'none';
+        }, 3000);
+        
+      }, 2000);
+    });
+
+    // AOS 초기화
+    AOS.init();
+
+    // 페이지 로드 시 초기 상태 설정
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('페이지 로드됨 - 초기 상태 설정');
+      
+      // 로그인 탭이 기본으로 활성화되도록 확실히 설정
+      document.querySelectorAll('.auth-tab').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.auth-form').forEach(form => form.classList.remove('active'));
+      
+      // 로그인 탭과 폼 활성화
+      const loginTab = document.querySelector('[onclick*="login"]');
+      const loginForm = document.getElementById('loginForm');
+      
+      if (loginTab) loginTab.classList.add('active');
+      if (loginForm) loginForm.classList.add('active');
+      
+      // 탭 버튼에 추가 이벤트 리스너 설정
+      const tabs = document.querySelectorAll('.auth-tab');
+      tabs.forEach((tab, index) => {
+        tab.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          if (index === 0) {
+            // 로그인 탭
+            switchTab('login');
+          } else if (index === 1) {
+            // 회원가입 탭
+            switchTab('register');
+          }
+        });
+      });
+      
+      console.log('초기 상태 설정 완료 - 탭 이벤트 리스너 추가됨');
+    });
+
+    // 엔터 키 이벤트 (현재 활성화된 폼에서만)
+    document.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        const activeForm = document.querySelector('.auth-form.active form');
+        if (activeForm) {
+          activeForm.dispatchEvent(new Event('submit'));
+        }
+      }
+    });
+
+    // 비밀번호 확인 실시간 체크
+    document.getElementById('confirmPassword').addEventListener('input', function() {
+      const password = document.getElementById('registerPassword').value;
+      const confirmPassword = this.value;
+      const errorMessage = document.getElementById('registerErrorMessage');
+      
+      if (confirmPassword && password !== confirmPassword) {
+        this.style.borderColor = '#dc3545';
+        errorMessage.textContent = '비밀번호가 일치하지 않습니다.';
+        errorMessage.style.display = 'block';
+      } else {
+        this.style.borderColor = '#e1e5e9';
+        errorMessage.style.display = 'none';
+      }
+    });
+  </script>
+  
+  <!-- Auth Manager -->
+  <script src="shared-assets/js/auth.js"></script>
+</body>
+
+</html>

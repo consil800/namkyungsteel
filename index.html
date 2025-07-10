@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title id="pageTitle">남경스틸(주) - 최고의 품질, 최상의 서비스</title>
+  <meta name="description" content="대한민국 최고의 철강 전문 기업">
+  <meta name="keywords" content="철강, 스틸, 강철, 제조업">
+
+  <!-- Favicons -->
+  <link href="logo.jpg" rel="icon">
+  <link href="logo.jpg" rel="apple-touch-icon">
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com" rel="preconnect">
+  <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
+
+  <!-- Vendor CSS Files -->
+  <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+  <link href="assets/vendor/aos/aos.css" rel="stylesheet">
+  <link href="assets/vendor/swiper/swiper-bundle.min.css" rel="stylesheet">
+
+  <!-- Supabase JS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Database Manager -->
+  <script src="database.js"></script>
+
+  <!-- Main CSS File -->
+  <link href="assets/css/main.css" rel="stylesheet">
+  
+  <style>
+    body { 
+      font-family: 'Noto Sans KR', sans-serif !important; 
+      background-color: #ffffff !important;
+    }
+    
+    /* 메인 섭션과 푸터 사이 공간 추가 */
+    .main {
+      margin-bottom: 0 !important;
+    }
+    
+    /* 헤더 밝게 스타일링 */
+    .header {
+      background-color: #ffffff !important;
+      box-shadow: 0 2px 15px rgba(0, 102, 204, 0.08) !important;
+      border-bottom: 1px solid #e9ecef !important;
+      backdrop-filter: blur(10px) !important;
+    }
+    
+    .header .sitename {
+      color: #1a365d !important;
+    }
+    
+    .navmenu a {
+      color: #2c3e50 !important;
+    }
+    
+    .navmenu a:hover {
+      color: #0066cc !important;
+    }
+    
+    .navmenu .active {
+      color: #0066cc !important;
+      font-weight: 600 !important;
+    }
+    
+    /* Footer Styles - 적당한 대비감 있는 색상 */
+    .footer {
+      background-color: #2d3748;
+      color: #ffffff;
+      border-top: 3px solid #0066cc;
+    }
+    
+    .footer-top {
+      padding: 30px 0 20px;
+    }
+    
+    .footer-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 40px;
+    }
+    
+    .footer-column h3,
+    .footer-column h4 {
+      margin-bottom: 20px;
+      color: #ffffff;
+      font-weight: 600;
+    }
+    
+    .footer-column ul {
+      list-style: none;
+      padding: 0;
+    }
+    
+    .footer-column ul li {
+      margin-bottom: 10px;
+    }
+    
+    .footer-column a {
+      color: #cbd5e0;
+      transition: all 0.3s ease;
+      text-decoration: none;
+    }
+    
+    .footer-column a:hover {
+      color: #0066cc;
+    }
+    
+    .footer-column p {
+      color: #a0aec0;
+      line-height: 1.6;
+    }
+    
+    .social-links {
+      display: flex;
+      gap: 15px;
+      margin-top: 20px;
+    }
+    
+    .social-links a {
+      width: 40px;
+      height: 40px;
+      background-color: #4a5568;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      color: #ffffff;
+    }
+    
+    .social-links a:hover {
+      background-color: #004499;
+      color: #ffffff;
+    }
+    
+    .contact-info li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 15px;
+      color: #cbd5e0;
+    }
+    
+    .contact-info i {
+      margin-top: 4px;
+      color: #0066cc;
+    }
+    
+    .footer-bottom {
+      background-color: #1a202c;
+      padding: 20px 0;
+    }
+    
+    .bottom-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .bottom-content p {
+      color: #a0aec0;
+      margin: 0;
+    }
+    
+    .footer-links {
+      display: flex;
+      gap: 20px;
+    }
+    
+    .footer-links a {
+      color: #a0aec0;
+      font-size: 14px;
+      text-decoration: none;
+    }
+    
+    .footer-links a:hover {
+      color: #0066cc;
+    }
+    
+    @media (max-width: 768px) {
+      .bottom-content {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+      }
+      
+      .footer-grid {
+        grid-template-columns: 1fr;
+        text-align: center;
+      }
+      
+      .social-links {
+        justify-content: center;
+      }
+      
+      .contact-info {
+        text-align: left;
+      }
+    }
+    .login-btn { 
+      background: #0066cc; 
+      color: white; 
+      padding: 8px 20px; 
+      border-radius: 5px; 
+      margin-left: 25px;
+      text-decoration: none;
+      transition: all 0.3s;
+    }
+    .login-btn:hover { 
+      background: #0052a3; 
+      color: white;
+    }
+    
+    /* 사용자 프로필 스타일 */
+    .user-profile {
+      margin-left: 25px;
+    }
+    
+    .profile-icon {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      padding: 5px 10px;
+      border-radius: 25px;
+    }
+    
+    .profile-icon:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .profile-icon img {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #fff;
+      margin-right: 8px;
+    }
+    
+    .profile-name {
+      color: #2c3e50;
+      font-weight: 500;
+      font-size: 14px;
+    }
+    
+    /* 🎯 NAVIGATION MENU FIXES */
+    .navmenu ul {
+      display: flex;
+      align-items: center;
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .navmenu > ul > li {
+      white-space: nowrap;
+      padding: 15px 16px; /* 균등한 간격 */
+      position: relative;
+    }
+    
+    .navmenu a {
+      color: var(--nav-color, #2c3e50);
+      padding: 12px 0;
+      font-size: 16px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      white-space: nowrap;
+      transition: 0.3s;
+      text-decoration: none;
+    }
+    
+    /* 드롭다운 기본적으로 숨김 */
+    .navmenu .dropdown ul {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      z-index: 99;
+      background-color: #ffffff;
+      box-shadow: 0px 0px 30px rgba(44, 62, 80, 0.15);
+      padding: 10px 0;
+      border-radius: 6px;
+      min-width: 180px;
+    }
+    
+    /* 드롭다운 호버 시 보이기 */
+    .navmenu .dropdown:hover > ul {
+      display: block;
+    }
+    
+    .navmenu .dropdown ul li {
+      padding: 0;
+    }
+    
+    .navmenu .dropdown ul a {
+      padding: 10px 20px;
+      font-size: 15px;
+      color: #2c3e50;
+      border: none;
+    }
+    
+    .navmenu .dropdown ul a:hover {
+      color: #3498db;
+      background-color: #f8f9fa;
+    }
+    
+    /* 모바일 네비게이션에서도 드롭다운 처리 */
+    @media (max-width: 1199px) {
+      .navmenu .dropdown ul {
+        position: static;
+        display: none;
+        z-index: 99;
+        padding: 10px 0;
+        margin: 10px 20px;
+        background-color: #ffffff;
+        border: 1px solid #e9ecef;
+        box-shadow: none;
+        border-radius: 6px;
+      }
+      
+      .navmenu .dropdown.active > ul {
+        display: block;
+      }
+    }
+    
+    /* 🎯 HERO SECTION STYLES - 밝은 상단, 어두운 하단 대비 */
+    #hero {
+      background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%) !important;
+      background-image: none !important;
+      color: #2c3e50 !important;
+    }
+    
+    #heroImagePlaceholder {
+      background: linear-gradient(135deg, #0066cc, #004499) !important;
+      opacity: 1 !important;
+      border-radius: 15px !important;
+      box-shadow: 0 10px 30px rgba(0, 102, 204, 0.2) !important;
+    }
+    
+    .hero .highlight {
+      color: #0066cc !important;
+      background: linear-gradient(45deg, #0066cc, #004499);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .hero h1 {
+      color: #1a365d !important;
+      font-weight: 700 !important;
+    }
+    
+    .hero .lead {
+      color: #4a5568 !important;
+    }
+    
+    .hero-features li {
+      color: #2c3e50 !important;
+    }
+    
+    .hero-features i {
+      color: #0066cc !important;
+    }
+    
+    .hero-tag {
+      background: linear-gradient(45deg, #0066cc, #004499) !important;
+      color: white !important;
+      border-radius: 25px !important;
+      padding: 8px 16px !important;
+    }
+  </style>
+  
+  <!-- Font Awesome for icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+
+<body class="index-page">
+
+  <header id="header" class="header d-flex align-items-center sticky-top">
+    <div class="container-fluid container-xl position-relative d-flex align-items-center">
+
+      <a href="index.html" class="logo d-flex align-items-center me-auto">
+        <img src="logo.jpg" alt="남경스틸 로고" style="height: 40px; margin-right: 10px;">
+        <h1 class="sitename" id="companyNameHeader">남경스틸(주)</h1>
+      </a>
+
+      <nav id="navmenu" class="navmenu">
+        <ul>
+          <li><a href="#hero" class="active">홈</a></li>
+          <li class="dropdown"><a href="#about"><span>회사소개</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+            <ul>
+              <li><a href="ceo-message.html">CEO 인사말</a></li>
+              <li><a href="company-history.html">회사연혁</a></li>
+              <li><a href="vision-mission.html">비전/미션</a></li>
+              <li><a href="organization.html">조직도</a></li>
+              <li><a href="certificates.html">인증서</a></li>
+            </ul>
+          </li>
+          <li class="dropdown"><a href="#services"><span>제품소개</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+            <ul>
+              <li><a href="service1-details.html">열연강판</a></li>
+              <li><a href="service2-details.html">냉연강판</a></li>
+              <li><a href="service3-details.html">특수강</a></li>
+              <li><a href="service4-details.html">맞춤 가공</a></li>
+            </ul>
+          </li>
+          <li class="dropdown"><a href="#"><span>사업영역</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+            <ul>
+              <li><a href="steel-manufacturing.html">철강제조</a></li>
+              <li><a href="processing-service.html">가공서비스</a></li>
+              <li><a href="tech-research.html">기술연구</a></li>
+            </ul>
+          </li>
+          <li class="dropdown"><a href="#"><span>고객센터</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+            <ul>
+              <li><a href="quote-inquiry.html">견적문의</a></li>
+              <li><a href="catalog.html">카탈로그</a></li>
+              <li><a href="faq.html">FAQ</a></li>
+              <li><a href="location.html">오시는길</a></li>
+              <li><a href="product-inquiry.html">제품문의</a></li>
+              <li><a href="technical-support.html">기술지원</a></li>
+            </ul>
+          </li>
+          <li class="dropdown"><a href="#"><span>홍보센터</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+            <ul>
+              <li><a href="notice.html">공지사항</a></li>
+              <li><a href="newsroom.html">뉴스룸</a></li>
+              <li><a href="media-materials.html">홍보자료</a></li>
+            </ul>
+          </li>
+        </ul>
+        <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+      </nav>
+
+      <!-- 로그인 전 버튼 -->
+      <a class="login-btn" href="login.html" id="mainLoginBtn">
+        <i class="bi bi-person-circle"></i> <span id="loginBtnText">로그인</span>
+      </a>
+      
+      <!-- 로그인 후 프로필 아이콘 -->
+      <div class="user-profile" id="userProfile" style="display: none;">
+        <div class="profile-icon" onclick="handleProfileClick()">
+          <img id="profileImage" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiM2NjdlZWEiLz4KPHN2ZyB4PSIyMCIgeT0iMjQiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPvCfkYQ8L3N2Zz4KPC9zdmc+" alt="프로필" />
+          <span class="profile-name" id="profileName">사용자</span>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <main class="main">
+
+    <!-- Hero Section -->
+    <section id="hero" class="hero section" style="padding: 120px 0; position: relative; overflow: hidden;">
+      <div class="container" data-aos="fade-up">
+        <div class="row align-items-center">
+          <div class="col-lg-6">
+            <div class="hero-content" data-aos="fade-up" data-aos-delay="100">
+              <div class="hero-tag">
+                <i class="bi bi-gear-fill"></i>
+                <span id="heroTag">철강 산업의 리더</span>
+              </div>
+              <h1 id="heroTitle">최고의 <span class="highlight">품질</span>과 <span class="highlight">기술력</span>으로 미래를 만듭니다</h1>
+              <p class="lead" id="heroDescription">12년 전통의 기술력과 혁신으로 대한민국 철강 산업을 선도하는<br><span style="color: #0052a3; font-size: 1.3em; font-weight: bold;">남경스틸(주)</span>입니다.</p>
+              <ul class="hero-features">
+                <li><i class="bi bi-check-circle"></i> <span>ISO 9001 품질경영시스템 인증</span></li>
+                <li><i class="bi bi-check-circle"></i> <span>연간 10만톤 생산 능력</span></li>
+                <li><i class="bi bi-check-circle"></i> <span>24시간 고객 기술지원</span></li>
+              </ul>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="hero-image" data-aos="zoom-out" data-aos-delay="200">
+              <div id="heroImagePlaceholder" class="image-placeholder" style="border: none; padding: 0; text-align: center; height: 500px; display: flex; align-items: center; justify-content: center; background: #000000; overflow: hidden; border-radius: 10px;">
+                <img src="namkyung.png" 
+                     style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" 
+                     alt="Scout 히어로 이미지">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section><!-- /Hero Section -->
+
+  </main>
+
+  <footer class="footer">
+    <div class="footer-top">
+      <div class="container">
+        <div class="footer-grid">
+          <div class="footer-column">
+            <h3>남경스틸(주)</h3>
+            <p>철강산업의 리더로서 최고의 품질과 서비스를 제공합니다.</p>
+          </div>
+          <div class="footer-column">
+            <h4>빠른 링크</h4>
+            <ul>
+              <li><a href="#">회사소개</a></li>
+              <li><a href="#">제품정보</a></li>
+              <li><a href="#">견적문의</a></li>
+              <li><a href="#">채용정보</a></li>
+            </ul>
+          </div>
+          <div class="footer-column">
+            <h4>고객지원</h4>
+            <ul>
+              <li><a href="#">자주묻는질문</a></li>
+              <li><a href="#">카탈로그</a></li>
+              <li><a href="#">A/S 신청</a></li>
+              <li><a href="#">오시는길</a></li>
+            </ul>
+          </div>
+          <div class="footer-column">
+            <h4>연락처</h4>
+            <ul class="contact-info">
+              <li><i class="fas fa-map-marker-alt"></i> 부산시 사상구 낙동대로 832</li>
+              <li><i class="fas fa-phone"></i> 051-314-9701</li>
+              <li><i class="fas fa-fax"></i> 051-314-9702</li>
+              <li><i class="fas fa-envelope"></i> namkyungst@naver.com</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="container">
+        <div class="bottom-content">
+          <p>&copy; 2025 남경스틸(주). All rights reserved.</p>
+          <div class="footer-links">
+            <a href="#">개인정보처리방침</a>
+            <a href="#">이용약관</a>
+            <a href="#">이메일무단수집거부</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+
+  <!-- Scroll Top -->
+  <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+
+  <!-- Vendor JS Files from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@srexi/purecounterjs/dist/purecounter_vanilla.js"></script>
+  <script src="https://unpkg.com/swiper@8/swiper-bundle.min.js"></script>
+
+  <!-- Main Template JS File -->
+  <script src="assets/js/main.js"></script>
+  
+  <!-- Authentication Scripts -->
+  <script src="shared-assets/js/auth.js"></script>
+  <script src="shared-assets/js/template-login.js"></script>
+
+  <!-- Initialize AOS and PureCounter -->
+  <script>
+    // Initialize AOS (Animation on Scroll)
+    if (typeof AOS !== 'undefined') {
+      AOS.init({
+        duration: 600,
+        easing: 'ease-in-out',
+        once: true,
+        mirror: false
+      });
+    }
+    
+    // Initialize PureCounter
+    if (typeof PureCounter !== 'undefined') {
+      new PureCounter();
+    }
+    
+    // 드롭다운 메뉴 클릭 기능 (모바일용)
+    document.addEventListener('DOMContentLoaded', function() {
+      const dropdownToggles = document.querySelectorAll('.toggle-dropdown');
+      
+      dropdownToggles.forEach(function(toggle) {
+        toggle.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          const dropdown = this.closest('.dropdown');
+          const isActive = dropdown.classList.contains('active');
+          
+          // 다른 모든 드롭다운 닫기
+          document.querySelectorAll('.dropdown.active').forEach(function(activeDropdown) {
+            if (activeDropdown !== dropdown) {
+              activeDropdown.classList.remove('active');
+            }
+          });
+          
+          // 현재 드롭다운 토글
+          dropdown.classList.toggle('active', !isActive);
+        });
+      });
+      
+      // 외부 클릭 시 드롭다운 닫기
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('.dropdown')) {
+          document.querySelectorAll('.dropdown.active').forEach(function(dropdown) {
+            dropdown.classList.remove('active');
+          });
+        }
+      });
+    });
+    
+    // Initialize Swiper if needed
+    if (typeof Swiper !== 'undefined') {
+      const swiper = new Swiper('.swiper', {
+        loop: true,
+        autoplay: {
+          delay: 5000,
+        },
+        breakpoints: {
+          320: {
+            slidesPerView: 2,
+            spaceBetween: 40
+          },
+          480: {
+            slidesPerView: 3,
+            spaceBetween: 60
+          },
+          640: {
+            slidesPerView: 4,
+            spaceBetween: 80
+          },
+          992: {
+            slidesPerView: 6,
+            spaceBetween: 120
+          }
+        }
+      });
+    }
+  </script>
+
+  <!-- 프로필 모달 -->
+  <div class="modal" id="profileModal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>프로필 설정</h2>
+        <button class="close-btn" onclick="hideProfileModal()">&times;</button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="profile-section">
+          <div class="profile-image-section">
+            <div class="current-profile-image">
+              <img id="modalProfileImage" src="" alt="프로필 이미지" />
+            </div>
+            <div class="profile-image-upload">
+              <input type="file" id="profileImageInput" accept="image/*" style="display: none;" onchange="handleProfileImageUpload(event)">
+              <button type="button" onclick="document.getElementById('profileImageInput').click()">이미지 변경</button>
+            </div>
+          </div>
+          
+          <form id="profileForm">
+            <div class="form-group">
+              <label>이름</label>
+              <input type="text" id="profileUserName" readonly>
+            </div>
+            
+            <div class="form-group">
+              <label>이메일</label>
+              <input type="email" id="profileUserEmail" readonly>
+            </div>
+            
+            <div class="form-group">
+              <label>부서</label>
+              <input type="text" id="profileUserDepartment" readonly>
+            </div>
+            
+            <div class="form-group">
+              <label>직책</label>
+              <input type="text" id="profileUserPosition" readonly>
+            </div>
+          </form>
+        </div>
+        
+        <div class="password-section">
+          <h3>비밀번호 변경</h3>
+          <form id="passwordChangeForm">
+            <div class="form-group">
+              <label>현재 비밀번호</label>
+              <input type="password" id="currentPassword" required>
+            </div>
+            
+            <div class="form-group">
+              <label>새 비밀번호</label>
+              <input type="password" id="newPassword" required minlength="6">
+            </div>
+            
+            <div class="form-group">
+              <label>새 비밀번호 확인</label>
+              <input type="password" id="confirmPassword" required>
+            </div>
+            
+            <button type="submit" class="btn-change-password">비밀번호 변경</button>
+          </form>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button onclick="logout()" class="btn-logout">로그아웃</button>
+        <button onclick="hideProfileModal()" class="btn-close">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    /* 프로필 모달 스타일 */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 9999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .modal-content {
+      background: white;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 80%;
+      overflow-y: auto;
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .modal-header h2 {
+      margin: 0;
+      color: #333;
+    }
+    
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #999;
+    }
+    
+    .modal-body {
+      padding: 20px;
+    }
+    
+    .profile-image-section {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    .current-profile-image img {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #667eea;
+      margin-bottom: 15px;
+    }
+    
+    .profile-image-upload button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      color: #333;
+    }
+    
+    .form-group input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+    
+    .form-group input[readonly] {
+      background: #f5f5f5;
+    }
+    
+    .password-section {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+    }
+    
+    .password-section h3 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+    
+    .btn-change-password {
+      width: 100%;
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+    
+    .btn-change-password:hover {
+      background: #218838;
+    }
+    
+    .modal-footer {
+      display: flex;
+      justify-content: space-between;
+      padding: 20px;
+      border-top: 1px solid #eee;
+    }
+    
+    .btn-logout {
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    
+    .btn-logout:hover {
+      background: #c82333;
+    }
+    
+    .btn-close {
+      background: #6c757d;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    
+    .btn-close:hover {
+      background: #545b62;
+    }
+  </style>
+
+  <script>
+    // 로그인 상태 확인 및 프로필 표시
+    function checkLoginStatus() {
+      const currentUser = localStorage.getItem('currentUser');
+      if (currentUser) {
+        const user = JSON.parse(currentUser);
+        showUserProfile(user);
+      }
+    }
+    
+    // 사용자 프로필 표시
+    function showUserProfile(user) {
+      document.getElementById('mainLoginBtn').style.display = 'none';
+      document.getElementById('userProfile').style.display = 'block';
+      document.getElementById('profileName').textContent = user.name || user.username;
+      
+      // 프로필 이미지 설정
+      const profileImage = user.profileImage || generateDefaultAvatar(user.name);
+      document.getElementById('profileImage').src = profileImage;
+    }
+    
+    // 기본 아바타 생성
+    function generateDefaultAvatar(name) {
+      const initial = name ? name.charAt(0).toUpperCase() : '👤';
+      return `data:image/svg+xml;base64,${btoa(`
+        <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="20" cy="20" r="20" fill="#667eea"/>
+          <text x="20" y="26" font-family="Arial" font-size="16" fill="white" text-anchor="middle">${initial}</text>
+        </svg>
+      `)}`;
+    }
+    
+    // 프로필 클릭 핸들러
+    function handleProfileClick() {
+      const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+      if (!currentUser) return;
+      
+      // 모든 사용자가 직원 대시보드로 이동
+      window.location.href = 'employee-dashboard.html';
+    }
+    
+    // 프로필 모달 표시
+    function showProfileModal() {
+      const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+      if (!currentUser) return;
+      
+      // 프로필 정보 채우기
+      document.getElementById('profileUserName').value = currentUser.name || '';
+      document.getElementById('profileUserEmail').value = currentUser.email || '';
+      document.getElementById('profileUserDepartment').value = currentUser.department || '';
+      document.getElementById('profileUserPosition').value = currentUser.position || '';
+      
+      const profileImage = currentUser.profileImage || generateDefaultAvatar(currentUser.name);
+      document.getElementById('modalProfileImage').src = profileImage;
+      
+      document.getElementById('profileModal').style.display = 'flex';
+    }
+    
+    // 프로필 모달 숨기기
+    function hideProfileModal() {
+      document.getElementById('profileModal').style.display = 'none';
+      // 폼 초기화
+      document.getElementById('passwordChangeForm').reset();
+    }
+    
+    // 프로필 이미지 업로드
+    function handleProfileImageUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      // 파일 크기 제한 (2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        alert('이미지 크기는 2MB 이하여야 합니다.');
+        return;
+      }
+      
+      // 이미지 파일 확인
+      if (!file.type.startsWith('image/')) {
+        alert('이미지 파일만 업로드 가능합니다.');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        const imageData = e.target.result;
+        
+        try {
+          const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+          
+          // 데이터베이스에 프로필 이미지 저장
+          if (window.db && window.db.updateUser) {
+            const result = await window.db.updateUser(currentUser.id, {
+              profile_image: imageData
+            });
+            
+            if (result.success) {
+              // 로컬 스토리지 업데이트
+              currentUser.profileImage = imageData;
+              localStorage.setItem('currentUser', JSON.stringify(currentUser));
+              
+              // UI 업데이트
+              document.getElementById('modalProfileImage').src = imageData;
+              document.getElementById('profileImage').src = imageData;
+              
+              alert('프로필 이미지가 변경되었습니다.');
+            } else {
+              alert('프로필 이미지 저장에 실패했습니다: ' + result.error);
+            }
+          } else {
+            // 데이터베이스 연결이 없는 경우 로컬 스토리지만 사용
+            currentUser.profileImage = imageData;
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
+            // UI 업데이트
+            document.getElementById('modalProfileImage').src = imageData;
+            document.getElementById('profileImage').src = imageData;
+            
+            alert('프로필 이미지가 변경되었습니다. (로컬 저장)');
+          }
+        } catch (error) {
+          console.error('프로필 이미지 저장 오류:', error);
+          alert('프로필 이미지 저장 중 오류가 발생했습니다.');
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+    
+    // 비밀번호 변경
+    document.getElementById('passwordChangeForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const currentPassword = document.getElementById('currentPassword').value;
+      const newPassword = document.getElementById('newPassword').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      
+      if (newPassword !== confirmPassword) {
+        alert('새 비밀번호와 확인 비밀번호가 일치하지 않습니다.');
+        return;
+      }
+      
+      if (newPassword.length < 6) {
+        alert('비밀번호는 최소 6자 이상이어야 합니다.');
+        return;
+      }
+      
+      try {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        
+        // 데이터베이스에서 비밀번호 변경 (실제 구현 필요)
+        if (window.db && window.db.updateUser) {
+          const result = await window.db.updateUser(currentUser.id, {
+            password: newPassword // 실제로는 해싱이 필요
+          });
+          
+          if (result.success) {
+            alert('비밀번호가 변경되었습니다.');
+            document.getElementById('passwordChangeForm').reset();
+          } else {
+            alert('비밀번호 변경에 실패했습니다: ' + result.error);
+          }
+        } else {
+          alert('데이터베이스 연결이 필요합니다.');
+        }
+      } catch (error) {
+        console.error('비밀번호 변경 오류:', error);
+        alert('비밀번호 변경 중 오류가 발생했습니다.');
+      }
+    });
+    
+    // 로그아웃
+    function logout() {
+      localStorage.removeItem('currentUser');
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('userName');
+      
+      // UI 업데이트
+      document.getElementById('mainLoginBtn').style.display = 'block';
+      document.getElementById('userProfile').style.display = 'none';
+      hideProfileModal();
+      
+      alert('로그아웃되었습니다.');
+    }
+    
+    // 페이지 로드 시 로그인 상태 확인
+    document.addEventListener('DOMContentLoaded', function() {
+      checkLoginStatus();
+    });
+  </script>
+
+</body>
+</html>

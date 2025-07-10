@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>업무일지 작성 - 철강영업 업무일지</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 id="workLogTitle">업무일지 작성</h1>
+            <nav>
+                <button id="backToCompanyBtn" class="btn btn-cyan">업체로 돌아가기</button>
+                <a href="worklog.html" class="btn btn-secondary">목록으로</a>
+            </nav>
+        </header>
+
+        <main>
+            <div id="companyInfo" class="company-info-section">
+                <!-- 업체 정보가 여기에 표시됩니다 -->
+            </div>
+
+            <form id="workLogForm" class="form-container">
+                <div class="form-group">
+                    <label for="visitDate">방문일자 *</label>
+                    <input type="date" id="visitDate" name="visitDate" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="visitPurpose">방문목적 *</label>
+                    <select id="visitPurpose" name="visitPurpose" required>
+                        <option value="">방문목적을 선택하세요</option>
+                        <!-- 동적으로 생성됩니다 -->
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="meetingPerson">면담자</label>
+                    <input type="text" id="meetingPerson" name="meetingPerson">
+                </div>
+
+                <div class="form-group">
+                    <label for="discussionContent">상담내용 *</label>
+                    <textarea id="discussionContent" name="discussionContent" rows="6" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="nextAction">향후계획</label>
+                    <textarea id="nextAction" name="nextAction" rows="3"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="followUpDate">다음방문예정일</label>
+                    <input type="date" id="followUpDate" name="followUpDate">
+                </div>
+
+                <div class="form-group">
+                    <label for="additionalNotes">특이사항</label>
+                    <textarea id="additionalNotes" name="additionalNotes" rows="3"></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">저장</button>
+                    <button type="button" id="cancelWorkLogBtn" class="btn btn-secondary">취소</button>
+                </div>
+            </form>
+        </main>
+    </div>
+
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Database Scripts -->
+    <script src="database.js"></script>
+    <script src="shared-assets/js/auth.js"></script>
+    <script src="work-log-entry.js"></script>
+</body>
+</html>

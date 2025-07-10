@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>업체 목록 - 철강영업 업무일지</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .table-container {
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+        
+        .company-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .company-table th,
+        .company-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            vertical-align: middle;
+        }
+        
+        .company-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #333;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .company-table tbody tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .company-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .visit-count {
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .last-visit {
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .company-name {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .company-name:hover {
+            color: #3498db;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>업체 목록</h1>
+            <nav>
+                <a href="employee-dashboard.html" class="btn btn-cyan">메인으로</a>
+            </nav>
+        </header>
+
+        <main>
+            <div class="action-buttons">
+                <button id="refreshBtn" class="btn btn-primary">새로고침</button>
+                <button id="addCompanyBtn" class="btn btn-success">새 업체 등록</button>
+            </div>
+
+            <div class="table-container">
+                <table class="company-table" id="companyTable">
+                    <thead>
+                        <tr>
+                            <th>업체명</th>
+                            <th>주소</th>
+                            <th>담당자</th>
+                            <th>전화번호</th>
+                            <th>업종</th>
+                            <th>방문횟수</th>
+                            <th>최근방문일</th>
+                        </tr>
+                    </thead>
+                    <tbody id="companyTableBody">
+                        <!-- 데이터가 여기에 동적으로 삽입됩니다 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="loadingMessage" style="display: none; text-align: center; padding: 20px;">
+                데이터를 불러오는 중...
+            </div>
+
+            <div id="emptyMessage" style="display: none; text-align: center; padding: 20px; color: #666;">
+                등록된 업체가 없습니다.
+            </div>
+        </main>
+    </div>
+
+    <script src="local-storage.js"></script>
+    <script src="company-list.js"></script>
+</body>
+</html>

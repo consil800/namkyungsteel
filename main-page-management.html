@@ -1,0 +1,1968 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>홈페이지 관리 - SteelWorks Platform</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        .admin-dashboard {
+            display: block;
+            min-height: 100vh;
+        }
+
+        .admin-header {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem 2rem;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .admin-logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: #ffffff;
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .admin-nav {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-btn:hover,
+        .nav-btn.active {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .admin-content {
+            padding: 2rem;
+        }
+
+        .content-section {
+            display: block;
+        }
+
+        .section-title {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 2rem;
+            color: #ffffff;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .data-grid {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .grid-header {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .grid-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 5px 15px rgba(239, 68, 68, 0.4);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #e2e8f0;
+            font-weight: 600;
+        }
+
+        .form-input, .form-textarea, .form-select {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+        }
+
+        .form-input::placeholder, .form-textarea::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .image-upload-area {
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .image-upload-area:hover {
+            border-color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .image-upload-area i {
+            font-size: 3rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .admin-header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .admin-nav {
+                justify-content: center;
+            }
+
+            .form-row {
+                flex-direction: column;
+            }
+
+            .admin-content {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-dashboard">
+        <!-- Header -->
+        <header class="admin-header">
+            <div class="admin-logo">
+                <i class="fas fa-globe"></i>
+                <span id="companyTitle">홈페이지 관리</span>
+            </div>
+            <nav class="admin-nav">
+                <a href="../templates/index.html" class="nav-btn" target="_blank" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+                    <i class="fas fa-home"></i> 홈페이지 미리보기
+                </a>
+                <a href="../../2-member-management/admin/admin-dashboard.html" class="nav-btn" id="dashboardLink" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+                    <i class="fas fa-dashboard"></i> 대시보드
+                </a>
+                <div id="dataStatus" style="background: rgba(255,255,255,0.1); padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.9rem;">
+                    💾 데이터: 로딩 중...
+                </div>
+            </nav>
+        </header>
+
+        <main class="admin-content">
+            <!-- 홈페이지 관리 섹션 -->
+            <section class="content-section active" id="homepage">
+                <h2 class="section-title">홈페이지 관리</h2>
+                
+                <!-- 기본 정보 -->
+                <div class="data-grid">
+                    <div class="grid-header">
+                        <h3 class="grid-title">기본 정보</h3>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn" onclick="saveBasicInfo()">
+                                <i class="fas fa-save"></i> 저장
+                            </button>
+                            <button class="btn" onclick="testBasicInfo()" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white;">
+                                <i class="fas fa-flask"></i> 테스트
+                            </button>
+                            <button class="btn" onclick="previewChanges()" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+                                <i class="fas fa-eye"></i> 미리보기
+                            </button>
+                        </div>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">회사명</label>
+                                <input type="text" class="form-input" id="companyName" placeholder="회사명을 입력하세요">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">대표 전화번호</label>
+                                <input type="text" class="form-input" id="companyPhone" placeholder="02-1234-5678">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">이메일</label>
+                                <input type="email" class="form-input" id="companyEmail" placeholder="contact@company.com">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">주소</label>
+                                <input type="text" class="form-input" id="companyAddress" placeholder="서울시 강남구...">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">회사 소개</label>
+                            <textarea class="form-textarea" id="companyDescription" placeholder="회사 소개를 입력하세요"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 메인 히어로 섹션 -->
+                <div class="data-grid">
+                    <div class="grid-header">
+                        <h3 class="grid-title">메인 히어로 섹션</h3>
+                        <button class="btn" onclick="saveHeroContent()">
+                            <i class="fas fa-save"></i> 저장
+                        </button>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <div class="form-group">
+                            <label class="form-label">히어로 태그 (⚙️ 철강 산업의 리더)</label>
+                            <input type="text" class="form-input" id="heroTag" placeholder="철강 산업의 리더">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">메인 제목</label>
+                            <textarea class="form-textarea" id="heroTitle" placeholder="최고의 품질과 기술력으로 미래를 만듭니다"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">메인 설명</label>
+                            <textarea class="form-textarea" id="heroDescription" placeholder="40년 전통의 기술력과 혁신으로 대한민국 철강 산업을 선도하는 한국철강입니다."></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">주요 특징 1</label>
+                                <input type="text" class="form-input" id="heroFeature1" placeholder="ISO 9001 품질경영시스템 인증">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">주요 특징 2</label>
+                                <input type="text" class="form-input" id="heroFeature2" placeholder="연간 500만톤 생산 능력">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">주요 특징 3</label>
+                                <input type="text" class="form-input" id="heroFeature3" placeholder="24시간 고객 기술지원">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">첫 번째 버튼 텍스트</label>
+                                <input type="text" class="form-input" id="heroButton1" placeholder="회사 소개">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">두 번째 버튼 텍스트</label>
+                                <input type="text" class="form-input" id="heroButton2" placeholder="견적 문의">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">히어로 이미지</label>
+                            <div class="image-upload-area" onclick="uploadHeroImage()">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>클릭하여 히어로 이미지 업로드</p>
+                                <small>권장 크기: 1200x800px</small>
+                            </div>
+                            <div class="hero-image-preview" id="hero-image-preview" style="display: none; margin-top: 10px;">
+                                <img class="preview-img" style="max-width: 150px; max-height: 150px; border-radius: 10px; object-fit: cover;">
+                                <p class="image-info" style="margin-top: 5px; font-size: 0.9em; color: #888;"></p>
+                            </div>
+                        </div>
+                        
+                        <!-- Scout 기본 이미지 교체 -->
+                        <div class="form-group">
+                            <label class="form-label">Scout 히어로 이미지 교체</label>
+                            <p style="color: rgba(255, 255, 255, 0.7); font-size: 0.9em; margin-bottom: 1rem;">히어로 섹션 우측 이미지 (photo-1558618666-fcd25c85cd64)</p>
+                            <div class="image-upload-area" onclick="uploadScoutHeroImage()">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>클릭하여 Scout 히어로 이미지 업로드</p>
+                                <small>권장 크기: 800x600px, PNG/JPG</small>
+                            </div>
+                            <div class="scout-image-preview" id="scout-hero-preview" style="display: none; margin-top: 10px;">
+                                <img class="preview-img" style="max-width: 150px; max-height: 150px; border-radius: 10px; object-fit: cover;">
+                                <p class="image-info" style="margin-top: 5px; font-size: 0.9em; color: #888;"></p>
+                            </div>
+                            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                                <button class="btn" onclick="saveScoutImage()">
+                                    <i class="fas fa-save"></i> 저장
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 회사소개 섹션 -->
+                <div class="data-grid">
+                    <div class="grid-header">
+                        <h3 class="grid-title">회사소개 섹션</h3>
+                        <button class="btn" onclick="saveAboutContent()">
+                            <i class="fas fa-save"></i> 저장
+                        </button>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <div class="form-group">
+                            <label class="form-label">섹션 부제목</label>
+                            <input type="text" class="form-input" id="aboutSubtitle" placeholder="회사 소개">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">섹션 제목</label>
+                            <input type="text" class="form-input" id="aboutTitle" placeholder="대한민국 철강 산업의 자부심">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">회사 소개 내용</label>
+                            <textarea class="form-textarea" id="aboutDescription" rows="5" placeholder="한국철강은 1983년 설립 이래 40년간 대한민국 철강 산업의 발전과 함께 성장해왔습니다. 최첨단 설비와 우수한 기술력을 바탕으로 최고 품질의 철강 제품을 생산하고 있습니다."></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">특징 1 (✓)</label>
+                                <input type="text" class="form-input" id="aboutFeature1" placeholder="연간 500만톤 이상의 생산 능력 보유">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">특징 2 (✓)</label>
+                                <input type="text" class="form-input" id="aboutFeature2" placeholder="친환경 공정으로 탄소 배출 30% 감축">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">특징 3 (✓)</label>
+                                <input type="text" class="form-input" id="aboutFeature3" placeholder="글로벌 50개국 수출 네트워크 구축">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">첫 번째 버튼 텍스트</label>
+                                <input type="text" class="form-input" id="aboutButton1" placeholder="더 알아보기">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">두 번째 버튼 텍스트</label>
+                                <input type="text" class="form-input" id="aboutButton2" placeholder="회사 브로슈어">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">메인 이미지</label>
+                                <div class="image-upload-area" onclick="uploadImage('aboutMain')">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <p>클릭하여 메인 이미지 업로드</p>
+                                    <small>권장 크기: 800x600px</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 제품·서비스 섹션 -->
+                <div class="data-grid">
+                    <div class="grid-header">
+                        <h3 class="grid-title">제품·서비스</h3>
+                        <button class="btn" onclick="saveServicesContent()">
+                            <i class="fas fa-save"></i> 저장
+                        </button>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <div class="form-group">
+                            <label class="form-label">섹션 제목</label>
+                            <input type="text" class="form-input" id="servicesTitle" placeholder="최고 품질의 철강 솔루션">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">섹션 설명</label>
+                            <input type="text" class="form-input" id="servicesSubtitle" placeholder="고객의 다양한 요구에 맞춘 맞춤형 철강 제품과 서비스를 제공합니다">
+                        </div>
+                        <div id="servicesContainer">
+                            <!-- 서비스 항목들이 여기에 동적으로 추가됩니다 -->
+                        </div>
+                        <button class="btn" onclick="addService()" style="margin-top: 1rem;">
+                            <i class="fas fa-plus"></i> 서비스 추가
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 임직원 섹션 -->
+                <div class="data-grid">
+                    <div class="grid-header">
+                        <h3 class="grid-title">임직원</h3>
+                        <button class="btn" onclick="saveTeamContent()">
+                            <i class="fas fa-save"></i> 저장
+                        </button>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <div class="form-group">
+                            <label class="form-label">섹션 제목</label>
+                            <input type="text" class="form-input" id="teamTitle" placeholder="철강 전문가 리더십">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">섹션 설명</label>
+                            <input type="text" class="form-input" id="teamSubtitle" placeholder="풍부한 경험과 전문성을 갖춘 경영진이 석영에스앤티의 미래를 이끌어갑니다">
+                        </div>
+                        <div id="teamContainer">
+                            <!-- 팀 멤버들이 여기에 동적으로 추가됩니다 -->
+                        </div>
+                        <button class="btn" onclick="addTeamMember()" style="margin-top: 1rem;">
+                            <i class="fas fa-plus"></i> 임직원 추가
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 통계 섹션 -->
+                <div class="data-grid">
+                    <div class="grid-header">
+                        <h3 class="grid-title">통계 정보</h3>
+                        <button class="btn" onclick="saveStatsContent()">
+                            <i class="fas fa-save"></i> 저장
+                        </button>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">통계 1 - 숫자/텍스트</label>
+                                <input type="text" class="form-input" id="stat1Number" placeholder="40 또는 텍스트">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">통계 1 - 제목</label>
+                                <input type="text" class="form-input" id="stat1Title" placeholder="년">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">통계 1 - 설명</label>
+                                <input type="text" class="form-input" id="stat1Desc" placeholder="업계 경력">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">통계 2 - 숫자/텍스트</label>
+                                <input type="text" class="form-input" id="stat2Number" placeholder="1200 또는 텍스트">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">통계 2 - 제목</label>
+                                <input type="text" class="form-input" id="stat2Title" placeholder="명">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">통계 2 - 설명</label>
+                                <input type="text" class="form-input" id="stat2Desc" placeholder="전문 인력">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">통계 3 - 숫자/텍스트</label>
+                                <input type="text" class="form-input" id="stat3Number" placeholder="50 또는 텍스트">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">통계 3 - 제목</label>
+                                <input type="text" class="form-input" id="stat3Title" placeholder="개국">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">통계 3 - 설명</label>
+                                <input type="text" class="form-input" id="stat3Desc" placeholder="수출 국가">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">통계 4 - 숫자/텍스트</label>
+                                <input type="text" class="form-input" id="stat4Number" placeholder="15 또는 텍스트">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">통계 4 - 제목</label>
+                                <input type="text" class="form-input" id="stat4Title" placeholder="개">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">통계 4 - 설명</label>
+                                <input type="text" class="form-input" id="stat4Desc" placeholder="품질 인증">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 제품 & 서비스 섹션 -->
+                <div class="data-grid">
+                    <div class="grid-header">
+                        <h3 class="grid-title">제품 & 서비스</h3>
+                        <button class="btn" onclick="saveServicesContent()">
+                            <i class="fas fa-save"></i> 저장
+                        </button>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <div class="form-group">
+                            <label class="form-label">섹션 부제목</label>
+                            <input type="text" class="form-input" id="servicesSubtitle" placeholder="제품 & 서비스">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">섹션 제목</label>
+                            <input type="text" class="form-input" id="servicesMainTitle" placeholder="최고 품질의 철강 솔루션">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">섹션 설명</label>
+                            <textarea class="form-textarea" id="servicesDescription" placeholder="고객의 다양한 요구에 맞춘 맞춤형 철강 제품과 서비스를 제공합니다"></textarea>
+                        </div>
+                        
+                        <!-- 서비스 1 -->
+                        <div style="border-top: 1px solid rgba(255, 255, 255, 0.1); margin-top: 2rem; padding-top: 2rem;">
+                            <h4 style="color: #e2e8f0; margin-bottom: 1rem;">서비스 1</h4>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">서비스명</label>
+                                    <input type="text" class="form-input" id="service1Title" placeholder="열연강판">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">아이콘 클래스</label>
+                                    <input type="text" class="form-input" id="service1Icon" placeholder="bi bi-gear-wide-connected">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">서비스 설명</label>
+                                <textarea class="form-textarea" id="service1Description" placeholder="자동차, 건설, 조선 등 다양한 산업 분야에 사용되는 고품질 열연강판을 생산합니다."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">링크 텍스트</label>
+                                <input type="text" class="form-input" id="service1LinkText" placeholder="자세히 보기">
+                            </div>
+                        </div>
+                        
+                        <!-- 서비스 2 -->
+                        <div style="border-top: 1px solid rgba(255, 255, 255, 0.1); margin-top: 2rem; padding-top: 2rem;">
+                            <h4 style="color: #e2e8f0; margin-bottom: 1rem;">서비스 2</h4>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">서비스명</label>
+                                    <input type="text" class="form-input" id="service2Title" placeholder="냉연강판">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">아이콘 클래스</label>
+                                    <input type="text" class="form-input" id="service2Icon" placeholder="bi bi-wrench">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">서비스 설명</label>
+                                <textarea class="form-textarea" id="service2Description" placeholder="가전제품, 자동차 외판 등 정밀한 가공이 필요한 분야에 최적화된 냉연강판입니다."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">링크 텍스트</label>
+                                <input type="text" class="form-input" id="service2LinkText" placeholder="자세히 보기">
+                            </div>
+                        </div>
+                        
+                        <!-- 서비스 3 -->
+                        <div style="border-top: 1px solid rgba(255, 255, 255, 0.1); margin-top: 2rem; padding-top: 2rem;">
+                            <h4 style="color: #e2e8f0; margin-bottom: 1rem;">서비스 3</h4>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">서비스명</label>
+                                    <input type="text" class="form-input" id="service3Title" placeholder="특수강">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">아이콘 클래스</label>
+                                    <input type="text" class="form-input" id="service3Icon" placeholder="bi bi-gem">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">서비스 설명</label>
+                                <textarea class="form-textarea" id="service3Description" placeholder="내열강, 내식강 등 특수한 용도에 맞춘 고기능성 특수강 제품을 공급합니다."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">링크 텍스트</label>
+                                <input type="text" class="form-input" id="service3LinkText" placeholder="자세히 보기">
+                            </div>
+                        </div>
+                        
+                        <!-- 서비스 4 -->
+                        <div style="border-top: 1px solid rgba(255, 255, 255, 0.1); margin-top: 2rem; padding-top: 2rem;">
+                            <h4 style="color: #e2e8f0; margin-bottom: 1rem;">서비스 4</h4>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">서비스명</label>
+                                    <input type="text" class="form-input" id="service4Title" placeholder="맞춤 가공">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">아이콘 클래스</label>
+                                    <input type="text" class="form-input" id="service4Icon" placeholder="bi bi-tools">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">서비스 설명</label>
+                                <textarea class="form-textarea" id="service4Description" placeholder="고객의 요구에 맞춘 절단, 성형, 표면처리 등 다양한 가공 서비스를 제공합니다."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">링크 텍스트</label>
+                                <input type="text" class="form-input" id="service4LinkText" placeholder="자세히 보기">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CTA 섹션 -->
+                <div class="data-grid">
+                    <div class="grid-header">
+                        <h3 class="grid-title">CTA (Call To Action)</h3>
+                        <button class="btn" onclick="saveCTAContent()">
+                            <i class="fas fa-save"></i> 저장
+                        </button>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <div class="form-group">
+                            <label class="form-label">CTA 제목</label>
+                            <input type="text" class="form-input" id="ctaTitle" placeholder="철강 솔루션이 필요하신가요?">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">CTA 설명</label>
+                            <textarea class="form-textarea" id="ctaDescription" placeholder="40년 전통의 기술력과 노하우로 최적의 철강 솔루션을 제공합니다. 전문 상담사가 친절하게 안내해드립니다."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">버튼 텍스트</label>
+                            <input type="text" class="form-input" id="ctaButtonText" placeholder="무료 상담 신청">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 파트너사 섹션 -->
+                <div class="data-grid">
+                    <div class="grid-header">
+                        <h3 class="grid-title">파트너사</h3>
+                        <button class="btn" onclick="savePartnersContent()">
+                            <i class="fas fa-save"></i> 저장
+                        </button>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <div class="form-group">
+                            <label class="form-label">섹션 부제목</label>
+                            <input type="text" class="form-input" id="partnersSubtitle" placeholder="파트너사">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">섹션 제목</label>
+                            <input type="text" class="form-input" id="partnersTitle" placeholder="함께하는 글로벌 기업">
+                        </div>
+                        <div id="partnersContainer">
+                            <!-- 파트너 로고들이 여기에 동적으로 추가됩니다 -->
+                        </div>
+                        <button class="btn" onclick="addPartner()" style="margin-top: 1rem;">
+                            <i class="fas fa-plus"></i> 파트너 추가
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 문의하기 섹션 -->
+                <div class="data-grid">
+                    <div class="grid-header">
+                        <h3 class="grid-title">문의하기</h3>
+                        <button class="btn" onclick="saveContactContent()">
+                            <i class="fas fa-save"></i> 저장
+                        </button>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <div class="form-group">
+                            <label class="form-label">섹션 부제목</label>
+                            <input type="text" class="form-input" id="contactSubtitle" placeholder="문의하기">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">섹션 제목</label>
+                            <input type="text" class="form-input" id="contactTitle" placeholder="언제든지 연락주세요">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">섹션 설명</label>
+                            <input type="text" class="form-input" id="contactDescription" placeholder="철강 전문가가 신속하고 정확하게 답변해드립니다">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 약도 업로드 섹션 -->
+                <div class="data-grid">
+                    <div class="grid-header">
+                        <h3 class="grid-title">약도 관리</h3>
+                        <button class="btn" onclick="clearMapImage()">
+                            <i class="fas fa-trash"></i> 초기화
+                        </button>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <div class="form-group">
+                            <label class="form-label">약도 이미지</label>
+                            <div class="image-upload-area" onclick="uploadMapImage()">
+                                <i class="fas fa-map-marked-alt"></i>
+                                <p>클릭하여 약도 이미지 업로드</p>
+                                <small>권장 크기: 800x600px (JPG, PNG)</small>
+                            </div>
+                            <div id="map-image-preview" style="margin-top: 1rem; display: none;">
+                                <img id="map-preview-img" style="max-width: 100%; max-height: 200px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);" />
+                                <p id="map-image-info" style="margin-top: 0.5rem; font-size: 0.9rem; opacity: 0.8;"></p>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">사용법</label>
+                            <p style="color: rgba(255,255,255,0.7); font-size: 0.9rem; line-height: 1.5;">
+                                1. 약도 이미지를 업로드하면 Scout 템플릿의 지도 영역에 자동으로 표시됩니다.<br>
+                                2. 이미지는 자동으로 저장되며, Scout 페이지를 새로고침하면 적용됩니다.<br>
+                                3. 초기화 버튼을 누르면 업로드된 약도가 삭제됩니다.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        var currentTemplate = null;
+        var mapImageData = null;
+        var scoutUploadedImage = null;
+
+        // 상태 업데이트 함수
+        function updateStatus() {
+            const data = localStorage.getItem('template_scout_settings');
+            const statusElement = document.getElementById('dataStatus');
+            
+            if (data) {
+                const parsed = JSON.parse(data);
+                const companyName = parsed.basic?.companyName || '미설정';
+                statusElement.innerHTML = `💾 데이터: ✅ 저장됨 (${companyName})`;
+            } else {
+                statusElement.innerHTML = '💾 데이터: ❌ 없음';
+            }
+        }
+        
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 홈페이지 관리 시작');
+            
+            // URL에서 회사 ID 가져오기
+            const urlParams = new URLSearchParams(window.location.search);
+            const companyId = urlParams.get('company');
+            
+            console.log('🏢 회사 ID:', companyId);
+            
+            currentTemplate = localStorage.getItem('currentTemplateId') || 'scout';
+            
+            // 회사명 동적 업데이트
+            const companyName = getCompanyName(companyId);
+            const titleElement = document.getElementById('companyTitle');
+            if (titleElement) {
+                titleElement.textContent = `${companyName} - 홈페이지 관리`;
+                document.title = `${companyName} - 홈페이지 관리`;
+                console.log('✅ 회사명 업데이트:', companyName);
+            }
+            
+            // 대시보드 링크 업데이트
+            if (companyId) {
+                const dashboardLink = document.getElementById('dashboardLink');
+                if (dashboardLink) {
+                    dashboardLink.href = `../../2-member-management/admin/admin-dashboard.html?company=${companyId}`;
+                    console.log('🔗 대시보드 링크 업데이트:', dashboardLink.href);
+                }
+            }
+            
+            loadData();
+            updateStatus();
+            
+            // 5초마다 상태 업데이트
+            setInterval(updateStatus, 5000);
+        });
+
+        function getCompanyName(companyId) {
+            // URL에서 회사 정보 가져오기
+            if (companyId) {
+                const companies = JSON.parse(localStorage.getItem('platform_companies') || '[]');
+                const company = companies.find(c => c.id === companyId);
+                
+                const companyNameMap = {
+                    'seokyoung-snt': '서경 S&T',
+                    'posco': '포스코 철강',
+                    'hyundai-steel': '현대제철',
+                    'namkyung-steel': '남경스틸',
+                    'new-test-company': '새로운테스트회사',
+                    '': '남경스틸' // 빈 파라미터 처리
+                };
+                
+                return company?.companyName || companyNameMap[companyId] || companyId;
+            }
+            
+            // 기존 템플릿 기반 이름 (fallback)
+            const templateNames = {
+                'scout': '석영에스앤티',
+                'instant': '대한철강',
+                'visible': '비전스틸',
+                'dewi': '동양철강',
+                'nice-restaurant': '한일철강',
+                'iportfolio': '포항철강',
+                'blogy': '한국산업',
+                'gp': '글로벌철강',
+                'upconstruction': '대한중공업'
+            };
+            return templateNames[currentTemplate] || '석영에스앤티';
+        }
+
+        function loadData() {
+            loadContentData();
+        }
+
+        function loadContentData() {
+            if (!currentTemplate) return;
+            
+            // Initialize with default Korean Steel content if no data exists
+            let savedData = localStorage.getItem(`template_${currentTemplate}_settings`);
+            if (!savedData) {
+                initializeDefaultContent();
+                savedData = localStorage.getItem(`template_${currentTemplate}_settings`);
+            }
+            
+            console.log('Loading admin data:', savedData);
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                console.log('Admin parsed data:', data);
+                
+                if (data.basic) {
+                    const companyName = document.getElementById('companyName');
+                    const companyPhone = document.getElementById('companyPhone');
+                    const companyEmail = document.getElementById('companyEmail');
+                    const companyAddress = document.getElementById('companyAddress');
+                    const companyDescription = document.getElementById('companyDescription');
+                    
+                    if (companyName) companyName.value = data.basic.companyName || '';
+                    if (companyPhone) companyPhone.value = data.basic.phone || '';
+                    if (companyEmail) companyEmail.value = data.basic.email || '';
+                    if (companyAddress) companyAddress.value = data.basic.address || '';
+                    if (companyDescription) companyDescription.value = data.basic.description || '';
+                }
+                
+                // Load hero content
+                if (data.hero) {
+                    const heroTag = document.getElementById('heroTag');
+                    const heroTitle = document.getElementById('heroTitle');
+                    const heroDescription = document.getElementById('heroDescription');
+                    const heroFeature1 = document.getElementById('heroFeature1');
+                    const heroFeature2 = document.getElementById('heroFeature2');
+                    const heroFeature3 = document.getElementById('heroFeature3');
+                    const heroButton1 = document.getElementById('heroButton1');
+                    const heroButton2 = document.getElementById('heroButton2');
+                    
+                    if (heroTag) heroTag.value = data.hero.tag || '';
+                    if (heroTitle) heroTitle.value = data.hero.title || '';
+                    if (heroDescription) heroDescription.value = data.hero.description || '';
+                    
+                    if (data.hero.features) {
+                        if (heroFeature1) heroFeature1.value = data.hero.features[0] || '';
+                        if (heroFeature2) heroFeature2.value = data.hero.features[1] || '';
+                        if (heroFeature3) heroFeature3.value = data.hero.features[2] || '';
+                    }
+                    
+                    if (data.hero.buttons) {
+                        if (heroButton1) heroButton1.value = data.hero.buttons[0] || '';
+                        if (heroButton2) heroButton2.value = data.hero.buttons[1] || '';
+                    }
+                }
+                
+                if (data.about) {
+                    const aboutSubtitle = document.getElementById('aboutSubtitle');
+                    const aboutTitle = document.getElementById('aboutTitle');
+                    const aboutDescription = document.getElementById('aboutDescription');
+                    const aboutFeature1 = document.getElementById('aboutFeature1');
+                    const aboutFeature2 = document.getElementById('aboutFeature2');
+                    const aboutFeature3 = document.getElementById('aboutFeature3');
+                    const aboutButton1 = document.getElementById('aboutButton1');
+                    const aboutButton2 = document.getElementById('aboutButton2');
+                    
+                    if (aboutSubtitle) aboutSubtitle.value = data.about.subtitle || '';
+                    if (aboutTitle) aboutTitle.value = data.about.title || '';
+                    if (aboutDescription) aboutDescription.value = data.about.description || '';
+                    
+                    if (data.about.features) {
+                        if (aboutFeature1) aboutFeature1.value = data.about.features[0] || '';
+                        if (aboutFeature2) aboutFeature2.value = data.about.features[1] || '';
+                        if (aboutFeature3) aboutFeature3.value = data.about.features[2] || '';
+                    }
+                    
+                    if (data.about.buttons) {
+                        if (aboutButton1) aboutButton1.value = data.about.buttons[0] || '';
+                        if (aboutButton2) aboutButton2.value = data.about.buttons[1] || '';
+                    }
+                }
+
+                // Load stats content
+                if (data.stats && data.stats.stats) {
+                    const stats = data.stats.stats;
+                    for (let i = 0; i < 4; i++) {
+                        const stat = stats[i] || {};
+                        const numberEl = document.getElementById(`stat${i+1}Number`);
+                        const titleEl = document.getElementById(`stat${i+1}Title`);
+                        const descEl = document.getElementById(`stat${i+1}Desc`);
+                        
+                        if (numberEl) numberEl.value = stat.number || '';
+                        if (titleEl) titleEl.value = stat.title || '';
+                        if (descEl) descEl.value = stat.description || '';
+                    }
+                }
+
+                // Load services content  
+                if (data.services && data.services.items) {
+                    const services = data.services.items;
+                    for (let i = 0; i < 4; i++) {
+                        const service = services[i] || {};
+                        const titleEl = document.getElementById(`service${i+1}Title`);
+                        const iconEl = document.getElementById(`service${i+1}Icon`);
+                        const descEl = document.getElementById(`service${i+1}Description`);
+                        const linkEl = document.getElementById(`service${i+1}LinkText`);
+                        
+                        if (titleEl) titleEl.value = service.title || '';
+                        if (iconEl) iconEl.value = service.icon || '';
+                        if (descEl) descEl.value = service.description || '';
+                        if (linkEl) linkEl.value = service.linkText || '';
+                    }
+                }
+
+                // Load CTA content
+                if (data.cta) {
+                    const ctaTitle = document.getElementById('ctaTitle');
+                    const ctaDescription = document.getElementById('ctaDescription');
+                    const ctaButtonText = document.getElementById('ctaButtonText');
+                    
+                    if (ctaTitle) ctaTitle.value = data.cta.title || '';
+                    if (ctaDescription) ctaDescription.value = data.cta.description || '';
+                    if (ctaButtonText) ctaButtonText.value = data.cta.buttonText || '';
+                }
+
+                // Load contact content
+                if (data.contactSection) {
+                    const contactSubtitle = document.getElementById('contactSubtitle');
+                    const contactTitle = document.getElementById('contactTitle');
+                    const contactDescription = document.getElementById('contactDescription');
+                    
+                    if (contactSubtitle) contactSubtitle.value = data.contactSection.subtitle || '';
+                    if (contactTitle) contactTitle.value = data.contactSection.title || '';
+                    if (contactDescription) contactDescription.value = data.contactSection.description || '';
+                }
+
+                // Load team content
+                if (data.team) {
+                    const teamTitle = document.getElementById('teamTitle');
+                    const teamSubtitle = document.getElementById('teamSubtitle');
+                    
+                    if (teamTitle) teamTitle.value = data.team.title || '';
+                    if (teamSubtitle) teamSubtitle.value = data.team.subtitle || '';
+                    
+                    if (data.team.members) {
+                        loadTeamMembers(data.team.members);
+                    }
+                }
+
+                // Load partners content
+                if (data.partners) {
+                    const partnersSubtitle = document.getElementById('partnersSubtitle');
+                    const partnersTitle = document.getElementById('partnersTitle');
+                    
+                    if (partnersSubtitle) partnersSubtitle.value = data.partners.subtitle || '';
+                    if (partnersTitle) partnersTitle.value = data.partners.title || '';
+                    
+                    if (data.partners.partners) {
+                        loadPartners(data.partners.partners);
+                    }
+                }
+            }
+        }
+
+        function initializeDefaultContent() {
+            const defaultData = {
+                basic: {
+                    companyName: '석영에스앤티',
+                    phone: '02-123-4567',
+                    email: 'info@seokyoungsnt.com',
+                    address: '서울시 강남구 테헤란로 123, 석영에스앤티빌딩',
+                    description: '대한민국 철강 산업의 선두주자로서 최고 품질의 철강 제품을 생산합니다.'
+                },
+                hero: {
+                    tag: '⚙️ 철강 산업의 리더',
+                    title: '최고의 품질과 기술력으로 미래를 만듭니다',
+                    description: '40년 전통의 기술력과 혁신으로 대한민국 철강 산업을 선도하는 석영에스앤티입니다.',
+                    features: [
+                        'ISO 9001 품질경영시스템 인증',
+                        '연간 500만톤 생산 능력',
+                        '24시간 고객 기술지원'
+                    ],
+                    buttons: ['회사 소개', '견적 문의']
+                },
+                about: {
+                    subtitle: '회사 소개',
+                    title: '대한민국 철강 산업의 자부심',
+                    description: '석영에스앤티는 1983년 설립 이래 40년간 대한민국 철강 산업의 발전과 함께 성장해왔습니다.',
+                    features: [
+                        '연간 500만톤 이상의 생산 능력 보유',
+                        '친환경 공정으로 탄소 배출 30% 감축',
+                        '글로벌 50개국 수출 네트워크 구축'
+                    ],
+                    buttons: ['더 알아보기', '회사 브로슈어']
+                }
+            };
+            
+            localStorage.setItem(`template_${currentTemplate}_settings`, JSON.stringify(defaultData));
+        }
+
+        function saveBasicInfo() {
+            if (!currentTemplate) {
+                alert('템플릿이 선택되지 않았습니다.');
+                return;
+            }
+            
+            const companyName = document.getElementById('companyName');
+            const companyPhone = document.getElementById('companyPhone');
+            const companyEmail = document.getElementById('companyEmail');
+            const companyAddress = document.getElementById('companyAddress');
+            const companyDescription = document.getElementById('companyDescription');
+            
+            const basicData = {
+                companyName: companyName ? companyName.value : '',
+                phone: companyPhone ? companyPhone.value : '',
+                email: companyEmail ? companyEmail.value : '',
+                address: companyAddress ? companyAddress.value : '',
+                description: companyDescription ? companyDescription.value : ''
+            };
+            
+            console.log('🔄 Saving basic data:', basicData);
+            
+            let savedData = JSON.parse(localStorage.getItem(`template_${currentTemplate}_settings`) || '{}');
+            savedData.basic = basicData;
+            localStorage.setItem(`template_${currentTemplate}_settings`, JSON.stringify(savedData));
+            
+            console.log('✅ Complete saved data:', savedData);
+            console.log('📝 LocalStorage key:', `template_${currentTemplate}_settings`);
+            
+            // 저장 확인
+            const verification = localStorage.getItem(`template_${currentTemplate}_settings`);
+            console.log('🔍 Verification - data actually saved:', verification);
+            
+            alert('✅ 기본 정보가 저장되었습니다!\n\n저장된 회사명: ' + basicData.companyName + '\n저장된 전화번호: ' + basicData.phone);
+            updateStatus();
+        }
+
+        function saveHeroContent() {
+            if (!currentTemplate) {
+                alert('템플릿이 선택되지 않았습니다.');
+                return;
+            }
+            
+            const heroTag = document.getElementById('heroTag');
+            const heroTitle = document.getElementById('heroTitle');
+            const heroDescription = document.getElementById('heroDescription');
+            const heroFeature1 = document.getElementById('heroFeature1');
+            const heroFeature2 = document.getElementById('heroFeature2');
+            const heroFeature3 = document.getElementById('heroFeature3');
+            const heroButton1 = document.getElementById('heroButton1');
+            const heroButton2 = document.getElementById('heroButton2');
+            
+            const heroData = {
+                tag: heroTag ? heroTag.value : '',
+                title: heroTitle ? heroTitle.value : '',
+                description: heroDescription ? heroDescription.value : '',
+                features: [
+                    heroFeature1 ? heroFeature1.value : '',
+                    heroFeature2 ? heroFeature2.value : '',
+                    heroFeature3 ? heroFeature3.value : ''
+                ],
+                buttons: [
+                    heroButton1 ? heroButton1.value : '',
+                    heroButton2 ? heroButton2.value : ''
+                ]
+            };
+            
+            console.log('🔄 Saving hero data:', heroData);
+            
+            let savedData = JSON.parse(localStorage.getItem(`template_${currentTemplate}_settings`) || '{}');
+            savedData.hero = heroData;
+            localStorage.setItem(`template_${currentTemplate}_settings`, JSON.stringify(savedData));
+            
+            console.log('✅ Hero data saved. Complete data:', savedData);
+            
+            alert('✅ 히어로 섹션이 저장되었습니다!\n\n태그: ' + heroData.tag + '\n제목: ' + heroData.title);
+            updateStatus();
+        }
+
+        function saveAboutContent() {
+            if (!currentTemplate) {
+                alert('템플릿이 선택되지 않았습니다.');
+                return;
+            }
+            
+            const aboutSubtitle = document.getElementById('aboutSubtitle');
+            const aboutTitle = document.getElementById('aboutTitle');
+            const aboutDescription = document.getElementById('aboutDescription');
+            const aboutFeature1 = document.getElementById('aboutFeature1');
+            const aboutFeature2 = document.getElementById('aboutFeature2');
+            const aboutFeature3 = document.getElementById('aboutFeature3');
+            const aboutButton1 = document.getElementById('aboutButton1');
+            const aboutButton2 = document.getElementById('aboutButton2');
+            
+            const aboutData = {
+                subtitle: aboutSubtitle ? aboutSubtitle.value : '',
+                title: aboutTitle ? aboutTitle.value : '',
+                description: aboutDescription ? aboutDescription.value : '',
+                features: [
+                    aboutFeature1 ? aboutFeature1.value : '',
+                    aboutFeature2 ? aboutFeature2.value : '',
+                    aboutFeature3 ? aboutFeature3.value : ''
+                ],
+                buttons: [
+                    aboutButton1 ? aboutButton1.value : '',
+                    aboutButton2 ? aboutButton2.value : ''
+                ]
+            };
+            
+            let savedData = JSON.parse(localStorage.getItem(`template_${currentTemplate}_settings`) || '{}');
+            savedData.about = aboutData;
+            localStorage.setItem(`template_${currentTemplate}_settings`, JSON.stringify(savedData));
+            console.log('Saved about data:', savedData);
+            
+            alert('회사소개 콘텐츠가 저장되었습니다.');
+        }
+
+        function saveServicesContent() {
+            if (!currentTemplate) {
+                alert('템플릿이 선택되지 않았습니다.');
+                return;
+            }
+            
+            const servicesData = {
+                subtitle: document.getElementById('servicesSubtitle')?.value || '',
+                title: document.getElementById('servicesMainTitle')?.value || '',
+                description: document.getElementById('servicesDescription')?.value || '',
+                items: [
+                    {
+                        title: document.getElementById('service1Title')?.value || '',
+                        icon: document.getElementById('service1Icon')?.value || 'bi bi-gear-wide-connected',
+                        description: document.getElementById('service1Description')?.value || '',
+                        linkText: document.getElementById('service1LinkText')?.value || '자세히 보기'
+                    },
+                    {
+                        title: document.getElementById('service2Title')?.value || '',
+                        icon: document.getElementById('service2Icon')?.value || 'bi bi-wrench',
+                        description: document.getElementById('service2Description')?.value || '',
+                        linkText: document.getElementById('service2LinkText')?.value || '자세히 보기'
+                    },
+                    {
+                        title: document.getElementById('service3Title')?.value || '',
+                        icon: document.getElementById('service3Icon')?.value || 'bi bi-gem',
+                        description: document.getElementById('service3Description')?.value || '',
+                        linkText: document.getElementById('service3LinkText')?.value || '자세히 보기'
+                    },
+                    {
+                        title: document.getElementById('service4Title')?.value || '',
+                        icon: document.getElementById('service4Icon')?.value || 'bi bi-tools',
+                        description: document.getElementById('service4Description')?.value || '',
+                        linkText: document.getElementById('service4LinkText')?.value || '자세히 보기'
+                    }
+                ]
+            };
+            
+            let savedData = JSON.parse(localStorage.getItem(`template_${currentTemplate}_settings`) || '{}');
+            savedData.services = servicesData;
+            localStorage.setItem(`template_${currentTemplate}_settings`, JSON.stringify(savedData));
+            console.log('Saved services data:', savedData);
+            
+            alert('제품 & 서비스 정보가 저장되었습니다.');
+        }
+
+        function saveTeamContent() {
+            if (!currentTemplate) {
+                alert('템플릿이 선택되지 않았습니다.');
+                return;
+            }
+            
+            const teamData = {
+                title: document.getElementById('teamTitle').value,
+                subtitle: document.getElementById('teamSubtitle').value,
+                members: getTeamData()
+            };
+            
+            let savedData = JSON.parse(localStorage.getItem(`template_${currentTemplate}_settings`) || '{}');
+            savedData.team = teamData;
+            localStorage.setItem(`template_${currentTemplate}_settings`, JSON.stringify(savedData));
+            
+            alert('임직원 콘텐츠가 저장되었습니다.');
+        }
+
+        function saveStatsContent() {
+            if (!currentTemplate) {
+                alert('템플릿이 선택되지 않았습니다.');
+                return;
+            }
+            
+            const stat1Number = document.getElementById('stat1Number');
+            const stat1Title = document.getElementById('stat1Title');
+            const stat1Desc = document.getElementById('stat1Desc');
+            const stat2Number = document.getElementById('stat2Number');
+            const stat2Title = document.getElementById('stat2Title');
+            const stat2Desc = document.getElementById('stat2Desc');
+            const stat3Number = document.getElementById('stat3Number');
+            const stat3Title = document.getElementById('stat3Title');
+            const stat3Desc = document.getElementById('stat3Desc');
+            const stat4Number = document.getElementById('stat4Number');
+            const stat4Title = document.getElementById('stat4Title');
+            const stat4Desc = document.getElementById('stat4Desc');
+            
+            const statsData = {
+                stats: [
+                    {
+                        number: stat1Number ? stat1Number.value : '',
+                        title: stat1Title ? stat1Title.value : '',
+                        description: stat1Desc ? stat1Desc.value : ''
+                    },
+                    {
+                        number: stat2Number ? stat2Number.value : '',
+                        title: stat2Title ? stat2Title.value : '',
+                        description: stat2Desc ? stat2Desc.value : ''
+                    },
+                    {
+                        number: stat3Number ? stat3Number.value : '',
+                        title: stat3Title ? stat3Title.value : '',
+                        description: stat3Desc ? stat3Desc.value : ''
+                    },
+                    {
+                        number: stat4Number ? stat4Number.value : '',
+                        title: stat4Title ? stat4Title.value : '',
+                        description: stat4Desc ? stat4Desc.value : ''
+                    }
+                ]
+            };
+            
+            let savedData = JSON.parse(localStorage.getItem(`template_${currentTemplate}_settings`) || '{}');
+            savedData.stats = statsData;
+            localStorage.setItem(`template_${currentTemplate}_settings`, JSON.stringify(savedData));
+            console.log('Saved stats data:', savedData);
+            
+            alert('통계 정보가 저장되었습니다.');
+        }
+        
+        function saveCTAContent() {
+            if (!currentTemplate) {
+                alert('템플릿이 선택되지 않았습니다.');
+                return;
+            }
+            
+            const ctaData = {
+                title: document.getElementById('ctaTitle').value,
+                description: document.getElementById('ctaDescription').value,
+                buttonText: document.getElementById('ctaButtonText').value
+            };
+            
+            let savedData = JSON.parse(localStorage.getItem(`template_${currentTemplate}_settings`) || '{}');
+            savedData.cta = ctaData;
+            localStorage.setItem(`template_${currentTemplate}_settings`, JSON.stringify(savedData));
+            
+            alert('CTA 콘텐츠가 저장되었습니다.');
+        }
+
+        function savePartnersContent() {
+            if (!currentTemplate) {
+                alert('템플릿이 선택되지 않았습니다.');
+                return;
+            }
+            
+            const partnersData = {
+                subtitle: document.getElementById('partnersSubtitle').value,
+                title: document.getElementById('partnersTitle').value,
+                partners: getPartnersData()
+            };
+            
+            let savedData = JSON.parse(localStorage.getItem(`template_${currentTemplate}_settings`) || '{}');
+            savedData.partners = partnersData;
+            localStorage.setItem(`template_${currentTemplate}_settings`, JSON.stringify(savedData));
+            
+            alert('파트너사 콘텐츠가 저장되었습니다.');
+        }
+
+        function saveContactContent() {
+            if (!currentTemplate) {
+                alert('템플릿이 선택되지 않았습니다.');
+                return;
+            }
+            
+            const contactData = {
+                subtitle: document.getElementById('contactSubtitle').value,
+                title: document.getElementById('contactTitle').value,
+                description: document.getElementById('contactDescription').value
+            };
+            
+            let savedData = JSON.parse(localStorage.getItem(`template_${currentTemplate}_settings`) || '{}');
+            savedData.contactSection = contactData;
+            localStorage.setItem(`template_${currentTemplate}_settings`, JSON.stringify(savedData));
+            
+            alert('문의하기 콘텐츠가 저장되었습니다.');
+        }
+
+        // Service management functions
+        function addService() {
+            const container = document.getElementById('servicesContainer');
+            const serviceId = Date.now();
+            const serviceHtml = `
+                <div class="service-item" data-id="${serviceId}" style="background: rgba(255, 255, 255, 0.05); padding: 1.5rem; border-radius: 10px; margin-bottom: 1rem;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">서비스명</label>
+                            <input type="text" class="form-input service-title" placeholder="열연강판">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">아이콘 클래스</label>
+                            <input type="text" class="form-input service-icon" placeholder="bi bi-gear-wide-connected">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">서비스 설명</label>
+                        <textarea class="form-textarea service-description" placeholder="자동차, 건설, 조선 등 다양한 산업 분야에 사용되는 고품질 열연강판을 생산합니다."></textarea>
+                    </div>
+                    <button class="btn btn-danger" onclick="removeService(${serviceId})">
+                        <i class="fas fa-trash"></i> 삭제
+                    </button>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', serviceHtml);
+        }
+
+        function removeService(id) {
+            const item = document.querySelector(`.service-item[data-id="${id}"]`);
+            if (item) item.remove();
+        }
+
+        function getServicesData() {
+            const services = [];
+            document.querySelectorAll('.service-item').forEach(item => {
+                services.push({
+                    title: item.querySelector('.service-title').value,
+                    icon: item.querySelector('.service-icon').value,
+                    description: item.querySelector('.service-description').value
+                });
+            });
+            return services;
+        }
+
+        function loadServices(services) {
+            const container = document.getElementById('servicesContainer');
+            container.innerHTML = '';
+            services.forEach(service => {
+                const serviceId = Date.now() + Math.random();
+                const serviceHtml = `
+                    <div class="service-item" data-id="${serviceId}" style="background: rgba(255, 255, 255, 0.05); padding: 1.5rem; border-radius: 10px; margin-bottom: 1rem;">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">서비스명</label>
+                                <input type="text" class="form-input service-title" value="${service.title || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">아이콘 클래스</label>
+                                <input type="text" class="form-input service-icon" value="${service.icon || ''}">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">서비스 설명</label>
+                            <textarea class="form-textarea service-description">${service.description || ''}</textarea>
+                        </div>
+                        <button class="btn btn-danger" onclick="removeService(${serviceId})">
+                            <i class="fas fa-trash"></i> 삭제
+                        </button>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', serviceHtml);
+            });
+        }
+
+        // Team management functions
+        function addTeamMember() {
+            const container = document.getElementById('teamContainer');
+            const memberId = Date.now();
+            const memberHtml = `
+                <div class="team-member" data-id="${memberId}" style="background: rgba(255, 255, 255, 0.05); padding: 1.5rem; border-radius: 10px; margin-bottom: 1rem;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">이름</label>
+                            <input type="text" class="form-input member-name" placeholder="김철수">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">직책</label>
+                            <input type="text" class="form-input member-position" placeholder="대표이사">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">소개</label>
+                        <textarea class="form-textarea member-description" placeholder="30년간 철강 업계에서 쌓은 경험으로 회사를 이끌고 있습니다."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">이미지 URL</label>
+                        <input type="text" class="form-input member-image" placeholder="assets/img/person/person-m-3.webp">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">이미지 업로드</label>
+                        <div class="image-upload-area" onclick="uploadMemberImage(${memberId})">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>클릭하여 임직원 사진 업로드</p>
+                            <small>권장 크기: 300x300px, PNG/JPG</small>
+                        </div>
+                        <div class="member-image-preview" id="member-preview-${memberId}" style="display: none; margin-top: 10px;">
+                            <img class="preview-img" style="max-width: 150px; max-height: 150px; border-radius: 10px; object-fit: cover;">
+                            <p class="image-info" style="margin-top: 5px; font-size: 0.9em; color: #888;"></p>
+                        </div>
+                    </div>
+                    <button class="btn btn-danger" onclick="removeTeamMember(${memberId})">
+                        <i class="fas fa-trash"></i> 삭제
+                    </button>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', memberHtml);
+        }
+
+        function removeTeamMember(id) {
+            const item = document.querySelector(`.team-member[data-id="${id}"]`);
+            if (item) item.remove();
+        }
+
+        function getTeamData() {
+            const members = [];
+            document.querySelectorAll('.team-member').forEach(item => {
+                members.push({
+                    name: item.querySelector('.member-name').value,
+                    position: item.querySelector('.member-position').value,
+                    description: item.querySelector('.member-description').value,
+                    image: item.querySelector('.member-image').value
+                });
+            });
+            return members;
+        }
+
+        function loadTeamMembers(members) {
+            const container = document.getElementById('teamContainer');
+            container.innerHTML = '';
+            members.forEach(member => {
+                const memberId = Date.now() + Math.random();
+                const memberHtml = `
+                    <div class="team-member" data-id="${memberId}" style="background: rgba(255, 255, 255, 0.05); padding: 1.5rem; border-radius: 10px; margin-bottom: 1rem;">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">이름</label>
+                                <input type="text" class="form-input member-name" value="${member.name || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">직책</label>
+                                <input type="text" class="form-input member-position" value="${member.position || ''}">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">소개</label>
+                            <textarea class="form-textarea member-description">${member.description || ''}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">이미지 URL</label>
+                            <input type="text" class="form-input member-image" value="${member.image || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">이미지 업로드</label>
+                            <div class="image-upload-area" onclick="uploadMemberImage(${memberId})">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>클릭하여 임직원 사진 업로드</p>
+                                <small>권장 크기: 300x300px, PNG/JPG</small>
+                            </div>
+                            <div class="member-image-preview" id="member-preview-${memberId}" style="display: none; margin-top: 10px;">
+                                <img class="preview-img" style="max-width: 150px; max-height: 150px; border-radius: 10px; object-fit: cover;">
+                                <p class="image-info" style="margin-top: 5px; font-size: 0.9em; color: #888;"></p>
+                            </div>
+                        </div>
+                        <button class="btn btn-danger" onclick="removeTeamMember(${memberId})">
+                            <i class="fas fa-trash"></i> 삭제
+                        </button>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', memberHtml);
+            });
+        }
+
+        // Partner management functions
+        function addPartner() {
+            const container = document.getElementById('partnersContainer');
+            const partnerId = Date.now();
+            const partnerHtml = `
+                <div class="partner-item" data-id="${partnerId}" style="background: rgba(255, 255, 255, 0.05); padding: 1.5rem; border-radius: 10px; margin-bottom: 1rem;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">파트너 이름</label>
+                            <input type="text" class="form-input partner-name" placeholder="삼성전자">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">파트너 설명</label>
+                            <input type="text" class="form-input partner-description" placeholder="글로벌 전자기업">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">로고 이미지 URL</label>
+                            <input type="text" class="form-input partner-logo" placeholder="https://example.com/logo.png 또는 assets/img/partners/samsung.png">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">웹사이트 URL</label>
+                            <input type="text" class="form-input partner-website" placeholder="https://www.samsung.com">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">로고 이미지 업로드</label>
+                        <div class="image-upload-area" onclick="uploadPartnerImage(${partnerId})">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>클릭하여 파트너 로고 업로드</p>
+                            <small>권장 크기: 200x80px, PNG/JPG</small>
+                        </div>
+                    </div>
+                    <button class="btn btn-danger" onclick="removePartner(${partnerId})">
+                        <i class="fas fa-trash"></i> 삭제
+                    </button>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', partnerHtml);
+        }
+
+        function removePartner(id) {
+            const item = document.querySelector(`.partner-item[data-id="${id}"]`);
+            if (item && confirm('이 파트너를 삭제하시겠습니까?')) {
+                item.remove();
+            }
+        }
+
+        function getPartnersData() {
+            const partners = [];
+            document.querySelectorAll('.partner-item').forEach(item => {
+                partners.push({
+                    name: item.querySelector('.partner-name').value,
+                    description: item.querySelector('.partner-description').value,
+                    logo: item.querySelector('.partner-logo').value,
+                    website: item.querySelector('.partner-website').value
+                });
+            });
+            return partners;
+        }
+
+        function loadPartners(partners) {
+            const container = document.getElementById('partnersContainer');
+            container.innerHTML = '';
+            partners.forEach(partner => {
+                const partnerId = Date.now() + Math.random();
+                const partnerHtml = `
+                    <div class="partner-item" data-id="${partnerId}" style="background: rgba(255, 255, 255, 0.05); padding: 1.5rem; border-radius: 10px; margin-bottom: 1rem;">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">파트너 이름</label>
+                                <input type="text" class="form-input partner-name" value="${partner.name || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">파트너 설명</label>
+                                <input type="text" class="form-input partner-description" value="${partner.description || ''}">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">로고 이미지 URL</label>
+                                <input type="text" class="form-input partner-logo" value="${partner.logo || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">웹사이트 URL</label>
+                                <input type="text" class="form-input partner-website" value="${partner.website || ''}">
+                            </div>
+                        </div>
+                        <button class="btn btn-danger" onclick="removePartner(${partnerId})">
+                            <i class="fas fa-trash"></i> 삭제
+                        </button>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', partnerHtml);
+            });
+        }
+
+        // Image upload functions
+        function uploadImage(type) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    // 파일 크기 체크 (5MB 제한)
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert('파일 크기가 너무 큽니다. 5MB 이하의 이미지를 선택해주세요.');
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const imageData = e.target.result;
+                        
+                        // 이미지 타입에 따라 저장
+                        if (type === 'hero') {
+                            localStorage.setItem('hero_uploaded_image', imageData);
+                            alert('히어로 이미지가 업로드되었습니다.');
+                        } else if (type === 'aboutMain') {
+                            localStorage.setItem('about_main_uploaded_image', imageData);
+                            alert('회사소개 메인 이미지가 업로드되었습니다.');
+                        }
+                        
+                        console.log(`${type} 이미지 업로드 완료:`, file.name);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            input.click();
+        }
+
+        function uploadMemberImage(memberId) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    // 파일 크기 체크 (5MB 제한)
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert('파일 크기가 너무 큽니다. 5MB 이하의 이미지를 선택해주세요.');
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const imageData = e.target.result;
+                        
+                        // 이미지 URL 필드에 데이터 URL 설정
+                        const memberItem = document.querySelector(`.team-member[data-id="${memberId}"]`);
+                        if (memberItem) {
+                            const imageInput = memberItem.querySelector('.member-image');
+                            if (imageInput) {
+                                imageInput.value = imageData;
+                            }
+                            
+                            // 미리보기 표시
+                            const preview = memberItem.querySelector(`#member-preview-${memberId}`);
+                            if (preview) {
+                                const img = preview.querySelector('.preview-img');
+                                const info = preview.querySelector('.image-info');
+                                
+                                if (img && info) {
+                                    img.src = imageData;
+                                    info.textContent = `파일명: ${file.name} | 크기: ${(file.size / 1024 / 1024).toFixed(2)}MB`;
+                                    preview.style.display = 'block';
+                                }
+                            }
+                        }
+                        
+                        alert('임직원 사진이 업로드되었습니다.');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            input.click();
+        }
+        
+        function uploadPartnerImage(partnerId) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    // 파일 크기 체크 (5MB 제한)
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert('파일 크기가 너무 큽니다. 5MB 이하의 이미지를 선택해주세요.');
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const imageData = e.target.result;
+                        
+                        // 로고 URL 필드에 데이터 URL 설정
+                        const partnerItem = document.querySelector(`.partner-item[data-id="${partnerId}"]`);
+                        if (partnerItem) {
+                            const logoInput = partnerItem.querySelector('.partner-logo');
+                            if (logoInput) {
+                                logoInput.value = imageData;
+                            }
+                        }
+                        
+                        alert('파트너 로고가 업로드되었습니다.');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            input.click();
+        }
+
+        function uploadMapImage() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        mapImageData = e.target.result;
+                        
+                        // 미리보기 표시
+                        const preview = document.getElementById('map-image-preview');
+                        const img = document.getElementById('map-preview-img');
+                        const info = document.getElementById('map-image-info');
+                        
+                        if (preview && img && info) {
+                            img.src = mapImageData;
+                            info.textContent = `파일명: ${file.name} | 크기: ${(file.size / 1024 / 1024).toFixed(2)}MB`;
+                            preview.style.display = 'block';
+                        }
+                        
+                        // localStorage에 저장
+                        localStorage.setItem('scout_map_image', mapImageData);
+                        alert('약도 이미지가 업로드되었습니다.');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            input.click();
+        }
+
+        function clearMapImage() {
+            if (confirm('약도 이미지를 삭제하시겠습니까?')) {
+                localStorage.removeItem('scout_map_image');
+                mapImageData = null;
+                
+                const preview = document.getElementById('map-image-preview');
+                if (preview) {
+                    preview.style.display = 'none';
+                }
+                
+                alert('약도 이미지가 삭제되었습니다.');
+            }
+        }
+
+        function handleScoutImageUpload(input) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    scoutUploadedImage = e.target.result;
+                    alert('이미지가 선택되었습니다. 저장 버튼을 클릭해주세요.');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function uploadScoutHeroImage() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    // 파일 크기 체크 (5MB 제한)
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert('파일 크기가 너무 큽니다. 5MB 이하의 이미지를 선택해주세요.');
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        scoutUploadedImage = e.target.result;
+                        
+                        // 미리보기 표시
+                        const preview = document.getElementById('scout-hero-preview');
+                        if (preview) {
+                            const img = preview.querySelector('.preview-img');
+                            const info = preview.querySelector('.image-info');
+                            
+                            if (img && info) {
+                                img.src = scoutUploadedImage;
+                                info.textContent = `파일명: ${file.name} | 크기: ${(file.size / 1024 / 1024).toFixed(2)}MB`;
+                                preview.style.display = 'block';
+                            }
+                        }
+                        
+                        alert('Scout 히어로 이미지가 업로드되었습니다. 저장 버튼을 클릭해주세요.');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            input.click();
+        }
+
+        function uploadHeroImage() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    // 파일 크기 체크 (5MB 제한)
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert('파일 크기가 너무 큽니다. 5MB 이하의 이미지를 선택해주세요.');
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const imageData = e.target.result;
+                        
+                        // 히어로 배경 이미지만 저장 (Scout 히어로 이미지와 분리)
+                        localStorage.setItem('hero_background_image', imageData);
+                        
+                        // 미리보기 표시
+                        const preview = document.getElementById('hero-image-preview');
+                        if (preview) {
+                            const img = preview.querySelector('.preview-img');
+                            const info = preview.querySelector('.image-info');
+                            
+                            if (img && info) {
+                                img.src = imageData;
+                                info.textContent = `파일명: ${file.name} | 크기: ${(file.size / 1024 / 1024).toFixed(2)}MB`;
+                                preview.style.display = 'block';
+                            }
+                        }
+                        
+                        alert('히어로 이미지가 업로드되었습니다.');
+                        console.log('✅ Hero background image uploaded and saved to localStorage');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            input.click();
+        }
+
+        function saveScoutImage() {
+            if (scoutUploadedImage) {
+                localStorage.setItem('scout_hero_uploaded_image', scoutUploadedImage);
+                alert('Scout 히어로 이미지가 저장되었습니다.');
+            } else {
+                alert('먼저 이미지를 선택해주세요.');
+            }
+        }
+
+        function clearScoutImage() {
+            if (confirm('Scout 히어로 이미지를 기본 이미지로 복원하시겠습니까?')) {
+                localStorage.removeItem('scout_hero_uploaded_image');
+                scoutUploadedImage = null;
+                
+                // 미리보기 숨기기
+                const preview = document.getElementById('scout-hero-preview');
+                if (preview) {
+                    preview.style.display = 'none';
+                }
+                
+                alert('Scout 히어로 이미지가 기본 이미지로 복원되었습니다.');
+            }
+        }
+
+        // Test and preview functions
+        function testBasicInfo() {
+            const companyName = document.getElementById('companyName').value;
+            const phone = document.getElementById('companyPhone').value;
+            
+            if (!companyName || !phone) {
+                alert('⚠️ 테스트 실패: 회사명과 전화번호를 입력해주세요.');
+                return;
+            }
+            
+            alert(`✅ 테스트 성공!\n회사명: ${companyName}\n전화번호: ${phone}`);
+        }
+
+        function previewChanges() {
+            const companyName = document.getElementById('companyName').value || '미설정';
+            alert(`🔍 미리보기\n현재 회사명: ${companyName}\n\n실제 미리보기는 '홈페이지 미리보기' 버튼을 클릭하세요.`);
+        }
+
+        // 페이지 로드 시 약도 이미지 로드
+        function loadMapImage() {
+            const savedImage = localStorage.getItem('scout_map_image');
+            if (savedImage) {
+                mapImageData = savedImage;
+                const preview = document.getElementById('map-image-preview');
+                const img = document.getElementById('map-preview-img');
+                const info = document.getElementById('map-image-info');
+                
+                if (preview && img && info) {
+                    img.src = mapImageData;
+                    info.textContent = '저장된 약도 이미지';
+                    preview.style.display = 'block';
+                }
+            }
+        }
+
+        // 페이지 로드 시 약도 이미지 로드
+        document.addEventListener('DOMContentLoaded', function() {
+            loadMapImage();
+        });
+
+    </script>
+</body>
+</html>

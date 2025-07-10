@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>법인카드 관리 - SteelWorks Platform</title>
+    
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Database Manager -->
+    <script src="database.js"></script>
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: #f5f7fa;
+            color: #333333;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 1.5rem 2rem;
+            border-bottom: 2px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .back-btn, .export-btn, .print-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-btn:hover, .export-btn:hover, .print-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border: 1px solid #dee2e6;
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #333333;
+        }
+
+        .search-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid #dee2e6;
+        }
+
+        .search-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-label {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #495057;
+        }
+
+        .form-input, .form-select {
+            padding: 0.75rem;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .search-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .summary-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .summary-title {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 0.5rem;
+        }
+
+        .summary-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+        }
+
+        .usage-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        .usage-table th,
+        .usage-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .usage-table th {
+            background: #f8f9fa;
+            font-weight: 700;
+            color: #495057;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .usage-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .amount-cell {
+            font-weight: 700;
+            color: #dc3545;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .receipt-thumbnail {
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            object-fit: cover;
+        }
+
+        .receipt-thumbnail:hover {
+            transform: scale(1.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .status-approved {
+            color: #28a745;
+            font-weight: 600;
+        }
+
+        .status-pending {
+            color: #ffc107;
+            font-weight: 600;
+        }
+
+        .status-rejected {
+            color: #dc3545;
+            font-weight: 600;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 2rem;
+        }
+
+        .pagination button {
+            padding: 0.5rem 1rem;
+            border: 1px solid #dee2e6;
+            background: white;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .pagination button:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .pagination button.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 3rem;
+            color: #6c757d;
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+            }
+            
+            .card {
+                padding: 1.5rem;
+            }
+            
+            .search-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .summary-section {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .header-actions {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+
+        /* 모달 스타일 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .close {
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            background: none;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .close:hover {
+            opacity: 0.7;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .receipt-info {
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+
+        .receipt-info h4 {
+            color: #333;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .receipt-info p {
+            margin: 0.3rem 0;
+            color: #666;
+        }
+
+        .receipt-image {
+            max-width: 100%;
+            max-height: 400px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .table-row-clickable {
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .table-row-clickable:hover {
+            background-color: #e3f2fd !important;
+        }
+
+        @media print {
+            .header, .search-section, .pagination, .no-print, .modal {
+                display: none !important;
+            }
+            
+            body {
+                background: white;
+            }
+            
+            .card {
+                box-shadow: none;
+                border: 1px solid #000;
+            }
+            
+            .usage-table th {
+                background: #f0f0f0 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-title">
+            <i class="fas fa-credit-card"></i>
+            <span>법인카드 사용 내역 관리</span>
+        </div>
+        <div class="header-actions">
+            <button class="print-btn no-print" onclick="printReport()">
+                <i class="fas fa-print"></i>
+                인쇄
+            </button>
+            <button class="export-btn no-print" onclick="exportToExcel()">
+                <i class="fas fa-file-excel"></i>
+                엑셀 내보내기
+            </button>
+            <a href="admin-dashboard.html" class="back-btn no-print">
+                <i class="fas fa-arrow-left"></i>
+                돌아가기
+            </a>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="card">
+            <h1 class="page-title">법인카드 사용 내역 관리</h1>
+            
+            <!-- 검색 필터 섹션 -->
+            <div class="search-section no-print">
+                <div class="search-grid">
+                    <div class="form-group">
+                        <label class="form-label">시작일</label>
+                        <input type="date" id="startDate" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">종료일</label>
+                        <input type="date" id="endDate" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">직원명</label>
+                        <select id="employeeFilter" class="form-select">
+                            <option value="">전체</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">부서</label>
+                        <select id="departmentFilter" class="form-select">
+                            <option value="">전체</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">직급</label>
+                        <select id="positionFilter" class="form-select">
+                            <option value="">전체</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">승인상태</label>
+                        <select id="statusFilter" class="form-select">
+                            <option value="">전체</option>
+                            <option value="approved">승인완료</option>
+                            <option value="pending">승인대기</option>
+                            <option value="rejected">반려</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="search-actions">
+                    <button class="btn btn-primary" onclick="searchUsageData()">
+                        <i class="fas fa-search"></i>
+                        검색
+                    </button>
+                    <button class="btn btn-secondary" onclick="resetFilters()">
+                        <i class="fas fa-undo"></i>
+                        초기화
+                    </button>
+                </div>
+            </div>
+
+            <!-- 요약 정보 -->
+            <div class="summary-section">
+                <div class="summary-card">
+                    <div class="summary-title">총 사용건수</div>
+                    <div class="summary-value" id="totalCount">0</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-title">총 사용금액</div>
+                    <div class="summary-value" id="totalAmount">0원</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-title">승인대기</div>
+                    <div class="summary-value" id="pendingCount">0</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-title">이번달 사용액</div>
+                    <div class="summary-value" id="monthlyAmount">0원</div>
+                </div>
+            </div>
+
+            <!-- 사용 내역 테이블 -->
+            <div class="table-container">
+                <table class="usage-table">
+                    <thead>
+                        <tr>
+                            <th>사용일시</th>
+                            <th>직원명</th>
+                            <th>부서</th>
+                            <th>직급</th>
+                            <th>사용처</th>
+                            <th>사용목적</th>
+                            <th>금액</th>
+                            <th>승인상태</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usageTableBody">
+                        <!-- 데이터가 여기에 동적으로 추가됩니다 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="noDataMessage" class="no-data" style="display: none;">
+                검색 결과가 없습니다.
+            </div>
+
+            <!-- 페이지네이션 -->
+            <div class="pagination no-print" id="pagination">
+                <!-- 페이지 버튼들이 여기에 동적으로 추가됩니다 -->
+            </div>
+        </div>
+    </main>
+
+    <!-- 영수증 모달 -->
+    <div id="receiptModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">영수증 확인</h3>
+                <button class="close" onclick="closeReceiptModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="receipt-info">
+                    <h4 id="modalEmployeeName"></h4>
+                    <p><strong>사용일시:</strong> <span id="modalDateTime"></span></p>
+                    <p><strong>사용처:</strong> <span id="modalMerchant"></span></p>
+                    <p><strong>사용목적:</strong> <span id="modalPurpose"></span></p>
+                    <p><strong>금액:</strong> <span id="modalAmount"></span></p>
+                    <p><strong>승인상태:</strong> <span id="modalStatus"></span></p>
+                </div>
+                <img id="receiptImage" class="receipt-image" src="" alt="영수증 이미지">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 법인카드 사용 데이터 (데이터베이스에서 로드)
+        let allUsageData = [];
+            {
+                id: 1,
+                date: '2024-12-15',
+                time: '14:30',
+                employeeName: '김철수',
+                department: '영업팀',
+                position: '과장',
+                merchant: '스타벅스 강남점',
+                purpose: '고객 미팅',
+                amount: 25000,
+                status: 'approved',
+                cardNumber: '**** **** **** 1234',
+                receiptImage: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2ZmZmZmZiIgc3Ryb2tlPSIjZGRkZGRkIiBzdHJva2Utd2lkdGg9IjIiLz4KICA8dGV4dCB4PSIxNTAiIHk9IjMwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiMzMzMzMzMiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtd2VpZ2h0PSJib2xkIj7siqTtg4DrspTsiqQ8L3RleHQ+CiAgPHRleHQgeD0iMTUwIiB5PSI2MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjNjY2NjY2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj7rvZXrgbjsoJDsoJE8L3RleHQ+CiAgPGxpbmUgeDE9IjIwIiB5MT0iODAiIHgyPSIyODAiIHkyPSI4MCIgc3Ryb2tlPSIjZGRkZGRkIiBzdHJva2Utd2lkdGg9IjEiLz4KICA8dGV4dCB4PSIyMCIgeT0iMTEwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiMzMzMzMzMiPuqzpOumrOydjOyLnDogMjAyNC4xMi4xNSAxNDozMDwvdGV4dD4KICA8dGV4dCB4PSIyMCIgeT0iMTMwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiMzMzMzMzMiPuuKpOycvDog6rmA7LKg7IKsPC90ZXh0PgogIDx0ZXh0IHg9IjIwIiB5PSIxNTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzMzMzMzMyI+6riM65+pOiDqs7DsnKU8L3RleHQ+CiAgPGxpbmUgeDE9IjIwIiB5MT0iMTcwIiB4Mj0iMjgwIiB5Mj0iMTcwIiBzdHJva2U9IiNkZGRkZGQiIHN0cm9rZS13aWR0aD0iMSIvPgogIDx0ZXh0IHg9IjIwIiB5PSIyMDAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzMzMzMzMyI+7JWE66mU66as7Lm0642Y64W47YGsOiAyNSwwMDDsm5A8L3RleHQ+CiAgPGxpbmUgeDE9IjIwIiB5MT0iMjIwIiB4Mj0iMjgwIiB5Mj0iMjIwIiBzdHJva2U9IiNkZGRkZGQiIHN0cm9rZS13aWR0aD0iMiIvPgogIDx0ZXh0IHg9IjIwIiB5PSIyNTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzMzMzMzMyIgZm9udC13ZWlnaHQ9ImJvbGQiPu2buOqzgCDquIjsooE6IDI1LDAwMOybkDwvdGV4dD4KICA8dGV4dCB4PSIyMCIgeT0iMjgwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiMzMzMzMzMiPuq1rOumrDog7KGw6rCc6rOgOiDtiJzspJE8L3RleHQ+CiAgPHRleHQgeD0iMjAiIHk9IjMwMCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEyIiBmaWxsPSIjMzMzMzMzIj7snbTsm5A6IDIwMjQuMTIuMTU8L3RleHQ+CiAgPHRleHQgeD0iMjAiIHk9IjMzMCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEwIiBmaWxsPSIjOTk5OTk5Ij7sirjsnLzrsJjsoJU6IGNhcmQxMjM0PC90ZXh0PgogIDx0ZXh0IHg9IjE1MCIgeT0iMzYwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTAiIGZpbGw9IiM5OTk5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPuqwkOyCsO2VqeuJnOqwgCDspJDrmJjripTsmIjsiJjrhIzspJE8L3RleHQ+Cjwvc3ZnPgo='
+            },
+            {
+                id: 2,
+                date: '2024-12-14',
+                time: '12:00',
+                employeeName: '이영희',
+                department: '마케팅팀',
+                position: '대리',
+                merchant: '한식당 맛나',
+                purpose: '점심 회의',
+                amount: 45000,
+                status: 'pending',
+                cardNumber: '**** **** **** 5678',
+                receiptImage: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2ZmZmZmZiIgc3Ryb2tlPSIjY2NjY2NjIiBzdHJva2Utd2lkdGg9IjIiLz4KICA8dGV4dCB4PSIxNTAiIHk9IjMwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiMzMzMzMzMiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtd2VpZ2h0PSJib2xkIj7tlZzsi53ri7kg66a47LKYPC90ZXh0PgogIDx0ZXh0IHg9IjE1MCIgeT0iNjAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NjY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+7ISc7Jq47Iud6rCA652066an6rO866as7J2E7ZWZ64uIKDwvdGV4dD4KICA8dGV4dCB4PSIyMCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiMzMzMzMzMiPuqzpOumrOydjOyLnDogMjAyNC4xMi4xNCAxMjowMDwvdGV4dD4KICA8dGV4dCB4PSIyMCIgeT0iMTIwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiMzMzMzMzMiPuqxsOynneyDgOyLnDog6riM64+E66a47YWM64GTPC90ZXh0PgogIDxsaW5lIHgxPSIyMCIgeTE9IjE0MCIgeDI9IjI4MCIgeTI9IjE0MCIgc3Ryb2tlPSIjY2NjY2NjIiBzdHJva2Utd2lkdGg9IjEiLz4KICA8dGV4dCB4PSIyMCIgeT0iMTcwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiMzMzMzMzMiPuqzoCBqaW1kYWs6IDMwLDAwMOybkCDQoDogMjwvdGV4dD4KICA8dGV4dCB4PSIyMCIgeT0iMTkwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiMzMzMzMzMiPuydkOywrCBqaWVja2FobmU6IDEwLDAwMOybkCDQoDogMTwvdGV4dD4KICA8dGV4dCB4PSIyMCIgeT0iMjEwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiMzMzMzMzMiPuq4iOyhpDogNDAsIDAwMOybkDwvdGV4dD4KICA8dGV4dCB4PSIyMCIgeT0iMjMwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiMzMzMzMzMiPuuKheyEnOyKpOq4iDogNSwwMDDsm5A8L3RleHQ+CiAgPGxpbmUgeDE9IjIwIiB5MT0iMjUwIiB4Mj0iMjgwIiB5Mj0iMjUwIiBzdHJva2U9IiNjY2NjY2MiIHN0cm9rZS13aWR0aD0iMiIvPgogIDx0ZXh0IHg9IjIwIiB5PSIyODAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzMzMzMzMyIgZm9udC13ZWlnaHQ9ImJvbGQiPu2buOqzgCDquIjsooE6IDQ1LDAwMOybkDwvdGV4dD4KICA8dGV4dCB4PSIyMCIgeT0iMzEwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiMzMzMzMzMiPuqysOygnOuwpeyLnTogTElGRS1DQVJEKS90ZXh0PgogIDx0ZXh0IHg9IjIwIiB5PSIzMzAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzMzMzMzMyI+7Iq57J2ADCBLSyoqKioqKioqKioqNTY3ODwvdGV4dD4KICA8dGV4dCB4PSIyMCIgeT0iMzYwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTAiIGZpbGw9IiM5OTk5OTkiPuu5hOuCqOuTpCDsgqzslKUg7JqQ66GcIOqwkOyCsO2VqeuLiOuLpC48L3RleHQ+CiAgPHRleHQgeD0iMTUwIiB5PSIzODAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMCIgZmlsbD0iIzk5OTk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+7KKF7J2R7J2065uo64uBIFnstZzsnpAg64+A7Jy-64+87KGU6rC97JuQ65GQW+ykgOuLiDwvdGV4dD4KPC9zdmc+Cg=='
+            },
+            {
+                id: 3,
+                date: '2024-12-13',
+                time: '16:45',
+                employeeName: '박민수',
+                department: '개발팀',
+                position: '팀장',
+                merchant: 'GS25 편의점',
+                purpose: '사무용품 구매',
+                amount: 15000,
+                status: 'approved',
+                cardNumber: '**** **** **** 9012',
+                receiptImage: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2ZmZmZmZiIgc3Ryb2tlPSIjY2NjY2NjIiBzdHJva2Utd2lkdGg9IjIiLz4KICA8dGV4dCB4PSIxNTAiIHk9IjMwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiMzMzMzMzMiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtd2VpZ2h0PSJib2xkIj5HUzI1IOu3uOychOywkDwvdGV4dD4KICA8dGV4dCB4PSIxNTAiIHk9IjYwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM2NjY2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPuy2qOyNoOywkDwvdGV4dD4KICA8bGluZSB4MT0iMjAiIHkxPSI4MCIgeDI9IjI4MCIgeTI9IjgwIiBzdHJva2U9IiNjY2NjY2MiIHN0cm9rZS13aWR0aD0iMSIvPgogIDx0ZXh0IHg9IjIwIiB5PSIxMTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzMzMzMzMyI+7LaU66y47KSR6riY64KgOiAyMDI0LjEyLjEzIDE2OjQ1PC90ZXh0PgogIDx0ZXh0IHg9IjIwIiB5PSIxMzAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzMzMzMzMyI+6riM64+0OiDrsJXrr7zsiJg8L3RleHQ+CiAgPGxpbmUgeDE9IjIwIiB5MT0iMTUwIiB4Mj0iMjgwIiB5Mj0iMTUwIiBzdHJva2U9IiNjY2NjY2MiIHN0cm9rZS13aWR0aD0iMSIvPgogIDx0ZXh0IHg9IjIwIiB5PSIxODAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzMzMzMzMyI+QTE067OA7LCI7ZW8OiA1LDAwMOybkCDYo8OBIDY6IDM8L3RleHQ+CiAgPHRleHQgeD0iMjAiIHk9IjIwMCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEyIiBmaWxsPSIjMzMzMzMzIj7rrqrrr7zss4xjOiA0LDAwMOybkCDQo8OBIDE6IDI8L3RleHQ+CiAgPHRleHQgeD0iMjAiIHk9IjIyMCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEyIiBmaWxsPSIjMzMzMzMzIj7to7Dshp4672og6rOB656Y44CU65Oo66CI7J6R55qE7LaU64+Z7JWgZjwvdGV4dD4KICA8dGV4dCB4PSIyMCIgeT0iMjQwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiMzMzMzMzMiPuq4iOysqDogMTUsMDAw7JuQ7LaU64+Z7JWgZixNOuq4keuwqjwvdGV4dD4KICA8bGluZSB4MT0iMjAiIHkxPSIyNjAiIHgyPSIyODAiIHkyPSIyNjAiIHN0cm9rZT0iI2NjY2NjYyIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPHRleHQgeD0iMjAiIHk9IjI5MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjMzMzMzMzIiBmb250LXdlaWdodD0iYm9sZCI+7Kim7ZqQ66aI7J2YOjI1LDAwMOybkOygleqyk+q4iOq7jTwvdGV4dD4KICA8dGV4dCB4PSIyMCIgeT0iMzIwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiMzMzMzMzMiPuq1rDrXsLQ6IDIwMjQuMTIuMTM8L3RleHQ+CiAgPHRleHQgeD0iMjAiIHk9IjM0MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEwIiBmaWxsPSIjOTk5OTk5Ij7rqeA7YqQ64+ZR+uKpCDsp4jsnYwsaWQ6IDkwMTI8L3RleHQ+CiAgPHRleHQgeD0iMTUwIiB5PSIzNzAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMCIgZmlsbD0iIzk5OTk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+6rCQ7KCA7ZWY64mp64SbIHNlcsyNICDslpHrsrggy6WNwrrQo8Op65KCIDwvdGV4dD4KPC9zdmc+Cg=='
+            },
+            {
+                id: 4,
+                date: '2024-12-12',
+                time: '10:15',
+                employeeName: '최지영',
+                department: '인사팀',
+                position: '차장',
+                merchant: '택시 (카카오택시)',
+                purpose: '출장 교통비',
+                amount: 12000,
+                status: 'approved',
+                cardNumber: '**** **** **** 3456'
+            },
+            {
+                id: 5,
+                date: '2024-12-11',
+                time: '19:30',
+                employeeName: '홍길동',
+                department: '영업팀',
+                position: '부장',
+                merchant: '호텔 레스토랑',
+                purpose: '고객 접대',
+                amount: 180000,
+                status: 'rejected',
+                cardNumber: '**** **** **** 7890'
+            },
+            {
+                id: 6,
+                date: '2024-12-10',
+                time: '13:20',
+                employeeName: '김민정',
+                department: '재무팀',
+                position: '사원',
+                merchant: '문구점',
+                purpose: '사무용품',
+                amount: 32000,
+                status: 'approved',
+                cardNumber: '**** **** **** 2468'
+            },
+            {
+                id: 7,
+                date: '2024-12-09',
+                time: '11:00',
+                employeeName: '이동훈',
+                department: '개발팀',
+                position: '선임연구원',
+                merchant: '카페베네',
+                purpose: '팀 미팅',
+                amount: 18000,
+                status: 'pending',
+                cardNumber: '**** **** **** 1357'
+            },
+            {
+                id: 8,
+                date: '2024-12-08',
+                time: '15:45',
+                employeeName: '안수진',
+                department: '마케팅팀',
+                position: '팀장',
+                merchant: '주유소',
+                purpose: '업무용 차량 주유',
+                amount: 65000,
+                status: 'approved',
+                cardNumber: '**** **** **** 8024'
+            }
+        ];
+
+        let filteredData = [...allUsageData];
+        let currentPage = 1;
+        const itemsPerPage = 10;
+
+        // 데이터베이스에서 법인카드 사용 내역 로드
+        async function loadUsageData() {
+            try {
+                // 데이터베이스 연결 확인
+                if (typeof db !== 'undefined' && db.isConnected()) {
+                    // 데이터베이스에서 법인카드 사용 내역을 가져올 수 있는 API가 있다면 여기에 구현
+                    // 예: const usageData = await db.getCorporateCardUsage();
+                    // 현재는 localStorage에서 법인카드 사용 내역을 가져옴
+                    allUsageData = JSON.parse(localStorage.getItem('corporateCardUsage') || '[]');
+                } else {
+                    // 데이터베이스 연결이 없으면 localStorage에서 가져옴
+                    allUsageData = JSON.parse(localStorage.getItem('corporateCardUsage') || '[]');
+                }
+                
+                // 데이터가 없으면 빈 배열 사용
+                if (!Array.isArray(allUsageData)) {
+                    allUsageData = [];
+                }
+                
+                filteredData = [...allUsageData];
+                console.log('법인카드 사용 내역 로드 완료:', allUsageData.length + '건');
+                
+                // UI 업데이트
+                initializeFilters();
+                displayUsageData();
+                updateSummary();
+                
+            } catch (error) {
+                console.error('법인카드 사용 내역 로드 중 오류:', error);
+                allUsageData = [];
+                filteredData = [];
+                displayNoData();
+            }
+        }
+
+        // 데이터가 없을 때 표시
+        function displayNoData() {
+            const tableBody = document.getElementById('usageTableBody');
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 2rem; color: #666;">
+                        등록된 법인카드 사용 내역이 없습니다.
+                    </td>
+                </tr>
+            `;
+            
+            const noDataMessage = document.getElementById('noDataMessage');
+            if (noDataMessage) {
+                noDataMessage.style.display = 'block';
+            }
+        }
+
+        // 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUsageData();
+        });
+
+        // 필터 옵션 초기화
+        function initializeFilters() {
+            const employees = [...new Set(allUsageData.map(item => item.employeeName))];
+            const departments = [...new Set(allUsageData.map(item => item.department))];
+            const positions = [...new Set(allUsageData.map(item => item.position))];
+
+            populateSelect('employeeFilter', employees);
+            populateSelect('departmentFilter', departments);
+            populateSelect('positionFilter', positions);
+
+            // 기본 날짜 설정 (최근 30일)
+            const today = new Date();
+            const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+            
+            document.getElementById('startDate').value = thirtyDaysAgo.toISOString().split('T')[0];
+            document.getElementById('endDate').value = today.toISOString().split('T')[0];
+        }
+
+        function populateSelect(selectId, options) {
+            const select = document.getElementById(selectId);
+            options.forEach(option => {
+                const optionElement = document.createElement('option');
+                optionElement.value = option;
+                optionElement.textContent = option;
+                select.appendChild(optionElement);
+            });
+        }
+
+        // 검색 기능
+        function searchUsageData() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const employee = document.getElementById('employeeFilter').value;
+            const department = document.getElementById('departmentFilter').value;
+            const position = document.getElementById('positionFilter').value;
+            const status = document.getElementById('statusFilter').value;
+
+            filteredData = allUsageData.filter(item => {
+                const itemDate = item.date;
+                
+                if (startDate && itemDate < startDate) return false;
+                if (endDate && itemDate > endDate) return false;
+                if (employee && item.employeeName !== employee) return false;
+                if (department && item.department !== department) return false;
+                if (position && item.position !== position) return false;
+                if (status && item.status !== status) return false;
+                
+                return true;
+            });
+
+            currentPage = 1;
+            loadUsageData();
+            updateSummary();
+        }
+
+        // 필터 초기화
+        function resetFilters() {
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            document.getElementById('employeeFilter').value = '';
+            document.getElementById('departmentFilter').value = '';
+            document.getElementById('positionFilter').value = '';
+            document.getElementById('statusFilter').value = '';
+            
+            filteredData = [...allUsageData];
+            currentPage = 1;
+            loadUsageData();
+            updateSummary();
+        }
+
+        // 사용 내역 로드
+        function loadUsageData() {
+            const tableBody = document.getElementById('usageTableBody');
+            const noDataMessage = document.getElementById('noDataMessage');
+            
+            if (filteredData.length === 0) {
+                tableBody.innerHTML = '';
+                noDataMessage.style.display = 'block';
+                document.getElementById('pagination').innerHTML = '';
+                return;
+            }
+
+            noDataMessage.style.display = 'none';
+
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageData = filteredData.slice(startIndex, endIndex);
+
+            tableBody.innerHTML = pageData.map(item => `
+                <tr>
+                    <td>${item.date} ${item.time}</td>
+                    <td>${item.employeeName}</td>
+                    <td>${item.department}</td>
+                    <td>${item.position}</td>
+                    <td>${item.merchant}</td>
+                    <td>${item.purpose}</td>
+                    <td class="amount-cell">
+                        ${item.amount.toLocaleString()}원
+                        ${item.receiptImage ? `<img src="${item.receiptImage}" class="receipt-thumbnail" onclick="showReceiptModal('${item.id}')" alt="영수증" title="영수증 보기">` : ''}
+                    </td>
+                    <td class="status-${item.status}">
+                        ${item.status === 'approved' ? '승인완료' : 
+                          item.status === 'pending' ? '승인대기' : '반려'}
+                    </td>
+                </tr>
+            `).join('');
+
+            createPagination();
+        }
+
+        // 페이지네이션 생성
+        function createPagination() {
+            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+            const paginationContainer = document.getElementById('pagination');
+            
+            if (totalPages <= 1) {
+                paginationContainer.innerHTML = '';
+                return;
+            }
+
+            let paginationHTML = '';
+            
+            // 이전 버튼
+            if (currentPage > 1) {
+                paginationHTML += `<button onclick="changePage(${currentPage - 1})">이전</button>`;
+            }
+
+            // 페이지 번호들
+            for (let i = 1; i <= totalPages; i++) {
+                const activeClass = i === currentPage ? 'active' : '';
+                paginationHTML += `<button class="${activeClass}" onclick="changePage(${i})">${i}</button>`;
+            }
+
+            // 다음 버튼
+            if (currentPage < totalPages) {
+                paginationHTML += `<button onclick="changePage(${currentPage + 1})">다음</button>`;
+            }
+
+            paginationContainer.innerHTML = paginationHTML;
+        }
+
+        // 페이지 변경
+        function changePage(page) {
+            currentPage = page;
+            loadUsageData();
+        }
+
+        // 요약 정보 업데이트
+        function updateSummary() {
+            const totalCount = filteredData.length;
+            const totalAmount = filteredData.reduce((sum, item) => sum + item.amount, 0);
+            const pendingCount = filteredData.filter(item => item.status === 'pending').length;
+            
+            // 이번달 사용액 계산
+            const currentMonth = new Date().getMonth() + 1;
+            const currentYear = new Date().getFullYear();
+            const monthlyAmount = filteredData.filter(item => {
+                const itemDate = new Date(item.date);
+                return itemDate.getMonth() + 1 === currentMonth && itemDate.getFullYear() === currentYear;
+            }).reduce((sum, item) => sum + item.amount, 0);
+
+            document.getElementById('totalCount').textContent = totalCount.toLocaleString();
+            document.getElementById('totalAmount').textContent = totalAmount.toLocaleString() + '원';
+            document.getElementById('pendingCount').textContent = pendingCount.toLocaleString();
+            document.getElementById('monthlyAmount').textContent = monthlyAmount.toLocaleString() + '원';
+        }
+
+        // 인쇄 기능
+        function printReport() {
+            window.print();
+        }
+
+        // 영수증 모달 표시
+        function showReceiptModal(itemId) {
+            const item = allUsageData.find(data => data.id == itemId);
+            if (!item || !item.receiptImage) return;
+
+            document.getElementById('modalEmployeeName').textContent = item.employeeName;
+            document.getElementById('modalDateTime').textContent = `${item.date} ${item.time}`;
+            document.getElementById('modalMerchant').textContent = item.merchant;
+            document.getElementById('modalPurpose').textContent = item.purpose;
+            document.getElementById('modalAmount').textContent = item.amount.toLocaleString() + '원';
+            document.getElementById('modalStatus').textContent = 
+                item.status === 'approved' ? '승인완료' : 
+                item.status === 'pending' ? '승인대기' : '반려';
+            
+            document.getElementById('receiptImage').src = item.receiptImage;
+            document.getElementById('receiptModal').style.display = 'block';
+        }
+
+        // 영수증 모달 닫기
+        function closeReceiptModal() {
+            document.getElementById('receiptModal').style.display = 'none';
+        }
+
+        // 모달 외부 클릭 시 닫기
+        window.onclick = function(event) {
+            const modal = document.getElementById('receiptModal');
+            if (event.target === modal) {
+                closeReceiptModal();
+            }
+        }
+
+        // 엑셀 내보내기
+        function exportToExcel() {
+            const headers = ['사용일시', '직원명', '부서', '직급', '사용처', '사용목적', '금액', '승인상태'];
+            
+            let csvContent = headers.join(',') + '\n';
+            
+            filteredData.forEach(item => {
+                const row = [
+                    `${item.date} ${item.time}`,
+                    item.employeeName,
+                    item.department,
+                    item.position,
+                    item.merchant,
+                    item.purpose,
+                    item.amount,
+                    item.status === 'approved' ? '승인완료' : 
+                    item.status === 'pending' ? '승인대기' : '반려'
+                ];
+                csvContent += row.join(',') + '\n';
+            });
+
+            // BOM 추가 (한글 깨짐 방지)
+            const BOM = '\uFEFF';
+            const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+            
+            const link = document.createElement('a');
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `법인카드_사용내역_${new Date().toISOString().split('T')[0]}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+    </script>
+</body>
+</html>

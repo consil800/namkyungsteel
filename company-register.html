@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>업체 등록 - 철강영업 업무일지</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>업체 등록</h1>
+            <nav>
+                <a href="worklog.html" class="btn btn-cyan">이전으로</a>
+            </nav>
+        </header>
+
+        <main>
+            <form id="companyForm" class="form-container">
+                <div class="form-group">
+                    <label for="companyName">업체명 *</label>
+                    <input type="text" id="companyName" name="companyName" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="region">지역 *</label>
+                    <select id="region" name="region" required>
+                        <option value="">지역을 선택하세요</option>
+                        <!-- 동적으로 생성됩니다 -->
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="address">주소</label>
+                    <input type="text" id="address" name="address">
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">전화번호</label>
+                    <input type="tel" id="phone" name="phone">
+                </div>
+
+                <div class="form-group">
+                    <label for="contactPerson">담당자명</label>
+                    <input type="text" id="contactPerson" name="contactPerson">
+                </div>
+
+                <div class="form-group">
+                    <label for="mobile">휴대폰</label>
+                    <input type="tel" id="mobile" name="mobile">
+                </div>
+
+                <div class="form-group">
+                    <label for="email">이메일</label>
+                    <input type="email" id="email" name="email">
+                </div>
+
+                <div class="form-group">
+                    <label for="paymentTerms">결제조건</label>
+                    <select id="paymentTerms" name="paymentTerms">
+                        <option value="">결제조건을 선택하세요</option>
+                        <!-- 동적으로 생성됩니다 -->
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="debtAmount">채권금액</label>
+                    <input type="text" id="debtAmount" name="debtAmount" placeholder="예: 1,000,000">
+                </div>
+
+                <div class="form-group">
+                    <label for="businessType">업종</label>
+                    <select id="businessType" name="businessType">
+                        <option value="">업종을 선택하세요</option>
+                        <!-- 동적으로 생성됩니다 -->
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="products">제조품</label>
+                    <textarea id="products" name="products" rows="3" placeholder="주로 제조하는 제품을 입력하세요 (예: 건축자재, 기계부품, 선박부품 등)"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="usageItems">사용품목</label>
+                    <textarea id="usageItems" name="usageItems" rows="3" placeholder="주로 사용하는 철강 품목을 입력하세요 (예: H빔, 각관, 철판 등)"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="companyColor">업체 색상</label>
+                    <select id="companyColor" name="companyColor" class="color-select">
+                        <option value="">색상을 선택하세요</option>
+                        <!-- 동적으로 생성됩니다 -->
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="notes">비고</label>
+                    <textarea id="notes" name="notes" rows="4"></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" id="submitBtn" class="btn btn-primary">등록</button>
+                    <button type="button" id="cancelBtn" class="btn btn-secondary">취소</button>
+                </div>
+            </form>
+        </main>
+    </div>
+
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Database Scripts -->
+    <script src="database.js"></script>
+    <script src="shared-assets/js/auth.js"></script>
+    <script src="company-register.js"></script>
+</body>
+</html>
