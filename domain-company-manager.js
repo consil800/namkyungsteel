@@ -14,7 +14,7 @@ class DomainCompanyManager {
             'localhost': {
                 companyName: '남경스틸(주)',
                 domain: 'namkyungsteel.com',
-                displayName: '남경스틸(주) - 개발환경',
+                displayName: '남경스틸(주)',
                 companyType: 'steel',
                 defaultRole: 'employee',
                 departments: ['영업부', '생산부', '품질관리부', '관리부', '기술부'],
@@ -23,7 +23,7 @@ class DomainCompanyManager {
             '127.0.0.1': {
                 companyName: '남경스틸(주)',
                 domain: 'namkyungsteel.com',
-                displayName: '남경스틸(주) - 로컬환경',
+                displayName: '남경스틸(주)',
                 companyType: 'steel',
                 defaultRole: 'employee',
                 departments: ['영업부', '생산부', '품질관리부', '관리부', '기술부'],
