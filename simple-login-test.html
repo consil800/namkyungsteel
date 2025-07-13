@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>간단한 로그인 테스트</title>
+    
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 50px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .login-btn {
+            display: inline-block;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            margin: 10px;
+            transition: transform 0.2s;
+            cursor: pointer;
+            border: none;
+            font-size: 16px;
+        }
+        
+        .login-btn:hover {
+            transform: translateY(-2px);
+            text-decoration: none;
+            color: white;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+            position: relative;
+        }
+        
+        .close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 30px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .btn-google {
+            width: 100%;
+            padding: 12px 20px;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            background: white;
+            color: #3c4043;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin: 15px 0;
+            font-size: 16px;
+        }
+        
+        .btn-google:hover {
+            background: #f8f9fa;
+            box-shadow: 0 1px 2px rgba(60,64,67,0.3);
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        
+        label {
+            font-weight: 500;
+            margin-bottom: 5px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 로그인 시스템 테스트</h1>
+        <p>남경스틸(주) - 간단한 로그인 테스트</p>
+        
+        <button class="login-btn" onclick="openModal()">
+            <i class="bi bi-person-circle"></i> 로그인
+        </button>
+        
+        <div id="debug" style="margin-top: 20px; padding: 15px; background: #f0f0f0; border-radius: 5px;">
+            <h3>디버그 정보:</h3>
+            <div id="debugInfo">로딩 중...</div>
+        </div>
+    </div>
+
+    <!-- 모달 -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            
+            <h2>로그인</h2>
+            
+            <form onsubmit="emailLogin(event)">
+                <label>이메일:</label>
+                <input type="email" id="email" required>
+                
+                <label>비밀번호:</label>
+                <input type="password" id="password" required>
+                
+                <button type="submit" class="login-btn" style="width: 100%; margin: 15px 0;">
+                    이메일로 로그인
+                </button>
+            </form>
+            
+            <div style="text-align: center; margin: 20px 0; position: relative;">
+                <div style="position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: #ddd;"></div>
+                <span style="background: white; padding: 0 15px; color: #666;">또는</span>
+            </div>
+            
+            <button class="btn-google" onclick="googleLogin()">
+                <svg width="18" height="18" viewBox="0 0 18 18">
+                    <g fill="none" fill-rule="evenodd">
+                        <path d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+                        <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
+                        <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+                        <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+                    </g>
+                </svg>
+                Google로 로그인
+            </button>
+            
+            <div id="status" class="status"></div>
+        </div>
+    </div>
+
+    <script>
+        // Supabase 설정
+        const SUPABASE_URL = 'https://zgyawfmjconubxaiamod.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpneWF3Zm1qY29udWJ4YWlhbW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NjQzNzIsImV4cCI6MjA2NzM0MDM3Mn0.shjBE2OQeILwkLLi4E6Bq0-b6YPUs-WFwquexdUiM9A';
+        
+        let supabaseClient = null;
+        
+        // 초기화
+        function init() {
+            try {
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                updateDebug('✅ Supabase 클라이언트 초기화 완료');
+                console.log('✅ Supabase 초기화 성공');
+            } catch (error) {
+                updateDebug('❌ Supabase 초기화 오류: ' + error.message);
+                console.error('❌ Supabase 초기화 오류:', error);
+            }
+        }
+        
+        function updateDebug(message) {
+            const debugDiv = document.getElementById('debugInfo');
+            const current = debugDiv.innerHTML;
+            debugDiv.innerHTML = current + '<br>' + new Date().toLocaleTimeString() + ': ' + message;
+            console.log(message);
+        }
+        
+        function showStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.style.display = 'block';
+            status.style.background = type === 'error' ? '#ffebee' : type === 'success' ? '#e8f5e8' : '#e3f2fd';
+            status.style.color = type === 'error' ? '#c62828' : type === 'success' ? '#2e7d32' : '#1565c0';
+            status.textContent = message;
+            updateDebug(message);
+        }
+        
+        function openModal() {
+            updateDebug('🔐 로그인 모달 열기');
+            document.getElementById('loginModal').style.display = 'flex';
+        }
+        
+        function closeModal() {
+            updateDebug('❌ 로그인 모달 닫기');
+            document.getElementById('loginModal').style.display = 'none';
+        }
+        
+        async function emailLogin(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            updateDebug('📧 이메일 로그인 시도: ' + email);
+            showStatus('로그인 중...', 'info');
+            
+            try {
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+                
+                if (error) {
+                    showStatus('로그인 실패: ' + error.message, 'error');
+                } else {
+                    showStatus('로그인 성공!', 'success');
+                    updateDebug('✅ 이메일 로그인 성공: ' + data.user.email);
+                    setTimeout(() => {
+                        closeModal();
+                        alert('로그인 성공! 환영합니다.');
+                    }, 1000);
+                }
+            } catch (error) {
+                showStatus('로그인 오류: ' + error.message, 'error');
+                updateDebug('❌ 이메일 로그인 오류: ' + error.message);
+            }
+        }
+        
+        async function googleLogin() {
+            updateDebug('🔐 Google 로그인 시작');
+            showStatus('Google 로그인 중...', 'info');
+            
+            if (!supabaseClient) {
+                showStatus('Supabase 클라이언트가 없습니다.', 'error');
+                return;
+            }
+            
+            try {
+                const { data, error } = await supabaseClient.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                        redirectTo: window.location.href
+                    }
+                });
+                
+                if (error) {
+                    showStatus('Google 로그인 오류: ' + error.message, 'error');
+                    updateDebug('❌ Google OAuth 오류: ' + error.message);
+                } else {
+                    showStatus('Google 로그인 페이지로 이동합니다...', 'success');
+                    updateDebug('✅ Google OAuth 요청 성공');
+                }
+            } catch (error) {
+                showStatus('Google 로그인 예외: ' + error.message, 'error');
+                updateDebug('❌ Google 로그인 예외: ' + error.message);
+            }
+        }
+        
+        // OAuth 콜백 처리
+        async function handleOAuthCallback() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const hashParams = new URLSearchParams(window.location.hash.substring(1));
+            
+            if (urlParams.get('code') || hashParams.get('access_token') || window.location.hash.includes('access_token')) {
+                updateDebug('🔐 OAuth 콜백 감지됨');
+                
+                try {
+                    const { data: { session }, error } = await supabaseClient.auth.getSession();
+                    
+                    if (error) {
+                        updateDebug('❌ 세션 확인 오류: ' + error.message);
+                        return;
+                    }
+                    
+                    if (session && session.user) {
+                        updateDebug('✅ OAuth 로그인 성공: ' + session.user.email);
+                        
+                        // URL 정리
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                        
+                        alert('Google 로그인 성공! 환영합니다, ' + (session.user.user_metadata?.name || session.user.email));
+                    }
+                } catch (error) {
+                    updateDebug('❌ OAuth 콜백 처리 오류: ' + error.message);
+                }
+            }
+        }
+        
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDebug('📄 페이지 로드됨');
+            init();
+            
+            // OAuth 콜백 처리
+            setTimeout(() => {
+                if (supabaseClient) {
+                    handleOAuthCallback();
+                }
+            }, 1000);
+        });
+        
+        // 전역 함수로 테스트 가능
+        window.testSupabase = function() {
+            return supabaseClient !== null;
+        };
+        
+        window.testGoogleLogin = googleLogin;
+    </script>
+</body>
+</html>
