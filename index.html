@@ -556,8 +556,15 @@
   <script src="https://cdn.jsdelivr.net/npm/@srexi/purecounterjs/dist/purecounter_vanilla.js"></script>
   <script src="https://unpkg.com/swiper@8/swiper-bundle.min.js"></script>
 
-  <!-- Main Template JS File -->
-  <script src="assets/js/main.js"></script>
+  <!-- Main Template JS File - 에러 방지를 위한 조건부 로드 -->
+  <script>
+    // OAuth 콜백 처리 중이 아닐 때만 main.js 로드
+    if (!window.location.hash.includes('access_token') && !window.location.search.includes('code')) {
+      const script = document.createElement('script');
+      script.src = 'assets/js/main.js';
+      document.head.appendChild(script);
+    }
+  </script>
   
   <!-- Authentication Scripts will be loaded later -->
 
@@ -877,6 +884,30 @@
   <script src="shared-assets/js/template-login.js"></script>
 
   <script>
+    // Google 로그인 처리 함수
+    async function handleGoogleLogin() {
+      console.log('🔐 Google 로그인 버튼 클릭');
+      
+      try {
+        if (typeof AuthManager === 'undefined') {
+          throw new Error('AuthManager가 로드되지 않았습니다.');
+        }
+        
+        const result = await AuthManager.googleLogin();
+        
+        if (result.success) {
+          console.log('✅ Google 로그인 시작:', result.message);
+          // OAuth 리다이렉트가 처리됨
+        } else {
+          throw new Error(result.message || 'Google 로그인에 실패했습니다.');
+        }
+        
+      } catch (error) {
+        console.error('❌ Google 로그인 오류:', error);
+        alert(error.message || 'Google 로그인 중 오류가 발생했습니다.');
+      }
+    }
+    
     // 로그인 상태 확인 및 프로필 표시
     function checkLoginStatus() {
       // 로그인 버튼 표시
@@ -1079,16 +1110,55 @@
         userProfile.style.display = 'none';
       }
       
-      // OAuth 콜백 처리
+      // OAuth 콜백 처리 - URL 해시와 쿼리 매개변수 모두 확인
       const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('code') || window.location.hash.includes('access_token')) {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      
+      if (urlParams.get('code') || hashParams.get('access_token') || window.location.hash.includes('access_token')) {
         console.log('🔐 OAuth 콜백 감지됨 (index.html)');
+        console.log('URL params:', urlParams.toString());
+        console.log('Hash params:', hashParams.toString());
         
-        if (typeof AuthManager !== 'undefined') {
+        // 액세스 토큰이 있으면 직접 로그인 처리
+        const accessToken = hashParams.get('access_token');
+        if (accessToken) {
+          console.log('✅ 액세스 토큰 발견, 로그인 처리 중...');
+          
+          // JWT 토큰 디코딩 (간단한 방법)
+          try {
+            const tokenParts = accessToken.split('.');
+            const payload = JSON.parse(atob(tokenParts[1]));
+            console.log('토큰 페이로드:', payload);
+            
+            // 사용자 정보 생성
+            const user = {
+              id: payload.sub,
+              email: payload.email,
+              name: payload.user_metadata?.name || payload.user_metadata?.full_name || payload.email,
+              role: 'employee',
+              profileImage: payload.user_metadata?.avatar_url || payload.user_metadata?.picture,
+              provider: 'google',
+              permissions: AuthManager.ROLE_PERMISSIONS['employee']
+            };
+            
+            // 로컬 스토리지에 저장
+            localStorage.setItem('currentUser', JSON.stringify(user));
+            localStorage.setItem('userRole', user.role);
+            localStorage.setItem('userName', user.name);
+            
+            console.log('✅ Google 로그인 성공:', user);
+            
+            // 페이지 새로고침 (해시 제거)
+            window.location.href = window.location.pathname;
+          } catch (error) {
+            console.error('❌ 토큰 처리 오류:', error);
+          }
+        } else if (typeof AuthManager !== 'undefined') {
+          // 기존 OAuth 콜백 처리
           AuthManager.handleOAuthCallback().then(result => {
             if (result.success) {
               console.log('✅ OAuth 로그인 완료, 새로고침');
-              window.location.href = window.location.pathname; // 새로고침
+              window.location.href = window.location.pathname;
             }
           }).catch(error => {
             console.error('❌ OAuth 콜백 처리 오류:', error);

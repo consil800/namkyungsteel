@@ -803,11 +803,34 @@ window.db = db;
 // 테스트 사용자 생성 함수
 async function createTestUser() {
     try {
+        // 먼저 회사가 존재하는지 확인하고, 없으면 생성
+        const companies = await db.getCompanies();
+        const existingCompany = companies.find(c => c.domain === 'consil800.com');
+        
+        if (!existingCompany) {
+            console.log('회사 데이터가 없습니다. 생성 중...');
+            const companyResult = await db.createCompany({
+                companyName: '콘실800',
+                domain: 'consil800.com',
+                website: 'https://consil800.github.io',
+                email: 'master@steelworks.com',
+                phone: '010-0000-0000',
+                address: '서울시',
+                subscription_plan: 'premium'
+            });
+            
+            if (!companyResult.success) {
+                console.error('회사 생성 실패:', companyResult);
+                return { success: false, error: '회사 생성에 실패했습니다.' };
+            }
+            console.log('✅ 회사 생성 완료:', companyResult.data);
+        }
+        
         const testUser = {
             email: 'master@steelworks.com',
             password: 'steelmaster2025',
             name: '마스터 관리자',
-            role: 'master_admin',
+            role: 'master',
             department: '관리부',
             position: '마스터',
             company_domain: 'consil800.com'
