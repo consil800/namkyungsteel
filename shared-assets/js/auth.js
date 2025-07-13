@@ -191,7 +191,7 @@ const AuthManager = {
             const { data, error } = await window.db.client.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: window.location.origin + window.location.pathname
+                    redirectTo: 'https://namkyungsteel.com'
                 }
             });
             
