@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>인증 시스템 테스트</title>
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Database Manager -->
+    <script src="database.js"></script>
+    <!-- Domain Company Manager -->
+    <script src="domain-company-manager.js"></script>
+    <!-- Auth Manager -->
+    <script src="shared-assets/js/auth.js"></script>
+</head>
+<body>
+    <h1>인증 시스템 테스트</h1>
+    
+    <div>
+        <h2>도메인 기반 회사 감지 테스트</h2>
+        <button onclick="testDomainDetection()">도메인 감지 테스트</button>
+        <div id="domainResult"></div>
+    </div>
+    
+    <div>
+        <h2>회원가입 테스트</h2>
+        <input type="email" id="testEmail" placeholder="test@namkyungsteel.com" value="test@namkyungsteel.com">
+        <input type="text" id="testName" placeholder="테스트 사용자" value="테스트 사용자">
+        <input type="password" id="testPassword" placeholder="password123" value="password123">
+        <button onclick="testRegister()">회원가입 테스트</button>
+        <div id="registerResult"></div>
+    </div>
+    
+    <div>
+        <h2>로그인 테스트</h2>
+        <input type="email" id="loginEmail" placeholder="test@namkyungsteel.com" value="test@namkyungsteel.com">
+        <input type="password" id="loginPassword" placeholder="password123" value="password123">
+        <button onclick="testLogin()">로그인 테스트</button>
+        <div id="loginResult"></div>
+    </div>
+
+    <script>
+        // 도메인 감지 테스트
+        function testDomainDetection() {
+            console.log('🧪 도메인 감지 테스트 시작');
+            
+            if (window.domainCompanyManager) {
+                const companyInfo = window.domainCompanyManager.getCurrentCompanyInfo();
+                console.log('🏢 감지된 회사 정보:', companyInfo);
+                
+                document.getElementById('domainResult').innerHTML = `
+                    <p><strong>회사명:</strong> ${companyInfo.companyName}</p>
+                    <p><strong>도메인:</strong> ${companyInfo.domain}</p>
+                    <p><strong>표시명:</strong> ${companyInfo.displayName}</p>
+                `;
+                
+                // 사용자 데이터 보강 테스트
+                const testUserData = {
+                    email: 'test@example.com',
+                    name: '테스트 사용자'
+                };
+                
+                const enhancedData = window.domainCompanyManager.enhanceUserData(testUserData);
+                console.log('✨ 보강된 사용자 데이터:', enhancedData);
+            } else {
+                document.getElementById('domainResult').innerHTML = '❌ domainCompanyManager가 로드되지 않았습니다.';
+            }
+        }
+        
+        // 회원가입 테스트
+        async function testRegister() {
+            console.log('🧪 회원가입 테스트 시작');
+            
+            const email = document.getElementById('testEmail').value;
+            const name = document.getElementById('testName').value;
+            const password = document.getElementById('testPassword').value;
+            
+            if (window.AuthManager) {
+                try {
+                    const userData = {
+                        email: email,
+                        name: name,
+                        password: password,
+                        role: 'employee',
+                        department: '기술부',
+                        position: '사원'
+                    };
+                    
+                    console.log('📤 회원가입 시도:', userData);
+                    const result = await window.AuthManager.register(userData);
+                    console.log('📥 회원가입 결과:', result);
+                    
+                    if (result.success) {
+                        document.getElementById('registerResult').innerHTML = `
+                            <p style="color: green;">✅ 회원가입 성공!</p>
+                            <p><strong>사용자 ID:</strong> ${result.user.id}</p>
+                            <p><strong>회사 도메인:</strong> ${result.user.company_domain}</p>
+                            <p><strong>회사명:</strong> ${result.user.company_name}</p>
+                        `;
+                    } else {
+                        document.getElementById('registerResult').innerHTML = `
+                            <p style="color: red;">❌ 회원가입 실패: ${result.message}</p>
+                        `;
+                    }
+                } catch (error) {
+                    console.error('❌ 회원가입 오류:', error);
+                    document.getElementById('registerResult').innerHTML = `
+                        <p style="color: red;">❌ 오류: ${error.message}</p>
+                    `;
+                }
+            } else {
+                document.getElementById('registerResult').innerHTML = '❌ AuthManager가 로드되지 않았습니다.';
+            }
+        }
+        
+        // 로그인 테스트
+        async function testLogin() {
+            console.log('🧪 로그인 테스트 시작');
+            
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (window.AuthManager) {
+                try {
+                    console.log('📤 로그인 시도:', { email });
+                    const result = await window.AuthManager.login(email, password);
+                    console.log('📥 로그인 결과:', result);
+                    
+                    if (result.success) {
+                        document.getElementById('loginResult').innerHTML = `
+                            <p style="color: green;">✅ 로그인 성공!</p>
+                            <p><strong>사용자명:</strong> ${result.user.name}</p>
+                            <p><strong>역할:</strong> ${result.user.role}</p>
+                            <p><strong>회사 도메인:</strong> ${result.user.company_domain}</p>
+                            <p><strong>회사명:</strong> ${result.user.company_name || 'N/A'}</p>
+                            <p><strong>권한:</strong> ${result.user.permissions?.join(', ') || 'N/A'}</p>
+                        `;
+                    } else {
+                        document.getElementById('loginResult').innerHTML = `
+                            <p style="color: red;">❌ 로그인 실패: ${result.message}</p>
+                        `;
+                    }
+                } catch (error) {
+                    console.error('❌ 로그인 오류:', error);
+                    document.getElementById('loginResult').innerHTML = `
+                        <p style="color: red;">❌ 오류: ${error.message}</p>
+                    `;
+                }
+            } else {
+                document.getElementById('loginResult').innerHTML = '❌ AuthManager가 로드되지 않았습니다.';
+            }
+        }
+        
+        // 페이지 로드 시 자동 테스트
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🧪 인증 시스템 테스트 페이지 로드됨');
+            
+            // 3초 후 자동으로 도메인 감지 테스트 실행
+            setTimeout(() => {
+                testDomainDetection();
+            }, 3000);
+        });
+    </script>
+</body>
+</html>

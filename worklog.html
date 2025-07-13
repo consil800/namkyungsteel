@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>철강영업 업무일지</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .table-container {
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+        
+        .company-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .company-table th,
+        .company-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            vertical-align: middle;
+        }
+        
+        .company-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #333;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .company-table tbody tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .company-table tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        .company-table tbody tr:nth-child(odd) {
+            background-color: #ffffff;
+        }
+        
+        .company-row {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .company-row:hover {
+            background-color: #e9ecef !important;
+        }
+        
+        .company-row.color-red {
+            background-color: rgba(231, 76, 60, 0.25) !important;
+        }
+        
+        .company-row.color-orange {
+            background-color: rgba(243, 156, 18, 0.25) !important;
+        }
+        
+        .company-row.color-yellow {
+            background-color: rgba(241, 196, 15, 0.25) !important;
+        }
+        
+        .company-row.color-green {
+            background-color: rgba(39, 174, 96, 0.25) !important;
+        }
+        
+        .company-row.color-blue {
+            background-color: rgba(52, 152, 219, 0.25) !important;
+        }
+        
+        .company-row.color-purple {
+            background-color: rgba(155, 89, 182, 0.25) !important;
+        }
+        
+        .company-row.color-gray {
+            background-color: rgba(149, 165, 166, 0.5) !important;
+        }
+        
+        .company-row.color-red:hover {
+            background-color: rgba(231, 76, 60, 0.4) !important;
+        }
+        
+        .company-row.color-orange:hover {
+            background-color: rgba(243, 156, 18, 0.4) !important;
+        }
+        
+        .company-row.color-yellow:hover {
+            background-color: rgba(241, 196, 15, 0.4) !important;
+        }
+        
+        .company-row.color-green:hover {
+            background-color: rgba(39, 174, 96, 0.4) !important;
+        }
+        
+        .company-row.color-blue:hover {
+            background-color: rgba(52, 152, 219, 0.4) !important;
+        }
+        
+        .company-row.color-purple:hover {
+            background-color: rgba(155, 89, 182, 0.4) !important;
+        }
+        
+        .company-row.color-gray:hover {
+            background-color: rgba(149, 165, 166, 0.7) !important;
+        }
+        
+        .company-count {
+            font-size: 0.8em;
+            color: #666;
+            font-weight: normal;
+        }
+        
+        .color-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            border: 1px solid #ddd;
+        }
+        
+        .color-red .color-indicator { background-color: #e74c3c; }
+        .color-orange .color-indicator { background-color: #f39c12; }
+        .color-yellow .color-indicator { background-color: #f1c40f; }
+        .color-green .color-indicator { background-color: #27ae60; }
+        .color-blue .color-indicator { background-color: #3498db; }
+        .color-purple .color-indicator { background-color: #9b59b6; }
+        .color-gray .color-indicator { background-color: #95a5a6; }
+        
+        .company-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .visit-count {
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .last-visit {
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .company-name {
+            font-weight: bold;
+            color: #2c3e50;
+            cursor: pointer;
+        }
+        
+        .company-name:hover {
+            color: #3498db;
+        }
+        
+        .sortable {
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.2s;
+        }
+        
+        .sortable:hover {
+            background-color: #e9ecef !important;
+        }
+        
+        .sort-arrow {
+            font-size: 0.8em;
+            color: #999;
+            margin-left: 5px;
+        }
+        
+        .sortable.asc .sort-arrow {
+            color: #007bff;
+        }
+        
+        .sortable.desc .sort-arrow {
+            color: #007bff;
+        }
+        
+        .sortable.asc .sort-arrow::after {
+            content: ' ↑';
+        }
+        
+        .sortable.desc .sort-arrow::after {
+            content: ' ↓';
+        }
+
+        /* 삭제 모드 스타일 */
+        .delete-mode .company-row {
+            cursor: default;
+        }
+
+        .delete-mode .company-name {
+            cursor: default;
+        }
+
+        .delete-mode .company-name:hover {
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); padding: 2rem; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); margin-bottom: 2rem;">
+            <div style="display: flex; align-items: center; width: 100%;">
+                <h1 style="margin: 0; color: #ffffff; font-size: 2rem; font-weight: 700; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); flex: 0 0 auto;">
+                    <i class="fas fa-clipboard-list" style="margin-right: 0.75rem;"></i>철강영업 업무일지
+                </h1>
+                <div style="flex: 1 1 auto;"></div>
+                <div style="display: flex; align-items: center; gap: 2rem; flex: 0 0 auto;">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div id="profileImageContainer" style="width: 40px; height: 40px;">
+                            <!-- 프로필 이미지가 여기에 동적으로 삽입됩니다 -->
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="color: #ffffff; font-weight: 600; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <span id="userName">로그인 필요</span>
+                            </div>
+                            <div style="color: rgba(255,255,255,0.7); font-size: 0.75rem; margin-top: 0.25rem;" id="userRole">
+                                -
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="goToDashboard()" style="background: linear-gradient(135deg, #f39c12, #e67e22); color: white; border: none; padding: 1rem 2rem; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(243, 156, 18, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(243, 156, 18, 0.3)'">
+                        <i class="fas fa-tachometer-alt" style="margin-right: 0.75rem;"></i>대시보드
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <section class="search-section">
+                <h2>업체 검색</h2>
+                <div class="search-container">
+                    <select id="searchRegion" style="padding: 0.75rem; border: 1px solid #ddd; border-radius: 5px; font-size: 1rem; min-width: 150px;">
+                        <option value="">전체 지역</option>
+                    </select>
+                    <input type="text" id="searchCompany" placeholder="업체명으로 검색">
+                    <button id="searchBtn" class="btn btn-primary">검색</button>
+                </div>
+            </section>
+
+            <section class="action-section">
+                <div class="action-buttons">
+                    <button id="addCompanyBtn" class="btn btn-success">새 업체 등록</button>
+                    <button id="exportBtn" class="btn btn-primary">업체 목록 내보내기 (XLSX)</button>
+                    <button id="importBtn" class="btn btn-secondary">업체 목록 불러오기 (XLSX)</button>
+                    <button id="deleteBtn" class="btn btn-warning">삭제</button>
+                    <button onclick="goToSettings()" class="btn btn-purple">설정</button>
+                </div>
+                <input type="file" id="xlsxFileInput" accept=".xlsx,.xls" style="display: none;">
+            </section>
+
+            <section class="results-section">
+                <h2>업체 목록 <span id="companyCount" class="company-count">(0개)</span></h2>
+                <div class="table-container">
+                    <table class="company-table" id="companyTable">
+                        <thead>
+                            <tr>
+                                <th class="sortable" onclick="sortTable(0)">업체명 <span class="sort-arrow">↕</span></th>
+                                <th class="sortable" onclick="sortTable(1)">주소 <span class="sort-arrow">↕</span></th>
+                                <th class="sortable" onclick="sortTable(2)">담당자 <span class="sort-arrow">↕</span></th>
+                                <th class="sortable" onclick="sortTable(3)">전화번호 <span class="sort-arrow">↕</span></th>
+                                <th class="sortable" onclick="sortTable(4)">업종 <span class="sort-arrow">↕</span></th>
+                                <th class="sortable" onclick="sortTable(5)">방문횟수 <span class="sort-arrow">↕</span></th>
+                                <th class="sortable" onclick="sortTable(6)">최근방문일 <span class="sort-arrow">↕</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="companyList">
+                            <!-- 업체 목록이 여기에 동적으로 생성됩니다 -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Database Scripts -->
+    <script src="database.js?v=20250107"></script>
+    <script src="shared-assets/js/auth.js?v=20250107"></script>
+    <script src="main.js?v=20250107"></script>
+    <script>
+        // 페이지 로드 시 사용자 정보 표시 및 지역 드롭다운 로드
+        window.addEventListener('DOMContentLoaded', async function() {
+            // 데이터베이스 초기화 대기
+            console.log('페이지 로드 완료, 데이터베이스 초기화 대기 중...');
+            
+            // 데이터베이스가 초기화될 때까지 최대 5초 대기
+            let retryCount = 0;
+            while ((!window.db || !window.db.client) && retryCount < 50) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                retryCount++;
+            }
+            
+            console.log('데이터베이스 초기화 상태:', !!window.db, !!window.db?.client);
+            
+            // 현재 로그인한 사용자 정보 가져오기
+            const currentUser = AuthManager.getCurrentUser();
+            
+            if (currentUser) {
+                // 사용자 이름 표시
+                document.getElementById('userName').textContent = currentUser.name || currentUser.email;
+                
+                // 프로필 이미지 표시
+                const profileContainer = document.getElementById('profileImageContainer');
+                if (profileContainer) {
+                    // 기본 아바타 생성 함수
+                    function generateDefaultAvatar(name) {
+                        const initials = name ? name.charAt(0).toUpperCase() : '?';
+                        return `data:image/svg+xml;base64,${btoa(`
+                            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="20" cy="20" r="20" fill="#667eea"/>
+                                <text x="20" y="26" font-family="Arial" font-size="18" fill="white" text-anchor="middle">${initials}</text>
+                            </svg>
+                        `)}`;
+                    }
+                    
+                    const profileImage = currentUser.profileImage || generateDefaultAvatar(currentUser.name || 'User');
+                    profileContainer.innerHTML = `
+                        <img src="${profileImage}" alt="프로필" 
+                             style="width: 40px; height: 40px; border-radius: 50%; 
+                                    border: 2px solid #fff; object-fit: cover;">
+                    `;
+                }
+                
+                // 사용자 역할 표시
+                let roleText = '';
+                switch(currentUser.role) {
+                    case 'master':
+                        roleText = '마스터 관리자';
+                        break;
+                    case 'company_admin':
+                        roleText = '업체 관리자';
+                        break;
+                    case 'company_manager':
+                        roleText = '업체 매니저';
+                        break;
+                    case 'employee':
+                        roleText = '직원';
+                        break;
+                    default:
+                        roleText = currentUser.role || '-';
+                }
+                document.getElementById('userRole').textContent = roleText;
+                
+                // 개인 업체 목록 알림 표시
+                const alertShown = localStorage.getItem('personalCompanyListAlertShown');
+                if (!alertShown) {
+                    alert(`${currentUser.name || currentUser.email}님의 개인 업체 목록입니다.\n여기서 추가/수정/삭제한 업체 정보는 다른 사용자와 공유되지 않습니다.`);
+                    localStorage.setItem('personalCompanyListAlertShown', 'true');
+                }
+            } else {
+                // 로그인되지 않은 경우 로그인 페이지로 이동
+                alert('로그인이 필요합니다.');
+                window.location.href = 'login.html';
+            }
+            
+            // 지역 목록 로드
+            loadRegions();
+        });
+        
+        // 대시보드로 이동 함수
+        function goToDashboard() {
+            window.location.href = 'employee-dashboard.html';
+        }
+        
+        // 설정으로 이동 함수
+        function goToSettings() {
+            const currentUser = AuthManager.getCurrentUser();
+            if (!currentUser) {
+                alert('로그인이 필요합니다.');
+                return;
+            }
+            window.location.href = 'settings.html';
+        }
+        
+        // 지역 목록 로드 함수
+        function loadRegions() {
+            const defaultRegions = ['서울','부산','대구','경주','김해','양산','함안','밀양','창원','창녕','울산','목포','광주','광양'];
+            const savedRegions = localStorage.getItem('company_regions');
+            const regions = savedRegions ? JSON.parse(savedRegions) : defaultRegions.sort((a, b) => a.localeCompare(b));
+            
+            const regionSelect = document.getElementById('searchRegion');
+            if (regionSelect) {
+                // 기존 옵션 초기화
+                regionSelect.innerHTML = '<option value="">전체 지역</option>';
+                
+                // 저장된 지역 추가
+                regions.forEach(region => {
+                    const option = document.createElement('option');
+                    option.value = region;
+                    option.textContent = region;
+                    regionSelect.appendChild(option);
+                });
+            }
+        }
+    </script>
+</body>
+</html>

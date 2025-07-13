@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>권한 설정 - SteelWorks Platform</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .permission-header {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1.5rem 2rem;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: #ffffff;
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Main Content */
+        .permission-container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        /* Menu Cards */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .menu-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .menu-card:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .menu-card.active {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .menu-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .menu-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .menu-description {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        /* Permission Panel */
+        .permission-panel {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: none;
+        }
+
+        .permission-panel.active {
+            display: block;
+        }
+
+        .panel-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        /* Tabs */
+        .permission-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-btn.active {
+            color: #ffffff;
+            border-bottom-color: #ffffff;
+        }
+
+        .tab-btn:hover {
+            color: #ffffff;
+        }
+
+        /* Permission Content */
+        .permission-content {
+            display: none;
+        }
+
+        .permission-content.active {
+            display: block;
+        }
+
+        /* Department/Position/Individual Lists */
+        .entity-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .entity-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 1.5rem;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .entity-item:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .entity-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .permission-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 25px;
+        }
+
+        .toggle-input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.3);
+            transition: .4s;
+            border-radius: 25px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 19px;
+            width: 19px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        .toggle-input:checked + .toggle-slider {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .toggle-input:checked + .toggle-slider:before {
+            transform: translateX(25px);
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Summary Info */
+        .permission-summary {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .summary-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #ffffff;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #10b981;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .permission-container {
+                padding: 0 1rem;
+            }
+            
+            .menu-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .permission-tabs {
+                flex-direction: column;
+                gap: 0;
+            }
+            
+            .tab-btn {
+                padding: 0.75rem 1rem;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                border-right: none;
+            }
+            
+            .entity-list {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="permission-header">
+        <div class="header-title">
+            <i class="fas fa-shield-alt"></i>
+            <span>권한 설정</span>
+        </div>
+        <a href="admin-dashboard.html" class="back-btn">
+            <i class="fas fa-arrow-left"></i>
+            관리자 대시보드로 돌아가기
+        </a>
+    </header>
+
+    <!-- Main Content -->
+    <main class="permission-container">
+        <!-- Summary -->
+        <div class="permission-summary">
+            <h3 class="summary-title">권한 설정 현황</h3>
+            <div class="summary-stats">
+                <div class="stat-item">
+                    <div class="stat-number" id="totalMenus">4</div>
+                    <div class="stat-label">총 메뉴</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="activeDepartments">0</div>
+                    <div class="stat-label">활성 부서</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="activePositions">0</div>
+                    <div class="stat-label">활성 직급</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="activeEmployees">0</div>
+                    <div class="stat-label">권한 부여된 직원</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Menu Cards -->
+        <div class="menu-grid">
+            <div class="menu-card" data-menu="worklog">
+                <div class="menu-icon">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <h3 class="menu-title">업무일지</h3>
+                <p class="menu-description">일일 업무 내용을 기록하고 관리하는 메뉴입니다.</p>
+            </div>
+
+
+            <div class="menu-card" data-menu="corporate-card">
+                <div class="menu-icon">
+                    <i class="fas fa-credit-card"></i>
+                </div>
+                <h3 class="menu-title">법인카드 사용</h3>
+                <p class="menu-description">법인카드 사용 내역을 기록하고 관리하는 메뉴입니다.</p>
+            </div>
+
+            <div class="menu-card" data-menu="leave-request">
+                <div class="menu-icon">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+                <h3 class="menu-title">연차신청서</h3>
+                <p class="menu-description">연차 및 휴가 신청을 관리하는 메뉴입니다.</p>
+            </div>
+
+            <div class="menu-card" data-menu="documents">
+                <div class="menu-icon">
+                    <i class="fas fa-file-invoice"></i>
+                </div>
+                <h3 class="menu-title">결제 서류</h3>
+                <p class="menu-description">사직서, 경위서, 재직증명서 등 각종 결재 서류를 작성하고 관리하는 메뉴입니다.</p>
+            </div>
+        </div>
+
+        <!-- Permission Panel -->
+        <div class="permission-panel" id="permissionPanel">
+            <h2 class="panel-title">
+                <i class="fas fa-cog"></i>
+                <span id="selectedMenuTitle">메뉴를 선택해주세요</span>
+            </h2>
+
+            <!-- Tabs -->
+            <div class="permission-tabs">
+                <button class="tab-btn active" data-tab="department">
+                    <i class="fas fa-building"></i> 부서별
+                </button>
+                <button class="tab-btn" data-tab="position">
+                    <i class="fas fa-user-tie"></i> 직급별
+                </button>
+                <button class="tab-btn" data-tab="individual">
+                    <i class="fas fa-user"></i> 개인별
+                </button>
+            </div>
+
+            <!-- Department Permissions -->
+            <div class="permission-content active" id="departmentContent">
+                <div class="entity-list" id="departmentList">
+                    <!-- 부서 목록이 여기에 동적으로 생성됩니다 -->
+                </div>
+            </div>
+
+            <!-- Position Permissions -->
+            <div class="permission-content" id="positionContent">
+                <div class="entity-list" id="positionList">
+                    <!-- 직급 목록이 여기에 동적으로 생성됩니다 -->
+                </div>
+            </div>
+
+            <!-- Individual Permissions -->
+            <div class="permission-content" id="individualContent">
+                <div class="entity-list" id="individualList">
+                    <!-- 개인 목록이 여기에 동적으로 생성됩니다 -->
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button class="btn btn-secondary" onclick="resetPermissions()">
+                    <i class="fas fa-undo"></i> 초기화
+                </button>
+                <button class="btn btn-primary" onclick="savePermissions()">
+                    <i class="fas fa-save"></i> 저장
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 전역 변수
+        let currentMenu = null;
+        let currentTab = 'department';
+        let permissions = {};
+        let employees = [];
+        let departments = [];
+        let positions = [];
+
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            loadEmployeeData();
+            loadPermissions();
+            initializeEventListeners();
+            updateSummary();
+        });
+
+        // 직원 데이터 로드
+        function loadEmployeeData() {
+            try {
+                // 직원 데이터 로드
+                employees = JSON.parse(localStorage.getItem('employees') || '[]');
+                
+                // 부서 목록 추출
+                departments = [...new Set(employees.map(emp => emp.department).filter(dept => dept))];
+                
+                // 직급 목록 추출
+                positions = [...new Set(employees.map(emp => emp.position).filter(pos => pos))];
+                
+                console.log('✅ 직원 데이터 로드 완료:', {
+                    employees: employees.length,
+                    departments: departments.length,
+                    positions: positions.length
+                });
+            } catch (error) {
+                console.error('❌ 직원 데이터 로드 실패:', error);
+                employees = [];
+                departments = [];
+                positions = [];
+            }
+        }
+
+        // 저장된 권한 설정 로드
+        function loadPermissions() {
+            try {
+                permissions = JSON.parse(localStorage.getItem('menuPermissions') || '{}');
+                console.log('✅ 권한 데이터 로드 완료:', permissions);
+            } catch (error) {
+                console.error('❌ 권한 데이터 로드 실패:', error);
+                permissions = {};
+            }
+        }
+
+        // 이벤트 리스너 초기화
+        function initializeEventListeners() {
+            // 메뉴 카드 클릭
+            document.querySelectorAll('.menu-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    selectMenu(this.dataset.menu);
+                });
+            });
+
+            // 탭 버튼 클릭
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    switchTab(this.dataset.tab);
+                });
+            });
+        }
+
+        // 메뉴 선택
+        function selectMenu(menuId) {
+            currentMenu = menuId;
+            
+            // 메뉴 카드 활성화
+            document.querySelectorAll('.menu-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            document.querySelector(`[data-menu="${menuId}"]`).classList.add('active');
+            
+            // 패널 표시
+            document.getElementById('permissionPanel').classList.add('active');
+            
+            // 메뉴 제목 업데이트
+            const menuTitles = {
+                'worklog': '업무일지',
+                'corporate-card': '법인카드 사용',
+                'leave-request': '연차신청서',
+                'documents': '결제 서류'
+            };
+            document.getElementById('selectedMenuTitle').textContent = `${menuTitles[menuId]} 권한 설정`;
+            
+            // 현재 탭의 콘텐츠 업데이트
+            updateTabContent();
+        }
+
+        // 탭 전환
+        function switchTab(tabId) {
+            currentTab = tabId;
+            
+            // 탭 버튼 활성화
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+            
+            // 콘텐츠 전환
+            document.querySelectorAll('.permission-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabId}Content`).classList.add('active');
+            
+            // 콘텐츠 업데이트
+            updateTabContent();
+        }
+
+        // 탭 콘텐츠 업데이트
+        function updateTabContent() {
+            if (!currentMenu) return;
+            
+            switch (currentTab) {
+                case 'department':
+                    renderDepartmentList();
+                    break;
+                case 'position':
+                    renderPositionList();
+                    break;
+                case 'individual':
+                    renderIndividualList();
+                    break;
+            }
+        }
+
+        // 부서별 권한 목록 렌더링
+        function renderDepartmentList() {
+            const container = document.getElementById('departmentList');
+            
+            if (departments.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.7);">등록된 부서가 없습니다.</p>';
+                return;
+            }
+            
+            container.innerHTML = departments.map(dept => {
+                const isAllowed = getPermission('department', dept, currentMenu);
+                return `
+                    <div class="entity-item">
+                        <div class="entity-name">
+                            <i class="fas fa-building"></i>
+                            ${dept}
+                        </div>
+                        <div class="permission-toggle">
+                            <span>접근 권한</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" class="toggle-input" 
+                                       ${isAllowed ? 'checked' : ''} 
+                                       onchange="updatePermission('department', '${dept}', '${currentMenu}', this.checked)">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 직급별 권한 목록 렌더링
+        function renderPositionList() {
+            const container = document.getElementById('positionList');
+            
+            if (positions.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.7);">등록된 직급이 없습니다.</p>';
+                return;
+            }
+            
+            container.innerHTML = positions.map(pos => {
+                const isAllowed = getPermission('position', pos, currentMenu);
+                return `
+                    <div class="entity-item">
+                        <div class="entity-name">
+                            <i class="fas fa-user-tie"></i>
+                            ${pos}
+                        </div>
+                        <div class="permission-toggle">
+                            <span>접근 권한</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" class="toggle-input" 
+                                       ${isAllowed ? 'checked' : ''} 
+                                       onchange="updatePermission('position', '${pos}', '${currentMenu}', this.checked)">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 개인별 권한 목록 렌더링
+        function renderIndividualList() {
+            const container = document.getElementById('individualList');
+            
+            if (employees.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.7);">등록된 직원이 없습니다.</p>';
+                return;
+            }
+            
+            container.innerHTML = employees.map(emp => {
+                const isAllowed = getPermission('individual', emp.id, currentMenu);
+                return `
+                    <div class="entity-item">
+                        <div class="entity-name">
+                            <i class="fas fa-user"></i>
+                            ${emp.name}
+                        </div>
+                        <div style="font-size: 0.9rem; color: rgba(255,255,255,0.7); margin-bottom: 1rem;">
+                            ${emp.department || '부서 없음'} · ${emp.position || '직급 없음'}
+                        </div>
+                        <div class="permission-toggle">
+                            <span>접근 권한</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" class="toggle-input" 
+                                       ${isAllowed ? 'checked' : ''} 
+                                       onchange="updatePermission('individual', '${emp.id}', '${currentMenu}', this.checked)">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 권한 조회
+        function getPermission(type, entityId, menuId) {
+            if (!permissions[menuId]) return false;
+            if (!permissions[menuId][type]) return false;
+            return permissions[menuId][type].includes(entityId);
+        }
+
+        // 권한 업데이트
+        function updatePermission(type, entityId, menuId, isAllowed) {
+            if (!permissions[menuId]) {
+                permissions[menuId] = {};
+            }
+            if (!permissions[menuId][type]) {
+                permissions[menuId][type] = [];
+            }
+            
+            const index = permissions[menuId][type].indexOf(entityId);
+            
+            if (isAllowed && index === -1) {
+                permissions[menuId][type].push(entityId);
+            } else if (!isAllowed && index > -1) {
+                permissions[menuId][type].splice(index, 1);
+            }
+            
+            updateSummary();
+            console.log('✅ 권한 업데이트:', { type, entityId, menuId, isAllowed });
+        }
+
+        // 요약 정보 업데이트
+        function updateSummary() {
+            const activeDepts = new Set();
+            const activePositions = new Set();
+            const activeEmployees = new Set();
+            
+            Object.values(permissions).forEach(menuPerm => {
+                if (menuPerm.department) {
+                    menuPerm.department.forEach(dept => activeDepts.add(dept));
+                }
+                if (menuPerm.position) {
+                    menuPerm.position.forEach(pos => activePositions.add(pos));
+                }
+                if (menuPerm.individual) {
+                    menuPerm.individual.forEach(empId => activeEmployees.add(empId));
+                }
+            });
+            
+            document.getElementById('activeDepartments').textContent = activeDepts.size;
+            document.getElementById('activePositions').textContent = activePositions.size;
+            document.getElementById('activeEmployees').textContent = activeEmployees.size;
+        }
+
+        // 권한 저장
+        function savePermissions() {
+            try {
+                localStorage.setItem('menuPermissions', JSON.stringify(permissions));
+                alert('✅ 권한 설정이 저장되었습니다.');
+                console.log('✅ 권한 저장 완료:', permissions);
+            } catch (error) {
+                console.error('❌ 권한 저장 실패:', error);
+                alert('❌ 권한 저장에 실패했습니다.');
+            }
+        }
+
+        // 권한 초기화
+        function resetPermissions() {
+            if (confirm('정말로 모든 권한 설정을 초기화하시겠습니까?')) {
+                permissions = {};
+                localStorage.removeItem('menuPermissions');
+                updateTabContent();
+                updateSummary();
+                alert('✅ 권한 설정이 초기화되었습니다.');
+                console.log('✅ 권한 초기화 완료');
+            }
+        }
+    </script>
+</body>
+</html>

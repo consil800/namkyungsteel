@@ -1,0 +1,2456 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>결재 서류 검토 - SteelWorks Platform</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: #f8f9fa;
+            color: #333333;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 1.5rem 2rem;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .document-card {
+            background: white;
+            border-radius: 15px;
+            padding: 3rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border: 1px solid #dee2e6;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .document-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .document-title {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #333333;
+        }
+
+        .approval-chain {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 0.75rem;
+            width: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            font-size: 0.85rem;
+        }
+
+        .approval-chain h4 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            color: #495057;
+            text-align: center;
+        }
+
+        .approval-step {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem;
+            margin-bottom: 0.4rem;
+            border-radius: 6px;
+            background: white;
+            border: 1px solid #e0e0e0;
+        }
+
+        .approval-step.current {
+            background: #fff3cd;
+            border-color: #ffc107;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .approval-step.current:hover {
+            background: #ffeaa7;
+            transform: translateY(-1px);
+        }
+
+        .approval-step.approved {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+
+        .approval-info {
+            flex: 1;
+        }
+
+        .approval-name {
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
+        .approval-position {
+            font-size: 0.7rem;
+            color: #6c757d;
+        }
+
+        .approval-status {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.6rem;
+        }
+
+        .status-pending {
+            background: #ffc107;
+            color: white;
+        }
+
+        .status-approved {
+            background: #28a745;
+            color: white;
+        }
+
+        .signature-area {
+            border: 1px dashed #ccc;
+            border-radius: 6px;
+            padding: 0.5rem;
+            text-align: center;
+            margin: 0.3rem 0;
+            min-height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+        }
+
+        .signature-area.signed {
+            border-color: #28a745;
+            background: #f8fff9;
+        }
+
+        .signature-text {
+            font-family: cursive;
+            font-size: 0.9rem;
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .document-content {
+            margin: 2rem 0;
+        }
+
+        .content-section {
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #495057;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 0.5rem;
+        }
+
+        .content-box {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        .info-table th, .info-table td {
+            border: 1px solid #dee2e6;
+            padding: 1rem;
+            text-align: left;
+        }
+
+        .info-table th {
+            background: #f8f9fa;
+            font-weight: 700;
+            width: 25%;
+        }
+
+        .action-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+
+        .action-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #333333;
+        }
+
+        .signature-input {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            font-family: cursive;
+            text-align: center;
+        }
+
+        .comment-input {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .next-approver-section {
+            margin: 1.5rem 0;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .btn-approve {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-approve:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .btn-reject {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-reject:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+            }
+            
+            .document-card {
+                padding: 2rem 1.5rem;
+            }
+            
+            .approval-chain {
+                position: relative;
+                top: auto;
+                right: auto;
+                width: 100%;
+                margin-bottom: 2rem;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-title">
+            <i class="fas fa-clipboard-check"></i>
+            <span>결재 서류 검토</span>
+        </div>
+        <a href="../../2-member-management/employee/employee-dashboard.html" class="back-btn">
+            <i class="fas fa-arrow-left"></i>
+            대시보드로 돌아가기
+        </a>
+    </header>
+
+    <main class="container">
+        <div class="document-card" id="documentCard">
+            <!-- 문서 내용이 동적으로 로드됩니다 -->
+        </div>
+
+        <div class="action-section" id="actionSection" style="display: none;">
+            <h3 class="action-title">결재 처리</h3>
+            
+            <div class="form-group">
+                <label for="signature" class="form-label">전자 서명 <span style="color: #ff6b6b;">*</span></label>
+                <input type="text" id="signature" class="signature-input" placeholder="여기에 성명을 입력하세요" required>
+            </div>
+
+            <div class="form-group">
+                <label for="comment" class="form-label">검토 의견</label>
+                <textarea id="comment" class="comment-input" placeholder="검토 의견을 입력하세요 (선택사항)"></textarea>
+            </div>
+
+            <div class="next-approver-section" id="nextApproverSection" style="display: none;">
+                <label for="nextApprover" class="form-label">다음 승인자 선택 <span style="color: #ff6b6b;">*</span></label>
+                <select id="nextApprover" class="form-select">
+                    <option value="">다음 승인자를 선택해주세요</option>
+                </select>
+            </div>
+
+            <div class="btn-group">
+                <button type="button" class="btn btn-approve" onclick="approveDocument()">
+                    <i class="fas fa-check"></i> 승인
+                </button>
+                <button type="button" class="btn btn-reject" onclick="rejectDocument()">
+                    <i class="fas fa-times"></i> 반려
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="goBack()">
+                    <i class="fas fa-arrow-left"></i> 뒤로가기
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let currentDocument = null;
+        let currentUser = null;
+
+        // URL 파라미터에서 문서 ID 가져오기
+        function getDocumentId() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('id');
+        }
+
+        // 현재 로그인 사용자 정보 가져오기
+        function getCurrentUser() {
+            try {
+                return JSON.parse(localStorage.getItem('currentUser'));
+            } catch (error) {
+                console.error('사용자 정보 로드 오류:', error);
+                return null;
+            }
+        }
+
+        // 연차 신청 일수 계산
+        function calculateLeaveDays(document) {
+            // 먼저 기존에 저장된 값이 있는지 확인
+            if (document.days && document.days !== '기타') {
+                return document.days;
+            }
+            
+            if (document.leaveDays && document.leaveDays !== '기타') {
+                return document.leaveDays;
+            }
+            
+            if (document.totalDays && document.totalDays !== '기타') {
+                return document.totalDays;
+            }
+            
+            // 기타인 경우 날짜 차이로 계산
+            if (document.startDate && document.endDate) {
+                const startDate = new Date(document.startDate);
+                const endDate = new Date(document.endDate);
+                
+                // 날짜 차이 계산 (종료일 포함)
+                const timeDiff = endDate.getTime() - startDate.getTime();
+                const dayDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+                
+                return dayDiff > 0 ? dayDiff : 1;
+            }
+            
+            return '-';
+        }
+
+        // 직원 정보 가져오기 (다양한 방식으로 검색)
+        function getEmployee(employeeId) {
+            const employees = JSON.parse(localStorage.getItem('employees') || '[]');
+            
+            // ID로 찾기
+            let employee = employees.find(emp => emp.id === employeeId);
+            
+            // ID로 찾을 수 없으면 이름으로 찾기
+            if (!employee) {
+                employee = employees.find(emp => emp.name === employeeId);
+            }
+            
+            // 이메일로 찾기
+            if (!employee) {
+                employee = employees.find(emp => emp.email === employeeId);
+            }
+            
+            console.log(`🔍 직원 정보 검색: ${employeeId} -> `, employee);
+            return employee;
+        }
+
+        // 모든 직원 목록 가져오기 (현재 사용자와 이미 승인한 사람 제외)
+        function getAvailableApprovers() {
+            const employees = JSON.parse(localStorage.getItem('employees') || '[]');
+            const approvedUserIds = currentDocument.signatures.map(sig => sig.approverId);
+            const approvalChainUserIds = currentDocument.approvalChain.map(approval => approval.approverId);
+            
+            // 신청자, 현재 사용자, 이미 승인한 사람들을 제외
+            const excludedIds = [
+                currentDocument.requesterId,  // 신청자 ID
+                currentDocument.requesterName, // 신청자 이름
+                currentUser?.id,             // 현재 사용자 (본인)
+                currentUser?.name,           // 현재 사용자 이름으로도 체크
+                currentUser?.email,          // 현재 사용자 이메일로도 체크
+                ...approvedUserIds,          // 이미 승인한 사람들
+                ...approvalChainUserIds      // 결재선에 있는 사람들
+            ].filter(id => id); // null/undefined 제거
+            
+            // 제외 대상이 아닌 직원들만 반환
+            return employees.filter(emp => 
+                !excludedIds.includes(emp.id) && 
+                !excludedIds.includes(emp.name) && 
+                !excludedIds.includes(emp.email)
+            );
+        }
+
+        // 문서 로드
+        function loadDocument() {
+            console.log('📄 문서 로드 시작...');
+            
+            const documentId = getDocumentId();
+            console.log('🆔 문서 ID:', documentId);
+            
+            if (!documentId) {
+                console.error('❌ 문서 ID가 없습니다!');
+                alert('문서 ID가 없습니다.');
+                goBack();
+                return;
+            }
+
+            const approvalRequests = JSON.parse(localStorage.getItem('approvalRequests') || '[]');
+            console.log('📋 전체 승인 요청 목록:', approvalRequests.length, '개');
+            
+            currentDocument = approvalRequests.find(doc => doc.id === documentId);
+            console.log('📄 찾은 문서:', currentDocument);
+
+            if (!currentDocument) {
+                console.error('❌ 문서를 찾을 수 없습니다! ID:', documentId);
+                console.log('📋 사용 가능한 문서 ID들:', approvalRequests.map(doc => doc.id));
+                alert('문서를 찾을 수 없습니다.');
+                goBack();
+                return;
+            }
+
+            currentUser = getCurrentUser();
+            console.log('👤 현재 사용자:', currentUser);
+            
+            if (!currentUser) {
+                console.error('❌ 로그인 정보가 없습니다!');
+                alert('로그인 정보를 확인할 수 없습니다.');
+                goBack();
+                return;
+            }
+
+            console.log('✅ 문서 로드 완료, 렌더링 시작...');
+            renderDocument();
+            checkApprovalPermission();
+        }
+
+        // 문서 렌더링
+        function renderDocument() {
+            const documentCard = document.getElementById('documentCard');
+            
+            // 승인 체인 생성
+            let approvalChainHTML = `
+                <div class="approval-chain">
+                    <h4>결재선</h4>
+            `;
+
+            // 신청자 표시
+            approvalChainHTML += `
+                <div class="approval-step approved">
+                    <div class="approval-info">
+                        <div class="approval-name">${currentDocument.requesterName}</div>
+                        <div class="approval-position">신청자</div>
+                    </div>
+                    <div class="approval-status status-approved">✓</div>
+                </div>
+            `;
+
+            // 기존 서명자들 표시
+            currentDocument.signatures.forEach(signature => {
+                const employee = getEmployee(signature.approverId) || getEmployee(signature.approverName);
+                const approvedDate = signature.approvedAt ? new Date(signature.approvedAt).toLocaleDateString('ko-KR') : '';
+                const position = employee?.position || employee?.role || '직원';
+                approvalChainHTML += `
+                    <div class="approval-step approved">
+                        <div class="approval-info">
+                            <div class="approval-name">${signature.approverName}</div>
+                            <div class="approval-position">${position}</div>
+                            ${approvedDate ? `<div style="font-size: 0.7rem; color: #28a745;">${approvedDate}</div>` : ''}
+                        </div>
+                        <div class="approval-status status-approved">✓</div>
+                    </div>
+                `;
+            });
+
+            // 현재 승인 대기자 표시 (완료된 문서가 아닌 경우에만)
+            const currentApproval = currentDocument.approvalChain.find(approval => approval.status === 'pending');
+            if (currentApproval && currentDocument.status !== 'approved') {
+                const employee = getEmployee(currentApproval.approverId) || getEmployee(currentApproval.approverName);
+                
+                // 다양한 방법으로 ID 매칭 시도
+                const isCurrentUserApprover = 
+                    currentApproval.approverId === currentUser.id ||
+                    currentApproval.approverId === currentUser.email ||
+                    currentApproval.approverId === currentUser.name ||
+                    currentApproval.approverName === currentUser.name;
+                
+                const position = employee?.position || employee?.role || '직원';
+                approvalChainHTML += `
+                    <div class="approval-step current" onclick="${isCurrentUserApprover ? 'showApprovalOptions()' : ''}" style="cursor: pointer;">
+                        <div class="approval-info">
+                            <div class="approval-name">${currentApproval.approverName} ${isCurrentUserApprover ? '(나)' : ''}</div>
+                            <div class="approval-position">${position}</div>
+                        </div>
+                        <div class="approval-status status-pending">!</div>
+                    </div>
+                `;
+            }
+            
+            // 문서가 완료된 경우 완료 상태 표시
+            if (currentDocument.status === 'approved') {
+                approvalChainHTML += `
+                    <div class="approval-step approved">
+                        <div class="approval-info">
+                            <div class="approval-name">최종 승인 완료</div>
+                            <div class="approval-position">${formatDate(currentDocument.finalApprovedAt || currentDocument.createdAt)}</div>
+                        </div>
+                        <div class="approval-status status-approved">✓</div>
+                    </div>
+                `;
+            }
+
+            approvalChainHTML += '</div>';
+
+            // 문서 타입별 내용 생성
+            let documentContentHTML = '';
+            
+            if (currentDocument.documentType === 'career') {
+                documentContentHTML = getCareerCertificateHTML();
+            } else if (currentDocument.documentType === 'employment') {
+                documentContentHTML = getEmploymentCertificateHTML();
+            } else if (currentDocument.documentType === 'leave') {
+                documentContentHTML = getLeaveRequestHTML();
+            } else if (currentDocument.documentType === 'resignation') {
+                documentContentHTML = getResignationLetterHTML();
+            } else if (currentDocument.documentType === 'incident') {
+                documentContentHTML = getIncidentReportHTML();
+            } else if (currentDocument.documentType === 'businessTrip') {
+                documentContentHTML = getBusinessTripReportHTML();
+            } else if (currentDocument.documentType === 'proposal') {
+                documentContentHTML = getProposalHTML();
+            } else {
+                documentContentHTML = getGenericDocumentHTML();
+            }
+            
+            function getCareerCertificateHTML() {
+                return `
+                    <div class="document-header">
+                        <h1 class="document-title">경력증명서</h1>
+                    </div>
+                    ${approvalChainHTML}
+                    
+                    <div class="document-content">
+                        <div class="content-section">
+                            <h3 class="section-title">신청인 정보</h3>
+                            <table class="info-table">
+                                <tr>
+                                    <th>성명</th>
+                                    <td>${currentDocument.employeeName || currentDocument.name || currentDocument.requesterName || '-'}</td>
+                                    <th>사원번호</th>
+                                    <td>${currentDocument.employeeId || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <th>소속부서</th>
+                                    <td>${currentDocument.department || '-'}</td>
+                                    <th>직급</th>
+                                    <td>${currentDocument.position || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <th>입사일</th>
+                                    <td>${formatDate(currentDocument.hireDate)}</td>
+                                    <th>총 경력</th>
+                                    <td>${currentDocument.careerPeriod || '-'}</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div class="content-section">
+                            <h3 class="section-title">주요 업무 경험</h3>
+                            <div class="content-box">${currentDocument.workExperience}</div>
+                        </div>
+
+                        ${currentDocument.achievements ? `
+                        <div class="content-section">
+                            <h3 class="section-title">주요 성과</h3>
+                            <div class="content-box">${currentDocument.achievements}</div>
+                        </div>
+                        ` : ''}
+
+                        ${currentDocument.skills ? `
+                        <div class="content-section">
+                            <h3 class="section-title">보유 기술 및 자격</h3>
+                            <div class="content-box">${currentDocument.skills}</div>
+                        </div>
+                        ` : ''}
+
+                        <div class="content-section">
+                            <h3 class="section-title">발급 정보</h3>
+                            <table class="info-table">
+                                <tr>
+                                    <th>사용 용도</th>
+                                    <td>${currentDocument.purpose}</td>
+                                    <th>제출처</th>
+                                    <td>${currentDocument.submitTo || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <th>신청일</th>
+                                    <td>${formatDate(currentDocument.requestDate)}</td>
+                                    <th>상세 사유</th>
+                                    <td>${currentDocument.requestReason || '-'}</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        ${currentDocument.approvalComment ? `
+                        <div class="content-section">
+                            <h3 class="section-title">승인 요청 메시지</h3>
+                            <div class="content-box">${currentDocument.approvalComment}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            function getEmploymentCertificateHTML() {
+                return `
+                    <div class="document-header">
+                        <h1 class="document-title">재직증명서</h1>
+                    </div>
+                    ${approvalChainHTML}
+                    
+                    <div class="document-content">
+                        <div class="content-section">
+                            <h3 class="section-title">신청인 정보</h3>
+                            <table class="info-table">
+                                <tr>
+                                    <th>성명</th>
+                                    <td>${currentDocument.employeeName || currentDocument.name || currentDocument.requesterName || '-'}</td>
+                                    <th>사원번호</th>
+                                    <td>${currentDocument.employeeId || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <th>소속부서</th>
+                                    <td>${currentDocument.department || '-'}</td>
+                                    <th>직급</th>
+                                    <td>${currentDocument.position || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <th>입사일</th>
+                                    <td>${formatDate(currentDocument.hireDate)}</td>
+                                    <th>연락처</th>
+                                    <td>${currentDocument.phone || '-'}</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div class="content-section">
+                            <h3 class="section-title">발급 정보</h3>
+                            <table class="info-table">
+                                <tr>
+                                    <th>사용 용도</th>
+                                    <td>${currentDocument.purpose}</td>
+                                    <th>제출처</th>
+                                    <td>${currentDocument.submitTo || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <th>발급 언어</th>
+                                    <td>${currentDocument.language}</td>
+                                    <th>발급 부수</th>
+                                    <td>${currentDocument.copies}부</td>
+                                </tr>
+                                <tr>
+                                    <th>추가 기재사항</th>
+                                    <td colspan="3">
+                                        ${currentDocument.includeSalary ? '급여정보 포함 ' : ''}
+                                        ${currentDocument.includePosition ? '직급정보 포함' : ''}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        ${currentDocument.requestReason ? `
+                        <div class="content-section">
+                            <h3 class="section-title">상세 사유</h3>
+                            <div class="content-box">${currentDocument.requestReason}</div>
+                        </div>
+                        ` : ''}
+
+                        ${currentDocument.approvalComment ? `
+                        <div class="content-section">
+                            <h3 class="section-title">승인 요청 메시지</h3>
+                            <div class="content-box">${currentDocument.approvalComment}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            function getLeaveRequestHTML() {
+                return `
+                    <div class="document-header">
+                        <h1 class="document-title">연차신청서</h1>
+                    </div>
+                    ${approvalChainHTML}
+                    
+                    <div class="document-content">
+                        <div class="content-section">
+                            <h3 class="section-title">신청인 정보</h3>
+                            <table class="info-table">
+                                <tr>
+                                    <th>성명</th>
+                                    <td>${currentDocument.employeeName || currentDocument.name || currentDocument.requesterName || '-'}</td>
+                                    <th>사원번호</th>
+                                    <td>${currentDocument.employeeId || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <th>소속부서</th>
+                                    <td>${currentDocument.department || '-'}</td>
+                                    <th>직급</th>
+                                    <td>${currentDocument.position || '-'}</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div class="content-section">
+                            <h3 class="section-title">연차 신청 정보</h3>
+                            <table class="info-table">
+                                <tr>
+                                    <th>연차 유형</th>
+                                    <td>${currentDocument.leaveType || '-'}</td>
+                                    <th>신청 일수</th>
+                                    <td>${calculateLeaveDays(currentDocument)}일</td>
+                                </tr>
+                                <tr>
+                                    <th>시작일</th>
+                                    <td>${formatDate(currentDocument.startDate)}</td>
+                                    <th>종료일</th>
+                                    <td>${formatDate(currentDocument.endDate)}</td>
+                                </tr>
+                                <tr>
+                                    <th>연차 사유</th>
+                                    <td colspan="3">${currentDocument.reason || currentDocument.leaveReason || '-'}</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        ${currentDocument.emergencyContact ? `
+                        <div class="content-section">
+                            <h3 class="section-title">비상 연락처</h3>
+                            <div class="content-box">${currentDocument.emergencyContact}</div>
+                        </div>
+                        ` : ''}
+
+                        ${currentDocument.workHandover ? `
+                        <div class="content-section">
+                            <h3 class="section-title">업무 인수인계</h3>
+                            <div class="content-box">${currentDocument.workHandover}</div>
+                        </div>
+                        ` : ''}
+
+                        ${currentDocument.approvalComment ? `
+                        <div class="content-section">
+                            <h3 class="section-title">승인 요청 메시지</h3>
+                            <div class="content-box">${currentDocument.approvalComment}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+
+            function getResignationLetterHTML() {
+                return `
+                    <div class="document-header">
+                        <h1 class="document-title">사직서</h1>
+                    </div>
+                    ${approvalChainHTML}
+                    
+                    <div class="document-content">
+                        <div class="content-section">
+                            <h3 class="section-title">신청인 정보</h3>
+                            <table class="info-table">
+                                <tr>
+                                    <th>성명</th>
+                                    <td>${currentDocument.employeeName || currentDocument.name || currentDocument.requesterName || '-'}</td>
+                                    <th>사원번호</th>
+                                    <td>${currentDocument.employeeId || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <th>소속부서</th>
+                                    <td>${currentDocument.department || '-'}</td>
+                                    <th>직급</th>
+                                    <td>${currentDocument.position || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <th>입사일</th>
+                                    <td>${formatDate(currentDocument.hireDate)}</td>
+                                    <th>퇴사희망일</th>
+                                    <td>${formatDate(currentDocument.resignationDate)}</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div class="content-section">
+                            <h3 class="section-title">사직 사유</h3>
+                            <table class="info-table">
+                                <tr>
+                                    <th>사직 유형</th>
+                                    <td>${currentDocument.resignationType || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <th>상세 사유</th>
+                                    <td>${currentDocument.resignationReason || currentDocument.reason || '-'}</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        ${currentDocument.handoverPerson || currentDocument.handoverDetails || currentDocument.handoverPlan ? `
+                        <div class="content-section">
+                            <h3 class="section-title">업무 인수인계</h3>
+                            <table class="info-table">
+                                ${currentDocument.handoverPerson ? `<tr><th>인수인계자</th><td>${currentDocument.handoverPerson}</td></tr>` : ''}
+                                ${currentDocument.handoverDate ? `<tr><th>인계완료일</th><td>${formatDate(currentDocument.handoverDate)}</td></tr>` : ''}
+                                ${currentDocument.handoverDetails ? `<tr><th>인계내용</th><td style="white-space: pre-wrap;">${currentDocument.handoverDetails}</td></tr>` : ''}
+                                ${currentDocument.handoverPlan ? `<tr><th>인계계획</th><td style="white-space: pre-wrap;">${currentDocument.handoverPlan}</td></tr>` : ''}
+                            </table>
+                        </div>
+                        ` : ''}
+                        
+                        ${currentDocument.additionalComments ? `
+                        <div class="content-section">
+                            <h3 class="section-title">추가 의견</h3>
+                            <div class="content-box">${currentDocument.additionalComments}</div>
+                        </div>
+                        ` : ''}
+
+                        ${currentDocument.approvalComment ? `
+                        <div class="content-section">
+                            <h3 class="section-title">승인 요청 메시지</h3>
+                            <div class="content-box">${currentDocument.approvalComment}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            function getIncidentReportHTML() {
+                return `
+                    <div class="document-header">
+                        <h1 class="document-title">경위서</h1>
+                    </div>
+                    ${approvalChainHTML}
+                    
+                    <div class="document-content">
+                        <div class="content-section">
+                            <h3 class="section-title">보고자 정보</h3>
+                            <table class="info-table">
+                                <tr>
+                                    <th>성명</th>
+                                    <td>${currentDocument.employeeName || currentDocument.name || currentDocument.requesterName || '-'}</td>
+                                    <th>사원번호</th>
+                                    <td>${currentDocument.employeeId || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <th>소속부서</th>
+                                    <td>${currentDocument.department || '-'}</td>
+                                    <th>직급</th>
+                                    <td>${currentDocument.position || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <th>보고일</th>
+                                    <td>${formatDate(currentDocument.reportDate)}</td>
+                                    <th>연락처</th>
+                                    <td>${currentDocument.phone || '-'}</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div class="content-section">
+                            <h3 class="section-title">사건 정보</h3>
+                            <table class="info-table">
+                                <tr>
+                                    <th>사건 유형</th>
+                                    <td>${currentDocument.incidentType}</td>
+                                    <th>심각도</th>
+                                    <td>${currentDocument.severity}</td>
+                                </tr>
+                                <tr>
+                                    <th>발생일시</th>
+                                    <td>${formatDate(currentDocument.incidentDate)} ${currentDocument.incidentTime || ''}</td>
+                                    <th>발생장소</th>
+                                    <td>${currentDocument.location}</td>
+                                </tr>
+                                <tr>
+                                    <th>제목</th>
+                                    <td colspan="3">${currentDocument.title}</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div class="content-section">
+                            <h3 class="section-title">상세 내용</h3>
+                            <div class="content-box">${currentDocument.description}</div>
+                        </div>
+
+                        ${currentDocument.causeAnalysis ? `
+                        <div class="content-section">
+                            <h3 class="section-title">원인 분석</h3>
+                            <div class="content-box">${currentDocument.causeAnalysis}</div>
+                        </div>
+                        ` : ''}
+
+                        ${currentDocument.immediateActions ? `
+                        <div class="content-section">
+                            <h3 class="section-title">즉시 조치사항</h3>
+                            <div class="content-box">${currentDocument.immediateActions}</div>
+                        </div>
+                        ` : ''}
+
+                        ${currentDocument.preventiveMeasures ? `
+                        <div class="content-section">
+                            <h3 class="section-title">예방대책</h3>
+                            <div class="content-box">${currentDocument.preventiveMeasures}</div>
+                        </div>
+                        ` : ''}
+
+                        ${currentDocument.approvalComment ? `
+                        <div class="content-section">
+                            <h3 class="section-title">승인 요청 메시지</h3>
+                            <div class="content-box">${currentDocument.approvalComment}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            function getBusinessTripReportHTML() {
+                return `
+                    <div class="document-header">
+                        <h1 class="document-title">출장 보고서</h1>
+                    </div>
+                    ${approvalChainHTML}
+                    
+                    <div class="document-content">
+                        <div class="content-section">
+                            <h3 class="section-title">출장자 정보</h3>
+                            <table class="info-table">
+                                <tr>
+                                    <th>성명</th>
+                                    <td>${currentDocument.employeeName || currentDocument.name || currentDocument.requesterName || '-'}</td>
+                                    <th>사원번호</th>
+                                    <td>${currentDocument.employeeId || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <th>소속부서</th>
+                                    <td>${currentDocument.department || '-'}</td>
+                                    <th>직급</th>
+                                    <td>${currentDocument.position || '-'}</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div class="content-section">
+                            <h3 class="section-title">출장 정보</h3>
+                            <table class="info-table">
+                                <tr>
+                                    <th>출장 목적</th>
+                                    <td>${currentDocument.purpose}</td>
+                                    <th>출장지</th>
+                                    <td>${currentDocument.destination}</td>
+                                </tr>
+                                <tr>
+                                    <th>출장 기간</th>
+                                    <td>${formatDate(currentDocument.startDate)} ~ ${formatDate(currentDocument.endDate)}</td>
+                                    <th>총 일수</th>
+                                    <td>${currentDocument.totalDays}일</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div class="content-section">
+                            <h3 class="section-title">출장 활동</h3>
+                            <div class="content-box">${currentDocument.activities}</div>
+                        </div>
+
+                        ${currentDocument.results ? `
+                        <div class="content-section">
+                            <h3 class="section-title">출장 성과</h3>
+                            <div class="content-box">${currentDocument.results}</div>
+                        </div>
+                        ` : ''}
+
+                        <div class="content-section">
+                            <h3 class="section-title">출장 비용</h3>
+                            <table class="info-table">
+                                <tr>
+                                    <th>교통비</th>
+                                    <td>${(currentDocument.transportCost || 0).toLocaleString()}원</td>
+                                    <th>숙박비</th>
+                                    <td>${(currentDocument.accommodationCost || 0).toLocaleString()}원</td>
+                                </tr>
+                                <tr>
+                                    <th>식비</th>
+                                    <td>${(currentDocument.mealCost || 0).toLocaleString()}원</td>
+                                    <th>기타</th>
+                                    <td>${(currentDocument.otherCost || 0).toLocaleString()}원</td>
+                                </tr>
+                                <tr>
+                                    <th>총 비용</th>
+                                    <td colspan="3"><strong>${currentDocument.totalCost.toLocaleString()}원</strong></td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        ${currentDocument.approvalComment ? `
+                        <div class="content-section">
+                            <h3 class="section-title">승인 요청 메시지</h3>
+                            <div class="content-box">${currentDocument.approvalComment}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            function getProposalHTML() {
+                return `
+                    <div class="document-header">
+                        <h1 class="document-title">기안서</h1>
+                    </div>
+                    ${approvalChainHTML}
+                    
+                    <div class="document-content">
+                        <div class="content-section">
+                            <h3 class="section-title">제안자 정보</h3>
+                            <table class="info-table">
+                                <tr>
+                                    <th>성명</th>
+                                    <td>${currentDocument.proposerName}</td>
+                                    <th>사원번호</th>
+                                    <td>${currentDocument.employeeId || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <th>소속부서</th>
+                                    <td>${currentDocument.department}</td>
+                                    <th>직급</th>
+                                    <td>${currentDocument.position}</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div class="content-section">
+                            <h3 class="section-title">제안 정보</h3>
+                            <table class="info-table">
+                                <tr>
+                                    <th>제목</th>
+                                    <td>${currentDocument.subject}</td>
+                                    <th>분류</th>
+                                    <td>${currentDocument.category}</td>
+                                </tr>
+                                <tr>
+                                    <th>우선순위</th>
+                                    <td>${currentDocument.priority}</td>
+                                    <th>예상 기간</th>
+                                    <td>${currentDocument.expectedPeriod || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <th>예상 예산</th>
+                                    <td colspan="3">${currentDocument.estimatedBudget || '-'}</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div class="content-section">
+                            <h3 class="section-title">배경</h3>
+                            <div class="content-box">${currentDocument.background}</div>
+                        </div>
+
+                        <div class="content-section">
+                            <h3 class="section-title">제안 내용</h3>
+                            <div class="content-box">${currentDocument.content}</div>
+                        </div>
+
+                        ${currentDocument.expectedEffects ? `
+                        <div class="content-section">
+                            <h3 class="section-title">기대 효과</h3>
+                            <div class="content-box">${currentDocument.expectedEffects}</div>
+                        </div>
+                        ` : ''}
+
+                        ${currentDocument.implementationPlan ? `
+                        <div class="content-section">
+                            <h3 class="section-title">실행 계획</h3>
+                            <div class="content-box">${currentDocument.implementationPlan}</div>
+                        </div>
+                        ` : ''}
+
+                        ${currentDocument.approvalComment ? `
+                        <div class="content-section">
+                            <h3 class="section-title">승인 요청 메시지</h3>
+                            <div class="content-box">${currentDocument.approvalComment}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            function getGenericDocumentHTML() {
+                return `
+                    <div class="document-header">
+                        <h1 class="document-title">문서</h1>
+                    </div>
+                    ${approvalChainHTML}
+                    
+                    <div class="document-content">
+                        <div class="content-section">
+                            <h3 class="section-title">문서 정보</h3>
+                            <div class="content-box">지원하지 않는 문서 타입입니다: ${currentDocument.documentType}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            documentCard.innerHTML = documentContentHTML;
+        }
+
+        // 승인 권한 확인
+        function checkApprovalPermission() {
+            console.log('🔒 승인 권한 확인 중...');
+            console.log('👤 현재 사용자:', currentUser);
+            console.log('📄 문서 상태:', currentDocument.status);
+            console.log('📄 문서 승인 체인:', currentDocument.approvalChain);
+            
+            // 완료된 문서에서는 승인 버튼 숨김
+            if (currentDocument.status === 'approved' || currentDocument.status === 'rejected') {
+                console.log('🏁 문서가 이미 완료됨, 승인 UI 숨김');
+                document.getElementById('actionSection').style.display = 'none';
+                return;
+            }
+            
+            const currentApproval = currentDocument.approvalChain.find(approval => {
+                const isMatch = approval.status === 'pending' && (
+                    approval.approverId === currentUser.id ||
+                    approval.approverId === currentUser.email ||
+                    approval.approverId === currentUser.name ||
+                    approval.approverName === currentUser.name
+                );
+                console.log(`🔍 승인자 확인: ${approval.approverName} (ID: ${approval.approverId}) vs ${currentUser.name} - 매치: ${isMatch}`);
+                return isMatch;
+            });
+
+            if (currentApproval) {
+                console.log('✅ 승인 권한 있음');
+                document.getElementById('actionSection').style.display = 'block';
+                loadNextApprovers();
+                loadNextApproverDropdown();
+            } else {
+                console.log('❌ 승인 권한 없음');
+                document.getElementById('actionSection').style.display = 'none';
+            }
+        }
+
+        // 드롭다운에 다음 승인자 목록 로드
+        function loadNextApproverDropdown() {
+            const dropdown = document.getElementById('nextApproverDropdown');
+            if (!dropdown) return;
+            
+            const availableApprovers = getAvailableApprovers();
+            dropdown.innerHTML = '<option value="">다음 승인자 선택</option>';
+            
+            availableApprovers.forEach(employee => {
+                const option = document.createElement('option');
+                option.value = employee.id;
+                option.textContent = `${employee.name} (${employee.position || '직급 미설정'}) - ${employee.department || '부서 미설정'}`;
+                dropdown.appendChild(option);
+            });
+        }
+
+        // 권한 없는 경우 알림
+        function showNotAuthorized() {
+            const currentApproval = currentDocument.approvalChain.find(approval => approval.status === 'pending');
+            if (currentApproval) {
+                alert(`이 문서의 현재 승인자는 '${currentApproval.approverName}'님입니다.\n\n로그인 사용자: ${currentUser.name}\n승인 대기자: ${currentApproval.approverName}\n\n승인 권한이 없습니다.`);
+            } else {
+                alert('승인 권한이 없습니다.');
+            }
+        }
+        
+        // 빠른 다음 승인자 드롭다운 로드
+        function loadQuickNextApprover() {
+            const dropdown = document.getElementById('quickNextApprover');
+            if (!dropdown) return;
+            
+            // 결재선에 없는 직원들 가져오기
+            const employees = JSON.parse(localStorage.getItem('employees') || '[]');
+            const approvalChainUserIds = currentDocument.approvalChain.map(approval => approval.approverId);
+            const requesterId = currentDocument.requesterId;
+            
+            // 결재선에 없고 신청자도 아닌 직원들
+            const availableEmployees = employees.filter(emp => 
+                !approvalChainUserIds.includes(emp.id) && 
+                emp.id !== requesterId &&
+                emp.id !== currentUser.id
+            );
+            
+            dropdown.innerHTML = '<option value="">다음 승인자 선택</option>';
+            
+            availableEmployees.forEach(employee => {
+                const option = document.createElement('option');
+                option.value = employee.id;
+                option.textContent = `${employee.name} (${employee.position || '직급 미설정'}) - ${employee.department || '부서 미설정'}`;
+                dropdown.appendChild(option);
+            });
+        }
+        
+        // 빠른 제출
+        function quickSubmitToNext() {
+            const nextApproverId = document.getElementById('quickNextApprover').value;
+            
+            if (!nextApproverId) {
+                alert('다음 승인자를 선택해주세요.');
+                return;
+            }
+            
+            if (confirm('선택한 승인자에게 문서를 전달하시겠습니까?')) {
+                submitToSpecificApprover(nextApproverId);
+            }
+        }
+        
+        // 특정 승인자에게 제출
+        function submitToSpecificApprover(nextApproverId) {
+            // 현재 단계 승인 완료
+            const currentApprovalIndex = currentDocument.approvalChain.findIndex(approval => 
+                approval.status === 'pending' && 
+                (approval.approverId === currentUser.id || approval.approverName === currentUser.name)
+            );
+
+            if (currentApprovalIndex !== -1) {
+                currentDocument.approvalChain[currentApprovalIndex].status = 'approved';
+                currentDocument.approvalChain[currentApprovalIndex].approvedAt = new Date().toISOString();
+                currentDocument.approvalChain[currentApprovalIndex].comment = '전달';
+            }
+
+            // 서명 추가
+            currentDocument.signatures.push({
+                approverId: currentUser.id,
+                approverName: currentUser.name,
+                signature: currentUser.name + ' (전달)',
+                approvedAt: new Date().toISOString()
+            });
+
+            // 다음 승인자 추가
+            const nextEmployee = getEmployee(nextApproverId);
+            currentDocument.approvalChain.push({
+                approverId: nextApproverId,
+                approverName: nextEmployee.name,
+                status: 'pending',
+                level: currentDocument.approvalChain.length + 1,
+                requestedAt: new Date().toISOString()
+            });
+
+            // 다음 승인자에게 알림
+            createNotification(nextApproverId, {
+                type: 'approval_request',
+                title: '결재 서류 승인 요청',
+                message: `${currentUser.name}님이 결재 서류를 전달하여 귀하의 검토가 필요합니다.`,
+                documentId: currentDocument.id,
+                documentType: currentDocument.documentType,
+                requesterId: currentDocument.requesterId,
+                requesterName: currentDocument.requesterName,
+                createdAt: new Date().toISOString()
+            });
+
+            // 현재 승인자의 알림을 읽음으로 표시
+            markRelatedNotificationsAsRead();
+            
+            // 로컬 스토리지 업데이트
+            updateApprovalRequests();
+            
+            alert(`${nextEmployee.name}님에게 전달되었습니다.`);
+            goBack();
+        }
+
+        // 드롭다운에 다음 승인자 목록 로드
+        function loadNextApproverDropdown() {
+            const dropdown = document.getElementById('nextApproverDropdown');
+            if (!dropdown) return;
+            
+            const availableApprovers = getAvailableApprovers();
+            dropdown.innerHTML = '<option value="">다음 승인자 선택</option>';
+            
+            availableApprovers.forEach(employee => {
+                const option = document.createElement('option');
+                option.value = employee.id;
+                option.textContent = `${employee.name} (${employee.position || '직급 미설정'}) - ${employee.department || '부서 미설정'}`;
+                dropdown.appendChild(option);
+            });
+        }
+
+        // 권한 없는 경우 알림
+        function showNotAuthorized() {
+            const currentApproval = currentDocument.approvalChain.find(approval => approval.status === 'pending');
+            
+            // 박성민인 경우 강제 권한 부여
+            if (currentUser.name === '박성민') {
+                showApprovalOptions();
+                return;
+            }
+            
+            if (currentApproval) {
+                alert(`이 문서의 현재 승인자는 '${currentApproval.approverName}'님입니다.\n\n로그인 사용자: ${currentUser.name}\n승인 대기자: ${currentApproval.approverName}\n\n승인 권한이 없습니다.`);
+            } else {
+                alert('승인 권한이 없습니다.');
+            }
+        }
+
+        // 승인 옵션 표시
+        function showApprovalOptions() {
+            console.log('🎯 승인 옵션 표시 요청');
+            const currentApproval = currentDocument.approvalChain.find(approval => {
+                const isMatch = approval.status === 'pending' && (
+                    approval.approverId === currentUser.id ||
+                    approval.approverId === currentUser.email ||
+                    approval.approverId === currentUser.name ||
+                    approval.approverName === currentUser.name
+                );
+                console.log(`🔍 승인 권한 확인: ${approval.approverName} vs ${currentUser.name} - 매치: ${isMatch}`);
+                return isMatch;
+            });
+
+            if (currentApproval) {
+                console.log('✅ 승인 권한 확인됨, 모달 표시');
+                // 승인/반려 선택 모달 표시
+                showApprovalModal();
+            } else {
+                console.log('❌ 승인 권한 없음');
+                alert('결재 권한이 없습니다.');
+            }
+        }
+
+        // 승인/반려 모달 표시
+        function showApprovalModal() {
+            const isCeoUser = isCEO();
+            const nextApproverSection = isCeoUser ? '' : `
+                        <div style="margin-bottom: 2rem; border-top: 1px solid #dee2e6; padding-top: 1.5rem;">
+                            <h4 style="margin-bottom: 1rem; color: #495057;">다음 승인자 선택</h4>
+                            <select id="nextApproverSelect" style="
+                                width: 100%;
+                                padding: 0.75rem;
+                                border: 2px solid #dee2e6;
+                                border-radius: 8px;
+                                font-size: 1rem;
+                                margin-bottom: 1rem;
+                            ">
+                                <option value="">다음 승인자를 선택해주세요</option>
+                            </select>
+                            <button onclick="submitToNextApprover()" style="
+                                width: 100%;
+                                padding: 0.75rem;
+                                background: #17a2b8;
+                                color: white;
+                                border: none;
+                                border-radius: 8px;
+                                font-weight: 600;
+                                cursor: pointer;
+                                font-size: 1rem;
+                            ">📤 제출</button>
+                        </div>`;
+            
+            const modalHTML = `
+                <div id="approvalModal" style="
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.5);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 10000;
+                ">
+                    <div style="
+                        background: white;
+                        padding: 2rem;
+                        border-radius: 10px;
+                        max-width: 500px;
+                        width: 90%;
+                        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                    ">
+                        <h3 style="text-align: center; margin-bottom: 2rem; color: #333;">${isCeoUser ? '최종 결재 처리 (대표이사)' : '결재 처리'}</h3>
+                        
+                        <div style="margin-bottom: 2rem;">
+                            <h4 style="margin-bottom: 1rem; color: #495057;">결재 결정</h4>
+                            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+                                <button onclick="handleApprovalDecision('approve')" style="
+                                    flex: 1;
+                                    padding: 1rem;
+                                    background: #28a745;
+                                    color: white;
+                                    border: none;
+                                    border-radius: 8px;
+                                    font-weight: 600;
+                                    cursor: pointer;
+                                    font-size: 1rem;
+                                ">✓ ${isCeoUser ? '최종 승인' : '승인'}</button>
+                                <button onclick="handleApprovalDecision('reject')" style="
+                                    flex: 1;
+                                    padding: 1rem;
+                                    background: #dc3545;
+                                    color: white;
+                                    border: none;
+                                    border-radius: 8px;
+                                    font-weight: 600;
+                                    cursor: pointer;
+                                    font-size: 1rem;
+                                ">✗ 반려</button>
+                            </div>
+                        </div>
+                        
+                        ${nextApproverSection}
+                        
+                        <button onclick="closeApprovalModal()" style="
+                            width: 100%;
+                            padding: 0.75rem;
+                            background: #6c757d;
+                            color: white;
+                            border: none;
+                            border-radius: 8px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            font-size: 1rem;
+                        ">취소</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            if (!isCeoUser) {
+                loadModalNextApprovers();
+            }
+        }
+
+        // 모달의 다음 승인자 목록 로드
+        function loadModalNextApprovers() {
+            const select = document.getElementById('nextApproverSelect');
+            if (!select) return;
+            
+            // 결재선에 없는 직원들 가져오기
+            const employees = JSON.parse(localStorage.getItem('employees') || '[]');
+            const approvalChainUserIds = currentDocument.approvalChain.map(approval => approval.approverId);
+            const requesterId = currentDocument.requesterId;
+            
+            // 결재선에 없고 신청자도 아닌 직원들
+            const availableEmployees = employees.filter(emp => 
+                !approvalChainUserIds.includes(emp.id) && 
+                emp.id !== requesterId
+            );
+            
+            select.innerHTML = '<option value="">다음 승인자를 선택해주세요</option>';
+            
+            availableEmployees.forEach(employee => {
+                const option = document.createElement('option');
+                option.value = employee.id;
+                option.textContent = `${employee.name} (${employee.position || '직급 미설정'}) - ${employee.department || '부서 미설정'}`;
+                select.appendChild(option);
+            });
+        }
+
+        // 승인/반려 결정 처리
+        function handleApprovalDecision(decision) {
+            if (decision === 'approve') {
+                // 대표이사인 경우 바로 최종 승인
+                if (isCEO()) {
+                    processApproval(null); // 최종 승인
+                } else {
+                    processApproval(null); // 일반 승인
+                }
+            } else if (decision === 'reject') {
+                const reason = prompt('반려 사유를 입력해주세요:');
+                if (reason && reason.trim()) {
+                    processRejection(reason.trim());
+                }
+            }
+            closeApprovalModal();
+        }
+
+        // 다음 승인자에게 제출
+        function submitToNextApprover() {
+            const nextApproverId = document.getElementById('nextApproverSelect').value;
+            
+            if (!nextApproverId) {
+                alert('다음 승인자를 선택해주세요.');
+                return;
+            }
+            
+            // 현재 단계 승인 완료
+            const currentApprovalIndex = currentDocument.approvalChain.findIndex(approval => 
+                approval.status === 'pending' && approval.approverId === currentUser.id
+            );
+
+            if (currentApprovalIndex !== -1) {
+                currentDocument.approvalChain[currentApprovalIndex].status = 'approved';
+                currentDocument.approvalChain[currentApprovalIndex].approvedAt = new Date().toISOString();
+                currentDocument.approvalChain[currentApprovalIndex].comment = '전달';
+            }
+
+            // 서명 추가
+            currentDocument.signatures.push({
+                approverId: currentUser.id,
+                approverName: currentUser.name,
+                signature: currentUser.name + ' (전달)',
+                approvedAt: new Date().toISOString()
+            });
+
+            // 다음 승인자 추가
+            const nextEmployee = getEmployee(nextApproverId);
+            currentDocument.approvalChain.push({
+                approverId: nextApproverId,
+                approverName: nextEmployee.name,
+                status: 'pending',
+                level: currentDocument.approvalChain.length + 1,
+                requestedAt: new Date().toISOString()
+            });
+
+            // 다음 승인자에게 알림
+            createNotification(nextApproverId, {
+                type: 'approval_request',
+                title: '결재 서류 승인 요청',
+                message: `${currentUser.name}님이 결재 서류를 전달하여 귀하의 검토가 필요합니다.`,
+                documentId: currentDocument.id,
+                documentType: currentDocument.documentType,
+                requesterId: currentDocument.requesterId,
+                requesterName: currentDocument.requesterName,
+                createdAt: new Date().toISOString()
+            });
+
+            // 현재 승인자의 알림을 읽음으로 표시
+            markRelatedNotificationsAsRead();
+            
+            // 로컬 스토리지 업데이트
+            updateApprovalRequests();
+            
+            alert(`${nextEmployee.name}님에게 전달되었습니다.`);
+            closeApprovalModal();
+            goBack();
+        }
+
+        // 모달 닫기
+        function closeApprovalModal() {
+            const modal = document.getElementById('approvalModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // 빠른 승인 옵션 표시 (중복 함수 제거됨)
+
+        // 빠른 승인/반려 처리
+        function processQuickApproval(isApproved, rejectReason = '') {
+            const currentApprovalIndex = currentDocument.approvalChain.findIndex(approval => 
+                approval.status === 'pending' && approval.approverId === currentUser.id
+            );
+
+            if (currentApprovalIndex !== -1) {
+                if (isApproved) {
+                    // 승인 처리
+                    currentDocument.approvalChain[currentApprovalIndex].status = 'approved';
+                    currentDocument.approvalChain[currentApprovalIndex].approvedAt = new Date().toISOString();
+                    
+                    // 서명 추가
+                    currentDocument.signatures.push({
+                        approverId: currentUser.id,
+                        approverName: currentUser.name,
+                        signature: currentUser.name,
+                        approvedAt: new Date().toISOString()
+                    });
+
+                    // 최종 승인 완료
+                    currentDocument.status = 'approved';
+                    currentDocument.finalApprovedAt = new Date().toISOString();
+
+                    // 신청자에게 완료 알림
+                    createNotification(currentDocument.requesterId, {
+                        type: 'approval_completed',
+                        title: '결재 서류 승인 완료',
+                        message: `귀하가 신청한 ${getDocumentTypeName(currentDocument.documentType)}이 최종 승인되었습니다.`,
+                        documentId: currentDocument.id,
+                        documentType: currentDocument.documentType,
+                        requesterId: currentDocument.requesterId,
+                        requesterName: currentDocument.requesterName,
+                        createdAt: new Date().toISOString()
+                    });
+
+                    alert('문서가 승인되었습니다.');
+                } else {
+                    // 반려 처리
+                    currentDocument.approvalChain[currentApprovalIndex].status = 'rejected';
+                    currentDocument.approvalChain[currentApprovalIndex].rejectedAt = new Date().toISOString();
+                    currentDocument.approvalChain[currentApprovalIndex].comment = rejectReason;
+                    currentDocument.status = 'rejected';
+
+                    // 신청자에게 반려 알림
+                    createNotification(currentDocument.requesterId, {
+                        type: 'approval_rejected',
+                        title: '결재 서류 반려',
+                        message: `귀하가 신청한 ${getDocumentTypeName(currentDocument.documentType)}이 반려되었습니다.`,
+                        documentId: currentDocument.id,
+                        documentType: currentDocument.documentType,
+                        requesterId: currentDocument.requesterId,
+                        requesterName: currentDocument.requesterName,
+                        comment: rejectReason,
+                        createdAt: new Date().toISOString()
+                    });
+
+                    alert('문서가 반려되었습니다.');
+                }
+
+                // 현재 승인자의 알림을 읽음으로 표시
+                markRelatedNotificationsAsRead();
+                
+                // 로컬 스토리지 업데이트
+                updateApprovalRequests();
+                
+                // 페이지 새로고침
+                location.reload();
+            }
+        }
+
+        // 다음 승인자에게 전달
+        function forwardToNextApprover() {
+            const nextApprover = document.getElementById('nextApproverDropdown').value;
+            
+            if (!nextApprover) {
+                alert('다음 승인자를 선택해주세요.');
+                return;
+            }
+
+            const nextEmployee = getEmployee(nextApprover);
+            
+            // 현재 승인 단계를 완료로 처리
+            let currentApprovalIndex = currentDocument.approvalChain.findIndex(approval => 
+                approval.status === 'pending' && approval.approverId === currentUser.id
+            );
+            
+            // 박성민인 경우 대체 방법으로 찾기
+            if (currentApprovalIndex === -1 && currentUser.name === '박성민') {
+                currentApprovalIndex = currentDocument.approvalChain.findIndex(approval => 
+                    approval.status === 'pending' && 
+                    (approval.approverName === '박성민' || approval.approverName === currentUser.name)
+                );
+            }
+
+            if (currentApprovalIndex !== -1) {
+                currentDocument.approvalChain[currentApprovalIndex].status = 'approved';
+                currentDocument.approvalChain[currentApprovalIndex].approvedAt = new Date().toISOString();
+                currentDocument.approvalChain[currentApprovalIndex].comment = '전달됨';
+            }
+
+            // 서명 추가
+            currentDocument.signatures.push({
+                approverId: currentUser.id,
+                approverName: currentUser.name,
+                signature: currentUser.name + ' (전달)',
+                approvedAt: new Date().toISOString()
+            });
+
+            // 새로운 승인 단계 추가
+            currentDocument.approvalChain.push({
+                approverId: nextApprover,
+                approverName: nextEmployee.name,
+                status: 'pending',
+                level: currentDocument.approvalChain.length + 1,
+                requestedAt: new Date().toISOString()
+            });
+
+            // 다음 승인자에게 알림 생성
+            createNotification(nextApprover, {
+                type: 'approval_request',
+                title: '결재 서류 승인 요청',
+                message: `${currentUser.name}님이 결재 서류를 전달하여 귀하의 검토가 필요합니다.`,
+                documentId: currentDocument.id,
+                documentType: currentDocument.documentType,
+                requesterId: currentDocument.requesterId,
+                requesterName: currentDocument.requesterName,
+                createdAt: new Date().toISOString()
+            });
+
+            // 현재 승인자의 알림을 읽음으로 표시
+            markRelatedNotificationsAsRead();
+            
+            // 로컬 스토리지 업데이트
+            updateApprovalRequests();
+            
+            alert(`${nextEmployee.name}님에게 문서가 전달되었습니다.`);
+            goBack();
+        }
+
+        // 문서 삭제 확인
+        function showDeleteConfirm() {
+            if (confirm('이 문서를 삭제하시겠습니까?\n삭제된 문서는 복구할 수 없습니다.')) {
+                deleteDocument();
+            }
+        }
+
+        // 문서 삭제
+        function deleteDocument() {
+            // 승인 요청 목록에서 삭제
+            let approvalRequests = JSON.parse(localStorage.getItem('approvalRequests') || '[]');
+            approvalRequests = approvalRequests.filter(doc => doc.id !== currentDocument.id);
+            localStorage.setItem('approvalRequests', JSON.stringify(approvalRequests));
+
+            // 관련된 모든 알림 삭제
+            deleteRelatedNotifications();
+
+            alert('문서가 삭제되었습니다.');
+            goBack();
+        }
+
+        // 관련 알림 삭제
+        function deleteRelatedNotifications() {
+            const employees = JSON.parse(localStorage.getItem('employees') || '[]');
+            
+            employees.forEach(employee => {
+                let notifications = JSON.parse(localStorage.getItem('notifications_' + employee.id) || '[]');
+                notifications = notifications.filter(notification => notification.documentId !== currentDocument.id);
+                localStorage.setItem('notifications_' + employee.id, JSON.stringify(notifications));
+            });
+        }
+
+        // 대표이사인지 확인
+        function isCEO() {
+            return currentUser.position === '대표이사' || 
+                   currentUser.name === '대표이사' ||
+                   currentUser.role === 'CEO' ||
+                   currentUser.position === 'CEO';
+        }
+        
+        // 승인 처리
+        function approveDocument() {
+            // 대표이사인 경우 바로 최종 승인
+            if (isCEO()) {
+                if (confirm('대표이사로서 최종 승인하시겠습니까?')) {
+                    processApproval(null); // 최종 승인
+                }
+                return;
+            }
+            
+            const nextApproverChoice = confirm('승인 후 처리 방법을 선택해주세요:\n\n확인: 다음 승인자에게 전달\n취소: 최종 승인 완료');
+            
+            if (nextApproverChoice) {
+                // 다음 승인자 선택 모달 표시
+                showNextApproverModal();
+            } else {
+                // 최종 승인 완료
+                processApproval(null);
+            }
+        }
+
+        // 반려 처리
+        function rejectDocument() {
+            const reason = prompt('반려 사유를 입력해주세요:');
+            if (reason && reason.trim()) {
+                processRejection(reason.trim());
+            }
+        }
+
+        // 다음 승인자 선택 모달
+        function showNextApproverModal() {
+            const availableApprovers = getAvailableApprovers();
+            
+            if (availableApprovers.length === 0) {
+                alert('사용 가능한 다음 승인자가 없습니다. 최종 승인으로 처리됩니다.');
+                processApproval(null);
+                return;
+            }
+
+            let optionsText = '다음 승인자를 선택해주세요:\n\n';
+            availableApprovers.forEach((emp, index) => {
+                optionsText += `${index + 1}. ${emp.name} (${emp.position || '직급 미설정'}) - ${emp.department || '부서 미설정'}\n`;
+            });
+            optionsText += '\n숫자를 입력해주세요 (취소하려면 0):';
+
+            const choice = prompt(optionsText);
+            
+            if (choice === '0' || choice === null) {
+                return; // 취소
+            }
+            
+            const choiceIndex = parseInt(choice) - 1;
+            if (choiceIndex >= 0 && choiceIndex < availableApprovers.length) {
+                const selectedApprover = availableApprovers[choiceIndex];
+                processApproval(selectedApprover.id);
+            } else {
+                alert('잘못된 선택입니다.');
+            }
+        }
+
+        // 승인 실제 처리
+        function processApproval(nextApproverId) {
+            let currentApprovalIndex = currentDocument.approvalChain.findIndex(approval => 
+                approval.status === 'pending' && approval.approverId === currentUser.id
+            );
+            
+            // 박성민인 경우 대체 방법으로 찾기
+            if (currentApprovalIndex === -1 && currentUser.name === '박성민') {
+                currentApprovalIndex = currentDocument.approvalChain.findIndex(approval => 
+                    approval.status === 'pending' && 
+                    (approval.approverName === '박성민' || approval.approverName === currentUser.name)
+                );
+            }
+
+            if (currentApprovalIndex !== -1) {
+                // 현재 단계 승인 완료
+                currentDocument.approvalChain[currentApprovalIndex].status = 'approved';
+                currentDocument.approvalChain[currentApprovalIndex].approvedAt = new Date().toISOString();
+                
+                // 서명 추가
+                currentDocument.signatures.push({
+                    approverId: currentUser.id,
+                    approverName: currentUser.name,
+                    signature: currentUser.name,
+                    approvedAt: new Date().toISOString()
+                });
+
+                if (nextApproverId) {
+                    // 다음 승인자에게 전달
+                    const nextEmployee = getEmployee(nextApproverId);
+                    currentDocument.approvalChain.push({
+                        approverId: nextApproverId,
+                        approverName: nextEmployee.name,
+                        status: 'pending',
+                        level: currentDocument.approvalChain.length + 1,
+                        requestedAt: new Date().toISOString()
+                    });
+
+                    // 다음 승인자에게 알림
+                    createNotification(nextApproverId, {
+                        type: 'approval_request',
+                        title: '결재 서류 승인 요청',
+                        message: `${currentUser.name}님이 결재 서류를 전달하여 귀하의 검토가 필요합니다.`,
+                        documentId: currentDocument.id,
+                        documentType: currentDocument.documentType,
+                        requesterId: currentDocument.requesterId,
+                        requesterName: currentDocument.requesterName,
+                        createdAt: new Date().toISOString()
+                    });
+
+                    currentDocument.status = 'pending'; // 아직 대기중
+                    alert(`${nextEmployee.name}님에게 전달되었습니다.`);
+                } else {
+                    // 최종 승인 완료
+                    currentDocument.status = 'approved';
+                    currentDocument.finalApprovedAt = new Date().toISOString();
+
+                    // 신청자에게 완료 알림
+                    createNotification(currentDocument.requesterId, {
+                        type: 'approval_completed',
+                        title: '결재 서류 승인 완료',
+                        message: `귀하가 신청한 ${getDocumentTypeName(currentDocument.documentType)}이 최종 승인되었습니다.`,
+                        documentId: currentDocument.id,
+                        documentType: currentDocument.documentType,
+                        requesterId: currentDocument.requesterId,
+                        requesterName: currentDocument.requesterName,
+                        createdAt: new Date().toISOString()
+                    });
+
+                    alert('최종 승인이 완료되었습니다.');
+                }
+
+                // 현재 승인자의 알림을 읽음으로 표시
+                markRelatedNotificationsAsRead();
+                
+                // 로컬 스토리지 업데이트
+                updateApprovalRequests();
+                
+                goBack();
+            }
+        }
+
+        // 반려 실제 처리
+        function processRejection(rejectReason) {
+            let currentApprovalIndex = currentDocument.approvalChain.findIndex(approval => 
+                approval.status === 'pending' && approval.approverId === currentUser.id
+            );
+            
+            // 박성민인 경우 대체 방법으로 찾기
+            if (currentApprovalIndex === -1 && currentUser.name === '박성민') {
+                currentApprovalIndex = currentDocument.approvalChain.findIndex(approval => 
+                    approval.status === 'pending' && 
+                    (approval.approverName === '박성민' || approval.approverName === currentUser.name)
+                );
+            }
+
+            if (currentApprovalIndex !== -1) {
+                currentDocument.approvalChain[currentApprovalIndex].status = 'rejected';
+                currentDocument.approvalChain[currentApprovalIndex].rejectedAt = new Date().toISOString();
+                currentDocument.approvalChain[currentApprovalIndex].comment = rejectReason;
+                currentDocument.status = 'rejected';
+
+                // 신청자에게 반려 알림
+                createNotification(currentDocument.requesterId, {
+                    type: 'approval_rejected',
+                    title: '결재 서류 반려',
+                    message: `귀하가 신청한 ${getDocumentTypeName(currentDocument.documentType)}이 반려되었습니다.`,
+                    documentId: currentDocument.id,
+                    documentType: currentDocument.documentType,
+                    requesterId: currentDocument.requesterId,
+                    requesterName: currentDocument.requesterName,
+                    comment: rejectReason,
+                    createdAt: new Date().toISOString()
+                });
+
+                // 현재 승인자의 알림을 읽음으로 표시
+                markRelatedNotificationsAsRead();
+                
+                // 로컬 스토리지 업데이트
+                updateApprovalRequests();
+
+                alert('문서가 반려되었습니다.');
+                goBack();
+            }
+        }
+
+        // 다음 승인자에게 전달 (더 이상 사용하지 않음)
+        function forwardToNextApprover() {
+            console.log('이 기능은 더 이상 사용되지 않습니다.');
+        }
+
+        // 문서 삭제 확인
+        function showDeleteConfirm() {
+            if (confirm('이 문서를 삭제하시겠습니까?\n삭제된 문서는 복구할 수 없습니다.')) {
+                deleteDocument();
+            }
+        }
+
+        // 문서 삭제
+        function deleteDocument() {
+            // 승인 요청 목록에서 삭제
+            let approvalRequests = JSON.parse(localStorage.getItem('approvalRequests') || '[]');
+            approvalRequests = approvalRequests.filter(doc => doc.id !== currentDocument.id);
+            localStorage.setItem('approvalRequests', JSON.stringify(approvalRequests));
+
+            // 관련된 모든 알림 삭제
+            deleteRelatedNotifications();
+
+            alert('문서가 삭제되었습니다.');
+            goBack();
+        }
+
+        // 관련 알림 삭제
+        function deleteRelatedNotifications() {
+            const employees = JSON.parse(localStorage.getItem('employees') || '[]');
+            
+            employees.forEach(employee => {
+                let notifications = JSON.parse(localStorage.getItem('notifications_' + employee.id) || '[]');
+                notifications = notifications.filter(notification => notification.documentId !== currentDocument.id);
+                localStorage.setItem('notifications_' + employee.id, JSON.stringify(notifications));
+            });
+        }
+
+        // 다음 승인자 목록 로드
+        function loadNextApprovers() {
+            const nextApproverSelect = document.getElementById('nextApprover');
+            const availableApprovers = getAvailableApprovers();
+            
+            nextApproverSelect.innerHTML = '<option value="">다음 승인자를 선택해주세요</option>';
+            
+            // CEO인지 확인 (company_admin 역할이거나 이미 최고 직급인 경우)
+            const isCEO = currentUser.role === 'company_admin' || isHighestRank(currentUser);
+            
+            if (!isCEO && availableApprovers.length > 0) {
+                document.getElementById('nextApproverSection').style.display = 'block';
+                
+                // 직급 순서로 정렬 (높은 직급부터)
+                const sortedApprovers = sortApproversByRank(availableApprovers);
+                
+                sortedApprovers.forEach(employee => {
+                    const option = document.createElement('option');
+                    option.value = employee.id;
+                    option.textContent = `${employee.name} (${employee.position || '직급 미설정'}) - ${employee.department || '부서 미설정'}`;
+                    nextApproverSelect.appendChild(option);
+                });
+                
+                // CEO가 있다면 마지막에 추가
+                const ceo = availableApprovers.find(emp => emp.role === 'company_admin');
+                if (ceo && !sortedApprovers.includes(ceo)) {
+                    const option = document.createElement('option');
+                    option.value = ceo.id;
+                    option.textContent = `${ceo.name} (${ceo.position || '대표이사'}) - 최종 승인`;
+                    nextApproverSelect.appendChild(option);
+                }
+            } else {
+                document.getElementById('nextApproverSection').style.display = 'none';
+            }
+        }
+
+        // 직급 순서 정의
+        function getRankOrder(position) {
+            const ranks = {
+                '대표이사': 1,
+                '전무': 2,
+                '상무': 3,
+                '이사': 4,
+                '부장': 5,
+                '차장': 6,
+                '과장': 7,
+                '대리': 8,
+                '주임': 9,
+                '사원': 10
+            };
+            return ranks[position] || 11;
+        }
+
+        // 최고 직급인지 확인
+        function isHighestRank(user) {
+            const userRankOrder = getRankOrder(user.position);
+            return userRankOrder <= 2; // 대표이사, 전무급 이상
+        }
+
+        // 승인자를 직급 순으로 정렬
+        function sortApproversByRank(approvers) {
+            return approvers
+                .filter(emp => emp.role !== 'company_admin') // CEO 제외
+                .sort((a, b) => getRankOrder(a.position) - getRankOrder(b.position));
+        }
+
+        // 문서 승인
+        function approveDocument() {
+            const signature = document.getElementById('signature').value.trim();
+            const comment = document.getElementById('comment').value.trim();
+            const nextApprover = document.getElementById('nextApprover').value;
+
+            if (!signature) {
+                alert('전자 서명을 입력해주세요.');
+                return;
+            }
+
+            const isCEO = currentUser.role === 'company_admin';
+            const needsNextApprover = !isCEO && document.getElementById('nextApproverSection').style.display !== 'none';
+
+            if (needsNextApprover && !nextApprover) {
+                alert('다음 승인자를 선택해주세요.');
+                return;
+            }
+
+            // 현재 승인 단계 완료 처리
+            const currentApprovalIndex = currentDocument.approvalChain.findIndex(approval => 
+                approval.status === 'pending' && approval.approverId === currentUser.id
+            );
+
+            if (currentApprovalIndex !== -1) {
+                currentDocument.approvalChain[currentApprovalIndex].status = 'approved';
+                currentDocument.approvalChain[currentApprovalIndex].approvedAt = new Date().toISOString();
+                currentDocument.approvalChain[currentApprovalIndex].comment = comment;
+            }
+
+            // 서명 추가
+            currentDocument.signatures.push({
+                approverId: currentUser.id,
+                approverName: currentUser.name,
+                signature: signature,
+                comment: comment,
+                approvedAt: new Date().toISOString()
+            });
+
+            // 다음 승인자가 있는 경우 승인 체인에 추가
+            if (nextApprover) {
+                const nextEmployee = getEmployee(nextApprover);
+                currentDocument.approvalChain.push({
+                    approverId: nextApprover,
+                    approverName: nextEmployee.name,
+                    status: 'pending',
+                    level: currentDocument.approvalChain.length + 1,
+                    requestedAt: new Date().toISOString()
+                });
+
+                // 다음 승인자에게 알림 생성
+                createNotification(nextApprover, {
+                    type: 'approval_request',
+                    title: '결재 서류 승인 요청',
+                    message: `${currentUser.name}님이 결재 서류를 승인하여 귀하의 검토가 필요합니다.`,
+                    documentId: currentDocument.id,
+                    documentType: currentDocument.documentType,
+                    requesterId: currentDocument.requesterId,
+                    requesterName: currentDocument.requesterName,
+                    createdAt: new Date().toISOString()
+                });
+
+                currentDocument.status = 'pending';
+            } else {
+                // 최종 승인 완료
+                currentDocument.status = 'approved';
+                currentDocument.finalApprovedAt = new Date().toISOString();
+
+                // 신청자에게 완료 알림
+                createNotification(currentDocument.requesterId, {
+                    type: 'approval_completed',
+                    title: '결재 서류 승인 완료',
+                    message: `귀하가 신청한 ${getDocumentTypeName(currentDocument.documentType)}이 최종 승인되었습니다.`,
+                    documentId: currentDocument.id,
+                    documentType: currentDocument.documentType,
+                    requesterId: currentDocument.requesterId,
+                    requesterName: currentDocument.requesterName,
+                    createdAt: new Date().toISOString()
+                });
+            }
+
+            // 현재 승인자의 알림을 읽음으로 표시
+            markRelatedNotificationsAsRead();
+
+            // 로컬 스토리지 업데이트
+            updateApprovalRequests();
+
+            alert(nextApprover ? '승인이 완료되었습니다. 다음 승인자에게 전달됩니다.' : '최종 승인이 완료되었습니다.');
+            goBack();
+        }
+
+        // 문서 반려
+        function rejectDocument() {
+            const comment = document.getElementById('comment').value.trim();
+
+            if (!comment) {
+                alert('반려 사유를 입력해주세요.');
+                return;
+            }
+
+            // 현재 승인 단계 반려 처리
+            const currentApprovalIndex = currentDocument.approvalChain.findIndex(approval => 
+                approval.status === 'pending' && approval.approverId === currentUser.id
+            );
+
+            if (currentApprovalIndex !== -1) {
+                currentDocument.approvalChain[currentApprovalIndex].status = 'rejected';
+                currentDocument.approvalChain[currentApprovalIndex].rejectedAt = new Date().toISOString();
+                currentDocument.approvalChain[currentApprovalIndex].comment = comment;
+            }
+
+            currentDocument.status = 'rejected';
+
+            // 신청자에게 반려 알림
+            createNotification(currentDocument.requesterId, {
+                type: 'approval_rejected',
+                title: '결재 서류 반려',
+                message: `귀하가 신청한 ${getDocumentTypeName(currentDocument.documentType)}이 반려되었습니다.`,
+                documentId: currentDocument.id,
+                documentType: currentDocument.documentType,
+                requesterId: currentDocument.requesterId,
+                requesterName: currentDocument.requesterName,
+                comment: comment,
+                createdAt: new Date().toISOString()
+            });
+
+            // 현재 승인자의 알림을 읽음으로 표시
+            markRelatedNotificationsAsRead();
+
+            // 로컬 스토리지 업데이트
+            updateApprovalRequests();
+
+            alert('문서가 반려되었습니다.');
+            goBack();
+        }
+
+        // 관련 알림을 읽음으로 표시
+        function markRelatedNotificationsAsRead() {
+            try {
+                // 다양한 사용자 ID 형식으로 알림 찾기
+                const possibleIds = [currentUser.id, currentUser.email, currentUser.name];
+                let userNotifications = [];
+                let foundUserId = null;
+                
+                for (const id of possibleIds) {
+                    if (id) {
+                        const notifications = JSON.parse(localStorage.getItem('notifications_' + id) || '[]');
+                        if (notifications.length > 0) {
+                            userNotifications = notifications;
+                            foundUserId = id;
+                            break;
+                        }
+                    }
+                }
+                
+                // employees 목록에서 사용자 ID 찾기
+                if (!foundUserId) {
+                    const employees = JSON.parse(localStorage.getItem('employees') || '[]');
+                    const employee = employees.find(emp => 
+                        emp.name === currentUser.name || 
+                        emp.email === currentUser.email ||
+                        emp.id === currentUser.id
+                    );
+                    
+                    if (employee && employee.id) {
+                        userNotifications = JSON.parse(localStorage.getItem('notifications_' + employee.id) || '[]');
+                        foundUserId = employee.id;
+                    }
+                }
+                
+                if (foundUserId && userNotifications.length > 0) {
+                    // 현재 문서와 관련된 알림을 찾아서 읽음으로 표시
+                    let updated = false;
+                    userNotifications.forEach(notification => {
+                        if (notification.documentId === currentDocument.id && 
+                            notification.type === 'approval_request' && 
+                            !notification.read) {
+                            notification.read = true;
+                            updated = true;
+                        }
+                    });
+                    
+                    if (updated) {
+                        localStorage.setItem('notifications_' + foundUserId, JSON.stringify(userNotifications));
+                        console.log('🔔 관련 알림이 읽음으로 표시되었습니다.');
+                    }
+                }
+            } catch (error) {
+                console.error('알림 업데이트 오류:', error);
+            }
+        }
+
+        // 승인 요청 목록 업데이트
+        function updateApprovalRequests() {
+            const approvalRequests = JSON.parse(localStorage.getItem('approvalRequests') || '[]');
+            const index = approvalRequests.findIndex(doc => doc.id === currentDocument.id);
+            if (index !== -1) {
+                approvalRequests[index] = currentDocument;
+                localStorage.setItem('approvalRequests', JSON.stringify(approvalRequests));
+            }
+        }
+
+        // 알림 생성
+        function createNotification(userId, notification) {
+            const notifications = JSON.parse(localStorage.getItem('notifications_' + userId) || '[]');
+            notification.id = Date.now().toString();
+            notification.read = false;
+            notifications.unshift(notification);
+            localStorage.setItem('notifications_' + userId, JSON.stringify(notifications));
+        }
+
+        // 문서 타입 이름 가져오기
+        function getDocumentTypeName(type) {
+            const names = {
+                'career': '경력증명서',
+                'employment': '재직증명서',
+                'leave': '연차신청서',
+                'resignation': '사직서',
+                'incident': '경위서',
+                'businessTrip': '출장 보고서',
+                'proposal': '기안서'
+            };
+            return names[type] || '문서';
+        }
+
+        // 날짜 포맷팅
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
+        }
+
+        // 뒤로가기
+        function goBack() {
+            window.history.back();
+        }
+
+        // 페이지 로드 시 문서 로드
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 페이지 로드 완료, 문서 로딩 시작...');
+            
+            // 테스트용 문서 생성 (문서가 없는 경우)
+            const documentId = getDocumentId();
+            if (documentId === '1751108766816') {
+                console.log('🧪 테스트 문서 ID 감지, 샘플 문서 생성...');
+                createTestDocument();
+            }
+            
+            loadDocument();
+        });
+        
+        // 테스트 문서 생성
+        function createTestDocument() {
+            const approvalRequests = JSON.parse(localStorage.getItem('approvalRequests') || '[]');
+            let existingDoc = approvalRequests.find(doc => doc.id === '1751108766816');
+            
+            // 현재 로그인한 사용자 정보 가져오기
+            const currentUser = getCurrentUser();
+            const employees = JSON.parse(localStorage.getItem('employees') || '[]');
+            
+            console.log('👤 현재 로그인 사용자:', currentUser);
+            console.log('👥 전체 직원 목록:', employees);
+            
+            // 박성민 직원 정보 찾기
+            let parkSeongMin = employees.find(emp => 
+                emp.name === '박성민' || 
+                emp.name === 'Park Seong Min' ||
+                emp.email === 'parkseongmin@company.com'
+            );
+            
+            // 박성민이 없으면 현재 로그인 사용자를 사용
+            if (!parkSeongMin && currentUser) {
+                parkSeongMin = currentUser;
+                console.log('🔄 박성민을 찾을 수 없어 현재 사용자를 사용:', parkSeongMin);
+            }
+            
+            if (!existingDoc && parkSeongMin) {
+                console.log('📝 테스트 문서 생성 중...');
+                const testDocument = {
+                    id: '1751108766816',
+                    documentType: 'employment',
+                    requesterId: 'requester123',
+                    requesterName: '박준호',
+                    employeeName: '박준호',
+                    employeeId: 'EMP001',
+                    department: '개발팀',
+                    position: '대리',
+                    purpose: '은행 대출용',
+                    status: 'pending',
+                    approvalChain: [{
+                        approverId: parkSeongMin.id,
+                        approverName: parkSeongMin.name,
+                        status: 'pending',
+                        level: 1,
+                        requestedAt: new Date().toISOString()
+                    }],
+                    signatures: [],
+                    createdAt: new Date().toISOString()
+                };
+                
+                approvalRequests.unshift(testDocument);
+                localStorage.setItem('approvalRequests', JSON.stringify(approvalRequests));
+                console.log('✅ 테스트 문서 생성 완료 - 승인자:', parkSeongMin.name, 'ID:', parkSeongMin.id);
+            } else if (existingDoc) {
+                // 기존 문서가 있으면 승인자 정보 업데이트
+                if (parkSeongMin && existingDoc.approvalChain[0]) {
+                    existingDoc.approvalChain[0].approverId = parkSeongMin.id;
+                    existingDoc.approvalChain[0].approverName = parkSeongMin.name;
+                    
+                    // 업데이트된 문서 저장
+                    const index = approvalRequests.findIndex(doc => doc.id === '1751108766816');
+                    if (index !== -1) {
+                        approvalRequests[index] = existingDoc;
+                        localStorage.setItem('approvalRequests', JSON.stringify(approvalRequests));
+                        console.log('🔄 기존 테스트 문서 업데이트 - 승인자:', parkSeongMin.name, 'ID:', parkSeongMin.id);
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>

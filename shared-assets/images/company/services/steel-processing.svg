@@ -1,0 +1,65 @@
+<svg width="400" height="300" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="metalGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#9ca3af;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#e5e7eb;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#6b7280;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="fireGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" style="stop-color:#dc2626;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#f59e0b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#fbbf24;stop-opacity:0.8" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="400" height="300" fill="#1f2937"/>
+  
+  <!-- Furnace Base -->
+  <rect x="50" y="200" width="120" height="100" fill="#374151"/>
+  <rect x="60" y="180" width="100" height="20" fill="#4b5563"/>
+  
+  <!-- Furnace Opening -->
+  <rect x="80" y="190" width="60" height="40" fill="#000000"/>
+  <rect x="85" y="195" width="50" height="30" fill="url(#fireGrad)"/>
+  
+  <!-- Steel Beam -->
+  <rect x="200" y="120" width="150" height="20" fill="url(#metalGrad)"/>
+  <rect x="200" y="160" width="150" height="20" fill="url(#metalGrad)"/>
+  <rect x="200" y="200" width="150" height="20" fill="url(#metalGrad)"/>
+  
+  <!-- Sparks -->
+  <circle cx="90" cy="170" r="2" fill="#fbbf24"/>
+  <circle cx="110" cy="165" r="1.5" fill="#f59e0b"/>
+  <circle cx="125" cy="175" r="1" fill="#dc2626"/>
+  <circle cx="105" cy="185" r="1.5" fill="#fbbf24"/>
+  
+  <!-- Crane Hook -->
+  <line x1="275" y1="50" x2="275" y2="110" stroke="#6b7280" stroke-width="3"/>
+  <rect x="270" y="110" width="10" height="8" fill="#374151"/>
+  
+  <!-- Crane Rail -->
+  <rect x="150" y="45" width="200" height="8" fill="#4b5563"/>
+  
+  <!-- Worker Silhouette -->
+  <circle cx="320" cy="240" r="8" fill="#1f2937"/>
+  <rect x="315" y="248" width="10" height="25" fill="#1f2937"/>
+  <rect x="312" y="258" width="6" height="15" fill="#1f2937"/>
+  <rect x="322" y="258" width="6" height="15" fill="#1f2937"/>
+  <rect x="308" y="250" width="8" height="3" fill="#1f2937"/>
+  <rect x="324" y="250" width="8" height="3" fill="#1f2937"/>
+  
+  <!-- Safety Equipment -->
+  <rect x="315" y="235" width="10" height="5" fill="#fbbf24"/>
+  
+  <!-- Control Panel -->
+  <rect x="30" y="150" width="40" height="30" fill="#374151"/>
+  <circle cx="40" cy="160" r="3" fill="#10b981"/>
+  <circle cx="50" cy="160" r="3" fill="#dc2626"/>
+  <circle cx="60" cy="160" r="3" fill="#fbbf24"/>
+  <rect x="35" y="170" width="25" height="5" fill="#6b7280"/>
+  
+  <!-- Temperature Display -->
+  <rect x="35" y="130" width="25" height="15" fill="#000000"/>
+  <text x="47" y="142" text-anchor="middle" fill="#10b981" font-family="monospace" font-size="8">1500°C</text>
+</svg>
