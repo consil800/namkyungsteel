@@ -1,0 +1,65 @@
+<svg width="400" height="250" viewBox="0 0 400 250" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="steelGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#94a3b8;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#e2e8f0;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#64748b;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="400" height="250" fill="#f1f5f9"/>
+  
+  <!-- Modern Factory Building -->
+  <rect x="30" y="80" width="340" height="120" fill="#475569"/>
+  <rect x="40" y="60" width="320" height="20" fill="#334155"/>
+  
+  <!-- Glass Facade -->
+  <rect x="50" y="90" width="60" height="80" fill="#3b82f6" opacity="0.3"/>
+  <rect x="120" y="90" width="60" height="80" fill="#3b82f6" opacity="0.3"/>
+  <rect x="190" y="90" width="60" height="80" fill="#3b82f6" opacity="0.3"/>
+  <rect x="260" y="90" width="60" height="80" fill="#3b82f6" opacity="0.3"/>
+  <rect x="330" y="90" width="30" height="80" fill="#3b82f6" opacity="0.3"/>
+  
+  <!-- Production Line Structure -->
+  <rect x="60" y="180" width="280" height="15" fill="#64748b"/>
+  
+  <!-- Steel Rolls -->
+  <circle cx="100" cy="187" r="12" fill="url(#steelGrad)"/>
+  <circle cx="130" cy="187" r="12" fill="url(#steelGrad)"/>
+  <circle cx="160" cy="187" r="12" fill="url(#steelGrad)"/>
+  <circle cx="190" cy="187" r="12" fill="url(#steelGrad)"/>
+  <circle cx="220" cy="187" r="12" fill="url(#steelGrad)"/>
+  <circle cx="250" cy="187" r="12" fill="url(#steelGrad)"/>
+  <circle cx="280" cy="187" r="12" fill="url(#steelGrad)"/>
+  <circle cx="310" cy="187" r="12" fill="url(#steelGrad)"/>
+  
+  <!-- Crane System -->
+  <rect x="80" y="40" width="240" height="5" fill="#374151"/>
+  <rect x="150" y="40" width="5" height="40" fill="#374151"/>
+  <rect x="250" y="40" width="5" height="40" fill="#374151"/>
+  
+  <!-- Moving Equipment -->
+  <rect x="145" y="75" width="15" height="8" fill="#dc2626"/>
+  <rect x="245" y="75" width="15" height="8" fill="#dc2626"/>
+  
+  <!-- Automation Panels -->
+  <rect x="200" y="200" width="40" height="25" fill="#1e293b"/>
+  <circle cx="210" cy="210" r="2" fill="#10b981"/>
+  <circle cx="220" cy="210" r="2" fill="#fbbf24"/>
+  <circle cx="230" cy="210" r="2" fill="#dc2626"/>
+  
+  <!-- Company Sign -->
+  <rect x="150" y="50" width="100" height="12" fill="#1e40af"/>
+  <text x="200" y="61" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="9" font-weight="bold">현대제철</text>
+  
+  <!-- Quality Control Station -->
+  <rect x="320" y="210" width="25" height="15" fill="#475569"/>
+  <rect x="322" y="212" width="21" height="11" fill="#000000"/>
+  <text x="332" y="219" text-anchor="middle" fill="#10b981" font-family="monospace" font-size="6">OK</text>
+  
+  <!-- Steel Beam Output -->
+  <rect x="350" y="180" width="40" height="8" fill="url(#steelGrad)"/>
+  <rect x="350" y="195" width="40" height="8" fill="url(#steelGrad)"/>
+  <rect x="350" y="210" width="40" height="8" fill="url(#steelGrad)"/>
+</svg>
