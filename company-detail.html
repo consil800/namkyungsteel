@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>업체 상세 - 철강영업 업무일지</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .info-item {
+            display: flex;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .info-item label {
+            font-weight: bold;
+            min-width: 120px;
+            margin-right: 10px;
+            color: #333;
+        }
+        
+        .info-item span {
+            flex: 1;
+            color: #666;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: none;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: #000;
+        }
+        
+        .work-log-section {
+            margin-top: 30px;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 id="companyTitle">업체 상세</h1>
+            <nav>
+                <button id="backToMainBtn" class="btn btn-cyan">메인으로</button>
+                <button id="backBtn" class="btn btn-secondary">뒤로가기</button>
+                <button id="editCompanyBtn" class="btn btn-warning">업체 정보 수정</button>
+                <button id="deleteCompanyBtn" class="btn btn-danger">업체 삭제</button>
+            </nav>
+        </header>
+
+        <main>
+            <section class="company-info">
+                <div id="companyDetails" class="info-grid">
+                    <!-- 업체 정보가 여기에 동적으로 생성됩니다 -->
+                </div>
+            </section>
+
+            <section class="work-log-section">
+                <div class="section-header">
+                    <h2>업무일지</h2>
+                    <button id="newWorkLogBtn" class="btn btn-primary">새 일지 작성</button>
+                </div>
+                
+                <div id="workLogList" class="work-log-list">
+                    <!-- 업무일지 목록이 여기에 동적으로 생성됩니다 -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 업체 정보 수정 모달 -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>업체 정보 수정</h3>
+                <span id="closeModal" class="close">&times;</span>
+            </div>
+            <form id="editCompanyForm" class="form-container">
+                <div class="form-group">
+                    <label for="editCompanyName">업체명 *</label>
+                    <input type="text" id="editCompanyName" name="editCompanyName" required>
+                </div>
+                <div class="form-group">
+                    <label for="editRegion">지역 *</label>
+                    <input type="text" id="editRegion" name="editRegion" required>
+                </div>
+                <div class="form-group">
+                    <label for="editAddress">주소</label>
+                    <input type="text" id="editAddress" name="editAddress">
+                </div>
+                <div class="form-group">
+                    <label for="editPhone">전화번호</label>
+                    <input type="tel" id="editPhone" name="editPhone">
+                </div>
+                <div class="form-group">
+                    <label for="editContactPerson">담당자명</label>
+                    <input type="text" id="editContactPerson" name="editContactPerson">
+                </div>
+                <div class="form-group">
+                    <label for="editMobile">휴대폰</label>
+                    <input type="tel" id="editMobile" name="editMobile">
+                </div>
+                <div class="form-group">
+                    <label for="editEmail">이메일</label>
+                    <input type="email" id="editEmail" name="editEmail">
+                </div>
+                <div class="form-group">
+                    <label for="editPaymentTerms">결제조건</label>
+                    <input type="text" id="editPaymentTerms" name="editPaymentTerms" placeholder="예: 월말결제, 30일, 현금">
+                </div>
+                <div class="form-group">
+                    <label for="editDebtAmount">채권금액</label>
+                    <input type="text" id="editDebtAmount" name="editDebtAmount" placeholder="예: 1,000,000">
+                </div>
+                <div class="form-group">
+                    <label for="editBusinessType">업종</label>
+                    <input type="text" id="editBusinessType" name="editBusinessType" placeholder="예: 제조업, 건설업">
+                </div>
+                <div class="form-group">
+                    <label for="editProducts">제조품</label>
+                    <textarea id="editProducts" name="editProducts" rows="3" placeholder="주로 제조하는 제품을 입력하세요 (예: 건축자재, 기계부품, 선박부품 등)"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="editUsageItems">사용품목</label>
+                    <textarea id="editUsageItems" name="editUsageItems" rows="3" placeholder="주로 사용하는 철강 품목을 입력하세요 (예: H빔, 각관, 철판 등)"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="editNotes">비고</label>
+                    <textarea id="editNotes" name="editNotes" rows="4"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">수정</button>
+                    <button type="button" id="cancelEditBtn" class="btn btn-secondary">취소</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Database Scripts -->
+    <script src="database.js"></script>
+    <script src="shared-assets/js/auth.js"></script>
+    <script src="company-detail.js"></script>
+</body>
+</html>

@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>인증서 - 남경스틸(주)</title>
+    <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+    <link href="assets/css/main.css" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif !important; }
+        
+        /* Navigation Dropdown Styles */
+        .navmenu ul {
+            display: flex;
+            align-items: center;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .navmenu > ul > li {
+            white-space: nowrap;
+            padding: 15px 16px;
+            position: relative;
+        }
+        
+        .navmenu a {
+            color: #2c3e50;
+            padding: 12px 0;
+            font-size: 16px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            white-space: nowrap;
+            transition: 0.3s;
+            text-decoration: none;
+        }
+        
+        .navmenu .dropdown ul {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            z-index: 99;
+            background-color: #ffffff;
+            box-shadow: 0px 0px 30px rgba(44, 62, 80, 0.15);
+            padding: 10px 0;
+            border-radius: 6px;
+            min-width: 180px;
+            flex-direction: column;
+        }
+        
+        .navmenu .dropdown:hover > ul {
+            display: flex;
+        }
+        
+        .navmenu .dropdown ul li {
+            padding: 0;
+            width: 100%;
+        }
+        
+        .navmenu .dropdown ul a {
+            padding: 10px 20px;
+            font-size: 15px;
+            color: #2c3e50;
+            border: none;
+            width: 100%;
+            justify-content: flex-start;
+        }
+        
+        .navmenu .dropdown ul a:hover {
+            color: #3498db;
+            background-color: #f8f9fa;
+        }
+        
+        .toggle-dropdown {
+            margin-left: 5px;
+        }
+        
+        @media (max-width: 1199px) {
+            .navmenu .dropdown ul {
+                position: static;
+                display: none;
+                z-index: 99;
+                padding: 10px 0;
+                margin: 10px 20px;
+                background-color: #ffffff;
+                border: 1px solid #e9ecef;
+                box-shadow: none;
+                border-radius: 6px;
+            }
+            
+            .navmenu .dropdown.active > ul {
+                display: flex;
+            }
+        }
+        
+        /* Footer Styles from namkyungst/index.html */
+        .footer {
+            background-color: #2d3748;
+            color: #ffffff;
+        }
+        
+        .footer-top {
+            padding: 60px 0 40px;
+        }
+        
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+        }
+        
+        .footer-column h3,
+        .footer-column h4 {
+            margin-bottom: 20px;
+            color: #ffffff;
+            font-weight: 600;
+        }
+        
+        .footer-column ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .footer-column ul li {
+            margin-bottom: 10px;
+        }
+        
+        .footer-column a {
+            color: #e2e8f0;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        
+        .footer-column a:hover {
+            color: #3182ce;
+        }
+        
+        .footer-column p {
+            color: #cbd5e0;
+            line-height: 1.6;
+        }
+        
+        .social-links {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .social-links a {
+            width: 40px;
+            height: 40px;
+            background-color: #4a5568;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            color: #ffffff;
+        }
+        
+        .social-links a:hover {
+            background-color: #3182ce;
+            color: #ffffff;
+        }
+        
+        .contact-info li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 15px;
+            color: #e2e8f0;
+        }
+        
+        .contact-info i {
+            margin-top: 4px;
+            color: #63b3ed;
+        }
+        
+        .footer-bottom {
+            background-color: #1a202c;
+            padding: 20px 0;
+        }
+        
+        .bottom-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .bottom-content p {
+            color: #cbd5e0;
+            margin: 0;
+        }
+        
+        .footer-links {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .footer-links a {
+            color: #a0aec0;
+            font-size: 14px;
+            text-decoration: none;
+        }
+        
+        .footer-links a:hover {
+            color: #3182ce;
+        }
+        
+        @media (max-width: 768px) {
+            .bottom-content {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+            
+            .footer-grid {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+            
+            .social-links {
+                justify-content: center;
+            }
+            
+            .contact-info {
+                text-align: left;
+            }
+        }
+        .page-header {
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('namkyung.png');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            padding: 100px 0;
+            text-align: center;
+        }
+        .cert-section {
+            padding: 80px 0;
+        }
+        .cert-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
+        }
+        .cert-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            border: 3px solid #f8f9fa;
+        }
+        .cert-card:hover {
+            transform: translateY(-10px);
+            border-color: #007bff;
+        }
+        .cert-image {
+            width: 150px;
+            height: 150px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+            color: #007bff;
+        }
+        .cert-badge {
+            background: #007bff;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+        .cert-date {
+            color: #6c757d;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .quality-section {
+            background: #f8f9fa;
+            padding: 80px 0;
+        }
+        .quality-item {
+            background: white;
+            padding: 40px 30px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            height: 100%;
+        }
+        .quality-icon {
+            width: 80px;
+            height: 80px;
+            background: #28a745;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            color: white;
+            font-size: 30px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header id="header" class="header d-flex align-items-center sticky-top">
+        <div class="container-fluid container-xl position-relative d-flex align-items-center">
+            <a href="index.html" class="logo d-flex align-items-center me-auto">
+                <img src="logo.jpg" alt="남경스틸 로고" style="height: 40px; margin-right: 10px;">
+                <h1 class="sitename">남경스틸(주)</h1>
+            </a>
+            
+            <nav id="navmenu" class="navmenu">
+                <ul>
+                    <li><a href="index.html">홈</a></li>
+                    <li class="dropdown"><a href="index.html#about"><span>회사소개</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="ceo-message.html">CEO 인사말</a></li>
+                            <li><a href="company-history.html">회사연혁</a></li>
+                            <li><a href="vision-mission.html">비전/미션</a></li>
+                            <li><a href="organization.html">조직도</a></li>
+                            <li><a href="certificates.html">인증서</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown"><a href="index.html#services"><span>제품소개</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="service1-details.html">열연강판</a></li>
+                            <li><a href="service2-details.html">냉연강판</a></li>
+                            <li><a href="service3-details.html">특수강</a></li>
+                            <li><a href="service4-details.html">맞춤 가공</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown"><a href="#"><span>사업영역</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="#">철강제조</a></li>
+                            <li><a href="#">가공서비스</a></li>
+                            <li><a href="#">기술연구</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown"><a href="#"><span>고객센터</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="#">견적문의</a></li>
+                            <li><a href="#">카탈로그</a></li>
+                            <li><a href="#">FAQ</a></li>
+                            <li><a href="#">오시는길</a></li>
+                            <li><a href="product-inquiry.html">제품문의</a></li>
+                            <li><a href="technical-support.html">기술지원</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown"><a href="#"><span>홍보센터</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="#">공지사항</a></li>
+                            <li><a href="#">뉴스룸</a></li>
+                            <li><a href="#">홍보자료</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container">
+            <h1>인증서</h1>
+            <p>남경스틸(주)의 품질과 신뢰성을 증명하는 각종 인증서</p>
+        </div>
+    </div>
+
+    <!-- Certificates Section -->
+    <section class="cert-section">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2>보유 인증서</h2>
+                <p class="lead">국제 표준을 충족하는 품질 관리 시스템</p>
+            </div>
+            
+            <div class="cert-grid">
+                <div class="cert-card">
+                    <div class="cert-badge">품질경영</div>
+                    <div class="cert-image">
+                        <i class="bi bi-award"></i>
+                    </div>
+                    <h4>ISO 9001:2015</h4>
+                    <p>품질경영시스템 인증</p>
+                    <p class="small">국제표준화기구(ISO)에서 제정한 품질경영시스템의 국제 표준으로, 고객 만족도 향상과 지속적인 개선을 위한 시스템을 구축하여 인증받았습니다.</p>
+                    <div class="cert-date">취득일: 2017.03.15</div>
+                </div>
+                
+                <div class="cert-card">
+                    <div class="cert-badge">환경경영</div>
+                    <div class="cert-image">
+                        <i class="bi bi-globe-americas"></i>
+                    </div>
+                    <h4>ISO 14001:2015</h4>
+                    <p>환경경영시스템 인증</p>
+                    <p class="small">환경영향을 최소화하고 지속가능한 발전을 위한 환경경영시스템을 구축하여 친환경 기업으로서의 책임을 다하고 있습니다.</p>
+                    <div class="cert-date">취득일: 2021.06.20</div>
+                </div>
+                
+                <div class="cert-card">
+                    <div class="cert-badge">국가표준</div>
+                    <div class="cert-image">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                    <h4>KS 인증</h4>
+                    <p>한국산업표준 인증</p>
+                    <p class="small">한국산업표준(KS)에 적합한 제품을 생산하는 기업으로 인정받아 국내 시장에서의 신뢰성을 확보하였습니다.</p>
+                    <div class="cert-date">취득일: 2017.09.10</div>
+                </div>
+                
+                <div class="cert-card">
+                    <div class="cert-badge">유럽표준</div>
+                    <div class="cert-image">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <h4>CE 마킹</h4>
+                    <p>유럽 적합성 선언</p>
+                    <p class="small">유럽연합의 법적 요구사항을 충족하는 제품임을 증명하는 마킹으로, 유럽 시장 진출의 기반을 마련하였습니다.</p>
+                    <div class="cert-date">취득일: 2019.11.05</div>
+                </div>
+                
+                <div class="cert-card">
+                    <div class="cert-badge">안전보건</div>
+                    <div class="cert-image">
+                        <i class="bi bi-shield-fill-check"></i>
+                    </div>
+                    <h4>OHSAS 18001</h4>
+                    <p>안전보건경영시스템</p>
+                    <p class="small">작업장 안전보건 관리시스템을 구축하여 임직원의 안전과 건강을 최우선으로 하는 경영을 실천하고 있습니다.</p>
+                    <div class="cert-date">취득일: 2020.02.28</div>
+                </div>
+                
+                <div class="cert-card">
+                    <div class="cert-badge">기업인증</div>
+                    <div class="cert-image">
+                        <i class="bi bi-building"></i>
+                    </div>
+                    <h4>벤처기업 인증</h4>
+                    <p>기술혁신형 중소기업</p>
+                    <p class="small">기술력과 성장잠재력을 인정받아 벤처기업으로 인증받았으며, 지속적인 기술 혁신을 통해 경쟁력을 강화하고 있습니다.</p>
+                    <div class="cert-date">취득일: 2022.04.12</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quality Management Section -->
+    <section class="quality-section">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2>품질 관리 체계</h2>
+                <p class="lead">체계적인 품질 관리로 고객 신뢰를 확보합니다</p>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="quality-item">
+                        <div class="quality-icon">
+                            <i class="bi bi-search"></i>
+                        </div>
+                        <h4>전수 검사</h4>
+                        <p>모든 제품에 대해 엄격한 품질 검사를 실시하여 불량품 출하를 원천 차단합니다.</p>
+                    </div>
+                </div>
+                
+                <div class="col-md-4 mb-4">
+                    <div class="quality-item">
+                        <div class="quality-icon">
+                            <i class="bi bi-graph-up"></i>
+                        </div>
+                        <h4>지속적 개선</h4>
+                        <p>PDCA 사이클을 통한 지속적인 품질 개선으로 최고 수준의 제품을 제공합니다.</p>
+                    </div>
+                </div>
+                
+                <div class="col-md-4 mb-4">
+                    <div class="quality-item">
+                        <div class="quality-icon">
+                            <i class="bi bi-people"></i>
+                        </div>
+                        <h4>전문 인력</h4>
+                        <p>품질 관리 전문 인력과 최신 검사 장비를 통해 정확한 품질 평가를 수행합니다.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Commitment Section -->
+    <section class="py-5 bg-primary text-white">
+        <div class="container text-center">
+            <h2 class="mb-4">품질에 대한 약속</h2>
+            <p class="lead mb-4">
+                남경스틸(주)는 고객에게 최고 품질의 제품과 서비스를 제공하기 위해<br>
+                끊임없이 노력하며, 모든 품질 기준을 준수할 것을 약속드립니다.
+            </p>
+            <div class="row">
+                <div class="col-md-3">
+                    <h3>99.8%</h3>
+                    <p>품질 합격률</p>
+                </div>
+                <div class="col-md-3">
+                    <h3>0.1%</h3>
+                    <p>고객 클레임률</p>
+                </div>
+                <div class="col-md-3">
+                    <h3>24시간</h3>
+                    <p>품질 지원</p>
+                </div>
+                <div class="col-md-3">
+                    <h3>10+</h3>
+                    <p>보유 인증</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-top">
+            <div class="container">
+                <div class="footer-grid">
+                    <div class="footer-column">
+                        <h3>남경스틸(주)</h3>
+                        <p>철강산업의 리더로서 최고의 품질과 서비스를 제공합니다.</p>
+                    </div>
+                    <div class="footer-column">
+                        <h4>빠른 링크</h4>
+                        <ul>
+                            <li><a href="#">회사소개</a></li>
+                            <li><a href="#">제품정보</a></li>
+                            <li><a href="#">견적문의</a></li>
+                            <li><a href="#">채용정보</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-column">
+                        <h4>고객지원</h4>
+                        <ul>
+                            <li><a href="#">자주묻는질문</a></li>
+                            <li><a href="#">카탈로그</a></li>
+                            <li><a href="#">A/S 신청</a></li>
+                            <li><a href="#">오시는길</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-column">
+                        <h4>연락처</h4>
+                        <ul class="contact-info">
+                            <li><i class="fas fa-map-marker-alt"></i> 부산시 사상구 낙동대로 832</li>
+                            <li><i class="fas fa-phone"></i> 051-314-9701</li>
+                            <li><i class="fas fa-fax"></i> 051-314-9702</li>
+                            <li><i class="fas fa-envelope"></i> namkyungst@naver.com</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="container">
+                <div class="bottom-content">
+                    <p>&copy; 2025 남경스틸(주). All rights reserved.</p>
+                    <div class="footer-links">
+                        <a href="#">개인정보처리방침</a>
+                        <a href="#">이용약관</a>
+                        <a href="#">이메일무단수집거부</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // 드롭다운 메뉴 클릭 기능 (모바일용)
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropdownToggles = document.querySelectorAll('.toggle-dropdown');
+            
+            dropdownToggles.forEach(function(toggle) {
+                toggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const dropdown = this.closest('.dropdown');
+                    const isActive = dropdown.classList.contains('active');
+                    
+                    // 다른 모든 드롭다운 닫기
+                    document.querySelectorAll('.dropdown.active').forEach(function(activeDropdown) {
+                        if (activeDropdown !== dropdown) {
+                            activeDropdown.classList.remove('active');
+                        }
+                    });
+                    
+                    // 현재 드롭다운 토글
+                    dropdown.classList.toggle('active', !isActive);
+                });
+            });
+            
+            // 외부 클릭 시 드롭다운 닫기
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.dropdown')) {
+                    document.querySelectorAll('.dropdown.active').forEach(function(dropdown) {
+                        dropdown.classList.remove('active');
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

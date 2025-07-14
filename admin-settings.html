@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 설정 - SteelWorks Platform</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #e2e8f0;
+            font-weight: 600;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+        }
+
+        .form-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .form-select option {
+            background: #667eea;
+            color: white;
+        }
+
+        /* Admin Dashboard */
+        .admin-dashboard {
+            display: block;
+            min-height: 100vh;
+        }
+
+        .admin-header {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem 2rem;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .admin-logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: #ffffff;
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .admin-nav {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-btn:hover,
+        .nav-btn.active {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .back-btn {
+            background: rgba(108, 117, 125, 0.3);
+            border: 1px solid rgba(108, 117, 125, 0.4);
+            color: #ffffff;
+        }
+
+        .back-btn:hover {
+            background: rgba(108, 117, 125, 0.5);
+            border-color: rgba(108, 117, 125, 0.6);
+        }
+
+        .admin-content {
+            padding: 2rem;
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .section-title {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 2rem;
+            color: #ffffff;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Data Grid */
+        .data-grid {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .grid-header {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .grid-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .add-btn, .save-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .add-btn:hover, .save-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+        }
+
+        .delete-btn {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .delete-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(239, 68, 68, 0.4);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .data-table th {
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+            font-weight: 700;
+        }
+
+        .data-table td {
+            color: #e2e8f0;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .edit-btn {
+            padding: 0.25rem 0.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+            background: rgba(59, 130, 246, 0.3);
+            color: #60a5fa;
+        }
+
+        .edit-btn:hover {
+            background: rgba(59, 130, 246, 0.5);
+        }
+
+        /* Statistics Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #ffffff, rgba(255, 255, 255, 0.8));
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            color: #667eea;
+            font-size: 1.5rem;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 900;
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 600;
+        }
+
+        .form-textarea {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 100px;
+            transition: all 0.3s ease;
+        }
+
+        .form-textarea:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+        }
+
+        .form-textarea::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .permission-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .permission-item {
+            display: flex;
+            align-items: center;
+            color: #e2e8f0;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .permission-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .permission-item input[type="checkbox"] {
+            margin-right: 0.75rem;
+            transform: scale(1.2);
+        }
+
+        .user-role-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .role-master {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+
+        .role-admin {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+        }
+
+        .role-manager {
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
+            color: white;
+        }
+
+        .role-employee {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+            color: white;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .admin-header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .admin-nav {
+                justify-content: center;
+            }
+
+            .form-row {
+                flex-direction: column;
+            }
+
+            .admin-content {
+                padding: 1rem;
+            }
+        }
+
+        .empty-state {
+            padding: 3rem 2rem;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <!-- Admin Dashboard -->
+    <div class="admin-dashboard" id="adminDashboard">
+        <!-- Header -->
+        <header class="admin-header">
+            <div class="admin-logo">
+                <i class="fas fa-cogs"></i>
+                <span id="companyTitle">관리자 설정</span>
+            </div>
+            <nav class="admin-nav">
+                <button class="nav-btn active" data-section="dashboard">
+                    <i class="fas fa-tachometer-alt"></i> 대시보드
+                </button>
+                <button class="nav-btn" data-section="employees">
+                    <i class="fas fa-users"></i> 직원 관리
+                </button>
+                <button class="nav-btn" data-section="permissions">
+                    <i class="fas fa-shield-alt"></i> 권한 설정
+                </button>
+                <button class="nav-btn" data-section="homepage">
+                    <i class="fas fa-palette"></i> 홈페이지 관리
+                </button>
+                <button class="nav-btn" data-section="system">
+                    <i class="fas fa-cog"></i> 시스템 설정
+                </button>
+                <a href="../employee/employee-dashboard.html" class="nav-btn back-btn">
+                    <i class="fas fa-arrow-left"></i> 대시보드로
+                </a>
+            </nav>
+        </header>
+
+        <!-- Content -->
+        <main class="admin-content">
+            <!-- Dashboard Section -->
+            <section class="content-section active" id="dashboard">
+                <h2 class="section-title">관리자 대시보드</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-number" id="totalEmployees">0</div>
+                        <div class="stat-label">총 직원 수</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <div class="stat-number" id="totalViews">1,234</div>
+                        <div class="stat-label">홈페이지 조회수</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <div class="stat-number" id="totalWorkLogs">48</div>
+                        <div class="stat-label">이번 달 업무일지</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-number" id="lastUpdate">방금 전</div>
+                        <div class="stat-label">마지막 업데이트</div>
+                    </div>
+                </div>
+                
+                <!-- 빠른 작업 -->
+                <div class="data-grid">
+                    <div class="grid-header">
+                        <h3 class="grid-title">빠른 작업</h3>
+                    </div>
+                    <div style="padding: 2rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <button class="add-btn" onclick="switchSection('employees')">
+                            <i class="fas fa-user-plus"></i>
+                            직원 추가
+                        </button>
+                        <button class="add-btn" onclick="previewHomepage()" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+                            <i class="fas fa-eye"></i>
+                            홈페이지 미리보기
+                        </button>
+                        <button class="add-btn" onclick="switchSection('homepage')" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                            <i class="fas fa-edit"></i>
+                            홈페이지 편집
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Employees Section -->
+            <section class="content-section" id="employees">
+                <h2 class="section-title">직원 관리</h2>
+                
+                <div class="data-grid">
+                    <div class="grid-header">
+                        <h3 class="grid-title">직원 목록</h3>
+                        <button class="add-btn" onclick="openEmployeeModal()">
+                            <i class="fas fa-plus"></i>
+                            직원 추가
+                        </button>
+                    </div>
+                    <div id="employeeList">
+                        <div class="empty-state">
+                            <i class="fas fa-users"></i>
+                            <p>등록된 직원이 없습니다.</p>
+                            <button class="add-btn" onclick="openEmployeeModal()" style="margin-top: 1rem;">
+                                <i class="fas fa-plus"></i>
+                                첫 번째 직원 추가
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Permissions Section -->
+            <section class="content-section" id="permissions">
+                <h2 class="section-title">권한 설정</h2>
+                
+                <div class="data-grid">
+                    <div class="grid-header">
+                        <h3 class="grid-title">직원 업무 시스템 권한</h3>
+                        <button class="save-btn" onclick="savePermissions()">
+                            <i class="fas fa-save"></i>
+                            설정 저장
+                        </button>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <div class="form-group">
+                            <label class="form-label">사용 가능한 업무 모듈</label>
+                            <div class="permission-grid">
+                                <label class="permission-item">
+                                    <input type="checkbox" id="perm_worklog" checked> 업무일지 작성
+                                </label>
+                                <label class="permission-item">
+                                    <input type="checkbox" id="perm_clients" checked> 거래처 관리
+                                </label>
+                                <label class="permission-item">
+                                    <input type="checkbox" id="perm_card"> 법인카드 사용
+                                </label>
+                                <label class="permission-item">
+                                    <input type="checkbox" id="perm_leave"> 연차 신청
+                                </label>
+                                <label class="permission-item">
+                                    <input type="checkbox" id="perm_project"> 프로젝트 관리
+                                </label>
+                                <label class="permission-item">
+                                    <input type="checkbox" id="perm_inventory"> 재고 관리
+                                </label>
+                                <label class="permission-item">
+                                    <input type="checkbox" id="perm_reports" checked> 보고서 작성
+                                </label>
+                                <label class="permission-item">
+                                    <input type="checkbox" id="perm_quality"> 품질 관리
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="data-grid">
+                    <div class="grid-header">
+                        <h3 class="grid-title">역할별 권한 매트릭스</h3>
+                    </div>
+                    <div style="padding: 2rem; overflow-x: auto;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>권한</th>
+                                    <th>마스터</th>
+                                    <th>회사 대표</th>
+                                    <th>관리자</th>
+                                    <th>직원</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>홈페이지 관리</td>
+                                    <td><i class="fas fa-check" style="color: #10b981;"></i></td>
+                                    <td><i class="fas fa-check" style="color: #10b981;"></i></td>
+                                    <td><i class="fas fa-check" style="color: #10b981;"></i></td>
+                                    <td><i class="fas fa-times" style="color: #ef4444;"></i></td>
+                                </tr>
+                                <tr>
+                                    <td>직원 관리</td>
+                                    <td><i class="fas fa-check" style="color: #10b981;"></i></td>
+                                    <td><i class="fas fa-check" style="color: #10b981;"></i></td>
+                                    <td><i class="fas fa-check" style="color: #10b981;"></i></td>
+                                    <td><i class="fas fa-times" style="color: #ef4444;"></i></td>
+                                </tr>
+                                <tr>
+                                    <td>업무일지 작성</td>
+                                    <td><i class="fas fa-check" style="color: #10b981;"></i></td>
+                                    <td><i class="fas fa-check" style="color: #10b981;"></i></td>
+                                    <td><i class="fas fa-check" style="color: #10b981;"></i></td>
+                                    <td><i class="fas fa-check" style="color: #10b981;"></i></td>
+                                </tr>
+                                <tr>
+                                    <td>거래처 관리</td>
+                                    <td><i class="fas fa-check" style="color: #10b981;"></i></td>
+                                    <td><i class="fas fa-check" style="color: #10b981;"></i></td>
+                                    <td><i class="fas fa-check" style="color: #10b981;"></i></td>
+                                    <td><i class="fas fa-check" style="color: #10b981;"></i></td>
+                                </tr>
+                                <tr>
+                                    <td>시스템 설정</td>
+                                    <td><i class="fas fa-check" style="color: #10b981;"></i></td>
+                                    <td><i class="fas fa-times" style="color: #ef4444;"></i></td>
+                                    <td><i class="fas fa-times" style="color: #ef4444;"></i></td>
+                                    <td><i class="fas fa-times" style="color: #ef4444;"></i></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Homepage Section -->
+            <section class="content-section" id="homepage">
+                <h2 class="section-title">홈페이지 관리</h2>
+                
+                <div class="data-grid">
+                    <div class="grid-header">
+                        <h3 class="grid-title">홈페이지 기본 설정</h3>
+                        <button class="save-btn" onclick="saveHomepageSettings()">
+                            <i class="fas fa-save"></i>
+                            설정 저장
+                        </button>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">회사명</label>
+                                <input type="text" class="form-input" id="homepage_company_name" placeholder="회사명을 입력하세요">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">대표 전화번호</label>
+                                <input type="text" class="form-input" id="homepage_phone" placeholder="02-1234-5678">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">이메일</label>
+                                <input type="email" class="form-input" id="homepage_email" placeholder="contact@company.com">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">주소</label>
+                                <input type="text" class="form-input" id="homepage_address" placeholder="서울시 강남구...">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">회사 슬로건</label>
+                            <textarea class="form-textarea" id="homepage_slogan" placeholder="회사를 대표하는 슬로건을 입력하세요"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="data-grid">
+                    <div class="grid-header">
+                        <h3 class="grid-title">홈페이지 컨텐츠</h3>
+                        <button class="add-btn" onclick="openTemplateSettings()">
+                            <i class="fas fa-edit"></i>
+                            고급 편집
+                        </button>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <div class="form-group">
+                            <label class="form-label">메인 제목</label>
+                            <input type="text" class="form-input" id="homepage_main_title" placeholder="메인 페이지 제목">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">메인 설명</label>
+                            <textarea class="form-textarea" id="homepage_main_description" placeholder="메인 페이지 설명을 입력하세요"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">회사 소개</label>
+                            <textarea class="form-textarea" id="homepage_about" placeholder="회사 소개 내용을 입력하세요"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="data-grid">
+                    <div class="grid-header">
+                        <h3 class="grid-title">홈페이지 미리보기</h3>
+                        <button class="add-btn" onclick="previewHomepage()" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+                            <i class="fas fa-external-link-alt"></i>
+                            새 탭에서 보기
+                        </button>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <iframe id="homepagePreview" style="width: 100%; height: 500px; border: none; border-radius: 10px; background: #f8f9fa;"></iframe>
+                    </div>
+                </div>
+            </section>
+
+            <!-- System Section -->
+            <section class="content-section" id="system">
+                <h2 class="section-title">시스템 설정</h2>
+                
+                <div class="data-grid">
+                    <div class="grid-header">
+                        <h3 class="grid-title">시스템 정보</h3>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">플랫폼 버전</label>
+                                <input type="text" class="form-input" value="SteelWorks Platform v1.0" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">마지막 업데이트</label>
+                                <input type="text" class="form-input" value="2025-06-15" readonly>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">활성 템플릿</label>
+                                <input type="text" class="form-input" id="active_template" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">데이터 백업</label>
+                                <button class="add-btn" onclick="backupData()">
+                                    <i class="fas fa-download"></i>
+                                    백업 다운로드
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="data-grid">
+                    <div class="grid-header">
+                        <h3 class="grid-title">시스템 로그</h3>
+                        <button class="add-btn" onclick="clearLogs()" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+                            <i class="fas fa-trash"></i>
+                            로그 삭제
+                        </button>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <div style="background: rgba(0, 0, 0, 0.3); padding: 1rem; border-radius: 8px; font-family: monospace; color: #e2e8f0; max-height: 300px; overflow-y: auto;">
+                            <div>[2025-06-15 14:30:15] 사용자 로그인: admin@company.com</div>
+                            <div>[2025-06-15 14:25:33] 홈페이지 설정 변경</div>
+                            <div>[2025-06-15 14:20:12] 직원 추가: 홍길동</div>
+                            <div>[2025-06-15 14:15:45] 권한 설정 업데이트</div>
+                            <div>[2025-06-15 14:10:22] 시스템 백업 완료</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Employee Modal -->
+    <div id="employeeModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); z-index: 10000; align-items: center; justify-content: center;">
+        <div style="background: linear-gradient(135deg, #667eea, #764ba2); padding: 2rem; border-radius: 15px; max-width: 500px; width: 90%; color: white;">
+            <h3 style="margin-bottom: 1.5rem;">직원 추가</h3>
+            
+            <div class="form-group">
+                <label class="form-label">이름</label>
+                <input type="text" class="form-input" id="employee_name" placeholder="직원 이름">
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">이메일</label>
+                    <input type="email" class="form-input" id="employee_email" placeholder="employee@company.com">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">역할</label>
+                    <select class="form-select" id="employee_role">
+                        <option value="employee">직원</option>
+                        <option value="company_manager">관리자</option>
+                        <option value="company_CEO">회사 대표</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">부서</label>
+                    <input type="text" class="form-input" id="employee_department" placeholder="영업팀">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">직급</label>
+                    <input type="text" class="form-input" id="employee_position" placeholder="대리">
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                <button class="save-btn" onclick="saveEmployee()" style="flex: 1;">
+                    <i class="fas fa-save"></i> 저장
+                </button>
+                <button class="delete-btn" onclick="closeEmployeeModal()" style="flex: 1;">
+                    <i class="fas fa-times"></i> 취소
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../shared-assets/js/auth.js"></script>
+    <script>
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = AuthManager.getCurrentUser();
+            if (!user) {
+                alert('로그인이 필요합니다.');
+                window.location.href = '../employee/employee-dashboard.html';
+                return;
+            }
+            
+            // 권한 확인
+            if (user.role !== 'master' && user.role !== 'company_admin' && user.role !== 'company_manager') {
+                alert('관리자 권한이 필요합니다.');
+                window.location.href = '../employee/employee-dashboard.html';
+                return;
+            }
+            
+            // 회사 정보 표시
+            if (user.company) {
+                document.getElementById('companyTitle').textContent = `${user.company} - 관리자 설정`;
+                document.getElementById('active_template').value = user.company;
+            }
+            
+            // 기존 데이터 로드
+            loadEmployees();
+            loadHomepageData();
+            updateStats();
+            
+            // 홈페이지 미리보기 설정
+            const templateId = localStorage.getItem('currentTemplateId') || user.company;
+            if (templateId) {
+                document.getElementById('homepagePreview').src = `../2-templates/${templateId}/index.html`;
+            }
+        });
+
+        // 섹션 전환
+        function switchSection(sectionId) {
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            document.getElementById(sectionId).classList.add('active');
+            document.querySelector(`[data-section="${sectionId}"]`).classList.add('active');
+        }
+
+        // 네비게이션 버튼 클릭 이벤트
+        document.querySelectorAll('.nav-btn[data-section]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const section = this.getAttribute('data-section');
+                switchSection(section);
+            });
+        });
+
+        // 직원 관리
+        function openEmployeeModal() {
+            document.getElementById('employeeModal').style.display = 'flex';
+        }
+
+        function closeEmployeeModal() {
+            document.getElementById('employeeModal').style.display = 'none';
+            // 폼 초기화
+            document.getElementById('employee_name').value = '';
+            document.getElementById('employee_email').value = '';
+            document.getElementById('employee_role').value = 'employee';
+            document.getElementById('employee_department').value = '';
+            document.getElementById('employee_position').value = '';
+        }
+
+        function saveEmployee() {
+            const employee = {
+                id: Date.now(),
+                name: document.getElementById('employee_name').value,
+                email: document.getElementById('employee_email').value,
+                role: document.getElementById('employee_role').value,
+                department: document.getElementById('employee_department').value,
+                position: document.getElementById('employee_position').value,
+                joinDate: new Date().toISOString().split('T')[0]
+            };
+            
+            if (!employee.name || !employee.email) {
+                alert('이름과 이메일은 필수 입력 항목입니다.');
+                return;
+            }
+            
+            // 로컬 스토리지에 저장
+            let employees = JSON.parse(localStorage.getItem('employees') || '[]');
+            employees.push(employee);
+            localStorage.setItem('employees', JSON.stringify(employees));
+            
+            closeEmployeeModal();
+            loadEmployees();
+            updateStats();
+            alert('직원이 추가되었습니다.');
+        }
+
+        function loadEmployees() {
+            const employees = JSON.parse(localStorage.getItem('employees') || '[]');
+            const employeeList = document.getElementById('employeeList');
+            
+            if (employees.length === 0) {
+                employeeList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-users"></i>
+                        <p>등록된 직원이 없습니다.</p>
+                        <button class="add-btn" onclick="openEmployeeModal()" style="margin-top: 1rem;">
+                            <i class="fas fa-plus"></i>
+                            첫 번째 직원 추가
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>이름</th>
+                            <th>이메일</th>
+                            <th>역할</th>
+                            <th>부서</th>
+                            <th>직급</th>
+                            <th>가입일</th>
+                            <th>작업</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            employees.forEach(employee => {
+                const roleClass = {
+                    'master': 'role-master',
+                    'company_admin': 'role-admin',
+                    'company_manager': 'role-manager',
+                    'employee': 'role-employee'
+                }[employee.role] || 'role-employee';
+                
+                const roleName = {
+                    'master': '마스터',
+                    'company_admin': '회사 대표',
+                    'company_manager': '관리자',
+                    'employee': '직원'
+                }[employee.role] || '직원';
+                
+                html += `
+                    <tr>
+                        <td>${employee.name}</td>
+                        <td>${employee.email}</td>
+                        <td><span class="user-role-badge ${roleClass}">${roleName}</span></td>
+                        <td>${employee.department || '-'}</td>
+                        <td>${employee.position || '-'}</td>
+                        <td>${employee.joinDate}</td>
+                        <td class="action-btns">
+                            <button class="edit-btn" onclick="editEmployee(${employee.id})">편집</button>
+                            <button class="delete-btn" onclick="deleteEmployee(${employee.id})" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">삭제</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            employeeList.innerHTML = html;
+        }
+
+        function deleteEmployee(id) {
+            if (confirm('이 직원을 삭제하시겠습니까?')) {
+                let employees = JSON.parse(localStorage.getItem('employees') || '[]');
+                employees = employees.filter(emp => emp.id !== id);
+                localStorage.setItem('employees', JSON.stringify(employees));
+                loadEmployees();
+                updateStats();
+            }
+        }
+
+        function editEmployee(id) {
+            alert('직원 편집 기능은 준비 중입니다.');
+        }
+
+        // 통계 업데이트
+        function updateStats() {
+            const employees = JSON.parse(localStorage.getItem('employees') || '[]');
+            document.getElementById('totalEmployees').textContent = employees.length;
+        }
+
+        // 홈페이지 데이터 로드
+        function loadHomepageData() {
+            const templateId = localStorage.getItem('currentTemplateId');
+            if (templateId) {
+                const savedData = localStorage.getItem(`template_${templateId}_settings`);
+                if (savedData) {
+                    const data = JSON.parse(savedData);
+                    
+                    if (data.basic) {
+                        document.getElementById('homepage_company_name').value = data.basic.companyName || '';
+                        document.getElementById('homepage_phone').value = data.basic.phone || '';
+                        document.getElementById('homepage_email').value = data.basic.email || '';
+                        document.getElementById('homepage_address').value = data.basic.address || '';
+                    }
+                    
+                    if (data.content) {
+                        document.getElementById('homepage_main_title').value = data.content.heroTitle || '';
+                        document.getElementById('homepage_main_description').value = data.content.heroDescription || '';
+                        document.getElementById('homepage_about').value = data.content.aboutContent || '';
+                        document.getElementById('homepage_slogan').value = data.content.companySlogan || '';
+                    }
+                }
+            }
+        }
+
+        // 홈페이지 설정 저장
+        function saveHomepageSettings() {
+            const templateId = localStorage.getItem('currentTemplateId');
+            if (!templateId) {
+                alert('템플릿이 선택되지 않았습니다.');
+                return;
+            }
+            
+            const basicData = {
+                companyName: document.getElementById('homepage_company_name').value,
+                phone: document.getElementById('homepage_phone').value,
+                email: document.getElementById('homepage_email').value,
+                address: document.getElementById('homepage_address').value
+            };
+            
+            const contentData = {
+                heroTitle: document.getElementById('homepage_main_title').value,
+                heroDescription: document.getElementById('homepage_main_description').value,
+                aboutContent: document.getElementById('homepage_about').value,
+                companySlogan: document.getElementById('homepage_slogan').value
+            };
+            
+            let savedData = JSON.parse(localStorage.getItem(`template_${templateId}_settings`) || '{}');
+            savedData.basic = basicData;
+            savedData.content = contentData;
+            localStorage.setItem(`template_${templateId}_settings`, JSON.stringify(savedData));
+            
+            alert('홈페이지 설정이 저장되었습니다.');
+        }
+
+        // 권한 설정 저장
+        function savePermissions() {
+            const permissions = {
+                worklog: document.getElementById('perm_worklog').checked,
+                clients: document.getElementById('perm_clients').checked,
+                card: document.getElementById('perm_card').checked,
+                leave: document.getElementById('perm_leave').checked,
+                project: document.getElementById('perm_project').checked,
+                inventory: document.getElementById('perm_inventory').checked,
+                reports: document.getElementById('perm_reports').checked,
+                quality: document.getElementById('perm_quality').checked
+            };
+            
+            localStorage.setItem('system_permissions', JSON.stringify(permissions));
+            alert('권한 설정이 저장되었습니다.');
+        }
+
+        // 홈페이지 미리보기
+        function previewHomepage() {
+            const templateId = localStorage.getItem('currentTemplateId');
+            if (templateId) {
+                window.open(`../2-templates/${templateId}/index.html`, '_blank');
+            } else {
+                alert('템플릿이 선택되지 않았습니다.');
+            }
+        }
+
+        // 템플릿 설정 페이지로 이동
+        function openTemplateSettings() {
+            const templateId = localStorage.getItem('currentTemplateId');
+            if (templateId) {
+                window.location.href = `template-settings.html?template=${templateId}`;
+            } else {
+                alert('템플릿이 선택되지 않았습니다.');
+            }
+        }
+
+        // 시스템 기능들
+        function backupData() {
+            const data = {
+                employees: JSON.parse(localStorage.getItem('employees') || '[]'),
+                permissions: JSON.parse(localStorage.getItem('system_permissions') || '{}'),
+                templates: {}
+            };
+            
+            // 템플릿 설정 데이터 포함
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('template_') && key.endsWith('_settings')) {
+                    data.templates[key] = JSON.parse(localStorage.getItem(key));
+                }
+            }
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `steelworks_backup_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function clearLogs() {
+            if (confirm('시스템 로그를 모두 삭제하시겠습니까?')) {
+                alert('로그가 삭제되었습니다.');
+            }
+        }
+    </script>
+</body>
+</html>
