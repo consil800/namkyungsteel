@@ -684,7 +684,27 @@ class DatabaseManager {
             let query = this.client.from('client_companies').select('*');
             
             if (userId) {
-                query = query.eq('user_id', userId);
+                // UUID 형식인지 확인 (OAuth 사용자)
+                const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+                
+                if (isUUID) {
+                    // OAuth 사용자의 경우 users 테이블에서 numeric ID 찾기
+                    const { data: userRecord, error: userError } = await this.client
+                        .from('users')
+                        .select('id')
+                        .eq('oauth_id', userId)
+                        .single();
+                    
+                    if (userError || !userRecord) {
+                        console.log('OAuth 사용자의 numeric ID를 찾을 수 없음, 빈 결과 반환');
+                        return [];
+                    }
+                    
+                    query = query.eq('user_id', userRecord.id);
+                } else {
+                    // 일반 사용자 (numeric ID)
+                    query = query.eq('user_id', userId);
+                }
             }
             
             const { data, error } = await query.order('company_name', { ascending: true });
@@ -779,7 +799,27 @@ class DatabaseManager {
             let query = this.client.from('client_companies').select('*');
             
             if (userId) {
-                query = query.eq('user_id', userId);
+                // UUID 형식인지 확인 (OAuth 사용자)
+                const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+                
+                if (isUUID) {
+                    // OAuth 사용자의 경우 users 테이블에서 numeric ID 찾기
+                    const { data: userRecord, error: userError } = await this.client
+                        .from('users')
+                        .select('id')
+                        .eq('oauth_id', userId)
+                        .single();
+                    
+                    if (userError || !userRecord) {
+                        console.log('OAuth 사용자의 numeric ID를 찾을 수 없음, 빈 결과 반환');
+                        return [];
+                    }
+                    
+                    query = query.eq('user_id', userRecord.id);
+                } else {
+                    // 일반 사용자 (numeric ID)
+                    query = query.eq('user_id', userId);
+                }
             }
             
             if (region) {

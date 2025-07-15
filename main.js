@@ -132,10 +132,8 @@ document.addEventListener('DOMContentLoaded', function() {
             displayCompanies(companies);
         } catch (error) {
             console.error('데이터 로드 중 오류:', error);
-            alert('데이터 로드 중 오류가 발생했습니다: ' + error.message);
-            if (companyList) {
-                companyList.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px; color: #f00;">데이터 로드 실패</td></tr>';
-            }
+            // 오류 메시지를 표시하지 않고 빈 리스트로 처리
+            displayCompanies([]);
         }
     }
 
