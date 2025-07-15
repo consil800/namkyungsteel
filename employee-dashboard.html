@@ -448,13 +448,6 @@
                 <p>오늘의 업무 내용을 기록하고 관리하세요. 프로젝트별 진행상황을 확인할 수 있습니다.</p>
             </div>
             
-            <div class="menu-card" id="clientListCard" onclick="openClientList()">
-                <div class="menu-icon">
-                    <i class="fas fa-users"></i>
-                </div>
-                <h3>거래처목록</h3>
-                <p>거래처 정보를 조회하고 관리하세요. 연락처와 거래 이력을 확인할 수 있습니다.</p>
-            </div>
             
             <div class="menu-card" onclick="openCorporateCard()">
                 <div class="menu-icon" style="position: relative;">
@@ -735,13 +728,6 @@
             }, 500);
         }
         
-        function openClientList() {
-            showLoading();
-            setTimeout(() => {
-                // steel-business-app의 거래처 목록으로 이동
-                window.location.href = 'company-list.html';
-            }, 500);
-        }
         
         function openCorporateCard() {
             showLoading();
