@@ -367,7 +367,7 @@
     </div>
 
     <script>
-        let supabaseClient;
+        let corporateCardSupabase;
         let selectedFile = null;
 
         // 페이지 로드 시 초기화
@@ -377,11 +377,11 @@
                 // Supabase 클라이언트 초기화
                 console.log('🔧 Supabase 라이브러리 확인:', typeof supabase);
                 if (typeof supabase !== 'undefined') {
-                    supabaseClient = supabase.createClient(
+                    corporateCardSupabase = supabase.createClient(
                         'https://zgyawfmjconubxaiamod.supabase.co',
                         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpneWF3Zm1qY29udWJ4YWlhbW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NjQzNzIsImV4cCI6MjA2NzM0MDM3Mn0.shjBE2OQeILwkLLi4E6Bq0-b6YPUs-WFwquexdUiM9A'
                     );
-                    console.log('✅ Supabase 클라이언트 초기화 완료');
+                    console.log('✅ 법인카드 전용 Supabase 클라이언트 초기화 완료');
                 } else {
                     console.error('❌ Supabase 라이브러리가 로드되지 않았습니다.');
                     throw new Error('Supabase 라이브러리가 로드되지 않았습니다.');
@@ -585,10 +585,10 @@
                 }
                 
                 // 세션에서 사용자 정보 가져오기
-                const session = await supabaseClient.auth.getSession();
+                const session = await corporateCardSupabase.auth.getSession();
                 if (session.data.session?.user) {
                     const user = session.data.session.user;
-                    const { data: userProfile } = await supabaseClient
+                    const { data: userProfile } = await corporateCardSupabase
                         .from('users')
                         .select('*')
                         .eq('email', user.email)
@@ -608,13 +608,13 @@
             try {
                 const fileName = `receipt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${file.name.split('.').pop()}`;
                 
-                const { data, error } = await supabaseClient.storage
+                const { data, error } = await corporateCardSupabase.storage
                     .from('receipts')
                     .upload(fileName, file);
 
                 if (error) throw error;
 
-                const { data: { publicUrl } } = supabaseClient.storage
+                const { data: { publicUrl } } = corporateCardSupabase.storage
                     .from('receipts')
                     .getPublicUrl(fileName);
 
@@ -627,7 +627,7 @@
 
         async function saveCorporateCardUsage(usageData) {
             try {
-                const { data, error } = await supabaseClient
+                const { data, error } = await corporateCardSupabase
                     .from('corporate_card_usage')
                     .insert([usageData])
                     .select()
