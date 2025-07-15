@@ -243,13 +243,34 @@ class DatabaseManager {
         }
 
         try {
-            const { data, error } = await this.client
-                .from('users')
-                .update(updateData)
-                .eq('id', userId)
-                .select();
+            let query = this.client.from('users').update(updateData);
+            
+            // userId가 UUID 형식인지 확인 (OAuth 사용자)
+            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+            
+            if (isUUID) {
+                // OAuth 사용자인 경우 oauth_id로 조회
+                console.log('OAuth 사용자 업데이트 (oauth_id):', userId);
+                query = query.eq('oauth_id', userId);
+            } else if (!isNaN(userId)) {
+                // 숫자 ID인 경우 일반 ID로 조회
+                console.log('일반 사용자 업데이트 (id):', userId);
+                query = query.eq('id', userId);
+            } else if (updateData.email) {
+                // ID가 올바르지 않지만 이메일이 있는 경우 이메일로 조회
+                console.log('이메일로 사용자 업데이트:', updateData.email);
+                query = query.eq('email', updateData.email);
+            } else {
+                throw new Error('유효한 사용자 식별자가 없습니다.');
+            }
+            
+            const { data, error } = await query.select();
             
             if (error) throw error;
+            if (!data || data.length === 0) {
+                throw new Error('사용자를 찾을 수 없습니다.');
+            }
+            
             return { success: true, data: data[0] };
         } catch (error) {
             console.error('사용자 업데이트 오류:', error);
@@ -534,13 +555,34 @@ class DatabaseManager {
         };
 
         try {
-            const { data, error } = await this.client
-                .from('users')
-                .update(updateData)
-                .eq('id', userId)
-                .select();
+            let query = this.client.from('users').update(updateData);
+            
+            // userId가 UUID 형식인지 확인 (OAuth 사용자)
+            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+            
+            if (isUUID) {
+                // OAuth 사용자인 경우 oauth_id로 조회
+                console.log('OAuth 사용자 업데이트 (oauth_id):', userId);
+                query = query.eq('oauth_id', userId);
+            } else if (!isNaN(userId)) {
+                // 숫자 ID인 경우 일반 ID로 조회
+                console.log('일반 사용자 업데이트 (id):', userId);
+                query = query.eq('id', userId);
+            } else if (userData.email) {
+                // ID가 올바르지 않지만 이메일이 있는 경우 이메일로 조회
+                console.log('이메일로 사용자 업데이트:', userData.email);
+                query = query.eq('email', userData.email);
+            } else {
+                throw new Error('유효한 사용자 식별자가 없습니다.');
+            }
+            
+            const { data, error } = await query.select();
 
             if (error) throw error;
+            if (!data || data.length === 0) {
+                throw new Error('사용자를 찾을 수 없습니다.');
+            }
+            
             return { success: true, data: data[0] };
         } catch (error) {
             console.error('사용자 정보 업데이트 오류:', error);
@@ -800,50 +842,6 @@ const db = new DatabaseManager();
 // 전역 함수로 내보내기
 window.db = db;
 
-// 테스트 사용자 생성 함수
-async function createTestUser() {
-    try {
-        // 먼저 회사가 존재하는지 확인하고, 없으면 생성
-        const companies = await db.getCompanies();
-        const existingCompany = companies.find(c => c.domain === 'consil800.com');
-        
-        if (!existingCompany) {
-            console.log('회사 데이터가 없습니다. 생성 중...');
-            const companyResult = await db.createCompany({
-                companyName: '콘실800',
-                domain: 'consil800.com',
-                website: 'https://consil800.github.io',
-                email: 'master@steelworks.com',
-                phone: '010-0000-0000',
-                address: '서울시',
-                subscription_plan: 'premium'
-            });
-            
-            if (!companyResult.success) {
-                console.error('회사 생성 실패:', companyResult);
-                return { success: false, error: '회사 생성에 실패했습니다.' };
-            }
-            console.log('✅ 회사 생성 완료:', companyResult.data);
-        }
-        
-        const testUser = {
-            email: 'master@steelworks.com',
-            password: 'steelmaster2025',
-            name: '마스터 관리자',
-            role: 'master',
-            department: '관리부',
-            position: '마스터',
-            company_domain: 'consil800.com'
-        };
-        
-        const result = await db.createUser(testUser);
-        console.log('테스트 사용자 생성 결과:', result);
-        return result;
-    } catch (error) {
-        console.error('테스트 사용자 생성 오류:', error);
-        return { success: false, error: error.message };
-    }
-}
 
 // 초기화 완료 후 이벤트 발생
 document.addEventListener('DOMContentLoaded', function() {

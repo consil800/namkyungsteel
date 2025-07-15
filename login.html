@@ -341,6 +341,35 @@
       background: #f1f3f4;
       box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3);
     }
+
+    .btn-kakao {
+      width: 100%;
+      padding: 12px 20px;
+      border: 1px solid #FEE500;
+      border-radius: 8px;
+      background: #FEE500;
+      color: #3C1E1E;
+      font-size: 14px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-bottom: 15px;
+    }
+
+    .btn-kakao:hover {
+      background: #FDD835;
+      border-color: #FDD835;
+      box-shadow: 0 1px 2px 0 rgba(60, 30, 30, 0.3), 0 1px 3px 1px rgba(60, 30, 30, 0.15);
+    }
+
+    .btn-kakao:active {
+      background: #F9A825;
+      box-shadow: 0 1px 2px 0 rgba(60, 30, 30, 0.3);
+    }
   </style>
 </head>
 
@@ -393,6 +422,16 @@
             </g>
           </svg>
           <span>Google로 로그인</span>
+        </button>
+
+        <!-- 카카오 로그인 버튼 -->
+        <button type="button" class="btn btn-kakao" id="kakaoLoginBtn" onclick="handleKakaoLogin()">
+          <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+            <g fill="none" fill-rule="evenodd">
+              <path d="M9 0C4.03 0 0 3.13 0 7c0 2.52 1.67 4.74 4.19 6.04L3.5 16.5c-.13.47.35.85.76.6l3.92-2.65c.28.02.55.05.82.05 4.97 0 9-3.13 9-7S13.97 0 9 0z" fill="#3C1E1E"/>
+            </g>
+          </svg>
+          <span>카카오로 로그인</span>
         </button>
 
         <div class="error-message" id="loginErrorMessage">
@@ -752,6 +791,41 @@
         // 버튼 복원
         googleBtn.disabled = false;
         googleBtn.innerHTML = originalText;
+      }
+    }
+
+    // 카카오 로그인 핸들러
+    async function handleKakaoLogin() {
+      console.log('🔐 카카오 로그인 버튼 클릭');
+      
+      const kakaoBtn = document.getElementById('kakaoLoginBtn');
+      const originalText = kakaoBtn.innerHTML;
+      
+      // 버튼 로딩 상태
+      kakaoBtn.disabled = true;
+      kakaoBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> <span>카카오 로그인 중...</span>';
+      
+      try {
+        if (typeof AuthManager === 'undefined') {
+          throw new Error('AuthManager가 로드되지 않았습니다.');
+        }
+        
+        const result = await AuthManager.kakaoLogin();
+        
+        if (result.success) {
+          console.log('✅ 카카오 로그인 시작:', result.message);
+          // OAuth 리다이렉트가 처리됨
+        } else {
+          throw new Error(result.message || '카카오 로그인에 실패했습니다.');
+        }
+        
+      } catch (error) {
+        console.error('❌ 카카오 로그인 오류:', error);
+        alert(error.message || '카카오 로그인 중 오류가 발생했습니다.');
+        
+        // 버튼 복원
+        kakaoBtn.disabled = false;
+        kakaoBtn.innerHTML = originalText;
       }
     }
 

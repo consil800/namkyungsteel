@@ -439,11 +439,11 @@
             <form id="adminLoginForm">
                 <div class="form-group">
                     <label class="form-label">관리자 이메일</label>
-                    <input type="email" class="form-input" id="adminEmail" placeholder="master@steelworks.com" required>
+                    <input type="email" class="form-input" id="adminEmail" placeholder="consil800@gmail.com" required>
                 </div>
                 <div class="form-group">
                     <label class="form-label">비밀번호</label>
-                    <input type="password" class="form-input" id="adminPassword" placeholder="admin123" required>
+                    <input type="password" class="form-input" id="adminPassword" placeholder="비밀번호 입력" required>
                 </div>
                 <div id="adminErrorMessage" class="error-message"></div>
                 <button type="submit" class="btn">
@@ -457,9 +457,6 @@
                     <i class="fas fa-info-circle"></i> 
                     플랫폼 전체를 관리할 수 있는 마스터 관리자 전용 페이지입니다.
                 </p>
-                <button onclick="quickAdminLogin()" class="btn" style="background: rgba(102, 126, 234, 0.3); border: 1px solid rgba(102, 126, 234, 0.5); font-size: 0.9rem;">
-                    <i class="fas fa-bolt"></i> 빠른 로그인 (데모)
-                </button>
             </div>
         </div>
     </div>
@@ -617,32 +614,6 @@
 
     <script src="../../shared-assets/js/auth.js"></script>
     <script>
-        // 빠른 관리자 로그인 (데모용)
-        function quickAdminLogin() {
-            console.log('빠른 관리자 로그인 시도');
-            
-            // AuthManager 존재 확인
-            if (typeof AuthManager === 'undefined') {
-                console.error('AuthManager가 로드되지 않았습니다.');
-                showNotification('AuthManager가 로드되지 않았습니다. 페이지를 새로고침해주세요.', 'error');
-                return;
-            }
-            
-            try {
-                const result = AuthManager.loginDemo('master');
-                console.log('관리자 로그인 결과:', result);
-                
-                if (result.success && result.user.role === 'master') {
-                    showDashboard();
-                    showNotification('플랫폼 관리자 로그인 성공!', 'success');
-                } else {
-                    showNotification(result.message || '관리자 인증에 실패했습니다.', 'error');
-                }
-            } catch (error) {
-                console.error('빠른 로그인 처리 중 오류:', error);
-                showNotification('로그인 처리 중 오류가 발생했습니다.', 'error');
-            }
-        }
 
         // 관리자 로그인 폼 처리
         document.getElementById('adminLoginForm').addEventListener('submit', function(e) {

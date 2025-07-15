@@ -3,7 +3,7 @@ const AuthManager = {
     // 사용자 역할 정의
     ROLES: {
         MASTER: 'master',
-        COMPANY_ADMIN: 'company_admin',
+        COMPANY_CEO: 'company_CEO',
         COMPANY_MANAGER: 'company_manager',
         EMPLOYEE: 'employee'
     },
@@ -15,11 +15,16 @@ const AuthManager = {
         MANAGE_ALL_USERS: 'manage_all_users',
         SYSTEM_SETTINGS: 'system_settings',
         
-        // 회사 관리자 권한
+        // 회사 관련 권한
         MANAGE_COMPANY_HOMEPAGE: 'manage_company_homepage',
         MANAGE_COMPANY_EMPLOYEES: 'manage_company_employees',
         MANAGE_EMPLOYEE_SYSTEMS: 'manage_employee_systems',
+        MANAGE_COMPANY_CEO: 'manage_company_CEO', // CEO 관리 권한 (CEO만 가능)
         VIEW_COMPANY_ANALYTICS: 'view_company_analytics',
+        MANAGE_COMPANY_DATA: 'manage_company_data',
+        MANAGE_EMPLOYEE_ROLES: 'manage_employee_roles',
+        MANAGE_COMPANY_SETTINGS: 'manage_company_settings',
+        MANAGE_COMPANY_BILLING: 'manage_company_billing',
         
         // 직원 권한
         ACCESS_EMPLOYEE_DASHBOARD: 'access_employee_dashboard',
@@ -31,39 +36,56 @@ const AuthManager = {
     // 역할별 권한 매핑
     ROLE_PERMISSIONS: {
         master: [
+            // 마스터 - 모든 권한 (시스템 전체 관리)
             'manage_all_companies',
             'manage_all_users',
             'system_settings',
             'manage_company_homepage',
             'manage_company_employees',
             'manage_employee_systems',
+            'manage_company_CEO',
             'view_company_analytics',
+            'manage_company_data',
+            'manage_employee_roles',
+            'manage_company_settings',
+            'manage_company_billing',
             'access_employee_dashboard',
             'create_work_log',
             'access_sales_system',
             'view_team_data'
         ],
-        company_admin: [
+        company_CEO: [
+            // 회사 CEO - 회사내 모든 권한 (회사당 1명)
             'manage_company_homepage',
             'manage_company_employees',
             'manage_employee_systems',
+            'manage_company_CEO', // CEO 관리 권한
             'view_company_analytics',
+            'manage_company_data',
+            'manage_employee_roles',
+            'manage_company_settings',
+            'manage_company_billing',
             'access_employee_dashboard',
             'create_work_log',
             'access_sales_system',
             'view_team_data'
         ],
         company_manager: [
+            // 회사 관리자 - CEO 관리 권한 제외한 모든 권한
             'manage_company_homepage',
             'manage_company_employees',
             'manage_employee_systems',
             'view_company_analytics',
+            'manage_company_data',
+            'manage_employee_roles',
+            'manage_company_settings',
             'access_employee_dashboard',
             'create_work_log',
             'access_sales_system',
             'view_team_data'
         ],
         employee: [
+            // 일반 직원 - 회사에서 정해준 기본 권한만
             'access_employee_dashboard',
             'create_work_log',
             'access_sales_system',
@@ -109,6 +131,7 @@ const AuthManager = {
                 
                 const userWithPermissions = {
                     ...user,
+                    is_approved: user.is_approved !== false, // 기본적으로 승인된 것으로 간주 (기존 사용자 호환성)
                     permissions: this.ROLE_PERMISSIONS[user.role] || this.ROLE_PERMISSIONS['employee']
                 };
                 
@@ -163,7 +186,8 @@ const AuthManager = {
                 role: enhancedUserData.role || 'employee',
                 department: enhancedUserData.department || '',
                 position: enhancedUserData.position || '',
-                company_domain: enhancedUserData.company_domain
+                company_domain: enhancedUserData.company_domain,
+                is_approved: enhancedUserData.role === 'employee' ? false : true // 직원은 기본적으로 승인 대기, 관리자는 자동 승인
             });
             
             if (result.success) {
@@ -210,6 +234,39 @@ const AuthManager = {
         }
     },
 
+    // 카카오 소셜 로그인
+    async kakaoLogin() {
+        console.log('🔐 Kakao OAuth 로그인 시도');
+        
+        if (!window.db || !window.db.client) {
+            return { success: false, message: '데이터베이스 연결이 필요합니다.' };
+        }
+        
+        try {
+            // Supabase Kakao OAuth 로그인 (기본 scope만 사용)
+            const { data, error } = await window.db.client.auth.signInWithOAuth({
+                provider: 'kakao',
+                options: {
+                    redirectTo: 'https://namkyungsteel.com'
+                    // scopes 옵션 완전 제거 - Supabase 기본 설정 사용
+                }
+            });
+            
+            if (error) {
+                console.error('❌ Kakao 로그인 오류:', error);
+                return { success: false, message: error.message };
+            }
+            
+            console.log('✅ Kakao OAuth 시작됨:', data);
+            // OAuth는 리다이렉트로 처리되므로 여기서는 성공 반환
+            return { success: true, message: 'Kakao 로그인 페이지로 이동합니다...' };
+            
+        } catch (error) {
+            console.error('❌ Kakao 로그인 예외:', error);
+            return { success: false, message: 'Kakao 로그인 중 오류가 발생했습니다.' };
+        }
+    },
+
     // OAuth 콜백 처리
     async handleOAuthCallback() {
         console.log('🔐 OAuth 콜백 처리 시작');
@@ -233,24 +290,191 @@ const AuthManager = {
             
             console.log('✅ OAuth 세션 확인됨:', session.user);
             
-            // 사용자 정보로 로컬 사용자 생성/조회
-            const user = {
-                id: session.user.id,
-                email: session.user.email,
-                name: session.user.user_metadata?.name || session.user.email,
-                role: 'employee', // 기본 역할
-                profileImage: session.user.user_metadata?.avatar_url,
-                provider: 'google',
-                permissions: this.ROLE_PERMISSIONS['employee']
-            };
-            
-            // 로컬 스토리지에 저장
-            localStorage.setItem('currentUser', JSON.stringify(user));
-            localStorage.setItem('userRole', user.role);
-            localStorage.setItem('userName', user.name);
-            
-            console.log('✅ OAuth 로그인 완료:', user);
-            return { success: true, user: user };
+            // public.users 테이블에서 사용자 확인/생성
+            try {
+                const provider = session.user.app_metadata?.provider || 'unknown';
+                const userEmail = session.user.email;
+                const userId = session.user.id;
+                
+                // 먼저 기존 사용자 확인
+                let existingUser, fetchError;
+                
+                if (userEmail) {
+                    // 이메일이 있는 경우 이메일로 조회
+                    const result = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .eq('email', userEmail)
+                        .single();
+                    existingUser = result.data;
+                    fetchError = result.error;
+                } else {
+                    // 이메일이 없는 경우 (카카오) OAuth ID로 조회
+                    const result = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .eq('oauth_id', userId)
+                        .single();
+                    existingUser = result.data;
+                    fetchError = result.error;
+                }
+                
+                let dbUser;
+                
+                if (fetchError && fetchError.code === 'PGRST116') {
+                    // 사용자가 없으므로 생성
+                    console.log('📝 public.users에 새 사용자 생성');
+                    const userName = session.user.user_metadata?.full_name || 
+                                   session.user.user_metadata?.name || 
+                                   session.user.user_metadata?.nickname ||
+                                   userEmail || 
+                                   `kakao_user_${userId.slice(-8)}`;
+                    
+                    const newUser = {
+                        username: userEmail || `kakao_${userId.slice(-8)}`,
+                        email: userEmail || null,
+                        oauth_id: userId,
+                        oauth_provider: provider,
+                        name: userName,
+                        role: 'employee',
+                        company_domain: 'namkyungsteel.com',
+                        company_name: '남경스틸(주)',
+                        profile_image: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture,
+                        password: 'oauth_user', // OAuth 사용자 표시
+                        is_active: true,
+                        is_approved: false, // 새 사용자는 기본적으로 승인 대기 상태
+                        created_at: new Date().toISOString()
+                    };
+                    
+                    const { data: createdUser, error: createError } = await window.db.client
+                        .from('users')
+                        .insert([newUser])
+                        .select()
+                        .single();
+                    
+                    if (createError) {
+                        console.error('❌ 사용자 생성 오류:', createError);
+                        // 트리거가 이미 생성했을 수 있으므로 다시 조회
+                        const { data: retriedUser } = await window.db.client
+                            .from('users')
+                            .select('*')
+                            .eq('email', session.user.email)
+                            .single();
+                        dbUser = retriedUser;
+                    } else {
+                        dbUser = createdUser;
+                        
+                        // 새 사용자 가입 알림 생성
+                        const notification = {
+                            id: Date.now().toString(),
+                            type: 'new_user_signup',
+                            title: '새로운 사용자 가입',
+                            message: `${userName}님이 ${finalProvider === 'kakao' ? '카카오' : 'Google'} 로그인으로 가입했습니다.`,
+                            userInfo: {
+                                name: userName,
+                                email: userEmail || '이메일 미제공',
+                                provider: finalProvider === 'kakao' ? '카카오' : 'Google',
+                                signupTime: new Date().toISOString()
+                            },
+                            isRead: false,
+                            createdAt: new Date().toISOString()
+                        };
+                        
+                        // 관리자용 알림 저장
+                        const notifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
+                        notifications.unshift(notification);
+                        
+                        // 최대 50개까지만 보관
+                        if (notifications.length > 50) {
+                            notifications.splice(50);
+                        }
+                        
+                        localStorage.setItem('admin_notifications', JSON.stringify(notifications));
+                        console.log('📢 새 사용자 가입 알림 생성:', notification);
+                    }
+                } else {
+                    // 기존 사용자 업데이트
+                    console.log('✅ 기존 사용자 발견, 정보 업데이트');
+                    const updateData = {
+                        last_login_at: new Date().toISOString(),
+                        profile_image: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture,
+                        updated_at: new Date().toISOString()
+                    };
+                    
+                    let updatedUser;
+                    if (userEmail) {
+                        const result = await window.db.client
+                            .from('users')
+                            .update(updateData)
+                            .eq('email', userEmail)
+                            .select()
+                            .single();
+                        updatedUser = result.data;
+                    } else {
+                        const result = await window.db.client
+                            .from('users')
+                            .update(updateData)
+                            .eq('oauth_id', userId)
+                            .select()
+                            .single();
+                        updatedUser = result.data;
+                    }
+                    
+                    dbUser = updatedUser || existingUser;
+                }
+                
+                // 사용자 정보로 로컬 사용자 객체 생성
+                const finalProvider = session.user.app_metadata?.provider || 'unknown';
+                const finalUserName = dbUser?.name || 
+                                    session.user.user_metadata?.full_name || 
+                                    session.user.user_metadata?.name || 
+                                    session.user.user_metadata?.nickname ||
+                                    userEmail || 
+                                    `kakao_user_${userId.slice(-8)}`;
+                
+                const user = {
+                    id: dbUser?.id || session.user.id,
+                    email: userEmail || null,
+                    oauth_id: userId,
+                    name: finalUserName,
+                    role: dbUser?.role || 'employee',
+                    department: dbUser?.department || '',
+                    position: dbUser?.position || '',
+                    company_domain: dbUser?.company_domain || 'namkyungsteel.com',
+                    company_name: dbUser?.company_name || '남경스틸(주)',
+                    profileImage: dbUser?.profile_image || session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture,
+                    provider: finalProvider,
+                    is_approved: dbUser?.is_approved !== false, // 데이터베이스에서 is_approved가 false가 아니면 승인된 것으로 간주
+                    permissions: this.ROLE_PERMISSIONS[dbUser?.role || 'employee']
+                };
+                
+                // 로컬 스토리지에 저장
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                localStorage.setItem('userRole', user.role);
+                localStorage.setItem('userName', user.name);
+                
+                console.log('✅ OAuth 로그인 완료:', user);
+                return { success: true, user: user };
+                
+            } catch (dbError) {
+                console.error('❌ 데이터베이스 작업 오류:', dbError);
+                // DB 오류가 있어도 기본 정보로 로그인 허용
+                const user = {
+                    id: session.user.id,
+                    email: session.user.email,
+                    name: session.user.user_metadata?.name || session.user.email,
+                    role: 'employee',
+                    profileImage: session.user.user_metadata?.avatar_url,
+                    provider: 'google',
+                    permissions: this.ROLE_PERMISSIONS['employee']
+                };
+                
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                localStorage.setItem('userRole', user.role);
+                localStorage.setItem('userName', user.name);
+                
+                return { success: true, user: user };
+            }
             
         } catch (error) {
             console.error('❌ OAuth 콜백 처리 오류:', error);
@@ -300,9 +524,9 @@ const AuthManager = {
 
         const pagePermissions = {
             'master-dashboard': ['master'],
-            'company-admin': ['master', 'company_admin', 'company_manager'],
-            'employee-workspace': ['master', 'company_admin', 'company_manager', 'employee'],
-            'sales-system': ['master', 'company_admin', 'company_manager', 'employee']
+            'company-admin': ['master', 'company_CEO', 'company_manager'],
+            'employee-workspace': ['master', 'company_CEO', 'company_manager', 'employee'],
+            'sales-system': ['master', 'company_CEO', 'company_manager', 'employee']
         };
 
         const allowedRoles = pagePermissions[page] || [];
@@ -324,7 +548,7 @@ const AuthManager = {
                 console.log('마스터 대시보드로 이동');
                 window.location.href = '../../2-member-management/admin/master-dashboard.html';
                 break;
-            case 'company_admin':
+            case 'company_CEO':
             case 'company_manager':
                 console.log('회사 관리자 대시보드로 이동');
                 window.location.href = '../../2-member-management/employee/employee-dashboard.html';
@@ -340,32 +564,6 @@ const AuthManager = {
         }
     },
 
-    // 데모 로그인 함수들
-    loginDemo(type) {
-        console.log('loginDemo 호출됨, type:', type);
-        let result;
-        switch (type) {
-            case 'master':
-                result = this.login('master@steelworks.com', 'demo123');
-                break;
-            case 'admin':
-                result = this.login('ceo@seokyoung.com', 'demo123');
-                break;
-            case 'customer':
-                result = this.login('manager1@seokyoung.com', 'demo123');
-                break;
-            case 'manager':
-                result = this.login('manager1@seokyoung.com', 'demo123');
-                break;
-            case 'employee':
-                result = this.login('employee1@seokyoung.com', 'demo123');
-                break;
-            default:
-                result = { success: false, message: '알 수 없는 로그인 타입입니다.' };
-        }
-        console.log('loginDemo 결과:', result);
-        return result;
-    }
 };
 
 // 전역 함수로 내보내기

@@ -25,6 +25,192 @@
 
   <!-- Supabase JS CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <style>
+    /* 인증 모달 스타일 */
+    .auth-form .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .auth-form label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #333;
+    }
+    
+    .auth-form input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: border-color 0.3s;
+      box-sizing: border-box;
+    }
+    
+    .auth-form input:focus {
+      outline: none;
+      border-color: #0066cc;
+      box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+    }
+    
+    .btn-primary {
+      width: 100%;
+      padding: 12px;
+      background: #0066cc;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      margin: 20px 0 15px 0;
+    }
+    
+    .btn-primary:hover {
+      background: #0052a3;
+    }
+    
+    .btn-google {
+      width: 100%;
+      padding: 12px 20px;
+      border: 1px solid #dadce0;
+      border-radius: 8px;
+      background: white;
+      color: #3c4043;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin: 10px 0 20px 0;
+      font-size: 16px;
+      transition: all 0.3s;
+    }
+    
+    .btn-google:hover {
+      background: #f8f9fa;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .btn-kakao {
+      width: 100%;
+      padding: 12px 20px;
+      border: 1px solid #FEE500;
+      border-radius: 8px;
+      background: #FEE500;
+      color: #3C1E1E;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin: 10px 0 20px 0;
+      font-size: 16px;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+
+    .btn-kakao:hover {
+      background: #FDD835;
+      border-color: #FDD835;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .divider {
+      text-align: center;
+      margin: 25px 0;
+      position: relative;
+    }
+    
+    .divider::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: #ddd;
+    }
+    
+    .divider span {
+      background: white;
+      padding: 0 15px;
+      color: #666;
+      font-size: 14px;
+    }
+    
+    .auth-switch {
+      text-align: center;
+      margin-top: 20px;
+      color: #666;
+    }
+    
+    .auth-switch a {
+      color: #0066cc;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    
+    .auth-switch a:hover {
+      text-decoration: underline;
+    }
+    
+    .status-message {
+      margin-top: 15px;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 500;
+    }
+    
+    .status-success {
+      background: #e8f5e8;
+      color: #2e7d32;
+      border: 1px solid #4caf50;
+    }
+    
+    .status-error {
+      background: #ffebee;
+      color: #c62828;
+      border: 1px solid #f44336;
+    }
+    
+    .status-info {
+      background: #e3f2fd;
+      color: #1565c0;
+      border: 1px solid #2196f3;
+    }
+    
+    /* 로그인 후 사용자 프로필 영역 */
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      padding: 8px 12px;
+      border-radius: 8px;
+      transition: background-color 0.3s;
+    }
+    
+    .user-profile:hover {
+      background: rgba(0, 102, 204, 0.1);
+    }
+    
+    .user-profile img {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    
+    .user-profile .profile-name {
+      font-weight: 500;
+      color: #333;
+    }
+  </style>
 
   <!-- Main CSS File -->
   <link href="assets/css/main.css" rel="stylesheet">
@@ -439,7 +625,7 @@
       </nav>
 
       <!-- 로그인 버튼 -->
-      <a class="login-btn" href="#" onclick="showTemplateLoginModal(); return false;" id="mainLoginBtn">
+      <a class="login-btn" href="#" onclick="showLoginModal(); return false;" id="mainLoginBtn">
         <i class="bi bi-person-circle"></i> <span id="loginBtnText">로그인</span>
       </a>
       
@@ -542,6 +728,105 @@
     </div>
   </footer>
 
+  <!-- 로그인/회원가입 모달 -->
+  <div id="authModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="authModalTitle">로그인</h2>
+        <button class="close-btn" onclick="closeAuthModal()">&times;</button>
+      </div>
+      
+      <div class="modal-body">
+        <!-- 로그인 폼 -->
+        <div id="loginForm" class="auth-form">
+          <div class="form-group">
+            <label>이메일</label>
+            <input type="email" id="loginEmail" placeholder="이메일을 입력하세요" required>
+          </div>
+          
+          <div class="form-group">
+            <label>비밀번호</label>
+            <input type="password" id="loginPassword" placeholder="비밀번호를 입력하세요" required>
+          </div>
+          
+          <button type="button" onclick="handleEmailLogin()" class="btn-primary">로그인</button>
+          
+          <!-- 구분선 -->
+          <div class="divider">
+            <span>또는</span>
+          </div>
+          
+          <!-- Google 로그인 -->
+          <button type="button" onclick="handleGoogleLogin()" class="btn-google">
+            <svg width="18" height="18" viewBox="0 0 18 18">
+              <g fill="none" fill-rule="evenodd">
+                <path d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+                <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
+                <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+                <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+              </g>
+            </svg>
+            Google로 로그인
+          </button>
+
+          <!-- 카카오 로그인 -->
+          <button type="button" onclick="handleKakaoLogin()" class="btn-kakao">
+            <svg width="18" height="18" viewBox="0 0 18 18">
+              <g fill="none" fill-rule="evenodd">
+                <path d="M9 0C4.03 0 0 3.13 0 7c0 2.52 1.67 4.74 4.19 6.04L3.5 16.5c-.13.47.35.85.76.6l3.92-2.65c.28.02.55.05.82.05 4.97 0 9-3.13 9-7S13.97 0 9 0z" fill="#3C1E1E"/>
+              </g>
+            </svg>
+            카카오로 로그인
+          </button>
+          
+          <div class="auth-switch">
+            계정이 없으신가요? <a href="#" onclick="showRegisterForm()">회원가입</a>
+          </div>
+        </div>
+        
+        <!-- 회원가입 폼 -->
+        <div id="registerForm" class="auth-form" style="display: none;">
+          <div class="form-group">
+            <label>이름</label>
+            <input type="text" id="registerName" placeholder="이름을 입력하세요" required>
+          </div>
+          
+          <div class="form-group">
+            <label>이메일</label>
+            <input type="email" id="registerEmail" placeholder="이메일을 입력하세요" required>
+          </div>
+          
+          <div class="form-group">
+            <label>비밀번호</label>
+            <input type="password" id="registerPassword" placeholder="비밀번호를 입력하세요 (최소 6자)" required minlength="6">
+          </div>
+          
+          <div class="form-group">
+            <label>비밀번호 확인</label>
+            <input type="password" id="confirmPassword" placeholder="비밀번호를 다시 입력하세요" required>
+          </div>
+          
+          <div class="form-group">
+            <label>부서 (선택사항)</label>
+            <input type="text" id="registerDepartment" placeholder="부서를 입력하세요">
+          </div>
+          
+          <div class="form-group">
+            <label>직책 (선택사항)</label>
+            <input type="text" id="registerPosition" placeholder="직책을 입력하세요">
+          </div>
+          
+          <button type="button" onclick="handleRegister()" class="btn-primary">회원가입</button>
+          
+          <div class="auth-switch">
+            이미 계정이 있으신가요? <a href="#" onclick="showLoginForm()">로그인</a>
+          </div>
+        </div>
+        
+        <div id="authStatus" class="status-message" style="display: none;"></div>
+      </div>
+    </div>
+  </div>
 
   <!-- Scroll Top -->
   <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
@@ -551,6 +836,603 @@
   <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@srexi/purecounterjs/dist/purecounter_vanilla.js"></script>
   <script src="https://unpkg.com/swiper@8/swiper-bundle.min.js"></script>
+
+  <!-- Supabase 및 로그인 기능 -->
+  <script>
+    // Supabase 설정
+    const SUPABASE_URL = 'https://zgyawfmjconubxaiamod.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpneWF3Zm1qY29udWJ4YWlhbW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NjQzNzIsImV4cCI6MjA2NzM0MDM3Mn0.shjBE2OQeILwkLLi4E6Bq0-b6YPUs-WFwquexdUiM9A';
+    
+    // Supabase 클라이언트 초기화
+    let supabaseClient = null;
+    
+    try {
+      supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: {
+          persistSession: true,
+          detectSessionInUrl: true,
+          autoRefreshToken: true
+        }
+      });
+      console.log('✅ Supabase 클라이언트 초기화 완료');
+    } catch (error) {
+      console.error('❌ Supabase 초기화 오류:', error);
+    }
+    
+    // 상태 표시 함수
+    function showStatus(message, type = 'info') {
+      const status = document.getElementById('authStatus');
+      status.style.display = 'block';
+      status.className = `status-message status-${type}`;
+      status.textContent = message;
+      
+      console.log(`${type.toUpperCase()}: ${message}`);
+    }
+    
+    // 인증 모달 열기 (로그인 폼)
+    function showLoginModal() {
+      console.log('🔐 로그인 모달 열기');
+      document.getElementById('authModal').style.display = 'flex';
+      showLoginForm();
+    }
+    
+    // 인증 모달 닫기
+    function closeAuthModal() {
+      console.log('❌ 인증 모달 닫기');
+      document.getElementById('authModal').style.display = 'none';
+      // 폼 초기화
+      clearAuthForms();
+    }
+    
+    // 로그인 폼 표시
+    function showLoginForm() {
+      document.getElementById('loginForm').style.display = 'block';
+      document.getElementById('registerForm').style.display = 'none';
+      document.getElementById('authModalTitle').textContent = '로그인';
+      document.getElementById('authStatus').style.display = 'none';
+    }
+    
+    // 회원가입 폼 표시
+    function showRegisterForm() {
+      document.getElementById('loginForm').style.display = 'none';
+      document.getElementById('registerForm').style.display = 'block';
+      document.getElementById('authModalTitle').textContent = '회원가입';
+      document.getElementById('authStatus').style.display = 'none';
+    }
+    
+    // 폼 초기화
+    function clearAuthForms() {
+      // 로그인 폼 초기화
+      document.getElementById('loginEmail').value = '';
+      document.getElementById('loginPassword').value = '';
+      
+      // 회원가입 폼 초기화
+      document.getElementById('registerName').value = '';
+      document.getElementById('registerEmail').value = '';
+      document.getElementById('registerPassword').value = '';
+      document.getElementById('confirmPassword').value = '';
+      document.getElementById('registerDepartment').value = '';
+      document.getElementById('registerPosition').value = '';
+      
+      // 상태 메시지 숨기기
+      document.getElementById('authStatus').style.display = 'none';
+    }
+    
+    // 이메일 로그인
+    async function handleEmailLogin() {
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+      
+      if (!email || !password) {
+        showStatus('이메일과 비밀번호를 입력하세요.', 'error');
+        return;
+      }
+      
+      showStatus('로그인 중...', 'info');
+      
+      try {
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
+          email: email,
+          password: password
+        });
+        
+        if (error) {
+          showStatus('로그인 실패: ' + error.message, 'error');
+        } else {
+          showStatus('로그인 성공!', 'success');
+          console.log('사용자 정보:', data.user);
+          
+          // 사용자 정보 저장 및 UI 업데이트
+          const user = {
+            id: data.user.id,
+            email: data.user.email,
+            name: data.user.user_metadata?.name || data.user.email,
+            profileImage: data.user.user_metadata?.avatar_url,
+            provider: 'email'
+          };
+          
+          saveUserAndUpdateUI(user);
+          closeAuthModal();
+          
+          // employee-dashboard로 이동
+          setTimeout(() => {
+            window.location.href = 'employee-dashboard.html';
+          }, 1000);
+        }
+      } catch (error) {
+        showStatus('로그인 오류: ' + error.message, 'error');
+      }
+    }
+    
+    // 회원가입
+    async function handleRegister() {
+      const name = document.getElementById('registerName').value;
+      const email = document.getElementById('registerEmail').value;
+      const password = document.getElementById('registerPassword').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      const department = document.getElementById('registerDepartment').value;
+      const position = document.getElementById('registerPosition').value;
+      
+      // 유효성 검사
+      if (!name || !email || !password) {
+        showStatus('이름, 이메일, 비밀번호는 필수 입력 항목입니다.', 'error');
+        return;
+      }
+      
+      if (password !== confirmPassword) {
+        showStatus('비밀번호가 일치하지 않습니다.', 'error');
+        return;
+      }
+      
+      if (password.length < 6) {
+        showStatus('비밀번호는 최소 6자 이상이어야 합니다.', 'error');
+        return;
+      }
+      
+      showStatus('회원가입 중...', 'info');
+      
+      try {
+        const { data, error } = await supabaseClient.auth.signUp({
+          email: email,
+          password: password,
+          options: {
+            data: {
+              name: name,
+              department: department,
+              position: position,
+              company_domain: 'namkyungsteel.com',
+              company_name: '남경스틸(주)'
+            }
+          }
+        });
+        
+        if (error) {
+          showStatus('회원가입 실패: ' + error.message, 'error');
+        } else {
+          console.log('Supabase Auth 회원가입 성공:', data);
+          
+          // 커스텀 users 테이블에도 사용자 정보 저장
+          try {
+            if (data.user) {
+              const { data: insertData, error: insertError } = await supabaseClient
+                .from('users')
+                .insert([
+                  {
+                    id: data.user.id,
+                    email: email,
+                    name: name,
+                    department: department || '',
+                    position: position || '',
+                    company_domain: 'namkyungsteel.com',
+                    company_name: '남경스틸(주)',
+                    role: 'employee',
+                    created_at: new Date().toISOString()
+                  }
+                ]);
+              
+              if (insertError) {
+                console.error('❌ users 테이블 저장 오류:', insertError);
+                showStatus('회원가입은 성공했지만 사용자 정보 저장에 실패했습니다.', 'error');
+              } else {
+                console.log('✅ users 테이블에 사용자 정보 저장 완료:', insertData);
+                showStatus('회원가입 성공! 이메일을 확인해주세요.', 'success');
+              }
+            }
+          } catch (tableError) {
+            console.error('❌ users 테이블 저장 예외:', tableError);
+          }
+          
+          // 자동 로그인이 되었다면 UI 업데이트
+          if (data.user && data.session) {
+            const user = {
+              id: data.user.id,
+              email: data.user.email,
+              name: name,
+              department: department,
+              position: position,
+              provider: 'email'
+            };
+            
+            saveUserAndUpdateUI(user);
+            closeAuthModal();
+            
+            // employee-dashboard로 이동
+            setTimeout(() => {
+              window.location.href = 'employee-dashboard.html';
+            }, 1000);
+          }
+        }
+      } catch (error) {
+        showStatus('회원가입 오류: ' + error.message, 'error');
+      }
+    }
+    
+    // 사용자 정보 저장 및 UI 업데이트
+    function saveUserAndUpdateUI(user) {
+      // localStorage에 사용자 정보 저장
+      localStorage.setItem('currentUser', JSON.stringify(user));
+      
+      // UI 업데이트
+      updateUIForLoggedInUser(user);
+      
+      console.log('✅ 사용자 정보 저장 및 UI 업데이트 완료:', user);
+    }
+    
+    // 로그인된 사용자용 UI 업데이트
+    function updateUIForLoggedInUser(user) {
+      const loginBtn = document.getElementById('mainLoginBtn');
+      const userProfile = document.getElementById('userProfile');
+      
+      if (loginBtn && userProfile) {
+        // 로그인 버튼 숨기기
+        loginBtn.style.display = 'none';
+        
+        // 사용자 프로필 표시
+        userProfile.style.display = 'flex';
+        
+        // 프로필 이미지 설정
+        const profileImage = document.getElementById('profileImage');
+        if (user.profileImage) {
+          profileImage.src = user.profileImage;
+        }
+        
+        // 사용자 이름 설정
+        const profileName = document.getElementById('profileName');
+        if (profileName) {
+          profileName.textContent = user.name;
+        }
+      }
+    }
+    
+    // 로그아웃된 상태용 UI 업데이트
+    function updateUIForLoggedOutUser() {
+      const loginBtn = document.getElementById('mainLoginBtn');
+      const userProfile = document.getElementById('userProfile');
+      
+      if (loginBtn && userProfile) {
+        // 로그인 버튼 표시
+        loginBtn.style.display = 'flex';
+        
+        // 사용자 프로필 숨기기
+        userProfile.style.display = 'none';
+      }
+    }
+    
+    // 로그아웃
+    function logout() {
+      localStorage.removeItem('currentUser');
+      updateUIForLoggedOutUser();
+      console.log('🚪 로그아웃 완료');
+      
+      // 프로필 모달 닫기
+      hideProfileModal();
+      
+      // 메인 페이지로 리다이렉트
+      setTimeout(() => {
+        window.location.href = '/index.html';
+      }, 100);
+    }
+    
+    // Google 로그인
+    async function handleGoogleLogin() {
+      console.log('🔐 Google 로그인 시작');
+      showStatus('Google 로그인 중...', 'info');
+      
+      if (!supabaseClient) {
+        showStatus('데이터베이스 연결이 필요합니다.', 'error');
+        return;
+      }
+      
+      try {
+        const { data, error } = await supabaseClient.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: 'https://namkyungsteel.com'
+          }
+        });
+        
+        if (error) {
+          console.error('❌ Google 로그인 오류:', error);
+          showStatus('Google 로그인 오류: ' + error.message, 'error');
+        } else {
+          console.log('✅ Google OAuth 시작됨:', data);
+          showStatus('Google 로그인 페이지로 이동합니다...', 'success');
+        }
+      } catch (error) {
+        console.error('❌ Google 로그인 예외:', error);
+        showStatus('Google 로그인 중 오류가 발생했습니다: ' + error.message, 'error');
+      }
+    }
+
+    // 카카오 로그인
+    async function handleKakaoLogin() {
+      console.log('🔐 Kakao 로그인 시작');
+      showStatus('카카오 로그인 중...', 'info');
+      
+      if (!supabaseClient) {
+        showStatus('데이터베이스 연결이 필요합니다.', 'error');
+        return;
+      }
+      
+      try {
+        const { data, error } = await supabaseClient.auth.signInWithOAuth({
+          provider: 'kakao',
+          options: {
+            redirectTo: 'https://namkyungsteel.com',
+            scopes: 'profile_nickname profile_image' // 이메일 제외
+          }
+        });
+        
+        if (error) {
+          console.error('❌ Kakao 로그인 오류:', error);
+          showStatus('카카오 로그인 오류: ' + error.message, 'error');
+        } else {
+          console.log('✅ Kakao OAuth 시작됨:', data);
+          showStatus('카카오 로그인 페이지로 이동합니다...', 'success');
+        }
+      } catch (error) {
+        console.error('❌ Kakao 로그인 예외:', error);
+        showStatus('카카오 로그인 중 오류가 발생했습니다: ' + error.message, 'error');
+      }
+    }
+    
+    // OAuth 콜백 처리
+    async function handleOAuthCallback() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      
+      if (urlParams.get('code') || hashParams.get('access_token') || window.location.hash.includes('access_token')) {
+        console.log('🔐 OAuth 콜백 감지됨');
+        
+        try {
+          const { data: { session }, error } = await supabaseClient.auth.getSession();
+          
+          if (error && !error.message.includes('skew')) {
+            console.error('❌ 세션 확인 오류:', error);
+            return;
+          }
+          
+          if (session && session.user) {
+            console.log('✅ OAuth 로그인 성공:', session.user);
+            
+            // 사용자 정보 저장
+            const user = {
+              id: session.user.id,
+              email: session.user.email,
+              name: session.user.user_metadata?.name || session.user.user_metadata?.full_name || session.user.email,
+              profileImage: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture,
+              provider: 'google'
+            };
+            
+            // users 테이블에 사용자 정보 저장 (없으면 생성)
+            try {
+              const { data: existingUser, error: selectError } = await supabaseClient
+                .from('users')
+                .select('id')
+                .eq('id', user.id)
+                .single();
+              
+              if (!existingUser) {
+                // 새 사용자라면 users 테이블에 저장
+                const { data: insertData, error: insertError } = await supabaseClient
+                  .from('users')
+                  .insert([
+                    {
+                      id: user.id,
+                      email: user.email,
+                      name: user.name,
+                      company_domain: 'namkyungsteel.com',
+                      company_name: '남경스틸(주)',
+                      role: 'employee',
+                      provider: 'google',
+                      created_at: new Date().toISOString()
+                    }
+                  ]);
+                
+                if (insertError) {
+                  console.error('❌ Google 사용자 저장 오류:', insertError);
+                } else {
+                  console.log('✅ Google 사용자 정보 저장 완료:', insertData);
+                }
+              }
+            } catch (tableError) {
+              console.error('❌ Google 사용자 테이블 처리 예외:', tableError);
+            }
+            
+            saveUserAndUpdateUI(user);
+            
+            // URL 정리
+            window.history.replaceState({}, document.title, window.location.pathname);
+            
+            alert('Google 로그인 성공! 환영합니다, ' + user.name);
+            
+            // employee-dashboard로 이동
+            setTimeout(() => {
+              window.location.href = 'employee-dashboard.html';
+            }, 1000);
+          }
+        } catch (error) {
+          if (!error.message.includes('skew')) {
+            console.error('❌ OAuth 콜백 처리 오류:', error);
+          }
+        }
+      }
+    }
+    
+    // 페이지 로드 시 사용자 상태 확인 및 OAuth 콜백 처리
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('📄 페이지 로드됨');
+      
+      // 먼저 저장된 사용자 정보 확인 및 UI 업데이트
+      checkAndRestoreUserSession();
+      
+      // OAuth 콜백 처리
+      handleOAuthCallback();
+    });
+    
+    // 저장된 사용자 세션 확인 및 복원
+    function checkAndRestoreUserSession() {
+      const currentUser = localStorage.getItem('currentUser');
+      if (currentUser) {
+        try {
+          const user = JSON.parse(currentUser);
+          console.log('✅ 저장된 사용자 정보 복원:', user);
+          updateUIForLoggedInUser(user);
+        } catch (error) {
+          console.error('❌ 사용자 정보 파싱 오류:', error);
+          localStorage.removeItem('currentUser');
+          updateUIForLoggedOutUser();
+        }
+      } else {
+        console.log('ℹ️ 저장된 사용자 정보 없음');
+        updateUIForLoggedOutUser();
+      }
+    }
+    
+    // 프로필 클릭 핸들러
+    function handleProfileClick() {
+      showProfileModal();
+    }
+    
+    // 프로필 모달 표시
+    function showProfileModal() {
+      const currentUser = localStorage.getItem('currentUser');
+      if (currentUser) {
+        try {
+          const user = JSON.parse(currentUser);
+          
+          // 프로필 이미지 설정
+          const modalProfileImage = document.getElementById('modalProfileImage');
+          if (user.profileImage) {
+            modalProfileImage.src = user.profileImage;
+          } else {
+            // 기본 아바타 생성
+            modalProfileImage.src = generateDefaultAvatar(user.name || user.email);
+          }
+          
+          // 프로필 모달 정보 업데이트
+          document.getElementById('profileUserName').value = user.name || '';
+          document.getElementById('profileUserEmail').value = user.email || '';
+          document.getElementById('profileUserDepartment').value = user.department || '';
+          document.getElementById('profileUserPosition').value = user.position || '';
+          
+          // 모달 표시
+          document.getElementById('profileModal').style.display = 'flex';
+        } catch (error) {
+          console.error('❌ 사용자 정보 로드 오류:', error);
+        }
+      }
+    }
+    
+    // 프로필 모달 숨기기
+    function hideProfileModal() {
+      document.getElementById('profileModal').style.display = 'none';
+    }
+    
+    // 전역 함수로 테스트 가능하도록
+    window.testGoogleLogin = handleGoogleLogin;
+    window.testSupabase = function() {
+      console.log('Supabase 클라이언트:', supabaseClient);
+      return supabaseClient !== null;
+    };
+    // 프로필 이미지 업로드
+    async function handleProfileImageUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      // 파일 크기 제한 (2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        alert('이미지 크기는 2MB 이하여야 합니다.');
+        return;
+      }
+      
+      // 이미지 파일 확인
+      if (!file.type.startsWith('image/')) {
+        alert('이미지 파일만 업로드 가능합니다.');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        const imageData = e.target.result;
+        
+        try {
+          const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+          
+          // 데이터베이스에 업데이트 (Google OAuth 사용자는 이메일로 식별)
+          if (supabaseClient) {
+            try {
+              // 이메일로 사용자 찾아서 업데이트
+              const { data, error } = await supabaseClient
+                .from('users')
+                .update({ 
+                  profile_image: imageData,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('email', currentUser.email)
+                .select();
+                
+              if (error) {
+                console.error('데이터베이스 업데이트 오류:', error);
+              } else {
+                console.log('프로필 이미지 데이터베이스 업데이트 완료');
+              }
+            } catch (dbError) {
+              console.error('데이터베이스 연결 오류:', dbError);
+            }
+          }
+          
+          // currentUser 객체 업데이트
+          currentUser.profileImage = imageData;
+          
+          // localStorage에 업데이트된 정보 저장
+          localStorage.setItem('currentUser', JSON.stringify(currentUser));
+          
+          // UI 업데이트
+          const modalProfileImage = document.getElementById('modalProfileImage');
+          if (modalProfileImage) modalProfileImage.src = imageData;
+          
+          // 헤더의 프로필 이미지도 업데이트
+          const headerProfileImages = document.querySelectorAll('.user-profile img, .profile-image img');
+          headerProfileImages.forEach(img => {
+            img.src = imageData;
+          });
+          
+          alert('프로필 이미지가 변경되었습니다.');
+        } catch (error) {
+          console.error('프로필 이미지 저장 오류:', error);
+          alert('프로필 이미지 저장 중 오류가 발생했습니다.');
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    window.handleProfileClick = handleProfileClick;
+    window.showProfileModal = showProfileModal;
+    window.hideProfileModal = hideProfileModal;
+    window.handleProfileImageUpload = handleProfileImageUpload;
+    window.logout = logout;
+  </script>
 
   <!-- Main Template JS File - 에러 방지를 위한 조건부 로드 -->
   <script>
@@ -758,8 +1640,23 @@
       background: none;
       border: none;
       font-size: 24px;
-      cursor: pointer;
       color: #999;
+      cursor: pointer;
+      position: absolute;
+      right: 20px;
+      top: 20px;
+      padding: 5px;
+      width: 35px;
+      height: 35px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.3s ease;
+      z-index: 1001;
+    }
+    
+    .close-btn:hover {
+      color: #333;
     }
     
     .modal-body {
@@ -842,17 +1739,23 @@
     .modal-footer {
       display: flex;
       justify-content: space-between;
+      align-items: center;
       padding: 20px;
       border-top: 1px solid #eee;
+      gap: 10px;
     }
     
     .btn-logout {
       background: #dc3545;
       color: white;
       border: none;
-      padding: 10px 20px;
+      padding: 12px 24px;
       border-radius: 5px;
       cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      white-space: nowrap;
+      min-width: 80px;
     }
     
     .btn-logout:hover {
@@ -863,534 +1766,20 @@
       background: #6c757d;
       color: white;
       border: none;
-      padding: 10px 20px;
+      padding: 12px 24px;
       border-radius: 5px;
       cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background-color 0.3s ease;
+      white-space: nowrap;
+      min-width: 80px;
     }
     
     .btn-close:hover {
       background: #545b62;
     }
   </style>
-
-  <!-- 모든 기능을 직접 포함 -->
-  <script>
-    // Supabase 설정
-    const SUPABASE_URL = 'https://zgyawfmjconubxaiamod.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpneWF3Zm1qY29udWJ4YWlhbW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NjQzNzIsImV4cCI6MjA2NzM0MDM3Mn0.shjBE2OQeILwkLLi4E6Bq0-b6YPUs-WFwquexdUiM9A';
-    
-    // Supabase 클라이언트 초기화
-    let supabaseClient = null;
-    
-    try {
-      supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      console.log('✅ Supabase 클라이언트 초기화 완료');
-    } catch (error) {
-      console.error('❌ Supabase 초기화 오류:', error);
-    }
-
-    // 로그인 모달 표시 함수
-    function showTemplateLoginModal() {
-      console.log('🔐 로그인 모달 표시');
-      
-      const modal = document.createElement('div');
-      modal.id = 'loginModal';
-      modal.innerHTML = \`
-        <div style="
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.7);
-          z-index: 10000;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-family: 'Noto Sans KR', sans-serif;
-        ">
-          <div style="
-            background: white;
-            padding: 2rem;
-            border-radius: 10px;
-            max-width: 500px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-            position: relative;
-          ">
-            <button onclick="closeLoginModal()" style="
-              position: absolute;
-              top: 1rem;
-              right: 1rem;
-              background: none;
-              border: none;
-              font-size: 1.5rem;
-              cursor: pointer;
-              color: #666;
-            ">&times;</button>
-            
-            <h2 style="margin-top: 0; color: #333;">로그인</h2>
-            <p style="color: #666; margin-bottom: 1.5rem;">직원 시스템에 접속하려면 로그인이 필요합니다.</p>
-            
-            <form onsubmit="handleEmailLogin(event); return false;">
-              <div style="margin-bottom: 1rem;">
-                <label style="display: block; margin-bottom: 0.5rem; color: #555; font-weight: 500;">이메일</label>
-                <input type="email" id="modalLoginEmail" required style="
-                  width: 100%;
-                  padding: 0.75rem;
-                  border: 1px solid #ddd;
-                  border-radius: 5px;
-                  font-size: 1rem;
-                  box-sizing: border-box;
-                ">
-              </div>
-              <div style="margin-bottom: 1.5rem;">
-                <label style="display: block; margin-bottom: 0.5rem; color: #555; font-weight: 500;">비밀번호</label>
-                <input type="password" id="modalLoginPassword" required style="
-                  width: 100%;
-                  padding: 0.75rem;
-                  border: 1px solid #ddd;
-                  border-radius: 5px;
-                  font-size: 1rem;
-                  box-sizing: border-box;
-                ">
-              </div>
-              <button type="submit" style="
-                width: 100%;
-                padding: 0.75rem;
-                background: linear-gradient(135deg, #667eea, #764ba2);
-                color: white;
-                border: none;
-                border-radius: 5px;
-                font-size: 1rem;
-                font-weight: 600;
-                cursor: pointer;
-                transition: all 0.3s ease;
-                margin-bottom: 1rem;
-              ">로그인</button>
-              
-              <!-- 구분선 -->
-              <div style="
-                text-align: center;
-                margin: 1rem 0;
-                position: relative;
-              ">
-                <div style="
-                  position: absolute;
-                  top: 50%;
-                  left: 0;
-                  right: 0;
-                  height: 1px;
-                  background: #ddd;
-                "></div>
-                <span style="
-                  background: white;
-                  padding: 0 15px;
-                  color: #666;
-                  font-size: 14px;
-                ">또는</span>
-              </div>
-              
-              <!-- 구글 로그인 버튼 -->
-              <button type="button" onclick="handleModalGoogleLogin()" style="
-                width: 100%;
-                padding: 0.75rem;
-                border: 1px solid #dadce0;
-                border-radius: 5px;
-                background: white;
-                color: #3c4043;
-                font-size: 1rem;
-                font-weight: 500;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 12px;
-                cursor: pointer;
-                transition: all 0.2s ease;
-              " onmouseover="this.style.boxShadow='0 1px 2px 0 rgba(60,64,67,0.3)'; this.style.background='#f8f9fa';" 
-                 onmouseout="this.style.boxShadow='none'; this.style.background='white';">
-                <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
-                  <g fill="none" fill-rule="evenodd">
-                    <path d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
-                    <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
-                    <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
-                    <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
-                  </g>
-                </svg>
-                Google로 로그인
-              </button>
-              
-              <div id="modalStatus" style="margin-top: 15px; padding: 10px; display: none; border-radius: 5px;"></div>
-            </form>
-          </div>
-        </div>
-      \`;
-      document.body.appendChild(modal);
-    }
-    
-    // 모달 닫기 함수
-    function closeLoginModal() {
-      const modal = document.getElementById('loginModal');
-      if (modal) {
-        modal.remove();
-      }
-    }
-    
-    // 상태 표시 함수
-    function showModalStatus(message, type = 'info') {
-      const status = document.getElementById('modalStatus');
-      if (status) {
-        status.style.display = 'block';
-        status.style.background = type === 'error' ? '#ffebee' : type === 'success' ? '#e8f5e8' : '#e3f2fd';
-        status.style.color = type === 'error' ? '#c62828' : type === 'success' ? '#2e7d32' : '#1565c0';
-        status.textContent = message;
-      }
-      console.log(\`\${type.toUpperCase()}: \${message}\`);
-    }
-    
-    // 이메일 로그인 처리
-    async function handleEmailLogin(event) {
-      event.preventDefault();
-      
-      const email = document.getElementById('modalLoginEmail').value;
-      const password = document.getElementById('modalLoginPassword').value;
-      
-      if (!email || !password) {
-        showModalStatus('이메일과 비밀번호를 입력하세요.', 'error');
-        return;
-      }
-      
-      showModalStatus('로그인 중...', 'info');
-      
-      try {
-        if (!supabaseClient) {
-          throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-        
-        const { data, error } = await supabaseClient.auth.signInWithPassword({
-          email: email,
-          password: password
-        });
-        
-        if (error) {
-          showModalStatus('로그인 실패: ' + error.message, 'error');
-        } else {
-          showModalStatus('로그인 성공!', 'success');
-          console.log('사용자 정보:', data.user);
-          
-          // 사용자 정보 저장
-          const user = {
-            id: data.user.id,
-            email: data.user.email,
-            name: data.user.user_metadata?.name || data.user.email,
-            provider: 'email'
-          };
-          
-          localStorage.setItem('currentUser', JSON.stringify(user));
-          closeLoginModal();
-          location.reload();
-        }
-      } catch (error) {
-        showModalStatus('로그인 오류: ' + error.message, 'error');
-      }
-    }
-    
-    // Google 로그인 처리
-    async function handleModalGoogleLogin() {
-      console.log('🔐 Google 로그인 시작');
-      showModalStatus('Google 로그인 중...', 'info');
-      
-      if (!supabaseClient) {
-        showModalStatus('데이터베이스 연결이 필요합니다.', 'error');
-        return;
-      }
-      
-      try {
-        const { data, error } = await supabaseClient.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: 'https://namkyungsteel.com'
-          }
-        });
-        
-        if (error) {
-          console.error('❌ Google 로그인 오류:', error);
-          showModalStatus('Google 로그인 오류: ' + error.message, 'error');
-        } else {
-          console.log('✅ Google OAuth 시작됨:', data);
-          showModalStatus('Google 로그인 페이지로 이동합니다...', 'success');
-        }
-      } catch (error) {
-        console.error('❌ Google 로그인 예외:', error);
-        showModalStatus('Google 로그인 중 오류가 발생했습니다: ' + error.message, 'error');
-      }
-    }
-    
-    // OAuth 콜백 처리
-    async function handleOAuthCallback() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      
-      if (urlParams.get('code') || hashParams.get('access_token') || window.location.hash.includes('access_token')) {
-        console.log('🔐 OAuth 콜백 감지됨');
-        
-        try {
-          const { data: { session }, error } = await supabaseClient.auth.getSession();
-          
-          if (error) {
-            console.error('❌ 세션 확인 오류:', error);
-            return;
-          }
-          
-          if (session && session.user) {
-            console.log('✅ OAuth 로그인 성공:', session.user);
-            
-            // 사용자 정보 저장
-            const user = {
-              id: session.user.id,
-              email: session.user.email,
-              name: session.user.user_metadata?.name || session.user.user_metadata?.full_name || session.user.email,
-              profileImage: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture,
-              provider: 'google'
-            };
-            
-            localStorage.setItem('currentUser', JSON.stringify(user));
-            
-            // URL 정리
-            window.history.replaceState({}, document.title, window.location.pathname);
-            
-            alert('Google 로그인 성공! 환영합니다, ' + user.name);
-            location.reload();
-          }
-        } catch (error) {
-          console.error('❌ OAuth 콜백 처리 오류:', error);
-        }
-      }
-    }
-
-    // 로그인 상태 확인 및 프로필 표시
-    function checkLoginStatus() {
-      // 로그인 버튼 표시
-      const loginBtn = document.getElementById('mainLoginBtn');
-      const userProfile = document.getElementById('userProfile');
-      
-      if (loginBtn) loginBtn.style.display = 'block';
-      if (userProfile) userProfile.style.display = 'none';
-      
-      const currentUser = localStorage.getItem('currentUser');
-      if (currentUser) {
-        try {
-          const user = JSON.parse(currentUser);
-          console.log('✅ 저장된 사용자 정보:', user);
-          // showUserProfile(user); // 필요시 사용자 프로필 표시 함수 구현
-        } catch (error) {
-          console.error('❌ 사용자 정보 파싱 오류:', error);
-        }
-      }
-    }
-    
-    // 사용자 프로필 표시
-    function showUserProfile(user) {
-      document.getElementById('mainLoginBtn').style.display = 'none';
-      document.getElementById('userProfile').style.display = 'block';
-      document.getElementById('profileName').textContent = user.name || user.username;
-      
-      // 프로필 이미지 설정
-      const profileImage = user.profileImage || generateDefaultAvatar(user.name);
-      document.getElementById('profileImage').src = profileImage;
-    }
-    
-    // 기본 아바타 생성
-    function generateDefaultAvatar(name) {
-      const initial = name ? name.charAt(0).toUpperCase() : '👤';
-      return `data:image/svg+xml;base64,${btoa(`
-        <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="20" cy="20" r="20" fill="#667eea"/>
-          <text x="20" y="26" font-family="Arial" font-size="16" fill="white" text-anchor="middle">${initial}</text>
-        </svg>
-      `)}`;
-    }
-    
-    // 프로필 클릭 핸들러
-    function handleProfileClick() {
-      const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-      if (!currentUser) return;
-      
-      // 모든 사용자가 직원 대시보드로 이동
-      window.location.href = 'employee-dashboard.html';
-    }
-    
-    // 프로필 모달 표시
-    function showProfileModal() {
-      const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-      if (!currentUser) return;
-      
-      // 프로필 정보 채우기
-      document.getElementById('profileUserName').value = currentUser.name || '';
-      document.getElementById('profileUserEmail').value = currentUser.email || '';
-      document.getElementById('profileUserDepartment').value = currentUser.department || '';
-      document.getElementById('profileUserPosition').value = currentUser.position || '';
-      
-      const profileImage = currentUser.profileImage || generateDefaultAvatar(currentUser.name);
-      document.getElementById('modalProfileImage').src = profileImage;
-      
-      document.getElementById('profileModal').style.display = 'flex';
-    }
-    
-    // 프로필 모달 숨기기
-    function hideProfileModal() {
-      document.getElementById('profileModal').style.display = 'none';
-      // 폼 초기화
-      document.getElementById('passwordChangeForm').reset();
-    }
-    
-    // 프로필 이미지 업로드
-    function handleProfileImageUpload(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      
-      // 파일 크기 제한 (2MB)
-      if (file.size > 2 * 1024 * 1024) {
-        alert('이미지 크기는 2MB 이하여야 합니다.');
-        return;
-      }
-      
-      // 이미지 파일 확인
-      if (!file.type.startsWith('image/')) {
-        alert('이미지 파일만 업로드 가능합니다.');
-        return;
-      }
-      
-      const reader = new FileReader();
-      reader.onload = async function(e) {
-        const imageData = e.target.result;
-        
-        try {
-          const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-          
-          // 데이터베이스에 프로필 이미지 저장
-          if (window.db && window.db.updateUser) {
-            const result = await window.db.updateUser(currentUser.id, {
-              profile_image: imageData
-            });
-            
-            if (result.success) {
-              // 로컬 스토리지 업데이트
-              currentUser.profileImage = imageData;
-              localStorage.setItem('currentUser', JSON.stringify(currentUser));
-              
-              // UI 업데이트
-              document.getElementById('modalProfileImage').src = imageData;
-              document.getElementById('profileImage').src = imageData;
-              
-              alert('프로필 이미지가 변경되었습니다.');
-            } else {
-              alert('프로필 이미지 저장에 실패했습니다: ' + result.error);
-            }
-          } else {
-            // 데이터베이스 연결이 없는 경우 로컬 스토리지만 사용
-            currentUser.profileImage = imageData;
-            localStorage.setItem('currentUser', JSON.stringify(currentUser));
-            
-            // UI 업데이트
-            document.getElementById('modalProfileImage').src = imageData;
-            document.getElementById('profileImage').src = imageData;
-            
-            alert('프로필 이미지가 변경되었습니다. (로컬 저장)');
-          }
-        } catch (error) {
-          console.error('프로필 이미지 저장 오류:', error);
-          alert('프로필 이미지 저장 중 오류가 발생했습니다.');
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-    
-    // 비밀번호 변경
-    document.getElementById('passwordChangeForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      
-      const currentPassword = document.getElementById('currentPassword').value;
-      const newPassword = document.getElementById('newPassword').value;
-      const confirmPassword = document.getElementById('confirmPassword').value;
-      
-      if (newPassword !== confirmPassword) {
-        alert('새 비밀번호와 확인 비밀번호가 일치하지 않습니다.');
-        return;
-      }
-      
-      if (newPassword.length < 6) {
-        alert('비밀번호는 최소 6자 이상이어야 합니다.');
-        return;
-      }
-      
-      try {
-        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-        
-        // 데이터베이스에서 비밀번호 변경 (실제 구현 필요)
-        if (window.db && window.db.updateUser) {
-          const result = await window.db.updateUser(currentUser.id, {
-            password: newPassword // 실제로는 해싱이 필요
-          });
-          
-          if (result.success) {
-            alert('비밀번호가 변경되었습니다.');
-            document.getElementById('passwordChangeForm').reset();
-          } else {
-            alert('비밀번호 변경에 실패했습니다: ' + result.error);
-          }
-        } else {
-          alert('데이터베이스 연결이 필요합니다.');
-        }
-      } catch (error) {
-        console.error('비밀번호 변경 오류:', error);
-        alert('비밀번호 변경 중 오류가 발생했습니다.');
-      }
-    });
-    
-    // 로그아웃
-    function logout() {
-      localStorage.removeItem('currentUser');
-      localStorage.removeItem('userRole');
-      localStorage.removeItem('userName');
-      
-      // UI 업데이트 - 로그인 버튼 표시
-      document.getElementById('mainLoginBtn').style.display = 'block';
-      document.getElementById('mainLoginBtn').innerHTML = '<i class="bi bi-person-circle"></i> <span id="loginBtnText">로그인</span>';
-      document.getElementById('userProfile').style.display = 'none';
-      hideProfileModal();
-      
-      alert('로그아웃되었습니다.');
-    }
-    
-    // 페이지 로드 시 초기화
-    document.addEventListener('DOMContentLoaded', function() {
-      console.log('📄 페이지 로드됨');
-      
-      // 로그인 버튼 표시
-      const loginBtn = document.getElementById('mainLoginBtn');
-      if (loginBtn) {
-        loginBtn.style.display = 'block';
-        loginBtn.innerHTML = '<i class="bi bi-person-circle"></i> <span id="loginBtnText">로그인</span>';
-      }
-      
-      // 사용자 프로필은 기본적으로 숨김
-      const userProfile = document.getElementById('userProfile');
-      if (userProfile) {
-        userProfile.style.display = 'none';
-      }
-      
-      // OAuth 콜백 처리
-      if (supabaseClient) {
-        handleOAuthCallback();
-      }
-      
-      // 로그인 상태 확인
-      checkLoginStatus();
-    });
-  </script>
 
 </body>
 </html>

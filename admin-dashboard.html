@@ -1226,7 +1226,8 @@
                             <select class="form-select" id="employeeRole">
                                 <option value="">권한을 선택하세요</option>
                                 <option value="employee">직원</option>
-                                <option value="manager">관리자</option>
+                                <option value="company_admin">회사 관리자</option>
+                                <option value="company_CEO">회사 대표</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -1431,7 +1432,7 @@
         window.testFormElementsAccessibility = testFormElementsAccessibility;
 
         // 페이지 로드 시 초기화
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             console.log('🚀 관리자 대시보드 시작');
             
             // localStorage 초기 상태 확인
@@ -1483,6 +1484,36 @@
             }, 500);
             
             let user = AuthManager.getCurrentUser();
+            
+            // 데이터베이스에서 직접 사용자 정보 가져오기 (로컬스토리지 중복 제거)
+            if (user && user.email) {
+                try {
+                    const { data: dbUser, error } = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .eq('email', user.email)
+                        .single();
+                    
+                    if (dbUser && !error) {
+                        // 데이터베이스 정보를 직접 사용 (로컬스토리지 업데이트 제거)
+                        user = {
+                            id: dbUser.id,
+                            email: dbUser.email,
+                            name: dbUser.name,
+                            role: dbUser.role,
+                            is_approved: dbUser.is_approved,
+                            is_active: dbUser.is_active,
+                            department: dbUser.department,
+                            position: dbUser.position,
+                            company_domain: dbUser.company_domain,
+                            company_name: dbUser.company_name
+                        };
+                        console.log('✅ 데이터베이스에서 최신 사용자 정보 로드:', user);
+                    }
+                } catch (error) {
+                    console.error('❌ 사용자 정보 로드 오류:', error);
+                }
+            }
             
             // 마스터 권한으로 접근한 경우
             if (masterAccess.role === 'master' && companyId === masterAccess.companyId) {
@@ -1669,29 +1700,52 @@
         });
 
         function hasAdminPermission(user) {
-            const adminRoles = ['master', 'company_admin', 'company_manager'];
+            const adminRoles = ['master', 'company_CEO', 'company_admin'];
             return adminRoles.includes(user.role);
         }
 
-        // 직원 관리 권한 체크
-        function canManageEmployees(user) {
-            const managerRoles = ['master', 'company_admin', 'company_manager'];
-            return managerRoles.includes(user.role);
+        // 직원 관리 권한 체크 (데이터베이스에서 실시간 확인)
+        async function canManageEmployees(user) {
+            try {
+                // 데이터베이스에서 최신 사용자 정보 확인
+                const { data: dbUser, error } = await window.db.client
+                    .from('users')
+                    .select('role')
+                    .eq('email', user.email)
+                    .single();
+                
+                if (error) {
+                    console.error('사용자 역할 확인 실패:', error);
+                    return false;
+                }
+                
+                const managerRoles = ['master', 'company_CEO', 'company_admin'];
+                return managerRoles.includes(dbUser.role);
+            } catch (error) {
+                console.error('권한 확인 오류:', error);
+                return false;
+            }
         }
 
         // 권한 수정 불가 사용자 체크
         function isSystemUser(role) {
-            return ['master', 'company_admin'].includes(role);
+            return ['master', 'company_CEO', 'company_admin'].includes(role);
         }
 
         // 권한 옵션 업데이트 (관리자, 직원만)
         function updateRoleOptions(currentUser, employeeId = null) {
             const roleSelect = document.getElementById('employeeRole');
             
-            // 관리자와 직원만 선택 가능
+            // 4가지 권한만 선택 가능
             let options = '<option value="">권한을 선택하세요</option>';
             options += '<option value="employee">직원</option>';
-            options += '<option value="manager">관리자</option>';
+            options += '<option value="company_admin">회사 관리자</option>';
+            options += '<option value="company_CEO">회사 대표</option>';
+            
+            // master 권한은 최고 관리자만 부여 가능
+            if (currentUser.role === 'master') {
+                options += '<option value="master">마스터 관리자</option>';
+            }
             
             roleSelect.innerHTML = options;
         }
@@ -2889,10 +2943,10 @@
         }
 
         // 메인 관리 카드 클릭 함수들
-        function showEmployeeManagement() {
+        async function showEmployeeManagement() {
             // 권한 체크
             const user = AuthManager.getCurrentUser();
-            if (!user || !canManageEmployees(user)) {
+            if (!user || !(await canManageEmployees(user))) {
                 alert('직원 관리 권한이 없습니다. 마스터, 회사대표, 관리자만 접근 가능합니다.');
                 return;
             }
@@ -2915,10 +2969,10 @@
             loadMenuPermissions();
         }
 
-        function showPendingMembers() {
+        async function showPendingMembers() {
             // 권한 체크
             const user = AuthManager.getCurrentUser();
-            if (!user || !canManageEmployees(user)) {
+            if (!user || !(await canManageEmployees(user))) {
                 alert('가입 승인 권한이 없습니다. 마스터, 회사대표, 관리자만 접근 가능합니다.');
                 return;
             }

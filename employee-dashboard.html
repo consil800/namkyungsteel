@@ -6,11 +6,11 @@
     <title id="pageTitle">남경스틸(주) 업무보드</title>
     
     <!-- Favicons -->
-    <link href="../../logo.jpg" rel="icon">
-    <link href="../../logo.jpg" rel="apple-touch-icon">
+    <link href="logo.jpg" rel="icon">
+    <link href="logo.jpg" rel="apple-touch-icon">
     
-    <link rel="stylesheet" href="../../shared-assets/css/main.css">
-    <link rel="stylesheet" href="../../shared-assets/css/platform.css">
+    <link rel="stylesheet" href="shared-assets/css/main.css">
+    <link rel="stylesheet" href="shared-assets/css/platform.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
@@ -549,12 +549,54 @@
         }
         
         // 페이지 로드 시 사용자 정보 표시
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             const user = AuthManager.getCurrentUser();
             if (!user) {
                 alert('로그인이 필요합니다.');
                 window.location.href = 'index.html';
                 return;
+            }
+
+            // 직원인 경우 실시간으로 승인 상태 확인
+            if (user.role === 'employee') {
+                try {
+                    let dbUser;
+                    if (user.email && user.email !== 'null') {
+                        const { data, error } = await window.db.client
+                            .from('users')
+                            .select('is_approved, is_active, rejection_reason')
+                            .eq('email', user.email)
+                            .single();
+                        dbUser = data;
+                    } else if (user.oauth_id) {
+                        const { data, error } = await window.db.client
+                            .from('users')
+                            .select('is_approved, is_active, rejection_reason')
+                            .eq('oauth_id', user.oauth_id)
+                            .single();
+                        dbUser = data;
+                    }
+
+                    if (dbUser) {
+                        // 로컬 사용자 정보 업데이트
+                        user.is_approved = dbUser.is_approved;
+                        user.is_active = dbUser.is_active;
+                        user.rejection_reason = dbUser.rejection_reason;
+                        localStorage.setItem('currentUser', JSON.stringify(user));
+
+                        // 반려된 사용자는 로그아웃 처리
+                        if (!dbUser.is_active && dbUser.rejection_reason) {
+                            alert(`계정이 반려되었습니다.\n사유: ${dbUser.rejection_reason}\n\n문의사항이 있으시면 관리자에게 연락해주세요.`);
+                            localStorage.removeItem('currentUser');
+                            localStorage.removeItem('userRole');
+                            localStorage.removeItem('userName');
+                            window.location.href = 'index.html';
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    console.error('사용자 상태 확인 오류:', error);
+                }
             }
             
             // 사용자별 환영 메시지 설정
@@ -571,28 +613,25 @@
                     infoText = '시스템 관리자로 로그인하셨습니다.';
                     break;
                 case 'company_admin':
-                    if (user.name === '고강석') {
-                        welcomeMessage = '고강석 대표';
-                    } else {
-                        welcomeMessage = user.name + ' 대표';
-                    }
+                    welcomeMessage = user.name;
                     infoText = `${user.position || '대표이사'} · ${user.company || '회사명'}`;
                     break;
                 case 'company_manager':
-                    if (user.name === '이원석') {
-                        welcomeMessage = '이원석 관리자';
-                    } else {
-                        welcomeMessage = user.name + ' 관리자';
-                    }
-                    infoText = `${user.position || '관리자'} · ${user.company || '회사명'}`;
+                    welcomeMessage = user.name;
+                    infoText = '관리자';
                     break;
                 case 'employee':
-                    if (user.name === '이영희') {
-                        welcomeMessage = '이영희';
+                    welcomeMessage = user.name;
+                    // 부서명, 직책이 없으면 빈 문자열로 설정
+                    if (user.department && user.position) {
+                        infoText = `${user.department} · ${user.position}`;
+                    } else if (user.department) {
+                        infoText = user.department;
+                    } else if (user.position) {
+                        infoText = user.position;
                     } else {
-                        welcomeMessage = user.name;
+                        infoText = '';
                     }
-                    infoText = `${user.department || '부서'} · ${user.position || '직급'}`;
                     break;
                 default:
                     welcomeMessage = user.name;
@@ -614,9 +653,16 @@
             document.title = '남경스틸(주) 업무보드';
             
             
-            // 직원의 경우 설정 버튼 숨기기
+            // 직원의 경우 설정 버튼 항상 숨기기
+            const settingsBtn = document.getElementById('settingsBtn');
             if (user.role === 'employee') {
-                document.getElementById('settingsBtn').style.display = 'none';
+                if (settingsBtn) {
+                    settingsBtn.style.display = 'none'; // 직원은 승인 여부와 관계없이 설정 버튼 숨김
+                }
+            } else {
+                if (settingsBtn) {
+                    settingsBtn.style.display = 'flex'; // 다른 역할은 설정 버튼 보이기
+                }
             }
             
             // 직원이나 홈페이지 관리자의 경우 거래처목록 숨기기
@@ -624,6 +670,15 @@
                 const clientListCard = document.getElementById('clientListCard');
                 if (clientListCard) {
                     clientListCard.style.display = 'none';
+                }
+            }
+            
+            // 승인되지 않은 직원에게 메시지 표시
+            if (user.role === 'employee' && (!user.is_approved && user.is_approved !== true)) {
+                // 미승인 상태 메시지 표시
+                const infoElement = document.getElementById('userInfo');
+                if (infoElement) {
+                    infoElement.innerHTML = `<span style="color: #ff6b6b; font-weight: 600;">⏳ 계정 승인 대기 중입니다. 관리자의 승인 후 시스템을 이용할 수 있습니다.</span>`;
                 }
             }
             
@@ -660,7 +715,7 @@
         function openCorporateCard() {
             showLoading();
             setTimeout(() => {
-                window.location.href = 'corporate-card.html';
+                window.location.href = 'corporate-card-register.html';
             }, 500);
         }
         
@@ -733,8 +788,8 @@
         
         // 직원별 메뉴 권한 적용 (새로운 권한 시스템)
         function applyMenuPermissions(user) {
-            // 관리자 권한이 있으면 모든 메뉴 표시
-            if (user.role === 'master_admin' || user.role === 'company_admin' || user.role === 'company_manager') {
+            // 마스터 또는 관리자 권한이 있으면 모든 메뉴 표시
+            if (user.role === 'master' || user.role === 'master_admin' || user.role === 'company_CEO' || user.role === 'company_admin' || user.role === 'company_manager') {
                 const menuCards = document.querySelectorAll('.menu-card');
                 menuCards.forEach(card => {
                     card.style.display = 'block';
@@ -749,13 +804,36 @@
                 return;
             }
             
-            // 일반 직원의 경우 권한 시스템 적용
+            // 일반 직원의 경우 승인 상태에 따라 메뉴 표시
             const menuCards = document.querySelectorAll('.menu-card');
             menuCards.forEach(card => {
-                card.style.display = 'none';
+                const h3 = card.querySelector('h3');
+                if (h3) {
+                    const menuTitle = h3.textContent;
+                    
+                    // 승인되지 않은 직원은 모든 업무 메뉴 숨김
+                    if (!user.is_approved && user.is_approved !== true) {
+                        if (menuTitle.includes('업무일지') || 
+                            menuTitle.includes('법인카드') || 
+                            menuTitle.includes('결제 서류')) {
+                            card.style.display = 'none';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    } else {
+                        // 승인된 직원이 기본적으로 사용할 수 있는 메뉴들
+                        if (menuTitle.includes('업무일지') || 
+                            menuTitle.includes('법인카드') || 
+                            menuTitle.includes('결제 서류')) {
+                            card.style.display = 'block';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    }
+                }
             });
             
-            // 새로운 권한 시스템에서 권한 확인
+            // 추가 권한이 있으면 적용
             const permissions = JSON.parse(localStorage.getItem('menuPermissions') || '{}');
             
             // 각 메뉴에 대해 권한 확인
@@ -1106,7 +1184,7 @@
             }
         }
         
-        // 승인 알림 체크
+        // 승인 알림 체크 (가입 알림 포함)
         function checkApprovalNotifications(user) {
             try {
                 // employees 목록에서 정확한 사용자 ID 찾기
@@ -1128,49 +1206,55 @@
                     console.log(`🔔 알림 로드 (fallback ${user.id}):`, notifications.length, '개');
                 }
                 
-                const unreadApprovals = notifications.filter(notification => 
-                    !notification.read && 
-                    (notification.type === 'approval_request' || 
-                     notification.type === 'approval_completed' || 
-                     notification.type === 'approval_rejected')
+                // 관리자인 경우 가입 알림도 로드
+                if (user.role === 'master' || user.role === 'company_CEO' || user.role === 'company_admin' || user.role === 'company_manager') {
+                    const adminNotifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
+                    console.log('📢 관리자 알림 로드:', adminNotifications.length, '개');
+                    
+                    // 기존 알림과 합치기 (중복 제거)
+                    adminNotifications.forEach(adminNotif => {
+                        const exists = notifications.find(n => n.id === adminNotif.id);
+                        if (!exists) {
+                            notifications.push(adminNotif);
+                        }
+                    });
+                }
+                
+                const unreadNotifications = notifications.filter(notification => 
+                    !notification.read && !notification.isRead
                 );
                 
                 const badge = document.getElementById('approvalNotificationBadge');
                 const headerBadge = document.getElementById('approvalNotificationBadgeHeader');
                 
-                if (unreadApprovals.length > 0) {
+                if (unreadNotifications.length > 0) {
                     // 기존 카드 배지 (숨겨진 상태)
-                    badge.textContent = unreadApprovals.length;
-                    badge.style.display = 'flex';
+                    if (badge) {
+                        badge.textContent = unreadNotifications.length;
+                        badge.style.display = 'flex';
+                    }
                     
                     // 헤더 배지
-                    headerBadge.textContent = unreadApprovals.length;
-                    headerBadge.style.display = 'flex';
+                    if (headerBadge) {
+                        headerBadge.textContent = unreadNotifications.length;
+                        headerBadge.style.display = 'flex';
+                    }
                 } else {
-                    badge.style.display = 'none';
-                    headerBadge.style.display = 'none';
+                    if (badge) badge.style.display = 'none';
+                    if (headerBadge) headerBadge.style.display = 'none';
                 }
                 
-                console.log('🔔 승인 알림 체크 완료:', {
+                console.log('🔔 알림 체크 완료:', {
                     userName: user.name,
                     userId: user.id,
                     totalNotifications: notifications.length,
-                    unreadApprovals: unreadApprovals.length,
-                    approvalNotifications: unreadApprovals
+                    unreadNotifications: unreadNotifications.length,
+                    signupNotifications: notifications.filter(n => n.type === 'new_user_signup' && !n.read && !n.isRead).length,
+                    approvalNotifications: notifications.filter(n => (n.type === 'approval_request' || n.type === 'approval_completed' || n.type === 'approval_rejected') && !n.read && !n.isRead).length
                 });
                 
-                // 디버깅을 위해 모든 알림 키 출력
-                const allNotificationKeys = [];
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (key && key.startsWith('notifications_')) {
-                        allNotificationKeys.push(key);
-                    }
-                }
-                console.log('📋 모든 알림 키:', allNotificationKeys);
-                
             } catch (error) {
-                console.error('승인 알림 체크 오류:', error);
+                console.error('알림 체크 오류:', error);
             }
         }
 
@@ -1455,10 +1539,34 @@
             padding: 10px 20px;
             border-radius: 5px;
             cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
         }
         
         .btn-close:hover {
             background: #545b62;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #999;
+            cursor: pointer;
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.3s ease;
+        }
+        
+        .close-btn:hover {
+            color: #333;
         }
         
         /* 프로필 이미지 스타일 */
@@ -1493,6 +1601,15 @@
         function showProfileModal() {
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
             if (!currentUser) return;
+            
+            // 프로필 이미지 설정
+            const modalProfileImage = document.getElementById('modalProfileImage');
+            if (currentUser.profileImage) {
+                modalProfileImage.src = currentUser.profileImage;
+            } else {
+                // 기본 아바타 생성
+                modalProfileImage.src = generateDefaultAvatar(currentUser.name || currentUser.email);
+            }
             
             // 프로필 정보 채우기
             document.getElementById('profileUserName').value = currentUser.name || '';
@@ -1543,21 +1660,29 @@
                 try {
                     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
                     
-                    // 데이터베이스에 업데이트
-                    if (window.db && currentUser.id) {
-                        const userData = {
-                            name: currentUser.name,
-                            email: currentUser.email,
-                            department: currentUser.department,
-                            position: currentUser.position,
-                            phone: currentUser.phone,
-                            profileImage: imageData
-                        };
+                    // 데이터베이스에 업데이트 (Google OAuth 사용자는 이메일로 식별)
+                    if (window.db && window.db.client) {
+                        try {
+                            // 이메일로 사용자 찾아서 업데이트
+                            const { data, error } = await window.db.client
+                                .from('users')
+                                .update({ 
+                                    profile_image: imageData,
+                                    updated_at: new Date().toISOString()
+                                })
+                                .eq('email', currentUser.email)
+                                .select();
+                                
+                            if (error) {
+                                console.error('데이터베이스 업데이트 오류:', error);
+                            } else {
+                                console.log('프로필 이미지 데이터베이스 업데이트 완료');
+                            }
+                        } catch (dbError) {
+                            console.error('데이터베이스 연결 오류:', dbError);
+                        }
                         
-                        await db.updateUser(currentUser.id, userData);
-                        console.log('프로필 이미지 데이터베이스 업데이트 완료');
-                        
-                        // currentUser 객체 업데이트 (데이터베이스 동기화)
+                        // currentUser 객체 업데이트
                         currentUser.profileImage = imageData;
                         
                         // localStorage에 업데이트된 정보 저장
@@ -1565,8 +1690,17 @@
                     }
                     
                     // UI 업데이트
-                    document.getElementById('modalProfileImage').src = imageData;
-                    document.getElementById('profileImageDashboard').src = imageData;
+                    const modalProfileImage = document.getElementById('modalProfileImage');
+                    const dashboardProfileImage = document.getElementById('profileImageDashboard');
+                    
+                    if (modalProfileImage) modalProfileImage.src = imageData;
+                    if (dashboardProfileImage) dashboardProfileImage.src = imageData;
+                    
+                    // 헤더의 프로필 이미지도 업데이트
+                    const headerProfileImages = document.querySelectorAll('.user-profile-dashboard img');
+                    headerProfileImages.forEach(img => {
+                        img.src = imageData;
+                    });
                     
                     alert('프로필 이미지가 변경되었습니다.');
                 } catch (error) {

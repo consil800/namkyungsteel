@@ -107,8 +107,15 @@
    */
   document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
+      const href = this.getAttribute('href');
+      
+      // href가 '#'만 있거나 비어있으면 스크롤 처리 안함
+      if (href === '#' || href.length <= 1) {
+        return;
+      }
+      
       e.preventDefault();
-      const target = document.querySelector(this.getAttribute('href'));
+      const target = document.querySelector(href);
       if (target) {
         target.scrollIntoView({
           behavior: 'smooth',

@@ -60,13 +60,21 @@ function showTemplateLoginModal() {
                     position: absolute;
                     top: 1rem;
                     right: 1rem;
-                    background: none;
-                    border: none;
-                    font-size: 1.5rem;
+                    background: #f8f9fa;
+                    border: 1px solid #dee2e6;
+                    border-radius: 50%;
+                    width: 32px;
+                    height: 32px;
+                    font-size: 1.2rem;
+                    line-height: 1;
                     cursor: pointer;
-                    color: #666;
+                    color: #6c757d;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: all 0.2s ease;
                     z-index: 1;
-                ">&times;</button>
+                " onmouseover="this.style.background='#e9ecef'; this.style.color='#495057';" onmouseout="this.style.background='#f8f9fa'; this.style.color='#6c757d';">&times;</button>
                 
                 <!-- 탭 메뉴 -->
                 <div style="
@@ -189,6 +197,31 @@ function showTemplateLoginModal() {
                                 </g>
                             </svg>
                             Google로 로그인
+                        </button>
+                        
+                        <button type="button" onclick="handleModalKakaoLogin()" style="
+                            width: 100%;
+                            padding: 0.75rem 1rem;
+                            border: 1px solid #FEE500;
+                            border-radius: 5px;
+                            background: #FEE500;
+                            color: #3C1E1E;
+                            cursor: pointer;
+                            font-size: 1rem;
+                            font-weight: 500;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 10px;
+                            margin-top: 10px;
+                            transition: all 0.2s ease;
+                        ">
+                            <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                                <g fill="none" fill-rule="evenodd">
+                                    <path d="M9 0C4.03 0 0 3.13 0 7c0 2.52 1.67 4.74 4.19 6.04L3.5 16.5c-.13.47.35.85.76.6l3.92-2.65c.28.02.55.05.82.05 4.97 0 9-3.13 9-7S13.97 0 9 0z" fill="#3C1E1E"/>
+                                </g>
+                            </svg>
+                            카카오로 로그인
                         </button>
                     </form>
                 </div>
@@ -324,6 +357,32 @@ function showTemplateLoginModal() {
                                 </g>
                             </svg>
                             Google로 가입하기
+                        </button>
+                        
+                        <button type="button" onclick="handleModalKakaoLogin()" style="
+                            width: 100%;
+                            padding: 0.75rem 1rem;
+                            border: 1px solid #FEE500;
+                            border-radius: 5px;
+                            background: #FEE500;
+                            color: #3C1E1E;
+                            cursor: pointer;
+                            font-size: 1rem;
+                            font-weight: 500;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 10px;
+                            margin-top: 10px;
+                            transition: all 0.2s ease;
+                        " onmouseover="this.style.background='#FDD835';" 
+                           onmouseout="this.style.background='#FEE500';">
+                            <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                                <g fill="none" fill-rule="evenodd">
+                                    <path d="M9 0C4.03 0 0 3.13 0 7c0 2.52 1.67 4.74 4.19 6.04L3.5 16.5c-.13.47.35.85.76.6l3.92-2.65c.28.02.55.05.82.05 4.97 0 9-3.13 9-7S13.97 0 9 0z" fill="#3C1E1E"/>
+                                </g>
+                            </svg>
+                            카카오로 가입하기
                         </button>
                     </form>
                 </div>
@@ -500,6 +559,32 @@ async function handleModalGoogleLogin() {
     } catch (error) {
         console.error('❌ 모달 구글 로그인 오류:', error);
         alert(error.message || '구글 로그인 중 오류가 발생했습니다.');
+    }
+}
+
+// 모달 카카오 로그인 핸들러
+async function handleModalKakaoLogin() {
+    console.log('🔐 모달 카카오 로그인 버튼 클릭');
+    
+    try {
+        if (typeof AuthManager === 'undefined') {
+            throw new Error('AuthManager가 로드되지 않았습니다.');
+        }
+        
+        const result = await AuthManager.kakaoLogin();
+        
+        if (result.success) {
+            console.log('✅ 모달 카카오 로그인 시작:', result.message);
+            // 모달 닫기
+            closeLoginModal();
+            // OAuth 리다이렉트가 처리됨
+        } else {
+            throw new Error(result.message || '카카오 로그인에 실패했습니다.');
+        }
+        
+    } catch (error) {
+        console.error('❌ 모달 카카오 로그인 오류:', error);
+        alert(error.message || '카카오 로그인 중 오류가 발생했습니다.');
     }
 }
 
