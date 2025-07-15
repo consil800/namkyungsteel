@@ -1264,7 +1264,17 @@
             // URL 정리
             window.history.replaceState({}, document.title, window.location.pathname);
             
-            alert('Google 로그인 성공! 환영합니다, ' + user.name);
+            // 로그인 제공자에 따른 메시지 표시
+            const provider = user.provider || 'OAuth';
+            let providerName = '';
+            if (provider === 'google') {
+                providerName = 'Google';
+            } else if (provider === 'kakao') {
+                providerName = '카카오';
+            } else {
+                providerName = '소셜';
+            }
+            alert(`${providerName} 로그인 성공! 환영합니다, ${user.name}`);
             
             // employee-dashboard로 이동
             setTimeout(() => {

@@ -551,6 +551,10 @@
         // 페이지 로드 시 사용자 정보 표시
         document.addEventListener('DOMContentLoaded', async function() {
             const user = AuthManager.getCurrentUser();
+            console.log('🧪 AuthManager에서 가져온 사용자 정보:', user);
+            console.log('🧪 사용자 역할:', user?.role);
+            console.log('🧪 localStorage currentUser:', localStorage.getItem('currentUser'));
+            
             if (!user) {
                 alert('로그인이 필요합니다.');
                 window.location.href = 'index.html';
