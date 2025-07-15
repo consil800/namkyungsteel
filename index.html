@@ -1216,12 +1216,13 @@
             console.log('✅ OAuth 로그인 성공:', session.user);
             
             // 사용자 정보 저장
+            const actualProvider = session.user.app_metadata?.provider || 'unknown';
             const user = {
               id: session.user.id,
               email: session.user.email,
               name: session.user.user_metadata?.name || session.user.user_metadata?.full_name || session.user.email,
               profileImage: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture,
-              provider: 'google'
+              provider: actualProvider
             };
             
             // users 테이블에 사용자 정보 저장 (없으면 생성)
@@ -1243,8 +1244,10 @@
                       name: user.name,
                       company_domain: 'namkyungsteel.com',
                       company_name: '남경스틸(주)',
-                      role: 'employee',
-                      provider: 'google',
+                      role: null,
+                      provider: actualProvider,
+                      is_approved: false,
+                      is_active: true,
                       created_at: new Date().toISOString()
                     }
                   ]);

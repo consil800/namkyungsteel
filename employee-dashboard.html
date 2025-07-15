@@ -607,39 +607,45 @@
             let welcomeMessage = '';
             let infoText = '';
             
-            switch(user.role) {
-                case 'master':
-                    welcomeMessage = user.name || '마스터'; // 마스터
-                    infoText = '마스터 관리자로 로그인하셨습니다.';
-                    break;
-                case 'master_admin':
-                    welcomeMessage = user.name || '시스템 관리자';
-                    infoText = '시스템 관리자로 로그인하셨습니다.';
-                    break;
-                case 'company_admin':
-                    welcomeMessage = user.name;
-                    infoText = `${user.position || '대표이사'} · ${user.company || '회사명'}`;
-                    break;
-                case 'company_manager':
-                    welcomeMessage = user.name;
-                    infoText = '관리자';
-                    break;
-                case 'employee':
-                    welcomeMessage = user.name;
-                    // 부서명, 직책이 없으면 빈 문자열로 설정
-                    if (user.department && user.position) {
-                        infoText = `${user.department} · ${user.position}`;
-                    } else if (user.department) {
-                        infoText = user.department;
-                    } else if (user.position) {
-                        infoText = user.position;
-                    } else {
+            // role이 null이거나 undefined인 경우 미승인 상태로 처리
+            if (!user.role) {
+                welcomeMessage = user.name;
+                infoText = '⏳ 계정 승인 대기 중입니다. 관리자의 승인 후 시스템을 이용할 수 있습니다.';
+            } else {
+                switch(user.role) {
+                    case 'master':
+                        welcomeMessage = user.name || '마스터'; // 마스터
+                        infoText = '마스터 관리자로 로그인하셨습니다.';
+                        break;
+                    case 'master_admin':
+                        welcomeMessage = user.name || '시스템 관리자';
+                        infoText = '시스템 관리자로 로그인하셨습니다.';
+                        break;
+                    case 'company_admin':
+                        welcomeMessage = user.name;
+                        infoText = `${user.position || '대표이사'} · ${user.company || '회사명'}`;
+                        break;
+                    case 'company_manager':
+                        welcomeMessage = user.name;
+                        infoText = '관리자';
+                        break;
+                    case 'employee':
+                        welcomeMessage = user.name;
+                        // 부서명, 직책이 없으면 빈 문자열로 설정
+                        if (user.department && user.position) {
+                            infoText = `${user.department} · ${user.position}`;
+                        } else if (user.department) {
+                            infoText = user.department;
+                        } else if (user.position) {
+                            infoText = user.position;
+                        } else {
+                            infoText = '';
+                        }
+                        break;
+                    default:
+                        welcomeMessage = user.name;
                         infoText = '';
-                    }
-                    break;
-                default:
-                    welcomeMessage = user.name;
-                    infoText = '환영합니다.';
+                }
             }
             
             document.getElementById('userName').textContent = welcomeMessage;
@@ -657,15 +663,15 @@
             document.title = '남경스틸(주) 업무보드';
             
             
-            // 직원의 경우 설정 버튼 항상 숨기기
+            // 설정 버튼 표시/숨김 처리 (role이 없거나 employee인 경우 숨김)
             console.log('🔧 설정 버튼 처리 시작 - 사용자 역할:', user.role);
             const settingsBtn = document.getElementById('settingsBtn');
             console.log('🔧 설정 버튼 요소:', settingsBtn);
             
-            if (user.role === 'employee') {
-                console.log('👤 직원 계정 확인됨 - 설정 버튼 숨김 처리');
+            if (!user.role || user.role === 'employee') {
+                console.log('👤 일반 사용자/직원 계정 확인됨 - 설정 버튼 숨김 처리');
                 if (settingsBtn) {
-                    settingsBtn.style.display = 'none'; // 직원은 승인 여부와 관계없이 설정 버튼 숨김
+                    settingsBtn.style.display = 'none'; // 미승인 사용자나 직원은 설정 버튼 숨김
                     console.log('✅ 설정 버튼 숨김 완료');
                 } else {
                     console.log('❌ 설정 버튼 요소를 찾을 수 없음');
@@ -673,7 +679,7 @@
             } else {
                 console.log('👑 관리자 계정 확인됨 - 설정 버튼 표시');
                 if (settingsBtn) {
-                    settingsBtn.style.display = 'flex'; // 다른 역할은 설정 버튼 보이기
+                    settingsBtn.style.display = 'flex'; // 관리자는 설정 버튼 보이기
                     console.log('✅ 설정 버튼 표시 완료');
                 }
             }
