@@ -654,14 +654,23 @@
             
             
             // 직원의 경우 설정 버튼 항상 숨기기
+            console.log('🔧 설정 버튼 처리 시작 - 사용자 역할:', user.role);
             const settingsBtn = document.getElementById('settingsBtn');
+            console.log('🔧 설정 버튼 요소:', settingsBtn);
+            
             if (user.role === 'employee') {
+                console.log('👤 직원 계정 확인됨 - 설정 버튼 숨김 처리');
                 if (settingsBtn) {
                     settingsBtn.style.display = 'none'; // 직원은 승인 여부와 관계없이 설정 버튼 숨김
+                    console.log('✅ 설정 버튼 숨김 완료');
+                } else {
+                    console.log('❌ 설정 버튼 요소를 찾을 수 없음');
                 }
             } else {
+                console.log('👑 관리자 계정 확인됨 - 설정 버튼 표시');
                 if (settingsBtn) {
                     settingsBtn.style.display = 'flex'; // 다른 역할은 설정 버튼 보이기
+                    console.log('✅ 설정 버튼 표시 완료');
                 }
             }
             
