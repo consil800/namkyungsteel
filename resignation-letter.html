@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>사직서 - SteelWorks Platform</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: #f8f9fa;
+            color: #333333;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 1.5rem 2rem;
+            border-bottom: 2px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .form-card {
+            background: white;
+            border-radius: 15px;
+            padding: 3rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border: 1px solid #dee2e6;
+            margin-bottom: 2rem;
+        }
+
+        .document-title {
+            font-size: 2rem;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 3rem;
+            color: #333333;
+            letter-spacing: 2px;
+        }
+
+        .form-section {
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #495057;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 0.5rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .required {
+            color: #ff6b6b;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 1rem;
+            background: #fff;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            color: #495057;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        .form-input::placeholder {
+            color: #6c757d;
+        }
+
+        .form-textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 1rem;
+            background: #fff;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            color: #495057;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .form-select option {
+            background: #fff;
+            color: #495057;
+        }
+
+        .signature-section {
+            text-align: right;
+            margin-top: 3rem;
+            padding: 2rem;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid #dee2e6;
+        }
+
+        .signature-line {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 3rem;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            border: 2px solid #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            border-color: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .btn-preview {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-preview:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .preview-template {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+            }
+            
+            .form-card {
+                padding: 2rem 1.5rem;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-title">
+            <i class="fas fa-user-times"></i>
+            <span>사직서 작성</span>
+        </div>
+        <a href="documents.html" class="back-btn">
+            <i class="fas fa-arrow-left"></i>
+            결제 서류로 돌아가기
+        </a>
+    </header>
+
+    <main class="container">
+        <div class="form-card">
+            <h1 class="document-title">사 직 서</h1>
+
+            <form id="resignationForm">
+                <!-- 기본 정보 -->
+                <div class="form-section">
+                    <h3 class="section-title">기본 정보</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="employeeName" class="form-label">성명 <span class="required">*</span></label>
+                            <input type="text" id="employeeName" name="employeeName" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="employeeId" class="form-label">사원번호</label>
+                            <input type="text" id="employeeId" name="employeeId" class="form-input">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="department" class="form-label">소속 부서 <span class="required">*</span></label>
+                            <input type="text" id="department" name="department" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="position" class="form-label">직급 <span class="required">*</span></label>
+                            <input type="text" id="position" name="position" class="form-input" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="hireDate" class="form-label">입사일</label>
+                            <input type="date" id="hireDate" name="hireDate" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label for="resignationDate" class="form-label">퇴사 희망일 <span class="required">*</span></label>
+                            <input type="date" id="resignationDate" name="resignationDate" class="form-input" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 사직 사유 -->
+                <div class="form-section">
+                    <h3 class="section-title">사직 사유</h3>
+                    <div class="form-group">
+                        <label for="resignationType" class="form-label">사직 유형 <span class="required">*</span></label>
+                        <select id="resignationType" name="resignationType" class="form-select" required>
+                            <option value="">선택해주세요</option>
+                            <option value="개인사정">개인사정</option>
+                            <option value="건강상의이유">건강상의 이유</option>
+                            <option value="이직">이직</option>
+                            <option value="학업">학업</option>
+                            <option value="창업">창업</option>
+                            <option value="가족사정">가족사정</option>
+                            <option value="기타">기타</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="resignationReason" class="form-label">상세 사유 <span class="required">*</span></label>
+                        <textarea id="resignationReason" name="resignationReason" class="form-input form-textarea" 
+                                placeholder="사직 사유를 구체적으로 작성해주세요" required></textarea>
+                    </div>
+                </div>
+
+                <!-- 업무 인수인계 -->
+                <div class="form-section">
+                    <h3 class="section-title">업무 인수인계</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="handoverPerson" class="form-label">인수인계 대상자</label>
+                            <input type="text" id="handoverPerson" name="handoverPerson" class="form-input" 
+                                   placeholder="업무를 인계받을 담당자">
+                        </div>
+                        <div class="form-group">
+                            <label for="handoverDate" class="form-label">인수인계 완료 예정일</label>
+                            <input type="date" id="handoverDate" name="handoverDate" class="form-input">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="handoverDetails" class="form-label">인수인계 내용</label>
+                        <textarea id="handoverDetails" name="handoverDetails" class="form-input form-textarea" 
+                                placeholder="인수인계할 주요 업무 내용을 작성해주세요"></textarea>
+                    </div>
+                </div>
+
+                <!-- 기타 사항 -->
+                <div class="form-section">
+                    <h3 class="section-title">기타 사항</h3>
+                    <div class="form-group">
+                        <label for="additionalComments" class="form-label">추가 의견</label>
+                        <textarea id="additionalComments" name="additionalComments" class="form-input form-textarea" 
+                                placeholder="회사에 전하고 싶은 말씀이 있으시면 작성해주세요"></textarea>
+                    </div>
+                </div>
+
+                <!-- 승인자 선택 -->
+                <div class="form-section">
+                    <h3 class="section-title">승인자 선택</h3>
+                    <div class="form-group">
+                        <label for="approver" class="form-label">1차 승인자 <span class="required">*</span></label>
+                        <select id="approver" name="approver" class="form-select" required>
+                            <option value="">승인자를 선택해주세요</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="approvalComment" class="form-label">승인 요청 메시지</label>
+                        <textarea id="approvalComment" name="approvalComment" class="form-input form-textarea" 
+                                placeholder="승인자에게 전달할 메시지를 입력해주세요" rows="3"></textarea>
+                    </div>
+                </div>
+
+                <!-- 서명 섹션 -->
+                <div class="signature-section">
+                    <div class="form-group" style="text-align: left; margin-bottom: 2rem;">
+                        <label for="submitDate" class="form-label">제출일 <span class="required">*</span></label>
+                        <input type="date" id="submitDate" name="submitDate" class="form-input" required style="max-width: 200px;">
+                    </div>
+                    <div class="form-group" style="text-align: left; margin-bottom: 2rem;">
+                        <label for="reportDate" class="form-label">보고일 <span class="required">*</span></label>
+                        <input type="date" id="reportDate" name="reportDate" class="form-input" required style="max-width: 200px;">
+                    </div>
+                    <div class="signature-line">신청인: <span id="signatureName">________________</span></div>
+                </div>
+            </form>
+
+            <div class="btn-group">
+                <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                    <i class="fas fa-undo"></i> 초기화
+                </button>
+                <button type="button" class="btn btn-preview" onclick="previewDocument()">
+                    <i class="fas fa-eye"></i> 미리보기
+                </button>
+                <button type="button" class="btn btn-primary" onclick="submitForm()">
+                    <i class="fas fa-paper-plane"></i> 제출
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- 미리보기 템플릿 (숨겨짐) -->
+    <div id="previewTemplate" class="preview-template">
+        <!DOCTYPE html>
+        <html lang="ko">
+        <head>
+            <meta charset="UTF-8">
+            <title>사직서 미리보기</title>
+            <style>
+                @page { size: A4; margin: 2cm; }
+                body { 
+                    font-family: "Noto Sans KR", sans-serif; 
+                    line-height: 1.8; 
+                    color: #333; 
+                    background: white; 
+                    margin: 0; 
+                    padding: 20px; 
+                    font-size: 14px; 
+                }
+                .document { 
+                    max-width: 100%; 
+                    margin: 0 auto; 
+                    background: white; 
+                    min-height: 297mm; 
+                    padding: 20px; 
+                }
+                .title { 
+                    text-align: center; 
+                    font-size: 28px; 
+                    font-weight: bold; 
+                    margin-bottom: 50px; 
+                    letter-spacing: 8px; 
+                }
+                .section { 
+                    margin-bottom: 30px; 
+                    border-bottom: 1px solid #eee; 
+                    padding-bottom: 20px; 
+                }
+                .section:last-child { border-bottom: none; }
+                .section-title { 
+                    font-size: 16px; 
+                    font-weight: bold; 
+                    color: #2563eb; 
+                    margin-bottom: 15px; 
+                    border-left: 4px solid #2563eb; 
+                    padding-left: 10px; 
+                }
+                .field { 
+                    margin-bottom: 12px; 
+                    display: flex; 
+                    align-items: flex-start; 
+                }
+                .label { 
+                    font-weight: bold; 
+                    display: inline-block; 
+                    min-width: 130px; 
+                    color: #555; 
+                }
+                .value { 
+                    flex: 1; 
+                    word-break: break-word; 
+                }
+                .long-text { 
+                    white-space: pre-wrap; 
+                    background: #f8f9fa; 
+                    padding: 15px; 
+                    border-radius: 5px; 
+                    margin-top: 5px; 
+                    border-left: 3px solid #007bff; 
+                }
+                .signature { 
+                    text-align: right; 
+                    margin-top: 60px; 
+                    font-size: 16px; 
+                }
+                .signature-line { 
+                    margin-bottom: 15px; 
+                }
+                .signature-name { 
+                    font-size: 18px; 
+                    font-weight: bold; 
+                    border-bottom: 2px solid #333; 
+                    padding-bottom: 5px; 
+                    display: inline-block; 
+                    min-width: 150px; 
+                    text-align: center; 
+                }
+                .print-btn { 
+                    position: fixed; 
+                    top: 20px; 
+                    right: 20px; 
+                    background: #007bff; 
+                    color: white; 
+                    border: none; 
+                    padding: 10px 20px; 
+                    border-radius: 5px; 
+                    cursor: pointer; 
+                    z-index: 1000; 
+                }
+                @media print { 
+                    .print-btn { display: none; } 
+                    body { margin: 0; padding: 0; } 
+                    .document { padding: 0; margin: 0; } 
+                }
+            </style>
+        </head>
+        <body>
+            <button class="print-btn" onclick="window.print()">인쇄</button>
+            <div class="document">
+                <h1 class="title">사 직 서</h1>
+                
+                <div class="section">
+                    <div class="section-title">기본 정보</div>
+                    <div class="field"><span class="label">성명:</span><span class="value" id="preview-employeeName"></span></div>
+                    <div class="field"><span class="label">사원번호:</span><span class="value" id="preview-employeeId"></span></div>
+                    <div class="field"><span class="label">소속부서:</span><span class="value" id="preview-department"></span></div>
+                    <div class="field"><span class="label">직급:</span><span class="value" id="preview-position"></span></div>
+                    <div class="field"><span class="label">입사일:</span><span class="value" id="preview-hireDate"></span></div>
+                    <div class="field"><span class="label">퇴사희망일:</span><span class="value" id="preview-resignationDate"></span></div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">사직 사유</div>
+                    <div class="field"><span class="label">사직유형:</span><span class="value" id="preview-resignationType"></span></div>
+                    <div class="field"><span class="label">상세사유:</span><div class="value"><div class="long-text" id="preview-resignationReason"></div></div></div>
+                </div>
+                
+                <div class="section" id="preview-handover-section" style="display: none;">
+                    <div class="section-title">업무 인수인계</div>
+                    <div class="field"><span class="label">인수인계자:</span><span class="value" id="preview-handoverPerson"></span></div>
+                    <div class="field"><span class="label">인계완료일:</span><span class="value" id="preview-handoverDate"></span></div>
+                    <div class="field" id="preview-handover-details-field" style="display: none;"><span class="label">인계내용:</span><div class="value"><div class="long-text" id="preview-handoverDetails"></div></div></div>
+                </div>
+                
+                <div class="section" id="preview-comments-section" style="display: none;">
+                    <div class="section-title">추가 의견</div>
+                    <div class="field"><span class="label">의견:</span><div class="value"><div class="long-text" id="preview-additionalComments"></div></div></div>
+                </div>
+                
+                <div class="signature">
+                    <div class="signature-line">제출일: <span id="preview-submitDate"></span></div>
+                    <br><br>
+                    <div class="signature-line">신청인: <span class="signature-name" id="preview-signatureName"></span> (인)</div>
+                </div>
+            </div>
+        </body>
+        </html>
+    </div>
+
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script>
+        // Supabase 초기화
+        const supabase = window.supabase.createClient(
+            'https://zgyawfmjconubxaiamod.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpneWF3Zm1qY29udWJ4YWlhbW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NjQzNzIsImV4cCI6MjA2NzM0MDM3Mn0.shjBE2OQeILwkLLi4E6Bq0-b6YPUs-WFwquexdUiM9A'
+        );
+        
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            var date = new Date(dateString);
+            return date.getFullYear() + '년 ' + (date.getMonth() + 1) + '월 ' + date.getDate() + '일';
+        }
+
+        // 회사정보 로드 함수
+        async function loadCompanyInfo() {
+            try {
+                const { data, error } = await supabase
+                    .from('company_info')
+                    .select('*')
+                    .limit(1)
+                    .single();
+                
+                if (error) {
+                    console.error('회사정보 로드 오류:', error);
+                    return null;
+                }
+                
+                return data;
+            } catch (error) {
+                console.error('회사정보 로드 실패:', error);
+                return null;
+            }
+        }
+
+        // 미리보기에서 회사정보 업데이트
+        async function updateCompanyInfoInPreview(previewWindow) {
+            const companyInfo = await loadCompanyInfo();
+            if (!companyInfo) return;
+            
+            try {
+                const companyInfoElement = previewWindow.document.querySelector('.company-info p');
+                if (companyInfoElement) {
+                    companyInfoElement.innerHTML = `
+                        <strong>${companyInfo.company_name || '남경스틸(주)'}</strong><br>
+                        대표이사 ${companyInfo.representative_name || '고 강 석'}<br>
+                        ${companyInfo.company_address || '경기도 안산시 단원구 원시동 123-45'}<br>
+                        사업자등록번호: ${companyInfo.business_number || '123-45-67890'}
+                    `;
+                }
+                
+                // 직인 이미지 업데이트
+                const stampArea = previewWindow.document.querySelector('.stamp-area');
+                if (stampArea && companyInfo.company_seal_url) {
+                    stampArea.innerHTML = `<img src="${companyInfo.company_seal_url}" alt="직인" style="max-width: 100%; max-height: 100%;">`;
+                }
+            } catch (error) {
+                console.error('미리보기 회사정보 업데이트 오류:', error);
+            }
+        }
+
+        function getFieldLabel(field) {
+            var labels = {
+                'employeeName': '성명',
+                'department': '소속 부서',
+                'position': '직급',
+                'resignationDate': '퇴사 희망일',
+                'resignationType': '사직 유형',
+                'resignationReason': '상세 사유',
+                'submitDate': '제출일',
+                'approver': '승인자'
+            };
+            return labels[field] || field;
+        }
+
+        function resetForm() {
+            document.getElementById('resignationForm').reset();
+            document.getElementById('signatureName').textContent = '________________';
+            
+            var today = new Date().toISOString().split('T')[0];
+            document.getElementById('submitDate').value = today;
+            
+            var twoWeeksLater = new Date();
+            twoWeeksLater.setDate(twoWeeksLater.getDate() + 14);
+            document.getElementById('resignationDate').min = twoWeeksLater.toISOString().split('T')[0];
+        }
+
+        function submitForm() {
+            var form = document.getElementById('resignationForm');
+            var formData = new FormData(form);
+            
+            var requiredFields = ['employeeName', 'department', 'position', 'resignationDate', 'resignationType', 'resignationReason', 'submitDate', 'approver'];
+            for (var i = 0; i < requiredFields.length; i++) {
+                var field = requiredFields[i];
+                if (!formData.get(field)) {
+                    alert(getFieldLabel(field) + '을(를) 입력해주세요.');
+                    return;
+                }
+            }
+
+            var resignationDate = new Date(formData.get('resignationDate'));
+            var minDate = new Date();
+            minDate.setDate(minDate.getDate() + 14);
+            
+            if (resignationDate < minDate) {
+                alert('퇴사 희망일은 최소 2주 후로 설정해주세요.');
+                return;
+            }
+
+            // 현재 로그인 사용자 정보 가져오기
+            var currentUser = getCurrentUser();
+            if (!currentUser) {
+                alert('로그인 정보를 확인할 수 없습니다.');
+                return;
+            }
+
+            var resignationData = {
+                id: Date.now().toString(),
+                documentType: 'resignation',
+                requesterId: currentUser.id,
+                requesterName: formData.get('employeeName'),
+                employeeName: formData.get('employeeName'),
+                employeeId: formData.get('employeeId'),
+                department: formData.get('department'),
+                position: formData.get('position'),
+                hireDate: formData.get('hireDate'),
+                resignationDate: formData.get('resignationDate'),
+                resignationType: formData.get('resignationType'),
+                resignationReason: formData.get('resignationReason'),
+                handoverPerson: formData.get('handoverPerson'),
+                handoverDate: formData.get('handoverDate'),
+                handoverDetails: formData.get('handoverDetails'),
+                additionalComments: formData.get('additionalComments'),
+                approvalComment: formData.get('approvalComment'),
+                submitDate: formData.get('submitDate'),
+                status: 'pending',
+                approvalChain: [{
+                    approverId: formData.get('approver'),
+                    approverName: getEmployeeName(formData.get('approver')),
+                    status: 'pending',
+                    level: 1,
+                    requestedAt: new Date().toISOString()
+                }],
+                signatures: [],
+                createdAt: new Date().toISOString()
+            };
+
+            // 승인 요청 저장
+            var approvalRequests = JSON.parse(localStorage.getItem('approvalRequests') || '[]');
+            approvalRequests.unshift(resignationData);
+            localStorage.setItem('approvalRequests', JSON.stringify(approvalRequests));
+
+            // 기존 사직서 목록에도 저장 (호환성)
+            var resignations = JSON.parse(localStorage.getItem('resignationLetters') || '[]');
+            resignations.unshift(resignationData);
+            localStorage.setItem('resignationLetters', JSON.stringify(resignations));
+
+            // 승인자에게 알림 생성
+            createNotification(formData.get('approver'), {
+                type: 'approval_request',
+                title: '사직서 승인 요청',
+                message: `${formData.get('employeeName')}님이 사직서 승인을 요청했습니다.`,
+                documentId: resignationData.id,
+                documentType: 'resignation',
+                requesterId: currentUser.id,
+                requesterName: formData.get('employeeName'),
+                createdAt: new Date().toISOString()
+            });
+            
+            alert('사직서 승인 요청이 완료되었습니다.\n승인자의 검토를 기다려주세요.');
+            resetForm();
+        }
+
+        function previewDocument() {
+            var form = document.getElementById('resignationForm');
+            var formData = new FormData(form);
+            
+            var requiredFields = ['employeeName', 'department', 'position', 'resignationDate', 'resignationType', 'resignationReason', 'submitDate'];
+            for (var i = 0; i < requiredFields.length; i++) {
+                var field = requiredFields[i];
+                if (!formData.get(field)) {
+                    alert('미리보기를 위해 ' + getFieldLabel(field) + '을(를) 입력해주세요.');
+                    return;
+                }
+            }
+            
+            var previewWindow = window.open('', '_blank', 'width=900,height=1200');
+            if (!previewWindow) {
+                alert('팝업이 차단되었습니다. 팝업 허용 후 다시 시도해주세요.');
+                return;
+            }
+
+            var templateHTML = document.getElementById('previewTemplate').innerHTML;
+            previewWindow.document.open();
+            previewWindow.document.write(templateHTML);
+            previewWindow.document.close();
+
+            setTimeout(function() {
+                previewWindow.document.getElementById('preview-employeeName').textContent = formData.get('employeeName') || '';
+                previewWindow.document.getElementById('preview-employeeId').textContent = formData.get('employeeId') || '미입력';
+                previewWindow.document.getElementById('preview-department').textContent = formData.get('department') || '';
+                previewWindow.document.getElementById('preview-position').textContent = formData.get('position') || '';
+                previewWindow.document.getElementById('preview-hireDate').textContent = formData.get('hireDate') ? formatDate(formData.get('hireDate')) : '미입력';
+                previewWindow.document.getElementById('preview-resignationDate').textContent = formatDate(formData.get('resignationDate'));
+                previewWindow.document.getElementById('preview-resignationType').textContent = formData.get('resignationType') || '';
+                previewWindow.document.getElementById('preview-resignationReason').textContent = formData.get('resignationReason') || '';
+                previewWindow.document.getElementById('preview-submitDate').textContent = formatDate(formData.get('submitDate'));
+                previewWindow.document.getElementById('preview-signatureName').textContent = formData.get('employeeName') || '';
+
+                if (formData.get('handoverPerson')) {
+                    previewWindow.document.getElementById('preview-handover-section').style.display = 'block';
+                    previewWindow.document.getElementById('preview-handoverPerson').textContent = formData.get('handoverPerson');
+                    previewWindow.document.getElementById('preview-handoverDate').textContent = formData.get('handoverDate') ? formatDate(formData.get('handoverDate')) : '미정';
+                    
+                    if (formData.get('handoverDetails')) {
+                        previewWindow.document.getElementById('preview-handover-details-field').style.display = 'block';
+                        previewWindow.document.getElementById('preview-handoverDetails').textContent = formData.get('handoverDetails');
+                    }
+                }
+
+                if (formData.get('additionalComments')) {
+                    previewWindow.document.getElementById('preview-comments-section').style.display = 'block';
+                    previewWindow.document.getElementById('preview-additionalComments').textContent = formData.get('additionalComments');
+                }
+
+                // 회사정보 업데이트
+                updateCompanyInfoInPreview(previewWindow);
+            }, 100);
+        }
+
+        // 현재 로그인 사용자 정보 가져오기
+        function getCurrentUser() {
+            try {
+                return JSON.parse(localStorage.getItem('currentUser'));
+            } catch (error) {
+                console.error('사용자 정보 로드 오류:', error);
+                return null;
+            }
+        }
+
+        // 직원 이름 가져오기
+        function getEmployeeName(employeeId) {
+            var employees = JSON.parse(localStorage.getItem('employees') || '[]');
+            var employee = employees.find(emp => emp.id === employeeId);
+            return employee ? employee.name : '알 수 없음';
+        }
+
+        // 승인자 목록 로드
+        async function loadApprovers() {
+            try {
+                const currentUser = getCurrentUser();
+                const approverSelect = document.getElementById('approver');
+                
+                // 데이터베이스에서 모든 직원 정보 가져오기
+                const { data: employees, error } = await supabase
+                    .from('users')
+                    .select('id, name, department, position, email')
+                    .eq('company_domain', 'namkyungsteel.com')
+                    .not('role', 'is', null)
+                    .order('name');
+                
+                if (error) {
+                    console.error('승인자 목록 로드 오류:', error);
+                    return;
+                }
+                
+                // 현재 사용자를 제외한 모든 직원을 승인자 후보로 추가
+                employees.forEach(function(employee) {
+                    // 현재 사용자는 제외
+                    if (employee.id !== currentUser?.id && employee.email !== currentUser?.email) {
+                        var option = document.createElement('option');
+                        option.value = employee.id;
+                        option.textContent = `${employee.name} (${employee.position || '직급 미설정'}) - ${employee.department || '부서 미설정'}`;
+                        approverSelect.appendChild(option);
+                    }
+                });
+                
+                console.log(`승인자 목록 로드 완료: ${employees.length}명`);
+            } catch (error) {
+                console.error('승인자 목록 로드 중 오류:', error);
+            }
+        }
+
+        // 알림 생성 함수
+        function createNotification(userId, notification) {
+            var notifications = JSON.parse(localStorage.getItem('notifications_' + userId) || '[]');
+            notification.id = Date.now().toString();
+            notification.read = false;
+            notifications.unshift(notification);
+            localStorage.setItem('notifications_' + userId, JSON.stringify(notifications));
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var today = new Date().toISOString().split('T')[0];
+            document.getElementById('submitDate').value = today;
+            
+            var twoWeeksLater = new Date();
+            twoWeeksLater.setDate(twoWeeksLater.getDate() + 14);
+            document.getElementById('resignationDate').min = twoWeeksLater.toISOString().split('T')[0];
+            
+            // 현재 사용자 정보로 폼 자동 입력
+            var currentUser = getCurrentUser();
+            if (currentUser) {
+                document.getElementById('employeeName').value = currentUser.name || '';
+                document.getElementById('department').value = currentUser.department || '';
+                document.getElementById('position').value = currentUser.position || '';
+                document.getElementById('signatureName').textContent = currentUser.name || '________________';
+            }
+            
+            // 승인자 목록 로드
+            loadApprovers();
+            
+            document.getElementById('resignationDate').addEventListener('change', function() {
+                var resignationDate = new Date(this.value);
+                var handoverDate = new Date(resignationDate);
+                handoverDate.setDate(handoverDate.getDate() - 3);
+                document.getElementById('handoverDate').value = handoverDate.toISOString().split('T')[0];
+            });
+            
+            document.getElementById('employeeName').addEventListener('input', function() {
+                document.getElementById('signatureName').textContent = this.value || '________________';
+            });
+        });
+    </script>
+</body>
+</html>
