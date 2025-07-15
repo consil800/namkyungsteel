@@ -550,7 +550,7 @@
         
         // 페이지 로드 시 사용자 정보 표시
         document.addEventListener('DOMContentLoaded', async function() {
-            const user = AuthManager.getCurrentUser();
+            let user = AuthManager.getCurrentUser();
             console.log('🧪 AuthManager에서 가져온 사용자 정보:', user);
             console.log('🧪 사용자 역할:', user?.role);
             console.log('🧪 localStorage currentUser:', localStorage.getItem('currentUser'));
@@ -561,53 +561,65 @@
                 return;
             }
 
-            // 직원인 경우 실시간으로 승인 상태 확인
-            if (user.role === 'employee') {
-                try {
-                    let dbUser;
-                    if (user.email && user.email !== 'null') {
-                        const { data, error } = await window.db.client
-                            .from('users')
-                            .select('is_approved, is_active, rejection_reason')
-                            .eq('email', user.email)
-                            .single();
-                        dbUser = data;
-                    } else if (user.oauth_id) {
-                        const { data, error } = await window.db.client
-                            .from('users')
-                            .select('is_approved, is_active, rejection_reason')
-                            .eq('oauth_id', user.oauth_id)
-                            .single();
-                        dbUser = data;
-                    }
-
-                    if (dbUser) {
-                        // 로컬 사용자 정보 업데이트
-                        user.is_approved = dbUser.is_approved;
-                        user.is_active = dbUser.is_active;
-                        user.rejection_reason = dbUser.rejection_reason;
-                        localStorage.setItem('currentUser', JSON.stringify(user));
-
-                        // 반려된 사용자는 로그아웃 처리
-                        if (!dbUser.is_active && dbUser.rejection_reason) {
-                            alert(`계정이 반려되었습니다.\n사유: ${dbUser.rejection_reason}\n\n문의사항이 있으시면 관리자에게 연락해주세요.`);
-                            localStorage.removeItem('currentUser');
-                            localStorage.removeItem('userRole');
-                            localStorage.removeItem('userName');
-                            window.location.href = 'index.html';
-                            return;
-                        }
-                    }
-                } catch (error) {
-                    console.error('사용자 상태 확인 오류:', error);
+            // 데이터베이스에서 최신 사용자 정보 가져오기
+            try {
+                console.log('🔄 데이터베이스에서 최신 사용자 정보 조회 중...');
+                let dbUser = null;
+                
+                if (user.email && user.email !== 'null') {
+                    const { data, error } = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .eq('email', user.email)
+                        .single();
+                    dbUser = data;
+                } else if (user.oauth_id || user.id) {
+                    const { data, error } = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .eq('id', user.oauth_id || user.id)
+                        .single();
+                    dbUser = data;
                 }
+
+                if (dbUser) {
+                    console.log('✅ 데이터베이스에서 가져온 사용자 정보:', dbUser);
+                    // 로컬 사용자 정보를 데이터베이스 정보로 업데이트
+                    user = {
+                        ...user,
+                        role: dbUser.role,
+                        department: dbUser.department,
+                        position: dbUser.position,
+                        is_approved: dbUser.is_approved,
+                        is_active: dbUser.is_active,
+                        rejection_reason: dbUser.rejection_reason
+                    };
+                    
+                    // localStorage도 업데이트
+                    localStorage.setItem('currentUser', JSON.stringify(user));
+                    console.log('🔄 사용자 정보 업데이트 완료:', user);
+                } else {
+                    console.log('❌ 데이터베이스에서 사용자를 찾을 수 없음');
+                }
+            } catch (error) {
+                console.error('❌ 사용자 정보 조회 오류:', error);
+            }
+
+            // 반려된 사용자 처리
+            if (!user.is_active && user.rejection_reason) {
+                alert(`계정이 반려되었습니다.\n사유: ${user.rejection_reason}\n\n문의사항이 있으시면 관리자에게 연락해주세요.`);
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('userRole');
+                localStorage.removeItem('userName');
+                window.location.href = 'index.html';
+                return;
             }
             
             // 사용자별 환영 메시지 설정
             let welcomeMessage = '';
             let infoText = '';
             
-            // role이 null이거나 undefined인 경우 미승인 상태로 처리
+            // role이 null이거나 undefined인 경우에만 미승인 상태로 처리
             if (!user.role) {
                 welcomeMessage = user.name;
                 infoText = '⏳ 계정 승인 대기 중입니다. 관리자의 승인 후 시스템을 이용할 수 있습니다.';
