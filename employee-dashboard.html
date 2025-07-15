@@ -645,7 +645,7 @@
                         welcomeMessage = user.name;
                         // 부서명, 직책이 없으면 빈 문자열로 설정
                         if (user.department && user.position) {
-                            infoText = `${user.department} · ${user.position}`;
+                            infoText = `${user.department} ${user.position}`;
                         } else if (user.department) {
                             infoText = user.department;
                         } else if (user.position) {
