@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>승인 알림 - SteelWorks Platform</title>
+    
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Database Manager -->
+    <script src="database.js"></script>
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: #f8f9fa;
+            color: #333333;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 1.5rem 2rem;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .notification-tabs {
+            display: flex;
+            background: white;
+            border-radius: 10px;
+            padding: 0.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 1rem;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            position: relative;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .tab:not(.active):hover {
+            background: #f8f9fa;
+        }
+
+        .tab-badge {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: #ff6b6b;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .notification-list {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+        }
+
+        .notification-item {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e9ecef;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+
+        .notification-item:hover {
+            background: #f8f9fa;
+        }
+
+        .notification-item.clickable:hover {
+            background: #e3f2fd;
+            transform: translateX(5px);
+        }
+
+        .notification-item.unread {
+            background: linear-gradient(90deg, rgba(102, 126, 234, 0.05), rgba(255, 255, 255, 0.05));
+            border-left: 4px solid #667eea;
+        }
+
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+
+        .notification-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #333333;
+            flex: 1;
+        }
+
+        .notification-type {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
+            margin-left: 1rem;
+        }
+
+        .type-approval-request {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .type-approval-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .type-approval-rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .type-new-user-signup {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .notification-message {
+            color: #6c757d;
+            line-height: 1.5;
+            margin-bottom: 0.75rem;
+        }
+
+        .notification-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+
+        .notification-time {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .notification-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a67d8;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-1px);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #6c757d;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            color: #dee2e6;
+        }
+
+        .unread-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 12px;
+            height: 12px;
+            background: #667eea;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(102, 126, 234, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(102, 126, 234, 0);
+            }
+        }
+
+        .comment-section {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-style: italic;
+            color: #495057;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+            }
+
+            .notification-header {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .notification-type {
+                margin-left: 0;
+                align-self: flex-start;
+            }
+
+            .notification-meta {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .notification-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-title">
+            <i class="fas fa-bell"></i>
+            <span>승인 알림</span>
+        </div>
+        <a href="employee-dashboard.html" class="back-btn">
+            <i class="fas fa-arrow-left"></i>
+            대시보드로 돌아가기
+        </a>
+    </header>
+
+    <main class="container">
+        <div class="notification-tabs">
+            <div class="tab active" data-tab="all" onclick="switchTab('all')">
+                전체 알림
+                <span class="tab-badge" id="allBadge" style="display: none;">0</span>
+            </div>
+            <div class="tab" data-tab="signup" onclick="switchTab('signup')">
+                신규 가입
+                <span class="tab-badge" id="signupBadge" style="display: none;">0</span>
+            </div>
+            <div class="tab" data-tab="pending" onclick="switchTab('pending')">
+                대기 중
+                <span class="tab-badge" id="pendingBadge" style="display: none;">0</span>
+            </div>
+            <div class="tab" data-tab="completed" onclick="switchTab('completed')">
+                완료됨
+                <span class="tab-badge" id="completedBadge" style="display: none;">0</span>
+            </div>
+        </div>
+
+        <div class="notification-list" id="notificationList">
+            <!-- 알림 목록이 동적으로 로드됩니다 -->
+        </div>
+    </main>
+
+    <script>
+        let currentUser = null;
+        let notifications = [];
+        let currentTab = 'all';
+
+        // 현재 로그인 사용자 정보 가져오기
+        function getCurrentUser() {
+            try {
+                return JSON.parse(localStorage.getItem('currentUser'));
+            } catch (error) {
+                console.error('사용자 정보 로드 오류:', error);
+                return null;
+            }
+        }
+
+        // 알림 로드
+        async function loadNotifications() {
+            currentUser = getCurrentUser();
+            if (!currentUser) {
+                alert('로그인 정보를 확인할 수 없습니다.');
+                window.location.href = 'employee-dashboard.html';
+                return;
+            }
+
+            try {
+                // employees 목록에서 정확한 사용자 ID 찾기
+                const employees = JSON.parse(localStorage.getItem('employees') || '[]');
+                const employee = employees.find(emp => 
+                    emp.name === currentUser.name || 
+                    emp.email === currentUser.email ||
+                    emp.id === currentUser.id
+                );
+                
+                if (employee && employee.id) {
+                    currentUser.id = employee.id; // 올바른 ID로 업데이트
+                    currentUser.correctId = employee.id; // 정확한 ID 저장
+                }
+                
+                // 정확한 사용자 ID로 알림 로드
+                const userId = currentUser.correctId || currentUser.id;
+                notifications = JSON.parse(localStorage.getItem('notifications_' + userId) || '[]');
+                console.log(`🔔 알림 로드 (${userId}):`, notifications.length, '개');
+                
+                // 관리자인 경우 데이터베이스에서 승인 대기 사용자 확인 및 알림 생성
+                if (currentUser.role === 'master' || currentUser.role === 'company_CEO' || currentUser.role === 'company_admin' || currentUser.role === 'company_manager') {
+                    console.log('👤 관리자 권한 확인됨, 데이터베이스에서 승인 대기 사용자 조회');
+                    
+                    if (window.db && window.db.client) {
+                        try {
+                            const { data, error } = await window.db.client
+                                .from('users')
+                                .select('id, name, email, created_at')
+                                .is('role', null)  // role이 null인 사용자들 (승인 대기)
+                                .eq('is_active', true);
+                                
+                            if (!error && data && data.length > 0) {
+                                console.log('✅ 승인 대기 사용자 조회 완료:', data.length, '명');
+                                
+                                // 기존 관리자 알림 로드
+                                const adminNotifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
+                                
+                                // 각 승인 대기 사용자에 대해 알림 생성 (중복 방지)
+                                data.forEach(pendingUser => {
+                                    const existingNotification = adminNotifications.find(n => 
+                                        n.type === 'new_user_signup' && 
+                                        n.userInfo && 
+                                        (n.userInfo.email === pendingUser.email || n.userInfo.name === pendingUser.name)
+                                    );
+                                    
+                                    if (!existingNotification) {
+                                        const notification = {
+                                            id: 'signup_' + pendingUser.id + '_' + Date.now(),
+                                            type: 'new_user_signup',
+                                            title: '새로운 사용자 가입',
+                                            message: `${pendingUser.name}님이 가입을 요청했습니다.`,
+                                            timestamp: pendingUser.created_at || new Date().toISOString(),
+                                            isRead: false,
+                                            read: false,
+                                            userInfo: {
+                                                id: pendingUser.id,
+                                                name: pendingUser.name,
+                                                email: pendingUser.email || '이메일 미제공'
+                                            }
+                                        };
+                                        
+                                        adminNotifications.push(notification);
+                                    }
+                                });
+                                
+                                localStorage.setItem('admin_notifications', JSON.stringify(adminNotifications));
+                                console.log('✅ 관리자 알림 업데이트 완료:', adminNotifications.length, '개');
+                            }
+                        } catch (error) {
+                            console.error('❌ 승인 대기 사용자 조회 예외:', error);
+                        }
+                    }
+                    
+                    const adminNotifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
+                    console.log('📢 관리자 알림 로드:', adminNotifications.length, '개');
+                    
+                    // 기존 알림과 합치기 (중복 제거)
+                    adminNotifications.forEach(adminNotif => {
+                        const exists = notifications.find(n => n.id === adminNotif.id);
+                        if (!exists) {
+                            notifications.push(adminNotif);
+                        }
+                    });
+                    
+                    // 최신 순으로 정렬
+                    notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                }
+                
+                // 알림 상태 업데이트 (문서 상태와 동기화)
+                updateNotificationStatus();
+                
+                updateTabBadges();
+                renderNotifications();
+            } catch (error) {
+                console.error('알림 로드 오류:', error);
+                notifications = [];
+                renderNotifications();
+            }
+        }
+        
+        // 알림 상태 업데이트 (문서 상태와 동기화)
+        function updateNotificationStatus() {
+            const approvalRequests = JSON.parse(localStorage.getItem('approvalRequests') || '[]');
+            let updated = false;
+            
+            notifications.forEach(notification => {
+                if (notification.type === 'approval_request' && notification.documentId) {
+                    const document = approvalRequests.find(doc => doc.id === notification.documentId);
+                    if (document) {
+                        if (document.status === 'approved' && notification.type === 'approval_request') {
+                            notification.type = 'approval_completed';
+                            notification.title = notification.title.replace('승인 요청', '승인 완료');
+                            notification.message = notification.message.replace('승인을 요청했습니다', '승인이 완료되었습니다');
+                            updated = true;
+                            console.log(`🔄 알림 상태 업데이트: ${notification.documentId} -> approved`);
+                        } else if (document.status === 'rejected' && notification.type === 'approval_request') {
+                            notification.type = 'approval_rejected';
+                            notification.title = notification.title.replace('승인 요청', '반려');
+                            notification.message = notification.message.replace('승인을 요청했습니다', '반려되었습니다');
+                            updated = true;
+                            console.log(`🔄 알림 상태 업데이트: ${notification.documentId} -> rejected`);
+                        }
+                    }
+                }
+            });
+            
+            // 업데이트된 알림을 저장
+            if (updated) {
+                const userId = currentUser.correctId || currentUser.id;
+                localStorage.setItem('notifications_' + userId, JSON.stringify(notifications));
+                console.log('💾 알림 상태 업데이트 저장 완료');
+            }
+        }
+
+        // 탭 배지 업데이트
+        function updateTabBadges() {
+            const unreadCount = notifications.filter(n => !n.read && !n.isRead).length;
+            const signupCount = notifications.filter(n => (!n.read && !n.isRead) && n.type === 'new_user_signup').length;
+            const pendingCount = notifications.filter(n => (!n.read && !n.isRead) && n.type === 'approval_request').length;
+            const completedCount = notifications.filter(n => (!n.read && !n.isRead) && (n.type === 'approval_completed' || n.type === 'approval_rejected')).length;
+
+            updateBadge('allBadge', unreadCount);
+            updateBadge('signupBadge', signupCount);
+            updateBadge('pendingBadge', pendingCount);
+            updateBadge('completedBadge', completedCount);
+        }
+
+        // 배지 업데이트
+        function updateBadge(badgeId, count) {
+            const badge = document.getElementById(badgeId);
+            if (count > 0) {
+                badge.textContent = count;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        // 탭 전환
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // 탭 활성화 상태 업데이트
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+            
+            renderNotifications();
+        }
+
+        // 알림 렌더링
+        function renderNotifications() {
+            const notificationList = document.getElementById('notificationList');
+            let filteredNotifications = notifications;
+
+            // 탭별 필터링
+            switch (currentTab) {
+                case 'signup':
+                    filteredNotifications = notifications.filter(n => n.type === 'new_user_signup');
+                    break;
+                case 'pending':
+                    filteredNotifications = notifications.filter(n => n.type === 'approval_request');
+                    break;
+                case 'completed':
+                    filteredNotifications = notifications.filter(n => n.type === 'approval_completed' || n.type === 'approval_rejected');
+                    break;
+                default:
+                    filteredNotifications = notifications;
+            }
+
+            if (filteredNotifications.length === 0) {
+                notificationList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-bell-slash"></i>
+                        <h3>알림이 없습니다</h3>
+                        <p>${getEmptyMessage()}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            notificationList.innerHTML = filteredNotifications.map(notification => 
+                createNotificationHTML(notification)
+            ).join('');
+        }
+
+        // 빈 상태 메시지
+        function getEmptyMessage() {
+            switch (currentTab) {
+                case 'signup':
+                    return '신규 가입 알림이 없습니다.';
+                case 'pending':
+                    return '대기 중인 승인 요청이 없습니다.';
+                case 'completed':
+                    return '완료된 알림이 없습니다.';
+                default:
+                    return '아직 받은 알림이 없습니다.';
+            }
+        }
+
+        // 알림 HTML 생성
+        function createNotificationHTML(notification) {
+            const typeClass = `type-${notification.type.replace('_', '-')}`;
+            const typeName = getNotificationTypeName(notification.type);
+            const timeAgo = getTimeAgo(notification.createdAt);
+            const isUnread = !notification.read && !notification.isRead;
+            const unreadClass = isUnread ? 'unread' : '';
+            const unreadBadge = isUnread ? '<div class="unread-badge"></div>' : '';
+            const clickableClass = (notification.type === 'approval_request' && isUnread) || notification.type === 'approval_completed' ? 'clickable' : '';
+            
+            let actionsHTML = '';
+            if (notification.type === 'new_user_signup') {
+                // 가입 알림 액션 - 승인/반려 상태에 따라 다른 버튼 표시
+                if (notification.approval_status === 'approved') {
+                    actionsHTML = `
+                        <div class="notification-actions">
+                            <span class="btn" style="background: #28a745; color: white; cursor: default;">
+                                <i class="fas fa-check-circle"></i> 승인됨
+                            </span>
+                            <button class="btn" style="background: #dc3545; color: white;" onclick="event.stopPropagation(); deleteNotification('${notification.id}')">
+                                <i class="fas fa-trash"></i> 삭제
+                            </button>
+                        </div>
+                    `;
+                } else if (notification.approval_status === 'rejected') {
+                    actionsHTML = `
+                        <div class="notification-actions">
+                            <span class="btn" style="background: #dc3545; color: white; cursor: default;">
+                                <i class="fas fa-times-circle"></i> 반려됨
+                            </span>
+                            <button class="btn" style="background: #dc3545; color: white;" onclick="event.stopPropagation(); deleteNotification('${notification.id}')">
+                                <i class="fas fa-trash"></i> 삭제
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    // 아직 처리되지 않은 경우
+                    actionsHTML = `
+                        <div class="notification-actions">
+                            ${notification.userInfo ? `
+                                <button class="btn btn-primary" onclick="event.stopPropagation(); showUserDetails('${notification.id}')">
+                                    <i class="fas fa-user"></i> 상세 정보
+                                </button>
+                            ` : ''}
+                            <button class="btn btn-success" onclick="event.stopPropagation(); approveUser('${notification.id}')">
+                                <i class="fas fa-check"></i> 승인
+                            </button>
+                            <button class="btn" style="background: #ffc107; color: #212529;" onclick="event.stopPropagation(); rejectUser('${notification.id}')">
+                                <i class="fas fa-times"></i> 반려
+                            </button>
+                            <button class="btn" style="background: #dc3545; color: white;" onclick="event.stopPropagation(); deleteNotification('${notification.id}')">
+                                <i class="fas fa-trash"></i> 삭제
+                            </button>
+                        </div>
+                    `;
+                }
+            } else if (notification.type === 'approval_request' && isUnread) {
+                actionsHTML = `
+                    <div class="notification-actions">
+                        <button class="btn btn-primary" onclick="event.stopPropagation(); openApprovalDocument('${notification.documentId}')">
+                            <i class="fas fa-eye"></i> 검토하기
+                        </button>
+                        <button class="btn btn-secondary" onclick="event.stopPropagation(); markAsRead('${notification.id}')">
+                            <i class="fas fa-check"></i> 읽음
+                        </button>
+                        <button class="btn" style="background: #dc3545; color: white;" onclick="event.stopPropagation(); deleteNotification('${notification.id}')">
+                            <i class="fas fa-trash"></i> 삭제
+                        </button>
+                    </div>
+                `;
+            } else if (!notification.read) {
+                actionsHTML = `
+                    <div class="notification-actions">
+                        <button class="btn btn-success" onclick="event.stopPropagation(); markAsRead('${notification.id}')">
+                            <i class="fas fa-check"></i> 읽음
+                        </button>
+                        <button class="btn" style="background: #dc3545; color: white;" onclick="event.stopPropagation(); deleteNotification('${notification.id}')">
+                            <i class="fas fa-trash"></i> 삭제
+                        </button>
+                    </div>
+                `;
+            } else if (notification.type === 'approval_request') {
+                // 읽은 승인 요청의 경우 다시 검토할 수 있는 버튼 제공
+                actionsHTML = `
+                    <div class="notification-actions">
+                        <button class="btn btn-primary" onclick="event.stopPropagation(); openApprovalDocument('${notification.documentId}')">
+                            <i class="fas fa-eye"></i> 다시 보기
+                        </button>
+                        <button class="btn" style="background: #dc3545; color: white;" onclick="event.stopPropagation(); deleteNotification('${notification.id}')">
+                            <i class="fas fa-trash"></i> 삭제
+                        </button>
+                    </div>
+                `;
+            } else if (notification.type === 'approval_completed' && notification.documentId) {
+                // 승인 완료된 문서도 상세 보기 가능
+                actionsHTML = `
+                    <div class="notification-actions">
+                        <button class="btn btn-success" onclick="event.stopPropagation(); openApprovalDocument('${notification.documentId}')">
+                            <i class="fas fa-file-check"></i> 상세 보기
+                        </button>
+                        <button class="btn" style="background: #dc3545; color: white;" onclick="event.stopPropagation(); deleteNotification('${notification.id}')">
+                            <i class="fas fa-trash"></i> 삭제
+                        </button>
+                    </div>
+                `;
+            } else {
+                // 기타 알림에도 삭제 버튼 제공
+                actionsHTML = `
+                    <div class="notification-actions">
+                        <button class="btn" style="background: #dc3545; color: white;" onclick="event.stopPropagation(); deleteNotification('${notification.id}')">
+                            <i class="fas fa-trash"></i> 삭제
+                        </button>
+                    </div>
+                `;
+            }
+
+            let commentHTML = '';
+            if (notification.comment) {
+                commentHTML = `
+                    <div class="comment-section">
+                        <strong>의견:</strong> ${notification.comment}
+                    </div>
+                `;
+            }
+
+            const onClickHandler = (notification.type === 'approval_request' && !notification.read) || notification.type === 'approval_completed' ? 
+                `onclick="openApprovalDocument('${notification.documentId}')"` : '';
+
+            return `
+                <div class="notification-item ${unreadClass} ${clickableClass}" data-id="${notification.id}" ${onClickHandler}>
+                    ${unreadBadge}
+                    <div class="notification-header">
+                        <div class="notification-title">${notification.title}</div>
+                        <div class="notification-type ${typeClass}">${typeName}</div>
+                    </div>
+                    <div class="notification-message">${notification.message}</div>
+                    ${commentHTML}
+                    <div class="notification-meta">
+                        <div class="notification-time">
+                            <i class="fas fa-clock"></i>
+                            ${timeAgo}
+                        </div>
+                        ${actionsHTML}
+                    </div>
+                </div>
+            `;
+        }
+
+        // 알림 타입 이름
+        function getNotificationTypeName(type) {
+            const names = {
+                'new_user_signup': '신규 가입',
+                'approval_request': '승인 요청',
+                'approval_completed': '승인 완료',
+                'approval_rejected': '반려'
+            };
+            return names[type] || '알림';
+        }
+
+        // 시간 표시
+        function getTimeAgo(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffInMs = now - date;
+            const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+            const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+            const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+            if (diffInMinutes < 1) {
+                return '방금 전';
+            } else if (diffInMinutes < 60) {
+                return `${diffInMinutes}분 전`;
+            } else if (diffInHours < 24) {
+                return `${diffInHours}시간 전`;
+            } else if (diffInDays < 7) {
+                return `${diffInDays}일 전`;
+            } else {
+                return date.toLocaleDateString('ko-KR');
+            }
+        }
+
+        // 읽음 처리
+        function markAsRead(notificationId) {
+            const notification = notifications.find(n => n.id === notificationId);
+            if (notification) {
+                notification.read = true;
+                notification.isRead = true;
+                
+                // 가입 알림인 경우 admin_notifications에도 업데이트
+                if (notification.type === 'new_user_signup') {
+                    const adminNotifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
+                    const adminNotif = adminNotifications.find(n => n.id === notificationId);
+                    if (adminNotif) {
+                        adminNotif.isRead = true;
+                        localStorage.setItem('admin_notifications', JSON.stringify(adminNotifications));
+                    }
+                }
+                
+                // 올바른 사용자 ID로 저장
+                const userId = currentUser.correctId || currentUser.id;
+                localStorage.setItem('notifications_' + userId, JSON.stringify(notifications));
+                updateTabBadges();
+                renderNotifications();
+            }
+        }
+        
+        // 사용자 상세 정보 표시
+        function showUserDetails(notificationId) {
+            const notification = notifications.find(n => n.id === notificationId);
+            if (notification && notification.userInfo) {
+                const userInfo = notification.userInfo;
+                const signupDate = new Date(userInfo.signupTime).toLocaleString('ko-KR');
+                
+                alert(`신규 가입 사용자 정보\n\n이름: ${userInfo.name}\n이메일: ${userInfo.email}\n가입 방법: ${userInfo.provider}\n가입 시간: ${signupDate}`);
+            }
+        }
+
+        // 승인 문서 열기
+        function openApprovalDocument(documentId) {
+            window.location.href = `approval-review.html?id=${documentId}`;
+        }
+        
+        // 알림 삭제
+        function deleteNotification(notificationId) {
+            if (!confirm('이 알림을 삭제하시겠습니까?')) {
+                return;
+            }
+            
+            const notificationIndex = notifications.findIndex(n => n.id === notificationId);
+            if (notificationIndex !== -1) {
+                notifications.splice(notificationIndex, 1);
+                
+                // 올바른 사용자 ID로 저장
+                const userId = currentUser.correctId || currentUser.id;
+                localStorage.setItem('notifications_' + userId, JSON.stringify(notifications));
+                
+                // UI 업데이트
+                updateTabBadges();
+                renderNotifications();
+                
+                console.log(`🗑️ 알림 삭제됨: ${notificationId}`);
+            }
+        }
+
+        // 사용자 승인 함수
+        async function approveUser(notificationId) {
+            const notification = notifications.find(n => n.id === notificationId);
+            if (!notification || !notification.userInfo) {
+                alert('사용자 정보를 찾을 수 없습니다.');
+                return;
+            }
+
+            if (!confirm(`${notification.userInfo.name}님을 승인하시겠습니까?`)) {
+                return;
+            }
+
+            try {
+                // 역할 선택 요청
+                const role = prompt(`${notification.userInfo.name}님의 역할을 선택하세요:\n\n1. employee (직원)\n2. company_manager (매니저)\n3. company_admin (관리자)\n\n역할을 입력하세요:`, 'employee');
+                
+                if (!role || !['employee', 'company_manager', 'company_admin'].includes(role)) {
+                    alert('올바른 역할을 선택해주세요.');
+                    return;
+                }
+                
+                // 데이터베이스에서 사용자 승인 처리 (role 설정 포함)
+                const userEmail = notification.userInfo.email;
+                if (userEmail && userEmail !== '이메일 미제공') {
+                    const { data, error } = await window.db.client
+                        .from('users')
+                        .update({ 
+                            is_approved: true,
+                            role: role
+                        })
+                        .eq('email', userEmail);
+                    
+                    if (error) {
+                        console.error('승인 처리 오류:', error);
+                        alert('승인 처리 중 오류가 발생했습니다.');
+                        return;
+                    }
+                } else {
+                    // 이메일이 없는 경우 이름으로 찾기
+                    const { data, error } = await window.db.client
+                        .from('users')
+                        .update({ 
+                            is_approved: true,
+                            role: role
+                        })
+                        .eq('name', notification.userInfo.name);
+                    
+                    if (error) {
+                        console.error('승인 처리 오류:', error);
+                        alert('승인 처리 중 오류가 발생했습니다.');
+                        return;
+                    }
+                }
+
+                // 알림 상태 업데이트
+                notification.approval_status = 'approved';
+                notification.isRead = true;
+                notification.title = notification.title.replace('새로운 사용자 가입', '사용자 승인 완료');
+                notification.message = `${notification.userInfo.name}님이 승인되었습니다.`;
+
+                // 관리자 알림 저장
+                const adminNotifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
+                const adminNotifIndex = adminNotifications.findIndex(n => n.id === notificationId);
+                if (adminNotifIndex !== -1) {
+                    adminNotifications[adminNotifIndex] = notification;
+                    localStorage.setItem('admin_notifications', JSON.stringify(adminNotifications));
+                }
+
+                // UI 업데이트
+                updateTabBadges();
+                renderNotifications();
+                
+                alert(`${notification.userInfo.name}님이 승인되었습니다.`);
+                
+            } catch (error) {
+                console.error('승인 처리 예외:', error);
+                alert('승인 처리 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 사용자 반려 함수
+        async function rejectUser(notificationId) {
+            const notification = notifications.find(n => n.id === notificationId);
+            if (!notification || !notification.userInfo) {
+                alert('사용자 정보를 찾을 수 없습니다.');
+                return;
+            }
+
+            const reason = prompt(`${notification.userInfo.name}님을 반려하는 이유를 입력하세요:`);
+            if (!reason) {
+                return;
+            }
+
+            try {
+                // 데이터베이스에서 사용자 비활성화 처리 (is_approved = false 유지)
+                const userEmail = notification.userInfo.email;
+                if (userEmail && userEmail !== '이메일 미제공') {
+                    const { data, error } = await window.db.client
+                        .from('users')
+                        .update({ 
+                            is_approved: false,
+                            is_active: false,
+                            rejection_reason: reason 
+                        })
+                        .eq('email', userEmail);
+                    
+                    if (error) {
+                        console.error('반려 처리 오류:', error);
+                        alert('반려 처리 중 오류가 발생했습니다.');
+                        return;
+                    }
+                } else {
+                    // 이메일이 없는 경우 이름으로 찾기
+                    const { data, error } = await window.db.client
+                        .from('users')
+                        .update({ 
+                            is_approved: false,
+                            is_active: false,
+                            rejection_reason: reason 
+                        })
+                        .eq('name', notification.userInfo.name);
+                    
+                    if (error) {
+                        console.error('반려 처리 오류:', error);
+                        alert('반려 처리 중 오류가 발생했습니다.');
+                        return;
+                    }
+                }
+
+                // 알림 상태 업데이트
+                notification.approval_status = 'rejected';
+                notification.isRead = true;
+                notification.title = notification.title.replace('새로운 사용자 가입', '사용자 가입 반려');
+                notification.message = `${notification.userInfo.name}님의 가입이 반려되었습니다. 사유: ${reason}`;
+                notification.rejection_reason = reason;
+
+                // 관리자 알림 저장
+                const adminNotifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
+                const adminNotifIndex = adminNotifications.findIndex(n => n.id === notificationId);
+                if (adminNotifIndex !== -1) {
+                    adminNotifications[adminNotifIndex] = notification;
+                    localStorage.setItem('admin_notifications', JSON.stringify(adminNotifications));
+                }
+
+                // UI 업데이트
+                updateTabBadges();
+                renderNotifications();
+                
+                alert(`${notification.userInfo.name}님의 가입이 반려되었습니다.`);
+                
+            } catch (error) {
+                console.error('반려 처리 예외:', error);
+                alert('반려 처리 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 페이지 로드 시 알림 로드
+        document.addEventListener('DOMContentLoaded', function() {
+            loadNotifications();
+        });
+    </script>
+</body>
+</html>
