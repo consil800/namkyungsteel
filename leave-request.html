@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>연차신청서 - SteelWorks Platform</title>
+    
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Database Manager -->
+    <script src="database.js"></script>
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: #f8f9fa;
+            color: #333333;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 1.5rem 2rem;
+            border-bottom: 2px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .leave-info {
+            background: white;
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            border: 1px solid #e9ecef;
+            margin-bottom: 2.5rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .leave-info::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .info-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #2c3e50;
+            text-align: center;
+            position: relative;
+        }
+        
+        .info-title::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 2px;
+            background: #10b981;
+            border-radius: 1px;
+        }
+
+        .info-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .stat-item {
+            background: linear-gradient(145deg, #ffffff, #f8f9fa);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid #e9ecef;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+        }
+        
+        .stat-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #10b981;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.95rem;
+            color: #6c757d;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+
+        .form-card {
+            background: white;
+            border-radius: 20px;
+            padding: 3.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            border: 1px solid #e9ecef;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .form-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .document-title {
+            font-size: 2.2rem;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 2.5rem;
+            color: #2c3e50;
+            letter-spacing: 1px;
+            position: relative;
+        }
+        
+        .document-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 3px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 2px;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin: 2rem 0 1.5rem 0;
+            color: #495057;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 0.8rem;
+            position: relative;
+        }
+        
+        .section-title:first-of-type {
+            margin-top: 0;
+        }
+        
+        .section-title::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -2px;
+            width: 40px;
+            height: 2px;
+            background: #667eea;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.8rem;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.95rem;
+            letter-spacing: 0.3px;
+        }
+
+        .required {
+            color: #e74c3c;
+            font-weight: 700;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 1.2rem;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            color: #2c3e50;
+            font-size: 1rem;
+            line-height: 1.5;
+            transition: all 0.3s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15), 0 2px 8px rgba(0,0,0,0.1);
+            transform: translateY(-1px);
+        }
+
+        .form-input::placeholder {
+            color: #6c757d;
+        }
+
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+            background: white;
+            color: #2c3e50;
+            line-height: 1.6;
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 1.2rem;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            color: #2c3e50;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15), 0 2px 8px rgba(0,0,0,0.1);
+            transform: translateY(-1px);
+        }
+        
+        .form-select option {
+            background: white;
+            color: #333333;
+        }
+
+        .date-range {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 1.5rem;
+            align-items: center;
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+        }
+
+        .date-separator {
+            text-align: center;
+            padding: 0.8rem;
+            font-weight: 700;
+            color: #667eea;
+            font-size: 1.2rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .btn {
+            padding: 1.2rem 2.5rem;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            font-size: 1rem;
+            letter-spacing: 0.3px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            border: 2px solid #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            border-color: #5a6268;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(108, 117, 125, 0.3);
+        }
+
+        .request-list {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border: 1px solid #dee2e6;
+        }
+
+        .list-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #333333;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .request-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1.5rem;
+            border: 1px solid #dee2e6;
+            margin-bottom: 1rem;
+        }
+
+        .request-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .request-type {
+            font-weight: 600;
+            color: #333333;
+        }
+        
+        .request-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 0.4rem 0.6rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.8rem;
+        }
+        
+        .delete-btn:hover {
+            background: #c82333;
+            transform: translateY(-1px);
+        }
+
+        .request-status {
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-pending {
+            background: #f59e0b;
+            color: #fff;
+        }
+
+        .status-approved {
+            background: #10b981;
+            color: #fff;
+        }
+
+        .status-rejected {
+            background: #ef4444;
+            color: #fff;
+        }
+
+        .request-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .detail-label {
+            color: #6c757d;
+            font-weight: 600;
+        }
+
+        .detail-value {
+            color: #333333;
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+            
+            .request-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+            
+            .date-range {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+            
+            .date-separator {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-title">
+            <i class="fas fa-calendar-alt"></i>
+            <span>연차신청서</span>
+        </div>
+        <a href="documents.html" class="back-btn">
+            <i class="fas fa-arrow-left"></i>
+            대시보드로 돌아가기
+        </a>
+    </header>
+
+    <main class="container">
+        <!-- 연차 현황 -->
+        <div class="leave-info">
+            <h3 class="info-title">내 연차 현황</h3>
+            <div class="info-stats">
+                <div class="stat-item">
+                    <div class="stat-number" id="totalLeave">15</div>
+                    <div class="stat-label">총 연차</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="usedLeave">0</div>
+                    <div class="stat-label">사용 연차</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="remainingLeave">15</div>
+                    <div class="stat-label">잔여 연차</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="pendingLeave">0</div>
+                    <div class="stat-label">신청 중</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 신청 폼 -->
+        <div class="form-card">
+            <h2 class="document-title">연차 신청</h2>
+            
+            <h3 class="section-title">기본 정보</h3>
+            <form id="leaveRequestForm" class="form-grid">
+                <div class="form-group">
+                    <label for="leaveType" class="form-label">휴가 구분 <span class="required">*</span></label>
+                    <select id="leaveType" name="leaveType" class="form-select" required>
+                        <option value="">선택해주세요</option>
+                        <option value="연차">연차</option>
+                        <option value="반차">반차</option>
+                        <option value="병가">병가</option>
+                        <option value="경조사">경조사</option>
+                        <option value="공가">공가</option>
+                        <option value="기타">기타</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="days" class="form-label">신청일수 <span class="required">*</span></label>
+                    <select id="days" name="days" class="form-select" required>
+                        <option value="">선택해주세요</option>
+                        <option value="0.5">0.5일 (반차)</option>
+                        <option value="1">1일</option>
+                        <option value="2">2일</option>
+                        <option value="3">3일</option>
+                        <option value="4">4일</option>
+                        <option value="5">5일</option>
+                        <option value="기타">기타 (직접입력)</option>
+                    </select>
+                </div>
+
+                <div class="form-group full-width">
+                    <label class="form-label">휴가 기간 <span class="required">*</span></label>
+                    <div class="date-range">
+                        <div>
+                            <input type="date" id="startDate" name="startDate" class="form-input" required>
+                        </div>
+                        <div class="date-separator">~</div>
+                        <div>
+                            <input type="date" id="endDate" name="endDate" class="form-input" required>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="section-title">연락처 및 대행자</h3>
+                <div class="form-group">
+                    <label for="contact" class="form-label">비상연락처</label>
+                    <input type="tel" id="contact" name="contact" class="form-input" placeholder="연락 가능한 전화번호">
+                </div>
+
+                <div class="form-group">
+                    <label for="substitute" class="form-label">업무 대행자</label>
+                    <input type="text" id="substitute" name="substitute" class="form-input" placeholder="업무 인수인계할 동료">
+                </div>
+
+                <h3 class="section-title">신청 사유 및 업무 계획</h3>
+                <div class="form-group full-width">
+                    <label for="reason" class="form-label">신청 사유 <span class="required">*</span></label>
+                    <textarea id="reason" name="reason" class="form-input form-textarea" placeholder="휴가 신청 사유를 상세히 입력해주세요" required></textarea>
+                </div>
+
+                <div class="form-group full-width">
+                    <label for="workPlan" class="form-label">업무 인수인계 계획</label>
+                    <textarea id="workPlan" name="workPlan" class="form-input form-textarea" placeholder="휴가 중 업무 처리 방안 및 인수인계 내용"></textarea>
+                </div>
+
+                <h3 class="section-title">승인 요청</h3>
+                <div class="form-group">
+                    <label for="approver" class="form-label">승인자 <span class="required">*</span></label>
+                    <select id="approver" name="approver" class="form-select" required>
+                        <option value="">승인자를 선택해주세요</option>
+                    </select>
+                </div>
+
+                <div class="form-group full-width">
+                    <label for="approvalComment" class="form-label">승인 요청 메시지</label>
+                    <textarea id="approvalComment" name="approvalComment" class="form-input form-textarea" placeholder="승인자에게 전달할 메시지를 입력해주세요" rows="3"></textarea>
+                </div>
+
+                <h3 class="section-title">보고 정보</h3>
+                <div class="form-group">
+                    <label for="reportDate" class="form-label">보고일 <span class="required">*</span></label>
+                    <input type="date" id="reportDate" name="reportDate" class="form-input" required>
+                </div>
+            </form>
+
+            <div class="btn-group">
+                <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                    <i class="fas fa-undo"></i> 초기화
+                </button>
+                <button type="submit" class="btn btn-primary" onclick="submitForm()">
+                    <i class="fas fa-paper-plane"></i> 신청
+                </button>
+            </div>
+        </div>
+
+        <!-- 신청 내역 목록 -->
+        <div class="request-list">
+            <h3 class="list-title">
+                <i class="fas fa-list"></i>
+                연차 신청 내역
+            </h3>
+            <div id="requestList">
+                <!-- 신청 내역이 여기에 동적으로 생성됩니다 -->
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Supabase 초기화
+        const supabase = window.supabase.createClient(
+            'https://zgyawfmjconubxaiamod.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpneWF3Zm1qY29udWJ4YWlhbW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NjQzNzIsImV4cCI6MjA2NzM0MDM3Mn0.shjBE2OQeILwkLLi4E6Bq0-b6YPUs-WFwquexdUiM9A'
+        );
+        
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            // 날짜 필드에 최소값 설정 (오늘 이후만 선택 가능)
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('startDate').min = today;
+            document.getElementById('endDate').min = today;
+            
+            // 시작일 변경 시 종료일 최소값 업데이트
+            document.getElementById('startDate').addEventListener('change', function() {
+                document.getElementById('endDate').min = this.value;
+                calculateDays();
+            });
+            
+            document.getElementById('endDate').addEventListener('change', calculateDays);
+            
+            // 저장된 신청 내역 로드
+            loadRequestHistory();
+            updateLeaveStatus();
+            
+            // 현재 사용자 정보로 폼 자동 입력
+            const currentUser = getCurrentUser();
+            if (currentUser) {
+                // 사용자 정보가 있으면 자동으로 채워주기 가능한 필드들을 설정할 수 있습니다
+                // 현재는 승인자 목록만 로드
+                
+                // 입사일 정보가 있으면 자동 입력 (예비용 - 연차 신청서에 직접적인 입사일 필드는 없지만 미래에 추가 가능)
+                if (currentUser.hireDate) {
+                    // 연차 신청서에 입사일 필드가 있다면 자동 입력
+                    // document.getElementById('hireDate').value = currentUser.hireDate;
+                } else if (currentUser.hire_date) {
+                    // document.getElementById('hireDate').value = currentUser.hire_date;
+                }
+            }
+            
+            // 승인자 목록 로드
+            loadApprovers();
+        });
+
+        // 일수 자동 계산
+        function calculateDays() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            if (startDate && endDate) {
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                const diffTime = Math.abs(end - start);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                
+                // 주말 제외 계산 (간단한 버전)
+                let workDays = 0;
+                for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                    if (d.getDay() !== 0 && d.getDay() !== 6) { // 일요일(0), 토요일(6) 제외
+                        workDays++;
+                    }
+                }
+                
+                const daysSelect = document.getElementById('days');
+                if (workDays <= 5) {
+                    daysSelect.value = workDays.toString();
+                } else {
+                    daysSelect.value = '기타';
+                }
+            }
+        }
+
+        // 폼 제출
+        function submitForm() {
+            const form = document.getElementById('leaveRequestForm');
+            const formData = new FormData(form);
+            
+            // 필수 필드 검증
+            const requiredFields = ['leaveType', 'days', 'startDate', 'endDate', 'reason', 'approver'];
+            for (let field of requiredFields) {
+                if (!formData.get(field)) {
+                    alert(`${getFieldLabel(field)}을(를) 입력해주세요.`);
+                    return;
+                }
+            }
+
+            // 날짜 검증
+            const startDate = new Date(formData.get('startDate'));
+            const endDate = new Date(formData.get('endDate'));
+            
+            if (startDate > endDate) {
+                alert('시작일이 종료일보다 늦을 수 없습니다.');
+                return;
+            }
+
+            // 현재 로그인 사용자 정보 가져오기
+            const currentUser = getCurrentUser();
+            if (!currentUser) {
+                alert('로그인 정보를 확인할 수 없습니다.');
+                return;
+            }
+
+            // 신청 데이터 생성
+            const requestData = {
+                id: Date.now().toString(),
+                documentType: 'leave',
+                requesterId: currentUser.id,
+                requesterName: currentUser.name,
+                leaveType: formData.get('leaveType'),
+                days: formData.get('days'),
+                startDate: formData.get('startDate'),
+                endDate: formData.get('endDate'),
+                reason: formData.get('reason'),
+                contact: formData.get('contact') || '',
+                substitute: formData.get('substitute') || '',
+                workPlan: formData.get('workPlan') || '',
+                approvalComment: formData.get('approvalComment'),
+                status: 'pending',
+                requestDate: new Date().toISOString(),
+                approveDate: null,
+                approvalChain: [{
+                    approverId: formData.get('approver'),
+                    approverName: getEmployeeName(formData.get('approver')),
+                    status: 'pending',
+                    level: 1,
+                    requestedAt: new Date().toISOString()
+                }],
+                signatures: [],
+                createdAt: new Date().toISOString()
+            };
+
+            // localStorage에 저장 (승인 요청과 연차 신청 모두)
+            saveRequestData(requestData);
+            
+            // 승인 요청 저장
+            const approvalRequests = JSON.parse(localStorage.getItem('approvalRequests') || '[]');
+            approvalRequests.unshift(requestData);
+            localStorage.setItem('approvalRequests', JSON.stringify(approvalRequests));
+
+            // 승인자에게 알림 생성
+            createNotification(formData.get('approver'), {
+                type: 'approval_request',
+                title: '연차 신청 승인 요청',
+                message: `${currentUser.name}님이 연차 신청 승인을 요청했습니다.`,
+                documentId: requestData.id,
+                documentType: 'leave',
+                requesterId: currentUser.id,
+                requesterName: currentUser.name,
+                createdAt: new Date().toISOString()
+            });
+            
+            // 폼 초기화
+            resetForm();
+            
+            // 목록 새로고침
+            loadRequestHistory();
+            updateLeaveStatus();
+            
+            alert('연차 신청이 완료되었습니다.\n승인자의 검토를 기다려주세요.');
+        }
+
+        // 신청 데이터 저장
+        function saveRequestData(data) {
+            const requestHistory = JSON.parse(localStorage.getItem('leaveRequests') || '[]');
+            requestHistory.unshift(data); // 최신 항목을 맨 앞에 추가
+            localStorage.setItem('leaveRequests', JSON.stringify(requestHistory));
+        }
+
+        // 신청 내역 로드
+        function loadRequestHistory() {
+            const requestHistory = JSON.parse(localStorage.getItem('leaveRequests') || '[]');
+            const requestList = document.getElementById('requestList');
+            
+            if (requestHistory.length === 0) {
+                requestList.innerHTML = '<p style="text-align: center; color: #6c757d;">신청한 연차가 없습니다.</p>';
+                return;
+            }
+
+            requestList.innerHTML = requestHistory.map((request, index) => `
+                <div class="request-item">
+                    <div class="request-header">
+                        <div class="request-type">${request.leaveType} (${request.days}일)</div>
+                        <div class="request-actions">
+                            <div class="request-status status-${request.status}">
+                                ${getStatusText(request.status)}
+                            </div>
+                            <button class="delete-btn" onclick="deleteRequest(${index})" title="삭제">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="request-details">
+                        <div class="detail-item">
+                            <span class="detail-label">기간:</span>
+                            <span class="detail-value">${formatDate(request.startDate)} ~ ${formatDate(request.endDate)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">신청일:</span>
+                            <span class="detail-value">${formatDate(request.requestDate.split('T')[0])}</span>
+                        </div>
+                        ${request.substitute ? `
+                        <div class="detail-item">
+                            <span class="detail-label">대행자:</span>
+                            <span class="detail-value">${request.substitute}</span>
+                        </div>` : ''}
+                        <div class="detail-item" style="grid-column: 1 / -1;">
+                            <span class="detail-label">사유:</span>
+                            <span class="detail-value">${request.reason}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 연차 현황 업데이트
+        function updateLeaveStatus() {
+            const requestHistory = JSON.parse(localStorage.getItem('leaveRequests') || '[]');
+            
+            let usedLeave = 0;
+            let pendingLeave = 0;
+            
+            requestHistory.forEach(request => {
+                if (request.status === 'approved') {
+                    usedLeave += parseFloat(request.days);
+                } else if (request.status === 'pending') {
+                    pendingLeave += parseFloat(request.days);
+                }
+            });
+            
+            const totalLeave = 15; // 기본 연차 15일
+            const remainingLeave = totalLeave - usedLeave;
+            
+            document.getElementById('usedLeave').textContent = usedLeave;
+            document.getElementById('remainingLeave').textContent = remainingLeave;
+            document.getElementById('pendingLeave').textContent = pendingLeave;
+        }
+
+        // 연차 신청 삭제
+        function deleteRequest(index) {
+            if (!confirm('정말로 이 연차 신청을 삭제하시겠습니까?')) {
+                return;
+            }
+            
+            const requestHistory = JSON.parse(localStorage.getItem('leaveRequests') || '[]');
+            requestHistory.splice(index, 1);
+            localStorage.setItem('leaveRequests', JSON.stringify(requestHistory));
+            
+            // 화면 업데이트
+            loadRequestHistory();
+            updateLeaveStatus();
+            
+            alert('연차 신청이 삭제되었습니다.');
+        }
+
+        // 폼 초기화
+        function resetForm() {
+            document.getElementById('leaveRequestForm').reset();
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('startDate').min = today;
+            document.getElementById('endDate').min = today;
+        }
+
+        // 필드 라벨 반환
+        function getFieldLabel(field) {
+            const labels = {
+                'leaveType': '휴가 구분',
+                'days': '신청일수',
+                'startDate': '시작일',
+                'endDate': '종료일',
+                'reason': '신청 사유',
+                'approver': '승인자'
+            };
+            return labels[field] || field;
+        }
+
+        // 상태 텍스트 반환
+        function getStatusText(status) {
+            const statusTexts = {
+                'pending': '대기중',
+                'approved': '승인',
+                'rejected': '반려'
+            };
+            return statusTexts[status] || status;
+        }
+
+        // 날짜 포맷팅
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
+        }
+
+        // 회사정보 로드 함수
+        async function loadCompanyInfo() {
+            try {
+                const { data, error } = await window.db.client
+                    .from('company_info')
+                    .select('*')
+                    .limit(1)
+                    .single();
+                
+                if (error) {
+                    console.error('회사정보 로드 오류:', error);
+                    return null;
+                }
+                
+                return data;
+            } catch (error) {
+                console.error('회사정보 로드 실패:', error);
+                return null;
+            }
+        }
+
+        // 미리보기에서 회사정보 업데이트
+        async function updateCompanyInfoInPreview(previewWindow) {
+            const companyInfo = await loadCompanyInfo();
+            if (!companyInfo) return;
+            
+            try {
+                const companyInfoElement = previewWindow.document.querySelector('.company-info-text');
+                if (companyInfoElement) {
+                    companyInfoElement.innerHTML = `
+                        <strong>${companyInfo.company_name || ''}</strong><br>
+                        대표이사 ${companyInfo.representative_name || ''}<br>
+                        ${companyInfo.company_address || ''}<br>
+                        사업자등록번호: ${companyInfo.business_number || ''}
+                    `;
+                }
+                
+                // 직인 이미지 업데이트
+                const stampArea = previewWindow.document.querySelector('.stamp-area');
+                if (stampArea) {
+                    if (companyInfo.company_seal_url) {
+                        // 저장된 이미지가 있으면 표시
+                        stampArea.innerHTML = `<img src="${companyInfo.company_seal_url}" alt="직인" style="max-width: 100%; max-height: 100%;">`;
+                    } else {
+                        // 저장된 이미지가 없으면 빈 원만 표시
+                        stampArea.innerHTML = '';
+                    }
+                }
+            } catch (error) {
+                console.error('미리보기 회사정보 업데이트 오류:', error);
+            }
+        }
+
+        // 현재 로그인 사용자 정보 가져오기
+        function getCurrentUser() {
+            try {
+                return JSON.parse(localStorage.getItem('currentUser'));
+            } catch (error) {
+                console.error('사용자 정보 로드 오류:', error);
+                return null;
+            }
+        }
+
+        // 직원 이름 가져오기
+        function getEmployeeName(employeeId) {
+            const employees = JSON.parse(localStorage.getItem('employees') || '[]');
+            const employee = employees.find(emp => emp.id === employeeId);
+            return employee ? employee.name : '알 수 없음';
+        }
+
+        // 승인자 목록 로드
+        async function loadApprovers() {
+            try {
+                const currentUser = getCurrentUser();
+                const approverSelect = document.getElementById('approver');
+                
+                // 데이터베이스에서 모든 직원 정보 가져오기
+                const { data: employees, error } = await supabase
+                    .from('users')
+                    .select('id, name, department, position, email')
+                    .eq('company_domain', 'namkyungsteel.com')
+                    .not('role', 'is', null)
+                    .order('name');
+                
+                if (error) {
+                    console.error('승인자 목록 로드 오류:', error);
+                    return;
+                }
+                
+                // 현재 사용자를 제외한 모든 직원을 승인자 후보로 추가
+                employees.forEach(function(employee) {
+                    // 현재 사용자는 제외
+                    if (employee.id !== currentUser?.id && employee.email !== currentUser?.email) {
+                        const option = document.createElement('option');
+                        option.value = employee.id;
+                        option.textContent = `${employee.name} (${employee.position || '직급 미설정'}) - ${employee.department || '부서 미설정'}`;
+                        approverSelect.appendChild(option);
+                    }
+                });
+                
+                console.log(`승인자 목록 로드 완료: ${employees.length}명`);
+            } catch (error) {
+                console.error('승인자 목록 로드 중 오류:', error);
+            }
+        }
+
+        // 알림 생성 함수
+        function createNotification(userId, notification) {
+            const notifications = JSON.parse(localStorage.getItem('notifications_' + userId) || '[]');
+            notification.id = Date.now().toString();
+            notification.read = false;
+            notifications.unshift(notification);
+            localStorage.setItem('notifications_' + userId, JSON.stringify(notifications));
+        }
+    </script>
+</body>
+</html>
