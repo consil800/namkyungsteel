@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>재직증명서 - SteelWorks Platform</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="database.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
@@ -381,7 +383,6 @@
                         <label for="reportDate" class="form-label">보고일 <span class="required">*</span></label>
                         <input type="date" id="reportDate" name="reportDate" class="form-input" required style="max-width: 200px;">
                     </div>
-                    <div class="signature-line" style="text-align: right; font-size: 1.1rem;">보고자: 시스템 관리자</div>
                 </div>
             </form>
 
@@ -406,6 +407,8 @@
         <head>
             <meta charset="UTF-8">
             <title>재직증명서</title>
+            <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+            <script src="database.js"></script>
             <style>
                 @page { size: A4; margin: 2cm; }
                 body { 
@@ -455,6 +458,10 @@
                 .info-table th {
                     background: #f8f9fa;
                     font-weight: bold;
+                    width: 20%;
+                    text-align: center;
+                }
+                .info-table td {
                     width: 30%;
                 }
                 .purpose-section {
@@ -547,25 +554,191 @@
                     <p id="preview-date"></p>
                     
                     <div class="company-info">
-                        <div class="stamp-area">직인</div>
-                        <p style="clear: both; padding-top: 20px;">
-                            <strong>주식회사 스틸웍스</strong><br>
-                            대표이사 홍 길 동<br>
-                            서울특별시 강남구 테헤란로 123<br>
-                            사업자등록번호: 123-45-67890
+                        <div class="stamp-area" style="float: right; width: 100px; height: 100px; border: 2px solid #ddd; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #999; margin-left: 20px;"></div>
+                        <p class="company-info-text" style="clear: both; padding-top: 20px;">
+                            <strong></strong><br>
+                            <br>
+                            <br>
+                            
                         </p>
                     </div>
                 </div>
             </div>
+            <script>
+                // 미리보기 윈도우에서 데이터베이스 초기화
+                window.addEventListener('DOMContentLoaded', async function() {
+                    console.log('🎯 미리보기 윈도우 데이터베이스 초기화 시작');
+                    
+                    // 부모 윈도우의 데이터베이스 연결 사용
+                    if (window.opener && window.opener.window && window.opener.window.db) {
+                        window.db = window.opener.window.db;
+                        console.log('✅ 부모 윈도우 데이터베이스 연결 사용');
+                        
+                        // 회사정보 자동 업데이트
+                        await updateCompanyInfoInPreview();
+                    } else {
+                        console.warn('⚠️ 부모 윈도우 데이터베이스 연결 없음');
+                    }
+                });
+                
+                // 회사정보 로드 함수 (미리보기 전용)
+                async function loadCompanyInfo() {
+                    try {
+                        if (!window.db || !window.db.client) {
+                            console.error('데이터베이스 연결이 없습니다.');
+                            return null;
+                        }
+                        
+                        const { data, error } = await window.db.client
+                            .from('company_info')
+                            .select('*')
+                            .order('updated_at', { ascending: false })
+                            .limit(1)
+                            .single();
+                        
+                        if (error && error.code !== 'PGRST116') {
+                            console.error('회사정보 로드 오류:', error);
+                            return null;
+                        }
+                        
+                        console.log('✅ 회사정보 로드 완료:', data);
+                        return data;
+                    } catch (error) {
+                        console.error('회사정보 로드 실패:', error);
+                        return null;
+                    }
+                }
+                
+                // 미리보기에서 회사정보 업데이트 (미리보기 전용)
+                async function updateCompanyInfoInPreview() {
+                    console.log('🏢 미리보기 회사정보 업데이트 시작');
+                    
+                    const companyInfo = await loadCompanyInfo();
+                    if (!companyInfo) {
+                        console.error('❌ 회사정보를 불러올 수 없습니다.');
+                        return;
+                    }
+                    
+                    console.log('✅ 로드된 회사정보:', companyInfo);
+                    
+                    try {
+                        const companyInfoElement = document.querySelector('.company-info-text');
+                        if (companyInfoElement) {
+                            const companyHTML = `
+                                <strong>${companyInfo.company_name || '회사명 없음'}</strong><br>
+                                대표이사 ${companyInfo.representative_name || '대표자명 없음'}<br>
+                                ${companyInfo.company_address || '주소 없음'}<br>
+                                사업자등록번호: ${companyInfo.business_number || '사업자번호 없음'}
+                            `;
+                            
+                            console.log('🔄 회사정보 HTML 업데이트:', companyHTML);
+                            companyInfoElement.innerHTML = companyHTML;
+                            
+                            // 업데이트 확인
+                            setTimeout(() => {
+                                console.log('📋 업데이트 후 회사정보 HTML:', companyInfoElement.innerHTML);
+                            }, 100);
+                        } else {
+                            console.error('❌ .company-info-text 요소를 찾을 수 없습니다');
+                        }
+                        
+                        // 회사 인감 이미지 업데이트
+                        const stampArea = document.querySelector('.stamp-area');
+                        if (stampArea) {
+                            if (companyInfo.company_seal_url) {
+                                stampArea.innerHTML = `<img src="${companyInfo.company_seal_url}" alt="회사 인감" style="max-width: 100%; max-height: 100%;">`;
+                                console.log('🖼️ 회사 인감 이미지 설정 완료');
+                            } else {
+                                stampArea.innerHTML = '';
+                                console.log('ℹ️ 회사 인감 이미지 없음');
+                            }
+                        } else {
+                            console.error('❌ .stamp-area 요소를 찾을 수 없습니다');
+                        }
+                    } catch (error) {
+                        console.error('❌ 미리보기 회사정보 업데이트 오류:', error);
+                    }
+                }
+            </script>
         </body>
         </html>
     </div>
 
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <script>
+        // Supabase 초기화
+        const supabase = window.supabase.createClient(
+            'https://zgyawfmjconubxaiamod.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpneWF3Zm1qY29udWJ4YWlhbW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NjQzNzIsImV4cCI6MjA2NzM0MDM3Mn0.shjBE2OQeILwkLLi4E6Bq0-b6YPUs-WFwquexdUiM9A'
+        );
+        
         function formatDate(dateString) {
             if (!dateString) return '';
             var date = new Date(dateString);
             return date.getFullYear() + '년 ' + (date.getMonth() + 1) + '월 ' + date.getDate() + '일';
+        }
+
+        // 회사정보 로드 함수
+        async function loadCompanyInfo() {
+            try {
+                if (!window.db || !window.db.client) {
+                    console.error('데이터베이스 연결이 없습니다.');
+                    return null;
+                }
+                
+                // 최신 데이터를 가져오기 위해 updated_at으로 정렬
+                const { data, error } = await window.db.client
+                    .from('company_info')
+                    .select('*')
+                    .order('updated_at', { ascending: false })
+                    .limit(1)
+                    .single();
+                
+                if (error && error.code !== 'PGRST116') {
+                    console.error('회사정보 로드 오류:', error);
+                    return null;
+                }
+                
+                console.log('✅ 회사정보 로드 완료:', data);
+                return data;
+            } catch (error) {
+                console.error('회사정보 로드 실패:', error);
+                return null;
+            }
+        }
+
+        // 미리보기에서 회사정보 업데이트
+        async function updateCompanyInfoInPreview(previewWindow) {
+            const companyInfo = await loadCompanyInfo();
+            if (!companyInfo) return;
+            
+            try {
+                const companyInfoElement = previewWindow.document.querySelector('.company-info-text');
+                if (companyInfoElement) {
+                    companyInfoElement.innerHTML = `
+                        <strong>${companyInfo.company_name || ''}</strong><br>
+                        대표이사 ${companyInfo.representative_name || ''}<br>
+                        ${companyInfo.company_address || ''}<br>
+                        사업자등록번호: ${companyInfo.business_number || ''}
+                    `;
+                }
+                
+                // 직인 이미지 업데이트
+                const stampArea = previewWindow.document.querySelector('.stamp-area');
+                if (stampArea) {
+                    if (companyInfo.company_seal_url) {
+                        // 저장된 이미지가 있으면 표시
+                        stampArea.innerHTML = `<img src="${companyInfo.company_seal_url}" alt="직인" style="max-width: 100%; max-height: 100%;">`;
+                    } else {
+                        // 저장된 이미지가 없으면 빈 원만 표시
+                        stampArea.innerHTML = '';
+                    }
+                }
+            } catch (error) {
+                console.error('미리보기 회사정보 업데이트 오류:', error);
+            }
         }
 
         function getFieldLabel(field) {
@@ -587,82 +760,76 @@
             document.getElementById('includePosition').checked = true;
         }
 
-        function submitForm() {
-            var form = document.getElementById('employmentForm');
-            var formData = new FormData(form);
-            
-            var requiredFields = ['employeeName', 'department', 'position', 'hireDate', 'purpose', 'language', 'copies', 'approver'];
-            for (var i = 0; i < requiredFields.length; i++) {
-                var field = requiredFields[i];
-                if (!formData.get(field)) {
-                    alert(getFieldLabel(field) + '을(를) 입력해주세요.');
+        async function submitForm() {
+            try {
+                await window.db.init();
+                
+                var form = document.getElementById('employmentForm');
+                var formData = new FormData(form);
+                
+                var requiredFields = ['employeeName', 'department', 'position', 'hireDate', 'purpose', 'language', 'copies', 'approver'];
+                for (var i = 0; i < requiredFields.length; i++) {
+                    var field = requiredFields[i];
+                    if (!formData.get(field)) {
+                        alert(getFieldLabel(field) + '을(를) 입력해주세요.');
+                        return;
+                    }
+                }
+
+                // 현재 로그인 사용자 정보 가져오기
+                var currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                if (!currentUser.id) {
+                    alert('로그인 정보를 확인할 수 없습니다.');
                     return;
                 }
+
+                // 승인자 이름 가져오기
+                const approverName = await getEmployeeName(formData.get('approver'));
+
+                // 서류 요청 데이터 구성
+                const documentData = {
+                    document_type: 'employment',
+                    title: '재직증명서 - ' + formData.get('employeeName'),
+                    content: {
+                        employeeName: formData.get('employeeName'),
+                        employeeId: formData.get('employeeId'),
+                        department: formData.get('department'),
+                        position: formData.get('position'),
+                        hireDate: formData.get('hireDate'),
+                        phone: formData.get('phone'),
+                        purpose: formData.get('purpose'),
+                        submitTo: formData.get('submitTo'),
+                        language: formData.get('language'),
+                        copies: formData.get('copies'),
+                        includeSalary: document.getElementById('includeSalary').checked,
+                        includePosition: document.getElementById('includePosition').checked,
+                        requestReason: formData.get('requestReason'),
+                        approvalComment: formData.get('approvalComment')
+                    },
+                    requester_id: currentUser.id,
+                    requester_name: formData.get('employeeName'),
+                    requester_email: currentUser.email,
+                    company_domain: window.db.getCurrentDomain() || 'namkyungsteel.com',
+                    approver_1_id: formData.get('approver'),
+                    approver_1_name: approverName,
+                    current_approver_id: formData.get('approver'),
+                    current_approver_name: approverName
+                };
+
+                // 데이터베이스에 서류 요청 저장
+                const result = await window.db.createDocumentRequest(documentData);
+
+                if (result.success) {
+                    alert('재직증명서 승인 요청이 완료되었습니다.\n승인자의 검토를 기다려주세요.');
+                    resetForm();
+                } else {
+                    alert('서류 요청 저장 중 오류가 발생했습니다.');
+                    console.error('저장 오류:', result.error);
+                }
+            } catch (error) {
+                console.error('submitForm 오류:', error);
+                alert('요청 처리 중 오류가 발생했습니다.');
             }
-
-            // 현재 로그인 사용자 정보 가져오기
-            var currentUser = getCurrentUser();
-            if (!currentUser) {
-                alert('로그인 정보를 확인할 수 없습니다.');
-                return;
-            }
-
-            var certificateData = {
-                id: Date.now().toString(),
-                documentType: 'employment',
-                requesterId: currentUser.id,
-                requesterName: formData.get('employeeName'),
-                employeeName: formData.get('employeeName'),
-                employeeId: formData.get('employeeId'),
-                department: formData.get('department'),
-                position: formData.get('position'),
-                hireDate: formData.get('hireDate'),
-                phone: formData.get('phone'),
-                purpose: formData.get('purpose'),
-                submitTo: formData.get('submitTo'),
-                language: formData.get('language'),
-                copies: formData.get('copies'),
-                includeSalary: document.getElementById('includeSalary').checked,
-                includePosition: document.getElementById('includePosition').checked,
-                requestReason: formData.get('requestReason'),
-                approvalComment: formData.get('approvalComment'),
-                requestDate: new Date().toISOString().split('T')[0],
-                status: 'pending',
-                approvalChain: [{
-                    approverId: formData.get('approver'),
-                    approverName: getEmployeeName(formData.get('approver')),
-                    status: 'pending',
-                    level: 1,
-                    requestedAt: new Date().toISOString()
-                }],
-                signatures: [],
-                createdAt: new Date().toISOString()
-            };
-
-            // 승인 요청 저장
-            var approvalRequests = JSON.parse(localStorage.getItem('approvalRequests') || '[]');
-            approvalRequests.unshift(certificateData);
-            localStorage.setItem('approvalRequests', JSON.stringify(approvalRequests));
-
-            // 기존 재직증명서 목록에도 저장 (호환성)
-            var certificates = JSON.parse(localStorage.getItem('employmentCertificates') || '[]');
-            certificates.unshift(certificateData);
-            localStorage.setItem('employmentCertificates', JSON.stringify(certificates));
-
-            // 승인자에게 알림 생성
-            createNotification(formData.get('approver'), {
-                type: 'approval_request',
-                title: '재직증명서 승인 요청',
-                message: `${formData.get('employeeName')}님이 재직증명서 승인을 요청했습니다.`,
-                documentId: certificateData.id,
-                documentType: 'employment',
-                requesterId: currentUser.id,
-                requesterName: formData.get('employeeName'),
-                createdAt: new Date().toISOString()
-            });
-            
-            alert('재직증명서 승인 요청이 완료되었습니다.\n승인자의 검토를 기다려주세요.');
-            resetForm();
         }
 
         function previewDocument() {
@@ -716,58 +883,96 @@
                 if (document.getElementById('includeSalary').checked) {
                     previewWindow.document.getElementById('preview-salary-row').style.display = 'table-row';
                 }
-            }, 100);
+
+                // 데이터베이스 연결을 미리보기 윈도우에 전달
+                if (window.db) {
+                    previewWindow.window.db = window.db;
+                    console.log('✅ 미리보기 윈도우에 데이터베이스 연결 전달');
+                }
+                
+                // 회사정보 업데이트 - 미리보기 윈도우의 자체 함수에서 처리됨
+            }, 500);
         }
 
         // 현재 로그인 사용자 정보 가져오기
         function getCurrentUser() {
             try {
-                return JSON.parse(localStorage.getItem('currentUser'));
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                return currentUser.id ? currentUser : null;
             } catch (error) {
-                console.error('사용자 정보 로드 오류:', error);
+                console.error('getCurrentUser 오류:', error);
                 return null;
             }
         }
 
         // 직원 이름 가져오기
-        function getEmployeeName(employeeId) {
-            var employees = JSON.parse(localStorage.getItem('employees') || '[]');
-            var employee = employees.find(emp => emp.id === employeeId);
-            return employee ? employee.name : '알 수 없음';
+        async function getEmployeeName(employeeId) {
+            try {
+                if (!window.db || !window.db.client) {
+                    console.error('데이터베이스 연결이 없습니다.');
+                    return '알 수 없음';
+                }
+                
+                const { data, error } = await window.db.client
+                    .from('users')
+                    .select('name')
+                    .eq('id', employeeId)
+                    .single();
+                    
+                if (error) {
+                    console.error('직원 정보 로드 오류:', error);
+                    return '알 수 없음';
+                }
+                
+                return data?.name || '알 수 없음';
+            } catch (error) {
+                console.error('직원 이름 조회 실패:', error);
+                return '알 수 없음';
+            }
         }
 
         // 승인자 목록 로드
-        function loadApprovers() {
-            var employees = JSON.parse(localStorage.getItem('employees') || '[]');
-            var currentUser = getCurrentUser();
-            var approverSelect = document.getElementById('approver');
-            
-            // 현재 사용자를 제외한 모든 직원을 승인자 후보로 추가
-            employees.forEach(function(employee) {
-                // 다양한 방법으로 현재 사용자 확인
-                var isCurrentUser = employee.id === currentUser?.id ||
-                                  employee.name === currentUser?.name ||
-                                  employee.email === currentUser?.email;
+        async function loadApprovers() {
+            try {
+                await window.db.init();
                 
-                if (!isCurrentUser) {
-                    var option = document.createElement('option');
-                    option.value = employee.id;
-                    option.textContent = `${employee.name} (${employee.position || '직급 미설정'}) - ${employee.department || '부서 미설정'}`;
-                    approverSelect.appendChild(option);
+                const currentUser = getCurrentUser();
+                const approverSelect = document.getElementById('approver');
+                
+                // 데이터베이스에서 모든 직원 정보 가져오기
+                const { data: employees, error } = await window.db.client
+                    .from('users')
+                    .select('id, name, department, position, email')
+                    .eq('company_domain', 'namkyungsteel.com')
+                    .eq('is_active', true)
+                    .order('name');
+                
+                if (error) {
+                    console.error('승인자 목록 로드 오류:', error);
+                    return;
                 }
-            });
+                
+                // 현재 사용자를 제외한 모든 직원을 승인자 후보로 추가
+                employees.forEach(function(employee) {
+                    // 현재 사용자는 제외
+                    if (employee.id !== currentUser?.id && employee.email !== currentUser?.email) {
+                        var option = document.createElement('option');
+                        option.value = employee.id;
+                        option.textContent = `${employee.name} (${employee.position || '직급 미설정'}) - ${employee.department || '부서 미설정'}`;
+                        approverSelect.appendChild(option);
+                    }
+                });
+                
+                console.log(`승인자 목록 로드 완료: ${employees.length}명`);
+            } catch (error) {
+                console.error('승인자 목록 로드 중 오류:', error);
+            }
         }
 
-        // 알림 생성 함수
-        function createNotification(userId, notification) {
-            var notifications = JSON.parse(localStorage.getItem('notifications_' + userId) || '[]');
-            notification.id = Date.now().toString();
-            notification.read = false;
-            notifications.unshift(notification);
-            localStorage.setItem('notifications_' + userId, JSON.stringify(notifications));
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
+            // 데이터베이스 초기화
+            await window.db.init();
+            
             resetForm();
             
             // 현재 사용자 정보로 폼 자동 입력
@@ -776,10 +981,17 @@
                 document.getElementById('employeeName').value = currentUser.name || '';
                 document.getElementById('department').value = currentUser.department || '';
                 document.getElementById('position').value = currentUser.position || '';
+                
+                // 입사일 정보가 있으면 자동 입력
+                if (currentUser.hireDate) {
+                    document.getElementById('hireDate').value = currentUser.hireDate;
+                } else if (currentUser.hire_date) {
+                    document.getElementById('hireDate').value = currentUser.hire_date;
+                }
             }
             
             // 승인자 목록 로드
-            loadApprovers();
+            await loadApprovers();
         });
     </script>
 </body>

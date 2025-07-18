@@ -293,9 +293,9 @@
 
     <script>
         // 페이지 로드 시 문서 카드와 최근 서류 목록 로드
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             loadDocumentCards();
-            loadRecentDocuments();
+            await loadRecentDocuments();
         });
 
         // 활성화된 문서 템플릿 가져오기
@@ -396,67 +396,77 @@
         }
 
         // 최근 작성한 서류 로드
-        function loadRecentDocuments() {
-            const recentList = document.getElementById('recentDocuments');
-            
-            // approvalRequests에서 현재 존재하는 서류 ID 목록 가져오기
-            const approvalRequests = JSON.parse(localStorage.getItem('approvalRequests') || '[]');
-            const existingDocumentIds = new Set(approvalRequests.map(doc => doc.id));
-            
-            // 각 서류 타입별 localStorage에서 데이터 가져오기
-            const documentTypes = [
-                { key: 'resignationLetters', name: '사직서', icon: 'fas fa-user-times' },
-                { key: 'incidentReports', name: '경위서', icon: 'fas fa-exclamation-triangle' },
-                { key: 'employmentCertificates', name: '재직증명서', icon: 'fas fa-certificate' },
-                { key: 'careerCertificates', name: '경력증명서', icon: 'fas fa-award' },
-                { key: 'businessTripReports', name: '출장 보고서', icon: 'fas fa-plane' },
-                { key: 'proposals', name: '기안서', icon: 'fas fa-lightbulb' },
-                { key: 'leaveRequests', name: '연차신청서', icon: 'fas fa-calendar-alt' }
-            ];
+        async function loadRecentDocuments() {
+            try {
+                await window.db.init();
+                
+                const recentList = document.getElementById('recentDocuments');
+                
+                // 현재 로그인 사용자 정보 가져오기
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                if (!currentUser.id) {
+                    recentList.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.7);">로그인이 필요합니다.</p>';
+                    return;
+                }
 
-            let allDocuments = [];
+                // 데이터베이스에서 최근 활동 가져오기 (getRecentActivities 메서드 사용)
+                const activities = await window.db.getRecentActivities(
+                    window.db.getCurrentDomain() || 'namkyungsteel.com', 
+                    5
+                );
 
-            documentTypes.forEach(type => {
-                const documents = JSON.parse(localStorage.getItem(type.key) || '[]');
-                documents.forEach(doc => {
-                    // approvalRequests에 존재하는 서류만 포함 (삭제되지 않은 서류)
-                    if (existingDocumentIds.has(doc.id)) {
-                        allDocuments.push({
-                            ...doc,
-                            typeName: type.name,
-                            typeIcon: type.icon
-                        });
-                    }
-                });
-            });
+                if (!activities || activities.length === 0) {
+                    recentList.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.7);">최근 작성한 서류가 없습니다.</p>';
+                    return;
+                }
 
-            // 최신순으로 정렬
-            allDocuments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                // 서류 타입별 아이콘 매핑
+                const typeIcons = {
+                    'resignation': 'fas fa-user-times',
+                    'incident': 'fas fa-exclamation-triangle',
+                    'employment': 'fas fa-certificate',
+                    'career': 'fas fa-award',
+                    'business_trip': 'fas fa-plane',
+                    'proposal': 'fas fa-lightbulb',
+                    'leave': 'fas fa-calendar-alt'
+                };
 
-            // 최근 5개만 표시
-            const recentDocuments = allDocuments.slice(0, 5);
+                // 서류 타입별 이름 매핑
+                const typeNames = {
+                    'resignation': '사직서',
+                    'incident': '경위서',
+                    'employment': '재직증명서',
+                    'career': '경력증명서',
+                    'business_trip': '출장 보고서',
+                    'proposal': '기안서',
+                    'leave': '연차신청서'
+                };
 
-            if (recentDocuments.length === 0) {
-                recentList.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.7);">최근 작성한 서류가 없습니다.</p>';
-                return;
+                recentList.innerHTML = activities.map(activity => `
+                    <div class="recent-item">
+                        <div class="recent-info">
+                            <div class="recent-icon">
+                                <i class="${typeIcons[activity.document_type] || 'fas fa-file'}"></i>
+                            </div>
+                            <div class="recent-details">
+                                <h4>${typeNames[activity.document_type] || activity.document_type}</h4>
+                                <p>${activity.title}</p>
+                                <p style="font-size: 0.7rem; margin-top: 0.2rem;">
+                                    ${activity.requester_name} - ${activity.status_text}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="recent-date">
+                            ${formatDate(activity.created_at)}
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                console.error('최근 활동 로드 오류:', error);
+                const recentList = document.getElementById('recentDocuments');
+                recentList.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.7);">활동 내역을 불러오는 중 오류가 발생했습니다.</p>';
             }
-
-            recentList.innerHTML = recentDocuments.map(doc => `
-                <div class="recent-item">
-                    <div class="recent-info">
-                        <div class="recent-icon">
-                            <i class="${doc.typeIcon}"></i>
-                        </div>
-                        <div class="recent-details">
-                            <h4>${doc.typeName}</h4>
-                            <p>${doc.title || doc.subject || '제목 없음'}</p>
-                        </div>
-                    </div>
-                    <div class="recent-date">
-                        ${formatDate(doc.createdAt)}
-                    </div>
-                </div>
-            `).join('');
         }
 
         // 날짜 포맷팅

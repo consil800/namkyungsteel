@@ -627,9 +627,6 @@
                     <label for="reportDate" class="form-label">보고일 <span class="required">*</span></label>
                     <input type="date" id="reportDate" name="reportDate" class="form-input" required>
                 </div>
-                <div class="form-group full-width" style="text-align: right; margin-top: 2rem; font-size: 1.1rem; color: #495057;">
-                    보고자: 시스템 관리자
-                </div>
             </form>
 
             <div class="btn-group">
@@ -655,8 +652,14 @@
     </main>
 
     <script>
+        // Supabase 초기화
+        const supabase = window.supabase.createClient(
+            'https://zgyawfmjconubxaiamod.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpneWF3Zm1qY29udWJ4YWlhbW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NjQzNzIsImV4cCI6MjA2NzM0MDM3Mn0.shjBE2OQeILwkLLi4E6Bq0-b6YPUs-WFwquexdUiM9A'
+        );
+        
         // 페이지 로드 시 초기화
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             // 날짜 필드에 최소값 설정 (오늘 이후만 선택 가능)
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('startDate').min = today;
@@ -679,6 +682,14 @@
             if (currentUser) {
                 // 사용자 정보가 있으면 자동으로 채워주기 가능한 필드들을 설정할 수 있습니다
                 // 현재는 승인자 목록만 로드
+                
+                // 입사일 정보가 있으면 자동 입력 (예비용 - 연차 신청서에 직접적인 입사일 필드는 없지만 미래에 추가 가능)
+                if (currentUser.hireDate) {
+                    // 연차 신청서에 입사일 필드가 있다면 자동 입력
+                    // document.getElementById('hireDate').value = currentUser.hireDate;
+                } else if (currentUser.hire_date) {
+                    // document.getElementById('hireDate').value = currentUser.hire_date;
+                }
             }
             
             // 승인자 목록 로드
@@ -714,185 +725,232 @@
         }
 
         // 폼 제출
-        function submitForm() {
-            const form = document.getElementById('leaveRequestForm');
-            const formData = new FormData(form);
-            
-            // 필수 필드 검증
-            const requiredFields = ['leaveType', 'days', 'startDate', 'endDate', 'reason', 'approver'];
-            for (let field of requiredFields) {
-                if (!formData.get(field)) {
-                    alert(`${getFieldLabel(field)}을(를) 입력해주세요.`);
+        async function submitForm() {
+            try {
+                await window.db.init();
+                
+                const form = document.getElementById('leaveRequestForm');
+                const formData = new FormData(form);
+                
+                // 필수 필드 검증
+                const requiredFields = ['leaveType', 'days', 'startDate', 'endDate', 'reason', 'approver'];
+                for (let field of requiredFields) {
+                    if (!formData.get(field)) {
+                        alert(`${getFieldLabel(field)}을(를) 입력해주세요.`);
+                        return;
+                    }
+                }
+
+                // 날짜 검증
+                const startDate = new Date(formData.get('startDate'));
+                const endDate = new Date(formData.get('endDate'));
+                
+                if (startDate > endDate) {
+                    alert('시작일이 종료일보다 늦을 수 없습니다.');
                     return;
                 }
+
+                // 현재 로그인 사용자 정보 가져오기
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                if (!currentUser.id) {
+                    alert('로그인 정보를 확인할 수 없습니다.');
+                    return;
+                }
+
+                // 승인자 이름 가져오기
+                const approverName = await getEmployeeName(formData.get('approver'));
+
+                // 서류 요청 데이터 구성
+                const documentData = {
+                    document_type: 'leave',
+                    title: `연차신청서 - ${currentUser.name} (${formData.get('startDate')} ~ ${formData.get('endDate')})`,
+                    content: {
+                        leaveType: formData.get('leaveType'),
+                        days: formData.get('days'),
+                        startDate: formData.get('startDate'),
+                        endDate: formData.get('endDate'),
+                        reason: formData.get('reason'),
+                        contact: formData.get('contact') || '',
+                        substitute: formData.get('substitute') || '',
+                        workPlan: formData.get('workPlan') || '',
+                        approvalComment: formData.get('approvalComment') || ''
+                    },
+                    requester_id: currentUser.id,
+                    requester_name: currentUser.name,
+                    requester_email: currentUser.email,
+                    company_domain: window.db.getCurrentDomain() || 'namkyungsteel.com',
+                    approver_1_id: formData.get('approver'),
+                    approver_1_name: approverName,
+                    current_approver_id: formData.get('approver'),
+                    current_approver_name: approverName
+                };
+
+                // 데이터베이스에 서류 요청 저장
+                const result = await window.db.createDocumentRequest(documentData);
+
+                if (result.success) {
+                    // 폼 초기화
+                    resetForm();
+                    
+                    // 목록 새로고침
+                    await loadRequestHistory();
+                    await updateLeaveStatus();
+                    
+                    alert('연차 신청이 완료되었습니다.\n승인자의 검토를 기다려주세요.');
+                } else {
+                    alert('연차 신청 저장 중 오류가 발생했습니다.');
+                    console.error('저장 오류:', result.error);
+                }
+            } catch (error) {
+                console.error('submitForm 오류:', error);
+                alert('요청 처리 중 오류가 발생했습니다.');
             }
-
-            // 날짜 검증
-            const startDate = new Date(formData.get('startDate'));
-            const endDate = new Date(formData.get('endDate'));
-            
-            if (startDate > endDate) {
-                alert('시작일이 종료일보다 늦을 수 없습니다.');
-                return;
-            }
-
-            // 현재 로그인 사용자 정보 가져오기
-            const currentUser = getCurrentUser();
-            if (!currentUser) {
-                alert('로그인 정보를 확인할 수 없습니다.');
-                return;
-            }
-
-            // 신청 데이터 생성
-            const requestData = {
-                id: Date.now().toString(),
-                documentType: 'leave',
-                requesterId: currentUser.id,
-                requesterName: currentUser.name,
-                leaveType: formData.get('leaveType'),
-                days: formData.get('days'),
-                startDate: formData.get('startDate'),
-                endDate: formData.get('endDate'),
-                reason: formData.get('reason'),
-                contact: formData.get('contact') || '',
-                substitute: formData.get('substitute') || '',
-                workPlan: formData.get('workPlan') || '',
-                approvalComment: formData.get('approvalComment'),
-                status: 'pending',
-                requestDate: new Date().toISOString(),
-                approveDate: null,
-                approvalChain: [{
-                    approverId: formData.get('approver'),
-                    approverName: getEmployeeName(formData.get('approver')),
-                    status: 'pending',
-                    level: 1,
-                    requestedAt: new Date().toISOString()
-                }],
-                signatures: [],
-                createdAt: new Date().toISOString()
-            };
-
-            // localStorage에 저장 (승인 요청과 연차 신청 모두)
-            saveRequestData(requestData);
-            
-            // 승인 요청 저장
-            const approvalRequests = JSON.parse(localStorage.getItem('approvalRequests') || '[]');
-            approvalRequests.unshift(requestData);
-            localStorage.setItem('approvalRequests', JSON.stringify(approvalRequests));
-
-            // 승인자에게 알림 생성
-            createNotification(formData.get('approver'), {
-                type: 'approval_request',
-                title: '연차 신청 승인 요청',
-                message: `${currentUser.name}님이 연차 신청 승인을 요청했습니다.`,
-                documentId: requestData.id,
-                documentType: 'leave',
-                requesterId: currentUser.id,
-                requesterName: currentUser.name,
-                createdAt: new Date().toISOString()
-            });
-            
-            // 폼 초기화
-            resetForm();
-            
-            // 목록 새로고침
-            loadRequestHistory();
-            updateLeaveStatus();
-            
-            alert('연차 신청이 완료되었습니다.\n승인자의 검토를 기다려주세요.');
-        }
-
-        // 신청 데이터 저장
-        function saveRequestData(data) {
-            const requestHistory = JSON.parse(localStorage.getItem('leaveRequests') || '[]');
-            requestHistory.unshift(data); // 최신 항목을 맨 앞에 추가
-            localStorage.setItem('leaveRequests', JSON.stringify(requestHistory));
         }
 
         // 신청 내역 로드
-        function loadRequestHistory() {
-            const requestHistory = JSON.parse(localStorage.getItem('leaveRequests') || '[]');
-            const requestList = document.getElementById('requestList');
-            
-            if (requestHistory.length === 0) {
-                requestList.innerHTML = '<p style="text-align: center; color: #6c757d;">신청한 연차가 없습니다.</p>';
-                return;
-            }
+        async function loadRequestHistory() {
+            try {
+                await window.db.init();
+                
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                if (!currentUser.id) return;
 
-            requestList.innerHTML = requestHistory.map((request, index) => `
-                <div class="request-item">
-                    <div class="request-header">
-                        <div class="request-type">${request.leaveType} (${request.days}일)</div>
-                        <div class="request-actions">
-                            <div class="request-status status-${request.status}">
-                                ${getStatusText(request.status)}
+                const { data: requestHistory, error } = await window.db.client
+                    .from('document_requests')
+                    .select('*')
+                    .eq('requester_id', currentUser.id)
+                    .eq('document_type', 'leave')
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    console.error('연차 신청 내역 로드 오류:', error);
+                    return;
+                }
+
+                const requestList = document.getElementById('requestList');
+                
+                if (!requestHistory || requestHistory.length === 0) {
+                    requestList.innerHTML = '<p style="text-align: center; color: #6c757d;">신청한 연차가 없습니다.</p>';
+                    return;
+                }
+
+                requestList.innerHTML = requestHistory.map((request, index) => {
+                    const content = typeof request.content === 'string' ? JSON.parse(request.content) : request.content;
+                    return `
+                    <div class="request-item">
+                        <div class="request-header">
+                            <div class="request-type">${content.leaveType} (${content.days}일)</div>
+                            <div class="request-actions">
+                                <div class="request-status status-${request.status}">
+                                    ${getStatusText(request.status)}
+                                </div>
+                                <button class="delete-btn" onclick="deleteRequest('${request.id}')" title="삭제">
+                                    <i class="fas fa-trash"></i>
+                                </button>
                             </div>
-                            <button class="delete-btn" onclick="deleteRequest(${index})" title="삭제">
-                                <i class="fas fa-trash"></i>
-                            </button>
+                        </div>
+                        <div class="request-details">
+                            <div class="detail-item">
+                                <span class="detail-label">기간:</span>
+                                <span class="detail-value">${formatDate(content.startDate)} ~ ${formatDate(content.endDate)}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">신청일:</span>
+                                <span class="detail-value">${formatDate(request.created_at.split('T')[0])}</span>
+                            </div>
+                            ${content.substitute ? `
+                            <div class="detail-item">
+                                <span class="detail-label">대행자:</span>
+                                <span class="detail-value">${content.substitute}</span>
+                            </div>` : ''}
+                            <div class="detail-item" style="grid-column: 1 / -1;">
+                                <span class="detail-label">사유:</span>
+                                <span class="detail-value">${content.reason}</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="request-details">
-                        <div class="detail-item">
-                            <span class="detail-label">기간:</span>
-                            <span class="detail-value">${formatDate(request.startDate)} ~ ${formatDate(request.endDate)}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">신청일:</span>
-                            <span class="detail-value">${formatDate(request.requestDate.split('T')[0])}</span>
-                        </div>
-                        ${request.substitute ? `
-                        <div class="detail-item">
-                            <span class="detail-label">대행자:</span>
-                            <span class="detail-value">${request.substitute}</span>
-                        </div>` : ''}
-                        <div class="detail-item" style="grid-column: 1 / -1;">
-                            <span class="detail-label">사유:</span>
-                            <span class="detail-value">${request.reason}</span>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
+                `;
+                }).join('');
+            } catch (error) {
+                console.error('연차 신청 내역 로드 실패:', error);
+            }
         }
 
         // 연차 현황 업데이트
-        function updateLeaveStatus() {
-            const requestHistory = JSON.parse(localStorage.getItem('leaveRequests') || '[]');
-            
-            let usedLeave = 0;
-            let pendingLeave = 0;
-            
-            requestHistory.forEach(request => {
-                if (request.status === 'approved') {
-                    usedLeave += parseFloat(request.days);
-                } else if (request.status === 'pending') {
-                    pendingLeave += parseFloat(request.days);
+        async function updateLeaveStatus() {
+            try {
+                await window.db.init();
+                
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                if (!currentUser.id) return;
+
+                const { data: requestHistory, error } = await window.db.client
+                    .from('document_requests')
+                    .select('content, status')
+                    .eq('requester_id', currentUser.id)
+                    .eq('document_type', 'leave');
+
+                if (error) {
+                    console.error('연차 현황 로드 오류:', error);
+                    return;
                 }
-            });
+
+                let usedLeave = 0;
+                let pendingLeave = 0;
+                
+                if (requestHistory) {
+                    requestHistory.forEach(request => {
+                        const content = typeof request.content === 'string' ? JSON.parse(request.content) : request.content;
+                        const days = parseFloat(content.days || 0);
+                        
+                        if (request.status === 'approved') {
+                            usedLeave += days;
+                        } else if (request.status === 'pending') {
+                            pendingLeave += days;
+                        }
+                    });
+                }
             
-            const totalLeave = 15; // 기본 연차 15일
-            const remainingLeave = totalLeave - usedLeave;
-            
-            document.getElementById('usedLeave').textContent = usedLeave;
-            document.getElementById('remainingLeave').textContent = remainingLeave;
-            document.getElementById('pendingLeave').textContent = pendingLeave;
+                const totalLeave = 15; // 기본 연차 15일
+                const remainingLeave = totalLeave - usedLeave;
+                
+                document.getElementById('usedLeave').textContent = usedLeave;
+                document.getElementById('remainingLeave').textContent = remainingLeave;
+                document.getElementById('pendingLeave').textContent = pendingLeave;
+            } catch (error) {
+                console.error('연차 현황 업데이트 실패:', error);
+            }
         }
 
         // 연차 신청 삭제
-        function deleteRequest(index) {
+        async function deleteRequest(requestId) {
             if (!confirm('정말로 이 연차 신청을 삭제하시겠습니까?')) {
                 return;
             }
             
-            const requestHistory = JSON.parse(localStorage.getItem('leaveRequests') || '[]');
-            requestHistory.splice(index, 1);
-            localStorage.setItem('leaveRequests', JSON.stringify(requestHistory));
-            
-            // 화면 업데이트
-            loadRequestHistory();
-            updateLeaveStatus();
-            
-            alert('연차 신청이 삭제되었습니다.');
+            try {
+                await window.db.init();
+                
+                const { error } = await window.db.client
+                    .from('document_requests')
+                    .delete()
+                    .eq('id', requestId);
+
+                if (error) {
+                    console.error('연차 신청 삭제 오류:', error);
+                    alert('연차 신청 삭제 중 오류가 발생했습니다.');
+                    return;
+                }
+                
+                // 화면 업데이트
+                await loadRequestHistory();
+                await updateLeaveStatus();
+                
+                alert('연차 신청이 삭제되었습니다.');
+            } catch (error) {
+                console.error('연차 신청 삭제 실패:', error);
+                alert('연차 신청 삭제 중 오류가 발생했습니다.');
+            }
         }
 
         // 폼 초기화
@@ -932,52 +990,131 @@
             return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
         }
 
+        // 회사정보 로드 함수
+        async function loadCompanyInfo() {
+            try {
+                // 최신 데이터를 가져오기 위해 updated_at으로 정렬
+                const { data, error } = await window.db.client
+                    .from('company_info')
+                    .select('*')
+                    .order('updated_at', { ascending: false })
+                    .limit(1)
+                    .single();
+                
+                if (error) {
+                    console.error('회사정보 로드 오류:', error);
+                    return null;
+                }
+                
+                return data;
+            } catch (error) {
+                console.error('회사정보 로드 실패:', error);
+                return null;
+            }
+        }
+
+        // 미리보기에서 회사정보 업데이트
+        async function updateCompanyInfoInPreview(previewWindow) {
+            const companyInfo = await loadCompanyInfo();
+            if (!companyInfo) return;
+            
+            try {
+                const companyInfoElement = previewWindow.document.querySelector('.company-info-text');
+                if (companyInfoElement) {
+                    companyInfoElement.innerHTML = `
+                        <strong>${companyInfo.company_name || ''}</strong><br>
+                        대표이사 ${companyInfo.representative_name || ''}<br>
+                        ${companyInfo.company_address || ''}<br>
+                        사업자등록번호: ${companyInfo.business_number || ''}
+                    `;
+                }
+                
+                // 직인 이미지 업데이트
+                const stampArea = previewWindow.document.querySelector('.stamp-area');
+                if (stampArea) {
+                    if (companyInfo.company_seal_url) {
+                        // 저장된 이미지가 있으면 표시
+                        stampArea.innerHTML = `<img src="${companyInfo.company_seal_url}" alt="직인" style="max-width: 100%; max-height: 100%;">`;
+                    } else {
+                        // 저장된 이미지가 없으면 빈 원만 표시
+                        stampArea.innerHTML = '';
+                    }
+                }
+            } catch (error) {
+                console.error('미리보기 회사정보 업데이트 오류:', error);
+            }
+        }
+
         // 현재 로그인 사용자 정보 가져오기
         function getCurrentUser() {
             try {
-                return JSON.parse(localStorage.getItem('currentUser'));
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                return currentUser.id ? currentUser : null;
             } catch (error) {
-                console.error('사용자 정보 로드 오류:', error);
+                console.error('getCurrentUser 오류:', error);
                 return null;
             }
         }
 
         // 직원 이름 가져오기
-        function getEmployeeName(employeeId) {
-            const employees = JSON.parse(localStorage.getItem('employees') || '[]');
-            const employee = employees.find(emp => emp.id === employeeId);
-            return employee ? employee.name : '알 수 없음';
+        async function getEmployeeName(employeeId) {
+            try {
+                await window.db.init();
+                
+                const { data: employee, error } = await window.db.client
+                    .from('users')
+                    .select('name')
+                    .eq('id', employeeId)
+                    .single();
+
+                if (error) {
+                    console.error('직원 정보 조회 오류:', error);
+                    return '알 수 없음';
+                }
+
+                return employee ? employee.name : '알 수 없음';
+            } catch (error) {
+                console.error('getEmployeeName 오류:', error);
+                return '알 수 없음';
+            }
         }
 
         // 승인자 목록 로드
-        function loadApprovers() {
-            const employees = JSON.parse(localStorage.getItem('employees') || '[]');
-            const currentUser = getCurrentUser();
-            const approverSelect = document.getElementById('approver');
-            
-            // 현재 사용자를 제외한 모든 직원을 승인자 후보로 추가
-            employees.forEach(function(employee) {
-                // 다양한 방법으로 현재 사용자 확인
-                const isCurrentUser = employee.id === currentUser?.id ||
-                                     employee.name === currentUser?.name ||
-                                     employee.email === currentUser?.email;
+        async function loadApprovers() {
+            try {
+                await window.db.init();
                 
-                if (!isCurrentUser) {
-                    const option = document.createElement('option');
-                    option.value = employee.id;
-                    option.textContent = `${employee.name} (${employee.position || '직급 미설정'}) - ${employee.department || '부서 미설정'}`;
-                    approverSelect.appendChild(option);
+                const currentUser = getCurrentUser();
+                const approverSelect = document.getElementById('approver');
+                
+                // 데이터베이스에서 모든 직원 정보 가져오기
+                const { data: employees, error } = await window.db.client
+                    .from('users')
+                    .select('id, name, department, position, email')
+                    .eq('company_domain', 'namkyungsteel.com')
+                    .eq('is_active', true)
+                    .order('name');
+                
+                if (error) {
+                    console.error('승인자 목록 로드 오류:', error);
+                    return;
                 }
-            });
-        }
-
-        // 알림 생성 함수
-        function createNotification(userId, notification) {
-            const notifications = JSON.parse(localStorage.getItem('notifications_' + userId) || '[]');
-            notification.id = Date.now().toString();
-            notification.read = false;
-            notifications.unshift(notification);
-            localStorage.setItem('notifications_' + userId, JSON.stringify(notifications));
+                
+                // 현재 사용자를 제외한 모든 직원을 승인자 후보로 추가
+                employees.forEach(function(employee) {
+                    // 현재 사용자는 제외
+                    if (employee.id !== currentUser?.id && employee.email !== currentUser?.email) {
+                        const option = document.createElement('option');
+                        option.value = employee.id;
+                        option.textContent = `${employee.name} (${employee.position || '직급 미설정'}) - ${employee.department || '부서 미설정'}`;
+                        approverSelect.appendChild(option);
+                    }
+                });
+                
+                console.log(`승인자 목록 로드 완료: ${employees.length}명`);
+            } catch (error) {
+                console.error('승인자 목록 로드 중 오류:', error);
+            }
         }
     </script>
 </body>

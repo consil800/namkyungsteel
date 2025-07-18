@@ -448,13 +448,6 @@
                 <p>오늘의 업무 내용을 기록하고 관리하세요. 프로젝트별 진행상황을 확인할 수 있습니다.</p>
             </div>
             
-            <div class="menu-card" id="clientListCard" onclick="openClientList()">
-                <div class="menu-icon">
-                    <i class="fas fa-users"></i>
-                </div>
-                <h3>거래처목록</h3>
-                <p>거래처 정보를 조회하고 관리하세요. 연락처와 거래 이력을 확인할 수 있습니다.</p>
-            </div>
             
             <div class="menu-card" onclick="openCorporateCard()">
                 <div class="menu-icon" style="position: relative;">
@@ -735,13 +728,6 @@
             }, 500);
         }
         
-        function openClientList() {
-            showLoading();
-            setTimeout(() => {
-                // steel-business-app의 거래처 목록으로 이동
-                window.location.href = 'company-list.html';
-            }, 500);
-        }
         
         function openCorporateCard() {
             showLoading();
@@ -1216,8 +1202,77 @@
         }
         
         // 승인 알림 체크 (가입 알림 포함)
-        function checkApprovalNotifications(user) {
+        async function checkApprovalNotifications(user) {
             try {
+                console.log('🔔 알림 체크 시작 - 현재 사용자:', user);
+                
+                // 관리자인 경우에만 승인 대기 중인 사용자 수를 체크
+                let pendingCount = 0;
+                if (user.role === 'master' || user.role === 'company_CEO' || user.role === 'company_admin' || user.role === 'company_manager') {
+                    console.log('👤 관리자 권한 확인됨, 승인 대기 사용자 조회 시작');
+                    
+                    // 데이터베이스에서 승인 대기 중인 사용자 수 조회
+                    if (window.db && window.db.client) {
+                        try {
+                            const { data, error } = await window.db.client
+                                .from('users')
+                                .select('id, name, email, created_at')
+                                .is('role', null)  // role이 null인 사용자들 (승인 대기)
+                                .eq('is_active', true);
+                                
+                            if (!error && data) {
+                                pendingCount = data.length;
+                                console.log('✅ 승인 대기 사용자 조회 완료:', pendingCount, '명');
+                                console.log('📋 승인 대기 사용자 목록:', data);
+                                
+                                // 승인 대기 사용자가 있으면 관리자 알림에 추가
+                                if (pendingCount > 0) {
+                                    // 각 승인 대기 사용자에 대해 알림 생성 (중복 방지)
+                                    const adminNotifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
+                                    
+                                    data.forEach(pendingUser => {
+                                        const existingNotification = adminNotifications.find(n => 
+                                            n.type === 'new_user_signup' && 
+                                            n.userInfo && 
+                                            (n.userInfo.email === pendingUser.email || n.userInfo.name === pendingUser.name)
+                                        );
+                                        
+                                        if (!existingNotification) {
+                                            const notification = {
+                                                id: 'signup_' + pendingUser.id + '_' + Date.now(),
+                                                type: 'new_user_signup',
+                                                title: '새로운 사용자 가입',
+                                                message: `${pendingUser.name}님이 가입을 요청했습니다.`,
+                                                timestamp: pendingUser.created_at || new Date().toISOString(),
+                                                isRead: false,
+                                                read: false,
+                                                userInfo: {
+                                                    id: pendingUser.id,
+                                                    name: pendingUser.name,
+                                                    email: pendingUser.email || '이메일 미제공'
+                                                }
+                                            };
+                                            
+                                            adminNotifications.push(notification);
+                                        }
+                                    });
+                                    
+                                    localStorage.setItem('admin_notifications', JSON.stringify(adminNotifications));
+                                    console.log('✅ 관리자 알림에 승인 대기 사용자 알림 추가:', adminNotifications.length, '개');
+                                }
+                            } else {
+                                console.error('❌ 승인 대기 사용자 조회 오류:', error);
+                            }
+                        } catch (error) {
+                            console.error('❌ 승인 대기 사용자 조회 예외:', error);
+                        }
+                    } else {
+                        console.warn('⚠️ 데이터베이스 클라이언트가 초기화되지 않음');
+                    }
+                } else {
+                    console.log('👤 일반 사용자 - 승인 대기 사용자 체크 건너뜀');
+                }
+                
                 // employees 목록에서 정확한 사용자 ID 찾기
                 const employees = JSON.parse(localStorage.getItem('employees') || '[]');
                 const employee = employees.find(emp => 
@@ -1255,19 +1310,22 @@
                     !notification.read && !notification.isRead
                 );
                 
+                // 승인 대기 중인 사용자 수를 알림 수에 추가
+                const totalNotificationCount = unreadNotifications.length + pendingCount;
+                
                 const badge = document.getElementById('approvalNotificationBadge');
                 const headerBadge = document.getElementById('approvalNotificationBadgeHeader');
                 
-                if (unreadNotifications.length > 0) {
+                if (totalNotificationCount > 0) {
                     // 기존 카드 배지 (숨겨진 상태)
                     if (badge) {
-                        badge.textContent = unreadNotifications.length;
+                        badge.textContent = totalNotificationCount;
                         badge.style.display = 'flex';
                     }
                     
                     // 헤더 배지
                     if (headerBadge) {
-                        headerBadge.textContent = unreadNotifications.length;
+                        headerBadge.textContent = totalNotificationCount;
                         headerBadge.style.display = 'flex';
                     }
                 } else {
@@ -1280,6 +1338,8 @@
                     userId: user.id,
                     totalNotifications: notifications.length,
                     unreadNotifications: unreadNotifications.length,
+                    pendingUserCount: pendingCount,
+                    totalDisplayCount: totalNotificationCount,
                     signupNotifications: notifications.filter(n => n.type === 'new_user_signup' && !n.read && !n.isRead).length,
                     approvalNotifications: notifications.filter(n => (n.type === 'approval_request' || n.type === 'approval_completed' || n.type === 'approval_rejected') && !n.read && !n.isRead).length
                 });

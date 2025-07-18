@@ -728,19 +728,84 @@ class DatabaseManager {
                 throw new Error('사용자 ID가 필요합니다.');
             }
 
+            let actualUserId = companyData.user_id;
+            
+            // OAuth 사용자 ID(UUID 형태)인 경우 실제 데이터베이스 ID로 변환
+            if (typeof companyData.user_id === 'string' && companyData.user_id.includes('-')) {
+                console.log('🔍 OAuth 사용자 ID 감지, 데이터베이스에서 실제 ID 조회:', companyData.user_id);
+                
+                // 현재 사용자 정보 가져오기
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                console.log('👤 현재 사용자 정보:', currentUser);
+                
+                if (currentUser.email) {
+                    // 이메일로 users 테이블에서 실제 ID 조회
+                    const { data: userData, error: userError } = await this.client
+                        .from('users')
+                        .select('id')
+                        .eq('email', currentUser.email)
+                        .single();
+                    
+                    if (userError) {
+                        console.error('❌ 사용자 조회 오류:', userError);
+                        
+                        // OAuth ID로도 시도해보기
+                        const { data: oauthUserData, error: oauthError } = await this.client
+                            .from('users')
+                            .select('id')
+                            .eq('oauth_id', companyData.user_id)
+                            .single();
+                        
+                        if (oauthError) {
+                            console.error('❌ OAuth ID로 사용자 조회 오류:', oauthError);
+                            throw new Error('사용자 정보를 찾을 수 없습니다.');
+                        } else {
+                            actualUserId = oauthUserData.id;
+                            console.log('✅ OAuth ID로 실제 사용자 ID 조회 성공:', actualUserId);
+                        }
+                    } else {
+                        actualUserId = userData.id;
+                        console.log('✅ 이메일로 실제 사용자 ID 조회 성공:', actualUserId);
+                    }
+                } else {
+                    // 이메일이 없으면 OAuth ID로 조회
+                    const { data: oauthUserData, error: oauthError } = await this.client
+                        .from('users')
+                        .select('id')
+                        .eq('oauth_id', companyData.user_id)
+                        .single();
+                    
+                    if (oauthError) {
+                        console.error('❌ OAuth ID로 사용자 조회 오류:', oauthError);
+                        throw new Error('사용자 정보를 찾을 수 없습니다.');
+                    } else {
+                        actualUserId = oauthUserData.id;
+                        console.log('✅ OAuth ID로 실제 사용자 ID 조회 성공:', actualUserId);
+                    }
+                }
+            }
+
             const newCompany = {
                 ...companyData,
+                user_id: actualUserId, // 실제 숫자 ID 사용
                 company_domain: companyData.company_domain || this.currentDomain || 'namkyungsteel.com',
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             };
+
+            console.log('📝 거래처 생성 데이터:', newCompany);
 
             const { data, error } = await this.client
                 .from('client_companies')
                 .insert([newCompany])
                 .select();
             
-            if (error) throw error;
+            if (error) {
+                console.error('❌ Supabase 삽입 오류:', error);
+                throw error;
+            }
+            
+            console.log('✅ 거래처 생성 성공:', data);
             return { success: true, data: data[0] };
         } catch (error) {
             console.error('거래처 생성 오류:', error);
@@ -873,6 +938,261 @@ class DatabaseManager {
             throw new Error('데이터베이스 연결이 필요합니다. Supabase 클라이언트를 초기화해주세요.');
         }
         return this.client;
+    }
+
+    // 서류 요청 관리
+    async createDocumentRequest(documentData) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            
+            // 요청자 ID 확인
+            let requesterId = currentUser.id;
+            if (typeof requesterId === 'string' && requesterId.includes('-')) {
+                // OAuth 사용자인 경우 실제 ID 조회
+                const { data: userData, error: userError } = await this.client
+                    .from('users')
+                    .select('id')
+                    .eq('email', currentUser.email)
+                    .single();
+                
+                if (userError) throw userError;
+                requesterId = userData.id;
+            }
+
+            const newDocument = {
+                document_type: documentData.document_type,
+                title: documentData.title,
+                content: documentData.content,
+                requester_id: requesterId,
+                requester_name: currentUser.name || currentUser.username,
+                requester_email: currentUser.email,
+                company_domain: currentUser.company_domain || 'namkyungsteel.com',
+                status: 'pending',
+                approver_1_id: documentData.approver_1_id,
+                approver_1_name: documentData.approver_1_name,
+                approver_2_id: documentData.approver_2_id,
+                approver_2_name: documentData.approver_2_name,
+                current_approver_id: documentData.approver_1_id,
+                current_approver_name: documentData.approver_1_name,
+                created_at: new Date().toISOString()
+            };
+
+            console.log('📝 서류 생성 데이터:', newDocument);
+
+            const { data, error } = await this.client
+                .from('document_requests')
+                .insert([newDocument])
+                .select();
+            
+            if (error) throw error;
+            
+            console.log('✅ 서류 생성 성공:', data);
+            return { success: true, data: data[0] };
+        } catch (error) {
+            console.error('서류 생성 오류:', error);
+            throw error;
+        }
+    }
+
+    // 서류 목록 조회
+    async getDocumentRequests(userId = null, role = null) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            let query = this.client.from('document_requests').select('*');
+            
+            if (userId && role === 'employee') {
+                // 일반 직원은 자신이 작성한 서류만 조회
+                query = query.eq('requester_id', userId);
+            } else if (userId) {
+                // 승인자는 자신이 승인해야 할 서류 조회
+                query = query.or(`approver_1_id.eq.${userId},approver_2_id.eq.${userId}`);
+            }
+            
+            const { data, error } = await query.order('created_at', { ascending: false });
+            
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error('서류 목록 조회 오류:', error);
+            throw error;
+        }
+    }
+
+    // 승인 대기 중인 서류 조회
+    async getPendingDocuments(approverId) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            // 실제 사용자 ID 확인
+            let actualApproverId = approverId;
+            if (typeof approverId === 'string' && approverId.includes('-')) {
+                const { data: userData, error: userError } = await this.client
+                    .from('users')
+                    .select('id')
+                    .eq('oauth_id', approverId)
+                    .single();
+                
+                if (!userError && userData) {
+                    actualApproverId = userData.id;
+                }
+            }
+
+            const { data, error } = await this.client
+                .from('document_requests')
+                .select('*')
+                .eq('status', 'pending')
+                .eq('current_approver_id', actualApproverId)
+                .order('created_at', { ascending: false });
+            
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error('승인 대기 서류 조회 오류:', error);
+            throw error;
+        }
+    }
+
+    // 서류 승인/반려
+    async updateDocumentStatus(documentId, action, comment = '') {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            
+            // 현재 서류 정보 조회
+            const { data: doc, error: fetchError } = await this.client
+                .from('document_requests')
+                .select('*')
+                .eq('id', documentId)
+                .single();
+            
+            if (fetchError) throw fetchError;
+            
+            const now = new Date().toISOString();
+            let updateData = {
+                updated_at: now
+            };
+
+            // 1차 승인자인 경우
+            if (doc.current_approver_id === doc.approver_1_id) {
+                updateData.approver_1_status = action;
+                updateData.approver_1_comment = comment;
+                updateData.approver_1_date = now;
+                
+                if (action === 'approved' && doc.approver_2_id) {
+                    // 2차 승인자가 있으면 2차 승인자에게 넘김
+                    updateData.current_approver_id = doc.approver_2_id;
+                    updateData.current_approver_name = doc.approver_2_name;
+                } else {
+                    // 2차 승인자가 없거나 반려인 경우 최종 처리
+                    updateData.status = action;
+                    updateData.completed_at = now;
+                }
+            }
+            // 2차 승인자인 경우
+            else if (doc.current_approver_id === doc.approver_2_id) {
+                updateData.approver_2_status = action;
+                updateData.approver_2_comment = comment;
+                updateData.approver_2_date = now;
+                updateData.status = action;
+                updateData.completed_at = now;
+            }
+
+            const { data, error } = await this.client
+                .from('document_requests')
+                .update(updateData)
+                .eq('id', documentId)
+                .select();
+            
+            if (error) throw error;
+            return { success: true, data: data[0] };
+        } catch (error) {
+            console.error('서류 상태 업데이트 오류:', error);
+            throw error;
+        }
+    }
+
+    // 대시보드 통계 조회
+    async getDashboardStatistics(companyDomain) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            const { data, error } = await this.client
+                .from('document_statistics')
+                .select('*')
+                .eq('company_domain', companyDomain)
+                .single();
+            
+            if (error) {
+                // 뷰가 없거나 데이터가 없는 경우 기본값 반환
+                return {
+                    monthly_total: 0,
+                    monthly_pending: 0,
+                    monthly_approved: 0,
+                    monthly_rejected: 0,
+                    monthly_leave: 0,
+                    monthly_proposal: 0
+                };
+            }
+            
+            return data;
+        } catch (error) {
+            console.error('통계 조회 오류:', error);
+            return {
+                monthly_total: 0,
+                monthly_pending: 0,
+                monthly_approved: 0,
+                monthly_rejected: 0,
+                monthly_leave: 0,
+                monthly_proposal: 0
+            };
+        }
+    }
+
+    // 최근 활동 조회
+    async getRecentActivities(companyDomain, limit = 5) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            const { data, error } = await this.client
+                .from('recent_activities')
+                .select('*')
+                .eq('company_domain', companyDomain)
+                .limit(limit);
+            
+            if (error) {
+                // 뷰가 없는 경우 직접 조회
+                const { data: fallbackData, error: fallbackError } = await this.client
+                    .from('document_requests')
+                    .select('*')
+                    .eq('company_domain', companyDomain)
+                    .order('created_at', { ascending: false })
+                    .limit(limit);
+                
+                if (fallbackError) throw fallbackError;
+                return fallbackData || [];
+            }
+            
+            return data || [];
+        } catch (error) {
+            console.error('최근 활동 조회 오류:', error);
+            return [];
+        }
     }
 }
 
