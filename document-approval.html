@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>서류승인 - 남경스틸(주)</title>
+    
+    <!-- Favicons -->
+    <link href="logo.jpg" rel="icon">
+    <link href="logo.jpg" rel="apple-touch-icon">
+    
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Database Manager -->
+    <script src="database.js"></script>
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: #f8f9fa;
+            color: #333333;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 1.5rem 2rem;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .documents-section {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .document-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #dee2e6;
+            transition: all 0.3s ease;
+        }
+
+        .document-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .document-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .document-type {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: white;
+            margin-right: 1rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .document-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .document-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info-icon {
+            color: #667eea;
+            width: 16px;
+        }
+
+        .info-text {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .document-content {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border-left: 4px solid #667eea;
+        }
+
+        .content-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 0.5rem;
+        }
+
+        .content-text {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-approve {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+
+        .btn-reject {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+
+        .btn-view {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            color: #dee2e6;
+            margin-bottom: 1rem;
+        }
+
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 로딩 화면 -->
+    <div class="loading" id="loadingScreen">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- 헤더 -->
+    <header class="header">
+        <div class="header-title">
+            <i class="fas fa-stamp"></i>
+            <span>서류 승인</span>
+        </div>
+        <a href="employee-dashboard.html" class="back-btn">
+            <i class="fas fa-arrow-left"></i>
+            대시보드로
+        </a>
+    </header>
+
+    <!-- 메인 콘텐츠 -->
+    <main class="container">
+        <div class="documents-section">
+            <h2 class="section-title">
+                <i class="fas fa-file-alt"></i>
+                승인 대기 서류
+            </h2>
+            <div id="documentsList">
+                <!-- 서류 목록이 동적으로 생성됩니다 -->
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let allDocuments = [];
+
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', async function() {
+            await window.db.init();
+            await loadDocuments();
+        });
+
+        // 데이터베이스에서 현재 사용자 정보 가져오기
+        async function getCurrentUserFromDB() {
+            try {
+                console.log('🔍 getCurrentUserFromDB 시작');
+                
+                if (!window.db) {
+                    console.warn('⚠️ 데이터베이스가 초기화되지 않음');
+                    return null;
+                }
+                
+                await window.db.init();
+                console.log('✅ 데이터베이스 초기화 완료');
+                
+                // 세션 스토리지에서 로그인 정보 가져오기
+                const loginInfo = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+                console.log('📋 세션 스토리지 로그인 정보:', loginInfo);
+                
+                if (!loginInfo || (!loginInfo.email && !loginInfo.id)) {
+                    console.error('❌ 로그인 정보가 없습니다.');
+                    return null;
+                }
+                
+                // Supabase users 테이블에서 최신 사용자 정보 조회 (이메일 또는 ID로)
+                let user, error;
+                if (loginInfo.email && loginInfo.email !== 'null') {
+                    // 이메일로 조회 (Google 로그인)
+                    console.log('🔍 이메일로 사용자 조회:', loginInfo.email);
+                    const result = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .eq('email', loginInfo.email)
+                        .single();
+                    user = result.data;
+                    error = result.error;
+                    console.log('📊 이메일 조회 결과:', { user, error });
+                } else if (loginInfo.id) {
+                    // ID로 조회 (카카오 로그인에서 이메일이 없는 경우)
+                    console.log('🔍 ID로 사용자 조회:', loginInfo.id);
+                    const result = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .eq('id', loginInfo.id)
+                        .single();
+                    user = result.data;
+                    error = result.error;
+                    console.log('📊 ID 조회 결과:', { user, error });
+                }
+                
+                if (error) {
+                    console.error('❌ 사용자 정보 조회 오류:', error);
+                    return null;
+                }
+                
+                if (!user) {
+                    console.error('❌ 사용자를 찾을 수 없습니다');
+                    return null;
+                }
+                
+                console.log('✅ 사용자 정보 조회 성공:', user);
+                return user;
+            } catch (error) {
+                console.error('❌ getCurrentUserFromDB 오류:', error);
+                return null;
+            }
+        }
+
+        // 서류 목록 로드
+        async function loadDocuments() {
+            showLoading();
+            try {
+                const currentUser = await getCurrentUserFromDB();
+                console.log('📋 현재 사용자 정보:', currentUser);
+                
+                if (!currentUser || !currentUser.id) {
+                    alert('로그인 정보를 확인할 수 없습니다.');
+                    window.location.href = 'employee-dashboard.html';
+                    return;
+                }
+
+                // 현재 사용자가 승인해야 할 서류 조회
+                console.log('🔍 승인 대기 서류 조회 시작, 승인자 ID:', currentUser.id);
+                allDocuments = await window.db.getPendingDocuments(currentUser.id);
+                console.log('📊 승인 대기 서류:', allDocuments);
+                
+                displayDocuments(allDocuments);
+            } catch (error) {
+                console.error('❌ 서류 로드 오류:', error);
+                alert('서류 목록을 불러오는 중 오류가 발생했습니다.');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // 서류 목록 표시
+        function displayDocuments(documents) {
+            const documentsList = document.getElementById('documentsList');
+            
+            if (documents.length === 0) {
+                documentsList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-inbox"></i>
+                        </div>
+                        <h3>승인 대기 중인 서류가 없습니다</h3>
+                        <p>새로운 승인 요청이 있을 때 여기에 표시됩니다.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const typeNames = {
+                'proposal': '기안서',
+                'resignation': '사직서',
+                'incident': '경위서',
+                'employment': '재직증명서',
+                'career': '경력증명서',
+                'business_trip': '출장보고서',
+                'leave': '연차신청서'
+            };
+
+            documentsList.innerHTML = documents.map(doc => `
+                <div class="document-card">
+                    <div class="document-header">
+                        <div>
+                            <span class="document-type">
+                                ${typeNames[doc.document_type] || doc.document_type}
+                            </span>
+                            <div class="document-title">${doc.title}</div>
+                        </div>
+                    </div>
+                    <div class="document-info">
+                        <div class="info-item">
+                            <i class="fas fa-user info-icon"></i>
+                            <span class="info-text">요청자: ${doc.requester_name}</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-calendar info-icon"></i>
+                            <span class="info-text">요청일: ${formatDate(doc.created_at)}</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-user-tie info-icon"></i>
+                            <span class="info-text">현재 승인자: ${doc.current_approver_name}</span>
+                        </div>
+                    </div>
+                    <div class="document-content">
+                        <div class="content-label">주요 내용</div>
+                        <div class="content-text">
+                            ${getDocumentSummary(doc)}
+                        </div>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn btn-view" onclick="viewDocumentDetail('${doc.id}')">
+                            <i class="fas fa-eye"></i> 상세보기
+                        </button>
+                        <button class="btn btn-approve" onclick="processDocument('${doc.id}', 'approved')">
+                            <i class="fas fa-check"></i> 승인
+                        </button>
+                        <button class="btn btn-reject" onclick="processDocument('${doc.id}', 'rejected')">
+                            <i class="fas fa-times"></i> 반려
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 서류 요약 정보 생성
+        function getDocumentSummary(doc) {
+            if (!doc.content) return '내용 없음';
+            
+            try {
+                const content = typeof doc.content === 'string' ? JSON.parse(doc.content) : doc.content;
+                
+                switch (doc.document_type) {
+                    case 'proposal':
+                        return `${content.category || ''} - ${content.background || content.content || ''}`.substring(0, 100) + '...';
+                    case 'resignation':
+                        return `사직 사유: ${content.reason || ''}`.substring(0, 100) + '...';
+                    case 'leave':
+                        return `휴가 기간: ${content.startDate || ''} ~ ${content.endDate || ''}`;
+                    default:
+                        return (content.content || content.purpose || content.reason || '내용 없음').substring(0, 100) + '...';
+                }
+            } catch (error) {
+                return '내용 로드 실패';
+            }
+        }
+
+        // 날짜 포맷팅
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ko-KR') + ' ' + date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // 서류 처리 (승인/반려)
+        async function processDocument(documentId, action) {
+            const comment = action === 'approved' ? '승인' : 
+                prompt('반려 사유를 입력해주세요:') || '반려';
+            
+            if (action === 'rejected' && !comment) {
+                return;
+            }
+            
+            try {
+                showLoading();
+                const result = await window.db.updateDocumentStatus(documentId, action, comment);
+                
+                if (result.success) {
+                    alert(action === 'approved' ? '서류가 승인되었습니다.' : '서류가 반려되었습니다.');
+                    await loadDocuments(); // 목록 새로고침
+                } else {
+                    alert('처리 중 오류가 발생했습니다.');
+                }
+            } catch (error) {
+                console.error('서류 처리 오류:', error);
+                alert('처리 중 오류가 발생했습니다.');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // 서류 상세보기
+        function viewDocumentDetail(documentId) {
+            const doc = allDocuments.find(d => d.id == documentId);
+            if (!doc) return;
+
+            // 새 창에서 서류 상세 내용 표시
+            const detailWindow = window.open('', '_blank', 'width=800,height=600');
+            detailWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>서류 상세보기</title>
+                    <meta charset="UTF-8">
+                    <style>
+                        body { font-family: 'Noto Sans KR', sans-serif; padding: 20px; line-height: 1.6; }
+                        .header { border-bottom: 2px solid #667eea; padding-bottom: 10px; margin-bottom: 20px; }
+                        .title { font-size: 24px; font-weight: bold; color: #333; }
+                        .info { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+                        .content { background: white; padding: 20px; border: 1px solid #dee2e6; border-radius: 8px; }
+                        .print-btn { position: fixed; top: 20px; right: 20px; background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+                    </style>
+                </head>
+                <body>
+                    <button class="print-btn" onclick="window.print()">인쇄</button>
+                    <div class="header">
+                        <div class="title">${doc.title}</div>
+                    </div>
+                    <div class="info">
+                        <p><strong>요청자:</strong> ${doc.requester_name}</p>
+                        <p><strong>요청일:</strong> ${formatDate(doc.created_at)}</p>
+                    </div>
+                    <div class="content">
+                        ${formatDocumentContent(doc)}
+                    </div>
+                </body>
+                </html>
+            `);
+        }
+
+        // 서류 내용 포맷팅
+        function formatDocumentContent(doc) {
+            try {
+                const content = typeof doc.content === 'string' ? JSON.parse(doc.content) : doc.content;
+                let html = '';
+
+                Object.keys(content).forEach(key => {
+                    if (content[key] && content[key].toString().trim()) {
+                        const label = getFieldLabel(key);
+                        html += `<p><strong>${label}:</strong> ${content[key]}</p>`;
+                    }
+                });
+
+                return html || '<p>내용이 없습니다.</p>';
+            } catch (error) {
+                return '<p>내용을 불러올 수 없습니다.</p>';
+            }
+        }
+
+        // 필드 라벨 매핑
+        function getFieldLabel(field) {
+            const labels = {
+                'proposerName': '기안자',
+                'department': '부서',
+                'position': '직급',
+                'subject': '제목',
+                'category': '구분',
+                'priority': '우선순위',
+                'background': '배경 및 목적',
+                'content': '내용',
+                'reason': '사유',
+                'startDate': '시작일',
+                'endDate': '종료일',
+                'leaveType': '휴가 유형',
+                'purpose': '목적'
+            };
+            return labels[field] || field;
+        }
+
+        // 로딩 화면 표시/숨김
+        function showLoading() {
+            document.getElementById('loadingScreen').classList.add('active');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingScreen').classList.remove('active');
+        }
+    </script>
+</body>
+</html>
