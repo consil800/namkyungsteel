@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SteelWorks Platform - 플랫폼 관리자</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #667eea 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* 로그인 섹션 */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .login-box {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            border-radius: 20px;
+            padding: 3rem;
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .login-logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+            margin: 0 auto 2rem;
+        }
+
+        .login-title {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .login-subtitle {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 2rem;
+            font-size: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #e2e8f0;
+            font-weight: 600;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .error-message {
+            display: none;
+            color: #ef4444;
+            margin-top: 1rem;
+            padding: 0.5rem;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        /* 대시보드 섹션 */
+        .dashboard-container {
+            display: none;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .dashboard-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .dashboard-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+
+        .dashboard-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .platform-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: #667eea;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            margin: 0 auto 1rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+        }
+
+        .management-sections {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+        }
+
+        .management-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            border-radius: 15px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .management-card:hover {
+            transform: translateY(-5px);
+            border-color: #667eea;
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .management-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .management-title i {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: white;
+        }
+
+        .company-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .company-item {
+            background: rgba(102, 126, 234, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 10px;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .company-item:hover {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: #667eea;
+        }
+
+        .company-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .company-logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: white;
+            font-size: 0.8rem;
+        }
+
+        .company-logo.seokyoung { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+        .company-logo.posco { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .company-logo.hyundai { background: linear-gradient(135deg, #22c55e, #16a34a); }
+
+        .company-details h4 {
+            color: white;
+            margin-bottom: 0.25rem;
+            font-size: 1rem;
+        }
+
+        .company-details p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.8rem;
+        }
+
+        .company-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .action-btn {
+            background: rgba(102, 126, 234, 0.2);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            color: #667eea;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .action-btn:hover {
+            background: rgba(102, 126, 234, 0.3);
+            border-color: #667eea;
+        }
+
+        .action-btn.manage { background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.3); color: #10b981; }
+        .action-btn.edit { background: rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.3); color: #f59e0b; }
+        .action-btn.employees { background: rgba(139, 92, 246, 0.2); border-color: rgba(139, 92, 246, 0.3); color: #8b5cf6; }
+
+        .action-btn.manage:hover { background: rgba(16, 185, 129, 0.3); border-color: #10b981; }
+        .action-btn.edit:hover { background: rgba(245, 158, 11, 0.3); border-color: #f59e0b; }
+        .action-btn.employees:hover { background: rgba(139, 92, 246, 0.3); border-color: #8b5cf6; }
+
+        .platform-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .platform-action {
+            background: rgba(102, 126, 234, 0.1);
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            border-radius: 10px;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .platform-action:hover {
+            transform: translateY(-3px);
+            border-color: #667eea;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .platform-action i {
+            font-size: 2rem;
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+
+        .platform-action h4 {
+            color: white;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .platform-action p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 768px) {
+            .management-sections {
+                grid-template-columns: 1fr;
+            }
+            
+            .platform-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .platform-actions {
+                grid-template-columns: 1fr;
+            }
+            
+            .company-actions {
+                flex-direction: column;
+            }
+            
+            .dashboard-header {
+                padding: 1.5rem;
+            }
+            
+            .logout-btn {
+                position: static;
+                margin-top: 1rem;
+                width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 로그인 섹션 -->
+    <div id="loginSection" class="login-container">
+        <div class="login-box">
+            <div class="login-logo">
+                <i class="fas fa-cogs"></i>
+            </div>
+            <h1 class="login-title">플랫폼 관리자</h1>
+            <p class="login-subtitle">SteelWorks Platform 통합 관리 시스템</p>
+            
+            <form id="adminLoginForm">
+                <div class="form-group">
+                    <label class="form-label">관리자 이메일</label>
+                    <input type="email" class="form-input" id="adminEmail" placeholder="consil800@gmail.com" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">비밀번호</label>
+                    <input type="password" class="form-input" id="adminPassword" placeholder="비밀번호 입력" required>
+                </div>
+                <div id="adminErrorMessage" class="error-message"></div>
+                <button type="submit" class="btn">
+                    <i class="fas fa-sign-in-alt"></i>
+                    관리자 로그인
+                </button>
+            </form>
+            
+            <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 1rem; font-size: 0.9rem;">
+                    <i class="fas fa-info-circle"></i> 
+                    플랫폼 전체를 관리할 수 있는 마스터 관리자 전용 페이지입니다.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 대시보드 섹션 -->
+    <div id="dashboardSection" class="dashboard-container">
+        <div class="dashboard-header">
+            <button onclick="logout()" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> 로그아웃
+            </button>
+            <h1 class="dashboard-title">SteelWorks Platform 관리자</h1>
+            <p class="dashboard-subtitle">전체 플랫폼과 참여 기업들을 통합 관리합니다</p>
+        </div>
+
+        <!-- 플랫폼 통계 -->
+        <div class="platform-stats">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-building"></i>
+                </div>
+                <div class="stat-value">3</div>
+                <div class="stat-label">참여 기업</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-value">127</div>
+                <div class="stat-label">총 사용자</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-globe"></i>
+                </div>
+                <div class="stat-value">9</div>
+                <div class="stat-label">홈페이지 템플릿</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="stat-value">98.5%</div>
+                <div class="stat-label">시스템 가동률</div>
+            </div>
+        </div>
+
+        <!-- 관리 섹션들 -->
+        <div class="management-sections">
+            <!-- 회사 관리 -->
+            <div class="management-card">
+                <div class="management-title">
+                    <i class="fas fa-building"></i>
+                    참여 기업 관리
+                </div>
+                <div class="company-list">
+                    <div class="company-item">
+                        <div class="company-info">
+                            <div class="company-logo seokyoung">서경</div>
+                            <div class="company-details">
+                                <h4>서경 S&T</h4>
+                                <p>철강 전문 기업 • 직원 42명</p>
+                            </div>
+                        </div>
+                        <div class="company-actions">
+                            <a href="../3-company-dashboards/seokyoung-snt/admin/index.html" class="action-btn manage">
+                                <i class="fas fa-cogs"></i> 관리
+                            </a>
+                            <a href="../2-templates/seokyoung-snt/seokyoung-preview.html" class="action-btn edit" target="_blank">
+                                <i class="fas fa-edit"></i> 홈페이지
+                            </a>
+                            <a href="../4-employee-systems/seokyoung-snt/employee-workspace.html" class="action-btn employees">
+                                <i class="fas fa-users"></i> 직원시스템
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="company-item">
+                        <div class="company-info">
+                            <div class="company-logo posco">포스코</div>
+                            <div class="company-details">
+                                <h4>포스코 철강</h4>
+                                <p>글로벌 철강 기업 • 직원 47명</p>
+                            </div>
+                        </div>
+                        <div class="company-actions">
+                            <a href="../3-company-dashboards/posco/admin/index.html" class="action-btn manage">
+                                <i class="fas fa-cogs"></i> 관리
+                            </a>
+                            <a href="../2-templates/posco/posco-preview.html" class="action-btn edit" target="_blank">
+                                <i class="fas fa-edit"></i> 홈페이지
+                            </a>
+                            <a href="../4-employee-systems/posco/employee-workspace.html" class="action-btn employees">
+                                <i class="fas fa-users"></i> 직원시스템
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="company-item">
+                        <div class="company-info">
+                            <div class="company-logo hyundai">현대</div>
+                            <div class="company-details">
+                                <h4>현대제철</h4>
+                                <p>친환경 철강 기업 • 직원 38명</p>
+                            </div>
+                        </div>
+                        <div class="company-actions">
+                            <a href="../3-company-dashboards/hyundai-steel/admin/index.html" class="action-btn manage">
+                                <i class="fas fa-cogs"></i> 관리
+                            </a>
+                            <a href="../2-templates/hyundai-steel/hyundai-preview.html" class="action-btn edit" target="_blank">
+                                <i class="fas fa-edit"></i> 홈페이지
+                            </a>
+                            <a href="../4-employee-systems/hyundai-steel/employee-workspace.html" class="action-btn employees">
+                                <i class="fas fa-users"></i> 직원시스템
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 플랫폼 설정 -->
+            <div class="management-card">
+                <div class="management-title">
+                    <i class="fas fa-cogs"></i>
+                    플랫폼 설정
+                </div>
+                <div class="platform-actions">
+                    <a href="master-dashboard.html" class="platform-action">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <h4>마스터 대시보드</h4>
+                        <p>전체 시스템 현황 및 모니터링</p>
+                    </a>
+                    
+                    <a href="../../1-homepage/templates/index.html" class="platform-action">
+                        <i class="fas fa-home"></i>
+                        <h4>메인 홈페이지</h4>
+                        <p>플랫폼 소개 페이지 관리</p>
+                    </a>
+                    
+                    <div class="platform-action" onclick="showComingSoon('템플릿 관리')">
+                        <i class="fas fa-palette"></i>
+                        <h4>템플릿 관리</h4>
+                        <p>홈페이지 템플릿 추가/수정</p>
+                    </div>
+                    
+                    <div class="platform-action" onclick="showComingSoon('시스템 설정')">
+                        <i class="fas fa-server"></i>
+                        <h4>시스템 설정</h4>
+                        <p>플랫폼 전체 환경 설정</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../shared-assets/js/auth.js"></script>
+    <script>
+
+        // 관리자 로그인 폼 처리
+        document.getElementById('adminLoginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            console.log('관리자 로그인 폼 제출됨');
+            
+            // AuthManager 존재 확인
+            if (typeof AuthManager === 'undefined') {
+                console.error('AuthManager가 로드되지 않았습니다.');
+                document.getElementById('adminErrorMessage').style.display = 'block';
+                document.getElementById('adminErrorMessage').textContent = 'AuthManager가 로드되지 않았습니다. 페이지를 새로고침해주세요.';
+                return;
+            }
+            
+            const email = document.getElementById('adminEmail').value;
+            const password = document.getElementById('adminPassword').value;
+            
+            console.log('입력된 이메일:', email);
+            console.log('입력된 비밀번호:', password);
+            
+            // 데이터베이스 기반 인증으로 변경 - 하드코딩된 계정 제거
+            if (!email || !password) {
+                document.getElementById('adminErrorMessage').style.display = 'block';
+                document.getElementById('adminErrorMessage').textContent = '이메일과 비밀번호를 입력하세요.';
+                return;
+            }
+            
+            try {
+                const result = AuthManager.login(email, password);
+                console.log('로그인 결과:', result);
+                
+                if (result.success && result.user.role === 'master') {
+                    showDashboard();
+                    showNotification('플랫폼 관리자 로그인 성공!', 'success');
+                } else {
+                    document.getElementById('adminErrorMessage').style.display = 'block';
+                    document.getElementById('adminErrorMessage').textContent = result.message || '관리자 인증에 실패했습니다.';
+                }
+            } catch (error) {
+                console.error('로그인 처리 중 오류:', error);
+                document.getElementById('adminErrorMessage').style.display = 'block';
+                document.getElementById('adminErrorMessage').textContent = '로그인 처리 중 오류가 발생했습니다.';
+            }
+        });
+
+        // 대시보드 표시
+        function showDashboard() {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('dashboardSection').style.display = 'block';
+        }
+
+        // 로그아웃
+        function logout() {
+            if (confirm('로그아웃 하시겠습니까?')) {
+                AuthManager.logout();
+                document.getElementById('loginSection').style.display = 'flex';
+                document.getElementById('dashboardSection').style.display = 'none';
+                document.getElementById('adminEmail').value = '';
+                document.getElementById('adminPassword').value = '';
+                document.getElementById('adminErrorMessage').style.display = 'none';
+                showNotification('로그아웃되었습니다.', 'info');
+            }
+        }
+
+        // 준비 중 기능 알림
+        function showComingSoon(feature) {
+            showNotification(`${feature} 기능은 준비 중입니다.`, 'info');
+        }
+
+        // 알림 표시 함수
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: rgba(0, 0, 0, 0.9);
+                color: white;
+                padding: 16px 24px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                z-index: 10000;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                min-width: 300px;
+                animation: slideIn 0.3s ease;
+                backdrop-filter: blur(10px);
+            `;
+            
+            const icon = type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ';
+            const color = type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#667eea';
+            
+            notification.innerHTML = `
+                <div style="width: 24px; height: 24px; background: ${color}; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                    ${icon}
+                </div>
+                <div style="flex: 1;">${message}</div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // CSS 애니메이션 추가
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // 페이지 로드 시 로그인 상태 확인
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentUser = AuthManager.getCurrentUser();
+            if (currentUser && currentUser.role === 'master') {
+                showDashboard();
+            }
+        });
+    </script>
+</body>
+</html>
