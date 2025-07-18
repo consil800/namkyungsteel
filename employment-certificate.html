@@ -907,7 +907,7 @@
             }, 500);
         }
 
-        // 현재 로그인 사용자 정보 가져오기
+        // 현재 로그인 사용자 정보 가져오기 (localStorage)
         function getCurrentUser() {
             try {
                 const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
@@ -915,6 +915,40 @@
             } catch (error) {
                 console.error('getCurrentUser 오류:', error);
                 return null;
+            }
+        }
+
+        // 데이터베이스에서 현재 사용자 정보 가져오기
+        async function getCurrentUserFromDB() {
+            try {
+                await window.db.init();
+                
+                // 로컬 사용자 정보 가져오기
+                const localUser = getCurrentUser();
+                if (!localUser || !localUser.email) {
+                    console.error('로컬 사용자 정보가 없습니다.');
+                    return localUser;
+                }
+                
+                // Supabase에서 사용자 정보 조회
+                const { data: dbUser, error } = await window.db.client
+                    .from('users')
+                    .select('*')
+                    .eq('email', localUser.email)
+                    .eq('is_active', true)
+                    .single();
+                
+                if (error) {
+                    console.error('데이터베이스 사용자 정보 조회 오류:', error);
+                    return localUser; // 실패시 localStorage 데이터 반환
+                }
+                
+                console.log('✅ 데이터베이스에서 사용자 정보 로드 완료:', dbUser);
+                return dbUser;
+            } catch (error) {
+                console.error('getCurrentUserFromDB 오류:', error);
+                // 오류 발생시 localStorage 데이터로 폴백
+                return getCurrentUser();
             }
         }
 
@@ -988,18 +1022,18 @@
             
             resetForm();
             
-            // 현재 사용자 정보로 폼 자동 입력
-            var currentUser = getCurrentUser();
+            // 현재 사용자 정보로 폼 자동 입력 (데이터베이스에서)
+            var currentUser = await getCurrentUserFromDB();
             if (currentUser) {
                 document.getElementById('employeeName').value = currentUser.name || '';
                 document.getElementById('department').value = currentUser.department || '';
                 document.getElementById('position').value = currentUser.position || '';
                 
                 // 입사일 정보가 있으면 자동 입력
-                if (currentUser.hireDate) {
-                    document.getElementById('hireDate').value = currentUser.hireDate;
-                } else if (currentUser.hire_date) {
+                if (currentUser.hire_date) {
                     document.getElementById('hireDate').value = currentUser.hire_date;
+                } else if (currentUser.hireDate) {
+                    document.getElementById('hireDate').value = currentUser.hireDate;
                 }
             }
             

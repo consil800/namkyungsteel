@@ -957,7 +957,7 @@
             }, 100);
         }
 
-        // 현재 로그인 사용자 정보 가져오기
+        // 현재 로그인 사용자 정보 가져오기 (localStorage)
         function getCurrentUser() {
             try {
                 const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
@@ -965,6 +965,35 @@
             } catch (error) {
                 console.error('getCurrentUser 오류:', error);
                 return null;
+            }
+        }
+
+        // Supabase에서 최신 사용자 정보 가져오기
+        async function getCurrentUserFromDB() {
+            try {
+                await window.db.init();
+                
+                const localUser = getCurrentUser();
+                if (!localUser || !localUser.email) {
+                    return null;
+                }
+
+                const { data: user, error } = await window.db.client
+                    .from('users')
+                    .select('*')
+                    .eq('email', localUser.email)
+                    .eq('is_active', true)
+                    .single();
+
+                if (error) {
+                    console.error('DB 사용자 정보 조회 오류:', error);
+                    return localUser; // DB 조회 실패 시 localStorage 정보 사용
+                }
+
+                return user;
+            } catch (error) {
+                console.error('getCurrentUserFromDB 오류:', error);
+                return getCurrentUser(); // 에러 시 localStorage 정보 사용
             }
         }
 
@@ -1038,8 +1067,8 @@
             var today = new Date().toISOString().split('T')[0];
             document.getElementById('reportDate').value = today;
             
-            // 현재 사용자 정보로 폼 자동 입력
-            var currentUser = getCurrentUser();
+            // Supabase에서 최신 사용자 정보로 폼 자동 입력
+            var currentUser = await getCurrentUserFromDB();
             if (currentUser) {
                 document.getElementById('employeeName').value = currentUser.name || '';
                 document.getElementById('department').value = currentUser.department || '';
