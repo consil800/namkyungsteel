@@ -519,6 +519,14 @@
             background: linear-gradient(135deg, #f59e0b, #d97706);
         }
 
+        .company-info-card {
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
+        }
+
+        .document-approval-card {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
         .checkbox-group {
             display: flex;
             flex-wrap: wrap;
@@ -980,8 +988,9 @@
                         <p>사용자별 접근 권한과 기능 권한을 설정합니다.</p>
                     </button>
                     
-                    <button class="management-card pending-members-card" onclick="showPendingMembers()">
+                    <button class="management-card pending-members-card" onclick="showPendingMembers()" style="position: relative;">
                         <i class="fas fa-user-clock"></i>
+                        <span id="pendingMembersBadge" class="notification-badge" style="display: none;">0</span>
                         <h3>가입 승인</h3>
                         <p>신규 가입 신청을 검토하고 승인 또는 거부를 처리합니다.</p>
                     </button>
@@ -992,11 +1001,24 @@
                         <p>각종 서류 템플릿을 관리하고 결재 시스템 표시 여부를 설정합니다.</p>
                     </button>
                     
+                    <button class="management-card document-approval-card" onclick="openDocumentApproval()" style="position: relative;">
+                        <i class="fas fa-stamp"></i>
+                        <span id="documentApprovalBadge" class="notification-badge" style="display: none;">0</span>
+                        <h3>서류 승인</h3>
+                        <p>직원들이 제출한 각종 서류의 승인 요청을 검토하고 처리합니다.</p>
+                    </button>
+                    
                     <button class="management-card corporate-card-card" onclick="openCorporateCardManagement()" style="position: relative;">
                         <i class="fas fa-credit-card"></i>
                         <span id="adminCardNotificationBadge" class="notification-badge" style="display: none;">0</span>
                         <h3>법인카드 관리</h3>
                         <p>법인카드 사용 내역을 조회하고 승인/반려를 처리합니다.</p>
+                    </button>
+                    
+                    <button class="management-card company-info-card" onclick="showCompanyInfoManagement()">
+                        <i class="fas fa-building"></i>
+                        <h3>회사정보</h3>
+                        <p>회사 기본정보, 사업자등록증, 법인등록번호 등을 관리합니다.</p>
                     </button>
                 </div>
             </div>
@@ -1097,6 +1119,150 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 회사정보 관리 섹션 -->
+            <section class="content-section" id="companyInfo" style="display: none;">
+                <button class="btn btn-secondary" onclick="backToDashboard()" style="margin-bottom: 1rem;">
+                    <i class="fas fa-arrow-left"></i> 대시보드로 돌아가기
+                </button>
+                <h2 class="section-title">회사정보 관리</h2>
+                
+                <div class="data-grid">
+                    <div class="grid-header">
+                        <h3 class="grid-title">회사 기본 정보</h3>
+                        <button class="btn" onclick="saveCompanyInfo()" style="background: linear-gradient(135deg, #10b981, #059669);">
+                            <i class="fas fa-save"></i> 저장
+                        </button>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <form id="companyInfoForm" onsubmit="event.preventDefault(); saveCompanyInfo(); return false;" novalidate>
+                            <!-- 첫 번째 행: 회사구분과 회사명 -->
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">회사구분 *</label>
+                                    <select class="form-select" id="companyType">
+                                        <option value="">구분을 선택하세요</option>
+                                        <option value="corporation">법인</option>
+                                        <option value="individual">개인사업자</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">회사명 *</label>
+                                    <input type="text" class="form-input" id="companyName" placeholder="회사명을 입력하세요">
+                                </div>
+                            </div>
+                            
+                            <!-- 두 번째 행: 대표자명과 사업자등록번호 -->
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">대표자명 *</label>
+                                    <input type="text" class="form-input" id="representativeName" placeholder="대표자명을 입력하세요">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">사업자등록번호 *</label>
+                                    <input type="text" class="form-input" id="businessNumber" placeholder="000-00-00000">
+                                </div>
+                            </div>
+                            
+                            <!-- 세 번째 행: 법인등록번호와 전화번호 -->
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">법인등록번호</label>
+                                    <input type="text" class="form-input" id="corporateNumber" placeholder="000000-0000000">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">전화번호</label>
+                                    <input type="tel" class="form-input" id="companyPhone" placeholder="02-000-0000">
+                                </div>
+                            </div>
+                            
+                            <!-- 네 번째 행: 팩스번호와 이메일 -->
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">팩스번호</label>
+                                    <input type="tel" class="form-input" id="companyFax" placeholder="02-000-0000">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">이메일</label>
+                                    <input type="email" class="form-input" id="companyEmail" placeholder="company@example.com">
+                                </div>
+                            </div>
+                            
+                            <!-- 다섯 번째 행: 주소 -->
+                            <div class="form-row">
+                                <div class="form-group" style="flex: 1;">
+                                    <label class="form-label">주소</label>
+                                    <input type="text" class="form-input" id="companyAddress" placeholder="주소를 입력하세요">
+                                </div>
+                            </div>
+                            
+                            <!-- 여섯 번째 행: 업종과 업태 -->
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">업종</label>
+                                    <input type="text" class="form-input" id="businessType" placeholder="업종을 입력하세요">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">업태</label>
+                                    <input type="text" class="form-input" id="businessCategory" placeholder="업태를 입력하세요">
+                                </div>
+                            </div>
+                            
+                            <!-- 일곱 번째 행: 설립일과 자본금 -->
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">설립일</label>
+                                    <input type="date" class="form-input" id="establishmentDate">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">자본금</label>
+                                    <input type="number" class="form-input" id="capital" placeholder="자본금을 입력하세요">
+                                </div>
+                            </div>
+                            
+                            <!-- 여덟 번째 행: 직원수와 홈페이지 -->
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">직원수</label>
+                                    <input type="number" class="form-input" id="employeeCount" placeholder="직원수를 입력하세요">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">홈페이지</label>
+                                    <input type="url" class="form-input" id="website" placeholder="https://www.company.com">
+                                </div>
+                            </div>
+                            
+                            <!-- 비고 -->
+                            <div class="form-row">
+                                <div class="form-group" style="flex: 1;">
+                                    <label class="form-label">비고</label>
+                                    <textarea class="form-textarea" id="companyNotes" rows="3" placeholder="추가 정보를 입력하세요"></textarea>
+                                </div>
+                            </div>
+                            
+                            <!-- 회사 인감 -->
+                            <div class="form-row">
+                                <div class="form-group" style="flex: 1;">
+                                    <label class="form-label">회사 인감 (법인 사용인감)</label>
+                                    <div style="display: flex; align-items: center; gap: 1rem;">
+                                        <input type="file" id="companySealUpload" accept="image/*" style="display: none;" onchange="handleCompanySealUpload(this)">
+                                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('companySealUpload').click();">
+                                            <i class="fas fa-upload"></i> 인감 이미지 업로드
+                                        </button>
+                                        <div style="position: relative;">
+                                            <img id="companySealPreview" src="" alt="회사 인감 미리보기" 
+                                                 style="display: none; max-width: 100px; max-height: 100px; border: 1px solid #ddd; border-radius: 4px; object-fit: contain;">
+                                            <button type="button" id="companySealRemove" onclick="removeCompanySeal()" 
+                                                    style="display: none; position: absolute; top: -5px; right: -5px; background: #dc3545; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer;">×</button>
+                                        </div>
+                                    </div>
+                                    <small style="color: #6c757d; margin-top: 0.5rem; display: block;">JPG, PNG 파일만 업로드 가능합니다. (최대 2MB)</small>
+                                </div>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </section>
@@ -1453,7 +1619,7 @@
             });
             
             // 페이지 새로고침 시 직원 데이터 재로드 강화
-            setTimeout(() => {
+            setTimeout(async () => {
                 console.log('🔄 페이지 로드 후 직원 데이터 재확인');
                 const currentEmployeesData = localStorage.getItem('employees');
                 if (currentEmployeesData) {
@@ -1464,7 +1630,7 @@
                 }
                 
                 // 강제로 다시 렌더링
-                renderEmployeeList();
+                await renderEmployeeList();
             }, 1000);
             
             // 마스터 대시보드에서 온 경우 체크
@@ -1481,6 +1647,7 @@
             // 알림 체크
             setTimeout(() => {
                 checkAdminNotifications();
+                checkPendingMembersCount();
             }, 500);
             
             let user = AuthManager.getCurrentUser();
@@ -1579,14 +1746,14 @@
             updateEmployeeFormOptions(); // 부서 및 직책 옵션 초기화
             
             // 직원 목록 강제 렌더링 (여러 번 시도)
-            setTimeout(() => {
+            setTimeout(async () => {
                 console.log('🔄 직원 목록 강제 렌더링 시작 (1차)');
-                renderEmployeeList();
+                await renderEmployeeList();
                 
                 // 2초 후 다시 시도
-                setTimeout(() => {
+                setTimeout(async () => {
                     console.log('🔄 직원 목록 강제 렌더링 시작 (2차)');
-                    renderEmployeeList();
+                    await renderEmployeeList();
                     
                     // 렌더링 확인
                     setTimeout(() => {
@@ -1636,7 +1803,7 @@
             }, 100);
             
             // 페이지 가시성 변경 감지 (사용자가 다른 탭으로 갔다가 돌아올 때)
-            document.addEventListener('visibilitychange', function() {
+            document.addEventListener('visibilitychange', async function() {
                 if (!document.hidden) {
                     console.log('📄 페이지가 다시 활성화됨, localStorage 상태 확인');
                     const currentEmployeesData = localStorage.getItem('employees');
@@ -1644,7 +1811,7 @@
                     
                     // 항상 다시 렌더링 (안정성 향상)
                     console.log('🔄 페이지 활성화 시 직원 목록 재렌더링');
-                    renderEmployeeList();
+                    await renderEmployeeList();
                     
                     // 데이터가 없으면 백업에서 복원 시도
                     if (!currentEmployeesData || JSON.parse(currentEmployeesData).length === 0) {
@@ -1659,7 +1826,7 @@
                             if (latestBackup) {
                                 localStorage.setItem('employees', latestBackup);
                                 console.log('✅ 백업에서 데이터 복원:', backupKeys[0]);
-                                renderEmployeeList();
+                                await renderEmployeeList();
                             }
                         }
                     }
@@ -1670,8 +1837,8 @@
             window.addEventListener('storage', function(e) {
                 if (e.key === 'employees' || (e.key && e.key.includes('employees'))) {
                     console.log('🔄 localStorage employees 데이터 변경 감지, 재렌더링');
-                    setTimeout(() => {
-                        renderEmployeeList();
+                    setTimeout(async () => {
+                        await renderEmployeeList();
                     }, 100);
                 }
             });
@@ -1751,52 +1918,38 @@
         }
 
         // 직원 목록 렌더링
-        function renderEmployeeList() {
+        async function renderEmployeeList() {
             console.log('🔄 직원 목록 렌더링 시작');
-            
-            // URL에서 회사 ID 가져오기
-            const urlParams = new URLSearchParams(window.location.search);
-            const companyId = urlParams.get('company');
-            console.log('🏢 현재 회사 ID:', companyId);
-            
-            // localStorage 현재 상태 로깅
-            console.log('🔍 현재 localStorage 상태:');
-            const allData = localStorage.getItem('employees');
-            console.log('  📁 employees:', allData ? JSON.parse(allData).length + '명' : '없음');
-            
-            if (companyId) {
-                const companyKey = `company_${companyId}_employees`;
-                const companyData = localStorage.getItem(companyKey);
-                console.log(`  📁 ${companyKey}:`, companyData ? JSON.parse(companyData).length + '명' : '없음');
-            }
             
             let employees = [];
             
-            // 먼저 회사별 직원 데이터 확인
-            if (companyId) {
-                const companyKey = `company_${companyId}_employees`;
-                const companyEmployees = JSON.parse(localStorage.getItem(companyKey) || '[]');
-                console.log(`📁 ${companyKey}에서 ${companyEmployees.length}명 발견`);
-                
-                if (companyEmployees.length > 0) {
-                    employees = companyEmployees;
-                    console.log('✅ 회사별 데이터 사용:', employees.length + '명');
-                } else {
-                    // 회사별 데이터가 없으면 통합 목록에서 필터링
-                    const allEmployees = JSON.parse(localStorage.getItem('employees') || '[]');
-                    employees = allEmployees.filter(emp => emp.companyId === companyId);
-                    console.log(`📁 통합 목록에서 ${employees.length}명 필터링`);
-                    
-                    // 필터링된 결과가 있으면 회사별 저장소에도 저장
-                    if (employees.length > 0) {
-                        localStorage.setItem(companyKey, JSON.stringify(employees));
-                        console.log('💾 회사별 저장소에 백업 저장 완료');
+            // 데이터베이스에서 직원 목록 로드
+            if (window.db && window.db.client) {
+                try {
+                    const { data, error } = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .eq('is_active', true)
+                        .not('role', 'is', null)  // role이 설정된 사용자들만 (승인된 사용자)
+                        .neq('role', 'master')    // master는 제외
+                        .order('name', { ascending: true });
+                        
+                    if (error) {
+                        console.error('❌ 직원 목록 조회 오류:', error);
+                    } else {
+                        employees = data || [];
+                        console.log('✅ 데이터베이스에서 직원 목록 로드 완료:', employees.length, '명 (master 제외)');
                     }
+                } catch (error) {
+                    console.error('❌ 데이터베이스 조회 예외:', error);
                 }
-            } else {
-                // 회사 ID가 없으면 모든 직원 표시
-                employees = JSON.parse(localStorage.getItem('employees') || '[]');
-                console.log(`📁 모든 직원: ${employees.length}명`);
+            }
+            
+            // 백업으로 localStorage에서 가져오기 (master 제외)
+            if (employees.length === 0) {
+                const allEmployees = JSON.parse(localStorage.getItem('employees') || '[]');
+                employees = allEmployees.filter(emp => emp.role !== 'master');
+                console.log('📂 localStorage에서 직원 데이터 백업 로드:', employees.length, '명 (master 제외)');
             }
             
             const employeeList = document.getElementById('employeeList');
@@ -2958,7 +3111,7 @@
             showSection('employees');
         }
 
-        function showPermissionManagement() {
+        async function showPermissionManagement() {
             // 히스토리에 상태 추가 (해시 변경 없이)
             history.pushState({ section: 'permissions' }, '권한 설정', '#permissions');
             
@@ -2966,7 +3119,7 @@
             showSection('permissions');
             
             // 권한 데이터 로드
-            loadMenuPermissions();
+            await loadMenuPermissions();
         }
 
         async function showPendingMembers() {
@@ -3023,6 +3176,10 @@
                     // 가입 승인 섹션인 경우 데이터 로드
                     else if (sectionName === 'pendingMembers') {
                         loadPendingMembers();
+                    }
+                    // 회사정보 섹션인 경우 데이터 로드
+                    else if (sectionName === 'companyInfo') {
+                        loadCompanyInfo();
                     }
                 } else {
                     console.warn('섹션을 찾을 수 없음:', sectionName);
@@ -3268,7 +3425,7 @@
         // ==================== 권한 관리 함수들 ====================
         
         // 메뉴 권한 데이터 로드
-        function loadMenuPermissions() {
+        async function loadMenuPermissions() {
             console.log('📋 메뉴 권한 로드 시작');
             
             // 저장된 권한 데이터 가져오기
@@ -3277,7 +3434,36 @@
             // 현재 회사의 부서, 직급, 직원 목록 가져오기
             const departments = getDepartments();
             const positions = getPositions();
-            const employees = JSON.parse(localStorage.getItem('employees') || '[]');
+            
+            // 데이터베이스에서 직원 목록 로드
+            let employees = [];
+            if (window.db && window.db.client) {
+                try {
+                    const { data, error } = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .eq('is_active', true)
+                        .not('role', 'is', null)  // role이 설정된 사용자들만 (승인된 사용자)
+                        .neq('role', 'master')    // master는 제외
+                        .order('name', { ascending: true });
+                        
+                    if (error) {
+                        console.error('❌ 직원 목록 조회 오류:', error);
+                    } else {
+                        employees = data || [];
+                        console.log('✅ 권한 설정용 직원 목록 로드 완료:', employees.length, '명');
+                    }
+                } catch (error) {
+                    console.error('❌ 데이터베이스 조회 예외:', error);
+                }
+            }
+            
+            // 백업으로 localStorage에서 가져오기 (master 제외)
+            if (employees.length === 0) {
+                const allEmployees = JSON.parse(localStorage.getItem('employees') || '[]');
+                employees = allEmployees.filter(emp => emp.role !== 'master');
+                console.log('📂 localStorage에서 직원 데이터 백업 로드:', employees.length, '명 (master 제외)');
+            }
             
             // 각 메뉴에 대해 권한 패널 렌더링
             const menus = ['worklog', 'corporate-card', 'documents'];
@@ -3362,13 +3548,13 @@
             const menuPermissions = savedPermissions[menu] || {};
             const individualPermissions = menuPermissions.individuals || {};
             
-            // 대표이사 제외 (모든 권한 자동 부여)
-            const filteredEmployees = employees.filter(emp => emp.position !== '대표이사');
+            // 대표이사와 master 제외 (모든 권한 자동 부여)
+            const filteredEmployees = employees.filter(emp => emp.position !== '대표이사' && emp.role !== 'master');
             
             let html = '<div style="max-height: 300px; overflow-y: auto;">';
             
             if (filteredEmployees.length === 0) {
-                html += '<p style="color: #9ca3af; text-align: center;">권한 설정 가능한 직원이 없습니다.<br><small>(대표이사는 모든 권한이 자동 부여됩니다)</small></p>';
+                html += '<p style="color: #9ca3af; text-align: center;">권한 설정 가능한 직원이 없습니다.<br><small>(대표이사와 마스터는 모든 권한이 자동 부여됩니다)</small></p>';
             } else {
                 filteredEmployees.forEach(emp => {
                     const isChecked = individualPermissions[emp.id] || false;
@@ -3460,11 +3646,32 @@
         }
 
         // 가입 승인 관리 함수들
-        function loadPendingMembers() {
+        async function loadPendingMembers() {
             console.log('📋 승인 대기 회원 목록 로드');
             
-            const pendingMembers = JSON.parse(localStorage.getItem('pendingMembers') || '[]');
             const pendingMembersList = document.getElementById('pendingMembersList');
+            
+            // 데이터베이스에서 승인 대기 중인 사용자 조회
+            let pendingMembers = [];
+            if (window.db && window.db.client) {
+                try {
+                    const { data, error } = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .is('role', null)  // role이 null인 사용자들 (승인 대기)
+                        .eq('is_active', true)
+                        .order('created_at', { ascending: false });
+                        
+                    if (error) {
+                        console.error('❌ 승인 대기 회원 조회 오류:', error);
+                    } else {
+                        pendingMembers = data || [];
+                        console.log('✅ 승인 대기 회원 조회 완료:', pendingMembers.length, '명');
+                    }
+                } catch (error) {
+                    console.error('❌ 데이터베이스 조회 예외:', error);
+                }
+            }
             
             if (pendingMembers.length === 0) {
                 pendingMembersList.innerHTML = `
@@ -3478,12 +3685,8 @@
             
             let html = '';
             pendingMembers.forEach(member => {
-                const requestDate = new Date(member.requestedAt).toLocaleDateString('ko-KR');
-                const roleText = {
-                    'employee': '직원',
-                    'company_manager': '관리자',
-                    'company_admin': '회사 대표'
-                }[member.role] || member.role;
+                const requestDate = new Date(member.created_at).toLocaleDateString('ko-KR');
+                const provider = member.oauth_provider || '일반';
                 
                 html += `
                     <div style="background: rgba(255, 255, 255, 0.1); padding: 1.5rem; border-radius: 10px; margin-bottom: 1rem; border: 1px solid rgba(255, 255, 255, 0.2);">
@@ -3495,13 +3698,17 @@
                                 </h4>
                                 <p style="color: #e2e8f0; margin: 0 0 0.5rem 0;">
                                     <i class="fas fa-envelope" style="margin-right: 0.5rem;"></i>
-                                    ${member.email}
+                                    ${member.email || '이메일 미제공'}
                                 </p>
                                 ${member.phone ? `
                                 <p style="color: #e2e8f0; margin: 0 0 0.5rem 0;">
                                     <i class="fas fa-phone" style="margin-right: 0.5rem;"></i>
                                     ${member.phone}
                                 </p>` : ''}
+                                <p style="color: #e2e8f0; margin: 0 0 0.5rem 0;">
+                                    <i class="fas fa-sign-in-alt" style="margin-right: 0.5rem;"></i>
+                                    ${provider === 'kakao' ? '카카오' : provider === 'google' ? 'Google' : '일반'} 가입
+                                </p>
                             </div>
                             <div style="text-align: right;">
                                 <span style="background: rgba(255, 193, 7, 0.2); color: #ffc107; padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.875rem; font-weight: 600;">
@@ -3522,8 +3729,13 @@
                                 <span style="color: #e2e8f0; margin-left: 0.5rem;">${member.position}</span>
                             </div>` : ''}
                             <div>
-                                <strong style="color: #cbd5e0;">희망 권한:</strong>
-                                <span style="color: #e2e8f0; margin-left: 0.5rem;">${roleText}</span>
+                                <strong style="color: #cbd5e0;">역할 선택:</strong>
+                                <select id="roleSelect_${member.id}" style="margin-left: 0.5rem; padding: 0.25rem 0.5rem; border-radius: 4px; border: 1px solid #4a5568; background: #2d3748; color: #e2e8f0;">
+                                    <option value="">역할을 선택하세요</option>
+                                    <option value="employee">직원</option>
+                                    <option value="company_manager">관리자</option>
+                                    <option value="company_admin">회사 대표</option>
+                                </select>
                             </div>
                             <div>
                                 <strong style="color: #cbd5e0;">신청일:</strong>
@@ -3544,75 +3756,190 @@
             });
             
             pendingMembersList.innerHTML = html;
+            
+            // 배지 업데이트
+            checkPendingMembersCount(pendingMembers.length);
         }
 
-        function approveMember(memberId) {
-            if (!confirm('이 회원의 가입을 승인하시겠습니까?')) {
+        async function approveMember(memberId) {
+            // 선택된 역할 확인
+            const roleSelect = document.getElementById(`roleSelect_${memberId}`);
+            if (!roleSelect || !roleSelect.value) {
+                alert('먼저 사용자의 역할을 선택해주세요.');
                 return;
             }
             
-            console.log('✅ 회원 승인:', memberId);
+            const selectedRole = roleSelect.value;
+            const roleText = {
+                'employee': '직원',
+                'company_manager': '관리자', 
+                'company_admin': '회사 대표'
+            }[selectedRole];
             
-            const pendingMembers = JSON.parse(localStorage.getItem('pendingMembers') || '[]');
-            const memberIndex = pendingMembers.findIndex(m => m.id === memberId);
-            
-            if (memberIndex === -1) {
-                alert('승인할 회원을 찾을 수 없습니다.');
+            if (!confirm(`이 회원을 "${roleText}" 역할로 승인하시겠습니까?`)) {
                 return;
             }
             
-            const member = pendingMembers[memberIndex];
+            console.log('✅ 회원 승인:', memberId, '역할:', selectedRole);
             
-            // 기존 직원 목록에 추가
-            const employees = JSON.parse(localStorage.getItem('employees') || '[]');
-            const newEmployee = {
-                id: member.id,
-                name: member.name,
-                email: member.email,
-                phone: member.phone || '',
-                role: member.role,
-                department: member.department || '',
-                position: member.position || '',
-                password: 'demo123', // 기본 비밀번호
-                company: 'seokyoung-snt', // 기본 회사
-                status: 'active',
+            // 데이터베이스에서 회원 정보 조회
+            let member = null;
+            if (window.db && window.db.client) {
+                try {
+                    const { data, error } = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .eq('id', memberId)
+                        .single();
+                        
+                    if (error) {
+                        console.error('❌ 회원 정보 조회 오류:', error);
+                        alert('회원 정보를 찾을 수 없습니다.');
+                        return;
+                    }
+                    
+                    member = data;
+                } catch (error) {
+                    console.error('❌ 회원 조회 예외:', error);
+                    alert('회원 정보 조회 중 오류가 발생했습니다.');
+                    return;
+                }
+            } else {
+                alert('데이터베이스 연결이 필요합니다.');
+                return;
+            }
+            
+            // 데이터베이스에서 사용자 승인 처리
+            if (window.db && window.db.client) {
+                try {
+                    const { data, error } = await window.db.client
+                        .from('users')
+                        .update({ 
+                            role: selectedRole,
+                            is_approved: true,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', memberId)
+                        .select();
+                        
+                    if (error) {
+                        console.error('❌ 사용자 승인 오류:', error);
+                        alert('사용자 승인 중 오류가 발생했습니다.');
+                        return;
+                    }
+                    
+                    console.log('✅ 데이터베이스 승인 완료:', data);
+                } catch (error) {
+                    console.error('❌ 승인 처리 오류:', error);
+                }
+            }
+            
+            // 승인 완료 - 더 이상 localStorage 조작 불필요 (데이터베이스에서 is_approved가 true로 변경됨)
+            
+            // 승인 완료 알림 생성
+            const approvalNotification = {
+                id: Date.now().toString(),
+                type: 'approval_completed',
+                title: '가입 승인 완료',
+                message: `${member.name}님이 "${roleText}" 역할로 승인되었습니다.`,
+                targetUserId: member.id,
+                assignedRole: selectedRole,
                 createdAt: new Date().toISOString(),
-                approvedAt: new Date().toISOString()
+                isRead: false
             };
             
-            employees.push(newEmployee);
-            localStorage.setItem('employees', JSON.stringify(employees));
+            // 해당 사용자에게 알림 전송
+            const userNotifications = JSON.parse(localStorage.getItem('notifications_' + member.id) || '[]');
+            userNotifications.unshift(approvalNotification);
+            localStorage.setItem('notifications_' + member.id, JSON.stringify(userNotifications));
             
-            // 승인 대기 목록에서 제거
-            pendingMembers.splice(memberIndex, 1);
-            localStorage.setItem('pendingMembers', JSON.stringify(pendingMembers));
-            
-            alert(`${member.name}님의 가입이 승인되었습니다.`);
+            alert(`${member.name}님이 "${roleText}" 역할로 승인되었습니다.`);
             
             // 목록 새로고침
             loadPendingMembers();
         }
 
-        function rejectMember(memberId) {
+        async function rejectMember(memberId) {
+            const reason = prompt('가입 거부 사유를 입력하세요:');
+            if (!reason) {
+                return;
+            }
+            
             if (!confirm('이 회원의 가입을 거부하시겠습니까?')) {
                 return;
             }
             
             console.log('❌ 회원 거부:', memberId);
             
-            const pendingMembers = JSON.parse(localStorage.getItem('pendingMembers') || '[]');
-            const memberIndex = pendingMembers.findIndex(m => m.id === memberId);
-            
-            if (memberIndex === -1) {
-                alert('거부할 회원을 찾을 수 없습니다.');
+            // 데이터베이스에서 회원 정보 조회
+            let member = null;
+            if (window.db && window.db.client) {
+                try {
+                    const { data, error } = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .eq('id', memberId)
+                        .single();
+                        
+                    if (error) {
+                        console.error('❌ 회원 정보 조회 오류:', error);
+                        alert('회원 정보를 찾을 수 없습니다.');
+                        return;
+                    }
+                    
+                    member = data;
+                } catch (error) {
+                    console.error('❌ 회원 조회 예외:', error);
+                    alert('회원 정보 조회 중 오류가 발생했습니다.');
+                    return;
+                }
+            } else {
+                alert('데이터베이스 연결이 필요합니다.');
                 return;
             }
             
-            const member = pendingMembers[memberIndex];
+            // 데이터베이스에서 사용자 거부 처리
+            if (window.db && window.db.client) {
+                try {
+                    const { data, error } = await window.db.client
+                        .from('users')
+                        .update({ 
+                            is_active: false,
+                            rejection_reason: reason,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', memberId)
+                        .select();
+                        
+                    if (error) {
+                        console.error('❌ 사용자 거부 오류:', error);
+                        alert('사용자 거부 중 오류가 발생했습니다.');
+                        return;
+                    }
+                    
+                    console.log('✅ 데이터베이스 거부 완료:', data);
+                } catch (error) {
+                    console.error('❌ 거부 처리 오류:', error);
+                }
+            }
             
-            // 승인 대기 목록에서 제거
-            pendingMembers.splice(memberIndex, 1);
-            localStorage.setItem('pendingMembers', JSON.stringify(pendingMembers));
+            // 거부 완료 - 더 이상 localStorage 조작 불필요 (데이터베이스에서 is_active가 false로 변경됨)
+            
+            // 거부 알림 생성
+            const rejectionNotification = {
+                id: Date.now().toString(),
+                type: 'approval_rejected',
+                title: '가입 거부됨',
+                message: `귀하의 가입이 거부되었습니다. 사유: ${reason}`,
+                targetUserId: member.id,
+                createdAt: new Date().toISOString(),
+                isRead: false
+            };
+            
+            // 해당 사용자에게 알림 전송
+            const userNotifications = JSON.parse(localStorage.getItem('notifications_' + member.id) || '[]');
+            userNotifications.unshift(rejectionNotification);
+            localStorage.setItem('notifications_' + member.id, JSON.stringify(userNotifications));
             
             alert(`${member.name}님의 가입이 거부되었습니다.`);
             
@@ -3623,6 +3950,46 @@
         function refreshPendingMembers() {
             console.log('🔄 승인 대기 목록 새로고침');
             loadPendingMembers();
+            checkPendingMembersCount();
+        }
+        
+        // 승인 대기 회원 수 체크
+        async function checkPendingMembersCount(count = null) {
+            const badge = document.getElementById('pendingMembersBadge');
+            
+            let pendingCount = count;
+            
+            // count가 제공되지 않았으면 데이터베이스에서 조회
+            if (pendingCount === null && window.db && window.db.client) {
+                try {
+                    const { data, error } = await window.db.client
+                        .from('users')
+                        .select('id')
+                        .is('role', null)  // role이 null인 사용자들 (승인 대기)
+                        .eq('is_active', true);
+                        
+                    if (error) {
+                        console.error('❌ 승인 대기 회원 수 조회 오류:', error);
+                        pendingCount = 0;
+                    } else {
+                        pendingCount = data ? data.length : 0;
+                    }
+                } catch (error) {
+                    console.error('❌ 승인 대기 회원 수 조회 예외:', error);
+                    pendingCount = 0;
+                }
+            }
+            
+            if (badge) {
+                if (pendingCount > 0) {
+                    badge.textContent = pendingCount;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+            
+            console.log('📢 승인 대기 회원 수:', pendingCount);
         }
 
         // 문서 관리 함수들
@@ -4036,7 +4403,7 @@
 
         
         // 브라우저 뒤로가기/앞으로가기 처리
-        function handlePopState(event) {
+        async function handlePopState(event) {
             console.log('🔄 브라우저 네비게이션 감지:', window.location.hash);
             const hash = window.location.hash.substring(1); // # 제거
             
@@ -4060,7 +4427,7 @@
                         alert('직원 관리 권한이 없습니다.');
                     }
                 } else if (hash === 'permissions') {
-                    loadMenuPermissions();
+                    await loadMenuPermissions();
                 } else if (hash === 'pendingMembers') {
                     // 가입 승인 섹션의 경우 권한 체크
                     const user = AuthManager.getCurrentUser();
@@ -4111,6 +4478,7 @@
         window.handlePopState = handlePopState;
         window.initializePage = initializePage;
         window.openCorporateCardManagement = openCorporateCardManagement;
+        window.showCompanyInfoManagement = showCompanyInfoManagement;
         window.checkAdminNotifications = checkAdminNotifications;
         
         // 문서 템플릿 관련 전역 함수
@@ -4123,6 +4491,17 @@
         // 법인카드 관리 페이지로 이동
         function openCorporateCardManagement() {
             window.location.href = 'corporate-card.html?admin=true';
+        }
+
+        function showCompanyInfoManagement() {
+            // 히스토리에 상태 추가 (해시 변경 없이)
+            history.pushState({ section: 'companyInfo' }, '회사정보', '#companyInfo');
+            
+            // 회사정보 섹션 표시
+            showSection('companyInfo');
+            
+            // 회사정보 데이터 로드
+            loadCompanyInfo();
         }
 
         // 관리자 알림 체크 함수
@@ -4138,6 +4517,334 @@
                 } else {
                     badge.style.display = 'none';
                 }
+            }
+        }
+
+        // 회사정보 관리 함수들
+        async function showCompanyInfoManagement() {
+            // 권한 체크
+            const user = AuthManager.getCurrentUser();
+            if (!user || !(await canManageEmployees(user))) {
+                alert('회사정보 관리 권한이 없습니다. 마스터, 회사대표, 관리자만 접근 가능합니다.');
+                return;
+            }
+
+            // 히스토리에 상태 추가 (해시 변경 없이)
+            history.pushState({ section: 'companyInfo' }, '회사정보 관리', '#companyInfo');
+            
+            // 회사정보 관리 섹션 표시
+            showSection('companyInfo');
+        }
+
+        async function saveCompanyInfo() {
+            console.log('💾 회사정보 저장 시작');
+            
+            try {
+                // 필수 필드 검증
+                const companyType = document.getElementById('companyType').value;
+                const companyName = document.getElementById('companyName').value;
+                const representativeName = document.getElementById('representativeName').value;
+                const businessNumber = document.getElementById('businessNumber').value;
+                
+                if (!companyType || !companyName || !representativeName || !businessNumber) {
+                    alert('필수 항목을 모두 입력해주세요. (회사구분, 회사명, 대표자명, 사업자등록번호)');
+                    return;
+                }
+                
+                // 현재 사용자 정보 가져오기
+                let currentUserId = null;
+                try {
+                    const currentUser = AuthManager.getCurrentUser();
+                    if (currentUser && currentUser.id) {
+                        // UUID 형태인지 확인하고 bigint ID로 변환
+                        const userId = currentUser.id;
+                        if (typeof userId === 'string' && userId.includes('-')) {
+                            // UUID 형태인 경우 데이터베이스에서 실제 ID 조회
+                            const { data: userRecord, error } = await window.db.client
+                                .from('users')
+                                .select('id')
+                                .eq('oauth_id', userId)
+                                .single();
+                            
+                            if (userRecord && !error) {
+                                currentUserId = userRecord.id;
+                            } else {
+                                console.warn('UUID로 사용자 ID 조회 실패:', error);
+                                currentUserId = null;
+                            }
+                        } else {
+                            // 이미 bigint 형태인 경우 그대로 사용
+                            currentUserId = userId;
+                        }
+                    }
+                } catch (error) {
+                    console.warn('현재 사용자 정보를 가져오는 중 오류:', error);
+                }
+                
+                // 회사정보 데이터 수집
+                const companyInfo = {
+                    company_type: companyType,
+                    company_name: companyName,
+                    representative_name: representativeName,
+                    business_number: businessNumber,
+                    corporate_number: document.getElementById('corporateNumber').value || null,
+                    company_phone: document.getElementById('companyPhone').value || null,
+                    company_fax: document.getElementById('companyFax').value || null,
+                    company_email: document.getElementById('companyEmail').value || null,
+                    company_address: document.getElementById('companyAddress').value || null,
+                    business_type: document.getElementById('businessType').value || null,
+                    business_category: document.getElementById('businessCategory').value || null,
+                    establishment_date: document.getElementById('establishmentDate').value || null,
+                    capital: document.getElementById('capital').value ? parseInt(document.getElementById('capital').value) : null,
+                    employee_count: document.getElementById('employeeCount').value ? parseInt(document.getElementById('employeeCount').value) : null,
+                    website: document.getElementById('website').value || null,
+                    company_notes: document.getElementById('companyNotes').value || null,
+                    company_seal_url: document.getElementById('companySealPreview').src && document.getElementById('companySealPreview').src !== window.location.href ? document.getElementById('companySealPreview').src : null,
+                    updated_at: new Date().toISOString(),
+                    updated_by: currentUserId
+                };
+                
+                console.log('📝 저장할 회사정보:', companyInfo);
+                
+                // Supabase에 저장
+                const { data, error } = await window.db.client
+                    .from('company_info')
+                    .upsert(companyInfo, { onConflict: 'business_number' });
+                
+                if (error) {
+                    console.error('❌ 회사정보 저장 오류:', error);
+                    alert('회사정보 저장에 실패했습니다: ' + error.message);
+                    return;
+                }
+                
+                console.log('✅ 회사정보 저장 완료:', data);
+                
+                alert('회사정보가 성공적으로 저장되었습니다.');
+                
+            } catch (error) {
+                console.error('❌ 회사정보 저장 중 오류:', error);
+                alert('회사정보 저장 중 오류가 발생했습니다.');
+            }
+        }
+        
+        async function loadCompanyInfo() {
+            console.log('🔄 회사정보 로딩 시작 - 데이터베이스 전용');
+            
+            try {
+                // 로컬 스토리지의 하드코딩된 데이터 제거
+                localStorage.removeItem('company_info');
+                
+                // Supabase에서 회사정보 조회 (오직 데이터베이스만 사용)
+                const { data, error } = await window.db.client
+                    .from('company_info')
+                    .select('*')
+                    .limit(1)
+                    .single();
+                
+                if (error && error.code !== 'PGRST116') { // PGRST116은 데이터가 없음을 의미
+                    console.error('❌ 회사정보 로드 오류:', error);
+                    clearCompanyInfoForm(); // 오류 시 폼 초기화
+                    return;
+                }
+                
+                if (data) {
+                    console.log('✅ 데이터베이스에서 회사정보 로드 완료:', data);
+                    populateCompanyInfoForm(data);
+                } else {
+                    console.log('ℹ️ 데이터베이스에 저장된 회사정보가 없습니다.');
+                    clearCompanyInfoForm(); // 데이터가 없으면 폼 초기화
+                }
+                
+            } catch (error) {
+                console.error('❌ 회사정보 로드 중 오류:', error);
+                clearCompanyInfoForm(); // 오류 시 폼 초기화
+            }
+        }
+        
+        // 회사정보 폼 초기화 함수
+        function clearCompanyInfoForm() {
+            console.log('🔄 회사정보 폼 초기화');
+            
+            // 모든 입력 필드 초기화
+            document.getElementById('companyType').value = '';
+            document.getElementById('companyName').value = '';
+            document.getElementById('representativeName').value = '';
+            document.getElementById('businessNumber').value = '';
+            document.getElementById('corporateNumber').value = '';
+            document.getElementById('companyPhone').value = '';
+            document.getElementById('companyFax').value = '';
+            document.getElementById('companyEmail').value = '';
+            document.getElementById('companyAddress').value = '';
+            document.getElementById('businessType').value = '';
+            document.getElementById('businessCategory').value = '';
+            document.getElementById('establishmentDate').value = '';
+            document.getElementById('capital').value = '';
+            
+            const employeeCountField = document.getElementById('employeeCount');
+            if (employeeCountField) employeeCountField.value = '';
+            
+            const websiteField = document.getElementById('website');
+            if (websiteField) websiteField.value = '';
+            
+            const companyNotesField = document.getElementById('companyNotes');
+            if (companyNotesField) companyNotesField.value = '';
+            
+            // 회사 인감 이미지 제거
+            const sealPreview = document.getElementById('companySealPreview');
+            if (sealPreview) {
+                sealPreview.style.display = 'none';
+                sealPreview.src = '';
+            }
+        }
+        
+        function populateCompanyInfoForm(data) {
+            console.log('📝 회사정보 폼 채우기:', data);
+            
+            // 각 필드에 데이터 채우기 (snake_case에서 camelCase 필드로 매핑)
+            if (data.company_type || data.companyType) document.getElementById('companyType').value = data.company_type || data.companyType;
+            if (data.company_name || data.companyName) document.getElementById('companyName').value = data.company_name || data.companyName;
+            if (data.representative_name || data.representativeName) document.getElementById('representativeName').value = data.representative_name || data.representativeName;
+            if (data.business_number || data.businessNumber) document.getElementById('businessNumber').value = data.business_number || data.businessNumber;
+            if (data.corporate_number || data.corporateNumber) document.getElementById('corporateNumber').value = data.corporate_number || data.corporateNumber;
+            if (data.company_phone || data.companyPhone) document.getElementById('companyPhone').value = data.company_phone || data.companyPhone;
+            if (data.company_fax || data.companyFax) document.getElementById('companyFax').value = data.company_fax || data.companyFax;
+            if (data.company_email || data.companyEmail) document.getElementById('companyEmail').value = data.company_email || data.companyEmail;
+            if (data.company_address || data.companyAddress) document.getElementById('companyAddress').value = data.company_address || data.companyAddress;
+            if (data.business_type || data.businessType) document.getElementById('businessType').value = data.business_type || data.businessType;
+            if (data.business_category || data.businessCategory) document.getElementById('businessCategory').value = data.business_category || data.businessCategory;
+            if (data.establishment_date || data.establishmentDate) document.getElementById('establishmentDate').value = data.establishment_date || data.establishmentDate;
+            if (data.capital) document.getElementById('capital').value = data.capital;
+            if (data.employee_count || data.employeeCount) document.getElementById('employeeCount').value = data.employee_count || data.employeeCount;
+            if (data.website) document.getElementById('website').value = data.website;
+            if (data.company_notes || data.companyNotes) document.getElementById('companyNotes').value = data.company_notes || data.companyNotes;
+            
+            // 회사 인감 이미지 표시
+            if (data.company_seal_url) {
+                const sealPreview = document.getElementById('companySealPreview');
+                if (sealPreview) {
+                    sealPreview.src = data.company_seal_url;
+                    sealPreview.style.display = 'block';
+                }
+            }
+        }
+        
+        // 회사 인감 이미지 업로드 처리
+        function handleCompanySealUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            // 파일 크기 확인 (2MB 제한)
+            const maxSize = 2 * 1024 * 1024; // 2MB
+            if (file.size > maxSize) {
+                alert('파일 크기가 너무 큽니다. 2MB 이하의 파일을 선택해주세요.');
+                input.value = '';
+                return;
+            }
+            
+            // 파일 형식 확인
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+            if (!allowedTypes.includes(file.type)) {
+                alert('JPG, PNG 파일만 업로드 가능합니다.');
+                input.value = '';
+                return;
+            }
+            
+            // 이미지를 Base64로 변환하여 미리보기 표시
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('companySealPreview');
+                const removeBtn = document.getElementById('companySealRemove');
+                
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+                removeBtn.style.display = 'block';
+                
+                console.log('✅ 회사 인감 이미지 업로드 완료');
+            };
+            
+            reader.onerror = function() {
+                alert('파일을 읽는 중 오류가 발생했습니다.');
+                input.value = '';
+            };
+            
+            reader.readAsDataURL(file);
+        }
+        
+        // 회사 인감 이미지 제거
+        function removeCompanySeal() {
+            const preview = document.getElementById('companySealPreview');
+            const removeBtn = document.getElementById('companySealRemove');
+            const uploadInput = document.getElementById('companySealUpload');
+            
+            preview.src = '';
+            preview.style.display = 'none';
+            removeBtn.style.display = 'none';
+            uploadInput.value = '';
+            
+            console.log('🗑️ 회사 인감 이미지 제거 완료');
+        }
+
+        // 서류 승인 페이지 열기
+        function openDocumentApproval() {
+            console.log('📋 서류 승인 페이지 열기');
+            window.open('document-approval.html', '_blank');
+        }
+
+        // 서류 승인 알림 확인
+        async function checkDocumentApprovalNotifications() {
+            try {
+                const currentUser = await getCurrentUser();
+                if (!currentUser) return;
+
+                // 현재 사용자에게 승인 요청된 서류들 조회
+                const { data: pendingDocuments, error } = await window.db.client
+                    .from('document_approvals')
+                    .select('*')
+                    .eq('current_approver_id', currentUser.id)
+                    .eq('status', 'pending');
+
+                if (error) {
+                    console.error('서류 승인 알림 조회 오류:', error);
+                    return;
+                }
+
+                const badge = document.getElementById('documentApprovalBadge');
+                if (badge) {
+                    if (pendingDocuments && pendingDocuments.length > 0) {
+                        badge.textContent = pendingDocuments.length;
+                        badge.style.display = 'flex';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                console.error('서류 승인 알림 확인 실패:', error);
+            }
+        }
+
+        // 현재 사용자 정보 가져오기
+        async function getCurrentUser() {
+            try {
+                const localUser = JSON.parse(localStorage.getItem('currentUser'));
+                if (!localUser) return null;
+                
+                if (window.db && window.db.client) {
+                    const { data, error } = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .eq('email', localUser.email)
+                        .eq('is_active', true)
+                        .single();
+                        
+                    if (!error && data) {
+                        return data;
+                    }
+                }
+                
+                return localUser;
+            } catch (error) {
+                console.error('사용자 정보 로드 오류:', error);
+                return null;
             }
         }
 

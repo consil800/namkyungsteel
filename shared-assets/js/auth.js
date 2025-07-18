@@ -183,11 +183,11 @@ const AuthManager = {
                 phone: enhancedUserData.phone || '',
                 password: enhancedUserData.password,
                 name: enhancedUserData.name,
-                role: enhancedUserData.role || 'employee',
+                role: null, // 가입 시에는 role 없음, 승인 시 설정
                 department: enhancedUserData.department || '',
                 position: enhancedUserData.position || '',
                 company_domain: enhancedUserData.company_domain,
-                is_approved: enhancedUserData.role === 'employee' ? false : true // 직원은 기본적으로 승인 대기, 관리자는 자동 승인
+                is_approved: false // 모든 신규 사용자는 승인 대기
             });
             
             if (result.success) {
@@ -336,7 +336,7 @@ const AuthManager = {
                         oauth_id: userId,
                         oauth_provider: provider,
                         name: userName,
-                        role: 'employee',
+                        role: null, // 가입 시에는 role 없음, 승인 시 설정
                         company_domain: 'namkyungsteel.com',
                         company_name: '남경스틸(주)',
                         profile_image: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture,
@@ -368,12 +368,13 @@ const AuthManager = {
                         const notification = {
                             id: Date.now().toString(),
                             type: 'new_user_signup',
-                            title: '새로운 사용자 가입',
-                            message: `${userName}님이 ${finalProvider === 'kakao' ? '카카오' : 'Google'} 로그인으로 가입했습니다.`,
+                            title: '새로운 사용자 가입 승인 대기',
+                            message: `${userName}님이 ${provider === 'kakao' ? '카카오' : 'Google'} 로그인으로 가입했습니다. 승인이 필요합니다.`,
                             userInfo: {
+                                id: dbUser.id.toString(),
                                 name: userName,
                                 email: userEmail || '이메일 미제공',
-                                provider: finalProvider === 'kakao' ? '카카오' : 'Google',
+                                provider: provider === 'kakao' ? '카카오' : 'Google',
                                 signupTime: new Date().toISOString()
                             },
                             isRead: false,

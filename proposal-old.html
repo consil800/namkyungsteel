@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>출장 보고서 - SteelWorks Platform</title>
+    <title>기안서 - SteelWorks Platform</title>
     
     <!-- Supabase JS CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Database Manager -->
     <script src="database.js"></script>
+    
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
@@ -256,8 +257,8 @@
 <body>
     <header class="header">
         <div class="header-title">
-            <i class="fas fa-plane"></i>
-            <span>출장 보고서 작성</span>
+            <i class="fas fa-lightbulb"></i>
+            <span>기안서 작성</span>
         </div>
         <a href="documents.html" class="back-btn">
             <i class="fas fa-arrow-left"></i>
@@ -267,16 +268,16 @@
 
     <main class="container">
         <div class="form-card">
-            <h1 class="document-title">출장 보고서</h1>
+            <h1 class="document-title">기안서</h1>
 
-            <form id="businessTripForm">
-                <!-- 신청인 정보 -->
+            <form id="proposalForm">
+                <!-- 기안자 정보 -->
                 <div class="form-section">
-                    <h3 class="section-title">신청인 정보</h3>
+                    <h3 class="section-title">기안자 정보</h3>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="employeeName" class="form-label">성명 <span class="required">*</span></label>
-                            <input type="text" id="employeeName" name="employeeName" class="form-input" required>
+                            <label for="proposerName" class="form-label">기안자 성명 <span class="required">*</span></label>
+                            <input type="text" id="proposerName" name="proposerName" class="form-input" required>
                         </div>
                         <div class="form-group">
                             <label for="employeeId" class="form-label">사원번호</label>
@@ -295,102 +296,80 @@
                     </div>
                 </div>
 
-                <!-- 출장 정보 -->
+                <!-- 기안 내용 -->
                 <div class="form-section">
-                    <h3 class="section-title">출장 정보</h3>
+                    <h3 class="section-title">기안 내용</h3>
+                    <div class="form-group">
+                        <label for="subject" class="form-label">제목 <span class="required">*</span></label>
+                        <input type="text" id="subject" name="subject" class="form-input" 
+                               placeholder="기안서의 제목을 입력해주세요" required>
+                    </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="tripPurpose" class="form-label">출장 목적 <span class="required">*</span></label>
-                            <select id="tripPurpose" name="tripPurpose" class="form-select" required>
+                            <label for="category" class="form-label">기안 구분 <span class="required">*</span></label>
+                            <select id="category" name="category" class="form-select" required>
                                 <option value="">선택해주세요</option>
-                                <option value="업무미팅">업무미팅</option>
-                                <option value="고객방문">고객방문</option>
-                                <option value="교육/세미나">교육/세미나</option>
-                                <option value="회의참석">회의참석</option>
-                                <option value="현장점검">현장점검</option>
-                                <option value="프로젝트수행">프로젝트수행</option>
+                                <option value="업무개선">업무 개선</option>
+                                <option value="새로운제도">새로운 제도 도입</option>
+                                <option value="프로젝트제안">프로젝트 제안</option>
+                                <option value="예산신청">예산 신청</option>
+                                <option value="인사제안">인사 제안</option>
+                                <option value="시설개선">시설 개선</option>
                                 <option value="기타">기타</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="destination" class="form-label">출장지 <span class="required">*</span></label>
-                            <input type="text" id="destination" name="destination" class="form-input" 
-                                   placeholder="출장지를 입력하세요" required>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="startDate" class="form-label">출장 시작일 <span class="required">*</span></label>
-                            <input type="date" id="startDate" name="startDate" class="form-input" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="endDate" class="form-label">출장 종료일 <span class="required">*</span></label>
-                            <input type="date" id="endDate" name="endDate" class="form-input" required>
+                            <label for="priority" class="form-label">우선순위 <span class="required">*</span></label>
+                            <select id="priority" name="priority" class="form-select" required>
+                                <option value="">선택해주세요</option>
+                                <option value="긴급">긴급</option>
+                                <option value="높음">높음</option>
+                                <option value="보통">보통</option>
+                                <option value="낮음">낮음</option>
+                            </select>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="tripCompany" class="form-label">방문 회사/기관</label>
-                        <input type="text" id="tripCompany" name="tripCompany" class="form-input" 
-                               placeholder="방문한 회사나 기관명을 입력하세요">
+                        <label for="background" class="form-label">배경 및 목적 <span class="required">*</span></label>
+                        <textarea id="background" name="background" class="form-input form-textarea" 
+                                placeholder="기안의 배경과 목적을 상세히 작성해주세요" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="content" class="form-label">기안 내용 <span class="required">*</span></label>
+                        <textarea id="content" name="content" class="form-input form-textarea" 
+                                placeholder="구체적인 기안 내용을 작성해주세요" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="expectedEffect" class="form-label">기대 효과</label>
+                        <textarea id="expectedEffect" name="expectedEffect" class="form-input form-textarea" 
+                                placeholder="이 기안으로 인해 예상되는 효과나 개선점을 작성해주세요"></textarea>
                     </div>
                 </div>
 
-                <!-- 출장 수행 내용 -->
+                <!-- 세부 사항 -->
                 <div class="form-section">
-                    <h3 class="section-title">출장 수행 내용</h3>
-                    <div class="form-group">
-                        <label for="activities" class="form-label">주요 활동 내용 <span class="required">*</span></label>
-                        <textarea id="activities" name="activities" class="form-input form-textarea" 
-                                placeholder="출장 중 수행한 주요 활동을 시간 순서대로 상세하게 작성해주세요" required></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="results" class="form-label">성과 및 결과 <span class="required">*</span></label>
-                        <textarea id="results" name="results" class="form-input form-textarea" 
-                                placeholder="출장을 통해 얻은 성과, 결과, 개선사항 등을 작성해주세요" required></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="followUp" class="form-label">후속 조치 계획</label>
-                        <textarea id="followUp" name="followUp" class="form-input form-textarea" 
-                                placeholder="출장 결과에 따른 후속 조치나 계획을 작성해주세요"></textarea>
-                    </div>
-                </div>
-
-                <!-- 출장 비용 정보 -->
-                <div class="form-section">
-                    <h3 class="section-title">출장 비용 정보</h3>
+                    <h3 class="section-title">세부 사항</h3>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="transportCost" class="form-label">교통비</label>
-                            <input type="number" id="transportCost" name="transportCost" class="form-input" 
-                                   placeholder="0" min="0">
+                            <label for="estimatedBudget" class="form-label">예상 예산</label>
+                            <input type="text" id="estimatedBudget" name="estimatedBudget" class="form-input" 
+                                   placeholder="예상 소요 예산을 입력해주세요">
                         </div>
                         <div class="form-group">
-                            <label for="accommodationCost" class="form-label">숙박비</label>
-                            <input type="number" id="accommodationCost" name="accommodationCost" class="form-input" 
-                                   placeholder="0" min="0">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="mealCost" class="form-label">식비</label>
-                            <input type="number" id="mealCost" name="mealCost" class="form-input" 
-                                   placeholder="0" min="0">
-                        </div>
-                        <div class="form-group">
-                            <label for="otherCost" class="form-label">기타 비용</label>
-                            <input type="number" id="otherCost" name="otherCost" class="form-input" 
-                                   placeholder="0" min="0">
+                            <label for="expectedPeriod" class="form-label">예상 소요 기간</label>
+                            <input type="text" id="expectedPeriod" name="expectedPeriod" class="form-input" 
+                                   placeholder="예: 2개월, 6개월 등">
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="totalCost" class="form-label">총 비용</label>
-                        <input type="number" id="totalCost" name="totalCost" class="form-input" 
-                               placeholder="0" readonly>
+                        <label for="implementation" class="form-label">실행 방안</label>
+                        <textarea id="implementation" name="implementation" class="form-input form-textarea" 
+                                placeholder="구체적인 실행 방안이나 단계를 작성해주세요"></textarea>
                     </div>
                     <div class="form-group">
-                        <label for="costNote" class="form-label">비용 관련 특이사항</label>
-                        <textarea id="costNote" name="costNote" class="form-input form-textarea" 
-                                placeholder="비용 관련 특이사항이나 설명이 필요한 내용을 작성해주세요" rows="3"></textarea>
+                        <label for="notes" class="form-label">특이사항</label>
+                        <textarea id="notes" name="notes" class="form-input form-textarea" 
+                                placeholder="추가로 전달할 사항이나 참고사항을 작성해주세요"></textarea>
                     </div>
                 </div>
 
@@ -413,10 +392,14 @@
                 <!-- 서명 섹션 -->
                 <div class="signature-section">
                     <div class="form-group" style="text-align: left; margin-bottom: 2rem;">
+                        <label for="proposalDate" class="form-label">기안일 <span class="required">*</span></label>
+                        <input type="date" id="proposalDate" name="proposalDate" class="form-input" required style="max-width: 200px;">
+                    </div>
+                    <div class="form-group" style="text-align: left; margin-bottom: 2rem;">
                         <label for="reportDate" class="form-label">보고일 <span class="required">*</span></label>
                         <input type="date" id="reportDate" name="reportDate" class="form-input" required style="max-width: 200px;">
                     </div>
-                    <div class="signature-line">보고자: <span id="signatureName">________________</span></div>
+                    <div class="signature-line">기안자: <span id="signatureName">________________</span></div>
                 </div>
             </form>
 
@@ -440,7 +423,7 @@
         <html lang="ko">
         <head>
             <meta charset="UTF-8">
-            <title>출장 보고서</title>
+            <title>기안서</title>
             <style>
                 @page { size: A4; margin: 2cm; }
                 body { 
@@ -466,7 +449,7 @@
                     margin-bottom: 50px; 
                     letter-spacing: 8px; 
                 }
-                .report-number {
+                .doc-number {
                     text-align: right;
                     font-size: 14px;
                     color: #666;
@@ -508,24 +491,6 @@
                     border-radius: 5px;
                     border-left: 3px solid #007bff;
                     white-space: pre-wrap;
-                }
-                .cost-table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    margin: 20px 0;
-                }
-                .cost-table th, .cost-table td {
-                    border: 1px solid #ddd;
-                    padding: 10px;
-                    text-align: right;
-                }
-                .cost-table th {
-                    background: #f8f9fa;
-                    font-weight: bold;
-                }
-                .cost-table .total-row {
-                    background: #e3f2fd;
-                    font-weight: bold;
                 }
                 .footer {
                     margin-top: 80px;
@@ -573,14 +538,14 @@
         <body>
             <button class="print-btn" onclick="window.print()">인쇄</button>
             <div class="document">
-                <h1 class="title">출장 보고서</h1>
+                <h1 class="title">기 안 서</h1>
                 
-                <div class="report-number">문서번호: <span id="preview-docNumber"></span></div>
+                <div class="doc-number">문서번호: <span id="preview-docNumber"></span></div>
                 
                 <table class="info-table">
                     <tr>
-                        <th>보고자</th>
-                        <td id="preview-employeeName"></td>
+                        <th>기안자</th>
+                        <td id="preview-proposerName"></td>
                         <th>사원번호</th>
                         <td id="preview-employeeId"></td>
                     </tr>
@@ -591,83 +556,62 @@
                         <td id="preview-position"></td>
                     </tr>
                     <tr>
-                        <th>출장지</th>
-                        <td id="preview-destination"></td>
-                        <th>출장목적</th>
-                        <td id="preview-tripPurpose"></td>
-                    </tr>
-                    <tr>
-                        <th>출장기간</th>
-                        <td id="preview-tripPeriod" colspan="3"></td>
+                        <th>기안일</th>
+                        <td id="preview-proposalDate"></td>
+                        <th>우선순위</th>
+                        <td id="preview-priority"></td>
                     </tr>
                 </table>
                 
-                <div class="section" id="preview-company-section" style="display: none;">
-                    <div class="section-title">방문 회사/기관</div>
-                    <div class="content-box" id="preview-tripCompany"></div>
+                <div class="section">
+                    <div class="section-title">제목</div>
+                    <div class="content-box" id="preview-subject"></div>
                 </div>
                 
                 <div class="section">
-                    <div class="section-title">주요 활동 내용</div>
-                    <div class="content-box" id="preview-activities"></div>
+                    <div class="section-title">기안 구분</div>
+                    <div class="content-box" id="preview-category"></div>
                 </div>
                 
                 <div class="section">
-                    <div class="section-title">성과 및 결과</div>
-                    <div class="content-box" id="preview-results"></div>
-                </div>
-                
-                <div class="section" id="preview-followup-section" style="display: none;">
-                    <div class="section-title">후속 조치 계획</div>
-                    <div class="content-box" id="preview-followUp"></div>
+                    <div class="section-title">배경 및 목적</div>
+                    <div class="content-box" id="preview-background"></div>
                 </div>
                 
                 <div class="section">
-                    <div class="section-title">출장 비용 내역</div>
-                    <table class="cost-table">
-                        <tr>
-                            <th>항목</th>
-                            <th>금액 (원)</th>
-                        </tr>
-                        <tr>
-                            <td>교통비</td>
-                            <td id="preview-transportCost">0</td>
-                        </tr>
-                        <tr>
-                            <td>숙박비</td>
-                            <td id="preview-accommodationCost">0</td>
-                        </tr>
-                        <tr>
-                            <td>식비</td>
-                            <td id="preview-mealCost">0</td>
-                        </tr>
-                        <tr>
-                            <td>기타 비용</td>
-                            <td id="preview-otherCost">0</td>
-                        </tr>
-                        <tr class="total-row">
-                            <td>총 비용</td>
-                            <td id="preview-totalCost">0</td>
-                        </tr>
-                    </table>
-                    
-                    <div id="preview-costnote-section" style="display: none;">
-                        <div style="margin-top: 20px;">
-                            <strong>비용 관련 특이사항:</strong>
-                            <div class="content-box" id="preview-costNote"></div>
-                        </div>
+                    <div class="section-title">기안 내용</div>
+                    <div class="content-box" id="preview-content"></div>
+                </div>
+                
+                <div class="section" id="preview-expectedEffect-section" style="display: none;">
+                    <div class="section-title">기대 효과</div>
+                    <div class="content-box" id="preview-expectedEffect"></div>
+                </div>
+                
+                <div class="section" id="preview-implementation-section" style="display: none;">
+                    <div class="section-title">실행 방안</div>
+                    <div class="content-box" id="preview-implementation"></div>
+                </div>
+                
+                <div class="section" id="preview-budget-section" style="display: none;">
+                    <div class="section-title">예산 및 기간</div>
+                    <div class="content-box">
+                        예상 예산: <span id="preview-estimatedBudget"></span><br>
+                        예상 기간: <span id="preview-expectedPeriod"></span>
                     </div>
                 </div>
                 
                 <div class="footer">
+                    <p>위와 같이 기안합니다.</p>
                     <p id="preview-date"></p>
                     
                     <div class="company-info">
                         <div class="stamp-area"></div>
                         <p class="company-info-text" style="clear: both; padding-top: 20px;">
                             <strong>회사명</strong><br>
-                            보고자: <span id="preview-reporterName"></span><br>
-                            소속: <span id="preview-reporterDept"></span>
+                            대표자명<br>
+                            회사주소<br>
+                            사업자등록번호: 000-00-00000
                         </p>
                     </div>
                 </div>
@@ -696,9 +640,11 @@
         // 회사정보 로드 함수
         async function loadCompanyInfo() {
             try {
+                // 최신 데이터를 가져오기 위해 updated_at으로 정렬
                 const { data, error } = await supabase
                     .from('company_info')
                     .select('*')
+                    .order('updated_at', { ascending: false })
                     .limit(1)
                     .single();
                 
@@ -723,9 +669,10 @@
                 const companyInfoElement = previewWindow.document.querySelector('.company-info-text');
                 if (companyInfoElement) {
                     companyInfoElement.innerHTML = `
-                        <strong>${companyInfo.company_name || '회사명'}</strong><br>
-                        보고자: <span>${previewWindow.document.getElementById('preview-reporterName').textContent}</span><br>
-                        소속: <span>${previewWindow.document.getElementById('preview-reporterDept').textContent}</span>
+                        <strong>${companyInfo.company_name || ''}</strong><br>
+                        대표이사 ${companyInfo.representative_name || ''}<br>
+                        ${companyInfo.company_address || ''}<br>
+                        사업자등록번호: ${companyInfo.business_number || ''}
                     `;
                 }
                 
@@ -745,151 +692,134 @@
             }
         }
 
-        function formatCurrency(amount) {
-            if (!amount) return '0';
-            return parseInt(amount).toLocaleString();
-        }
-
         function getFieldLabel(field) {
             var labels = {
-                'employeeName': '성명',
+                'proposerName': '기안자 성명',
                 'department': '소속 부서',
                 'position': '직급',
-                'tripPurpose': '출장 목적',
-                'destination': '출장지',
-                'startDate': '출장 시작일',
-                'endDate': '출장 종료일',
-                'activities': '주요 활동 내용',
-                'results': '성과 및 결과',
-                'reportDate': '보고일',
+                'subject': '제목',
+                'category': '기안 구분',
+                'priority': '우선순위',
+                'background': '배경 및 목적',
+                'content': '기안 내용',
+                'proposalDate': '기안일',
                 'approver': '승인자'
             };
             return labels[field] || field;
         }
 
-        function calculateTotalCost() {
-            var transportCost = parseInt(document.getElementById('transportCost').value) || 0;
-            var accommodationCost = parseInt(document.getElementById('accommodationCost').value) || 0;
-            var mealCost = parseInt(document.getElementById('mealCost').value) || 0;
-            var otherCost = parseInt(document.getElementById('otherCost').value) || 0;
-            
-            var totalCost = transportCost + accommodationCost + mealCost + otherCost;
-            document.getElementById('totalCost').value = totalCost;
-        }
-
         function resetForm() {
-            document.getElementById('businessTripForm').reset();
+            document.getElementById('proposalForm').reset();
             document.getElementById('signatureName').textContent = '________________';
-            document.getElementById('totalCost').value = '0';
             
             var today = new Date().toISOString().split('T')[0];
-            document.getElementById('reportDate').value = today;
+            document.getElementById('proposalDate').value = today;
         }
 
         async function submitForm() {
-            try {
-                // 데이터베이스 연결 확인
-                if (!window.db) {
-                    alert('데이터베이스 연결을 확인할 수 없습니다. 페이지를 새로고침해주세요.');
+            var form = document.getElementById('proposalForm');
+            var formData = new FormData(form);
+            
+            var requiredFields = ['proposerName', 'department', 'position', 'subject', 'category', 'priority', 'background', 'content', 'proposalDate', 'approver'];
+            for (var i = 0; i < requiredFields.length; i++) {
+                var field = requiredFields[i];
+                if (!formData.get(field)) {
+                    alert(getFieldLabel(field) + '을(를) 입력해주세요.');
                     return;
                 }
-                
-                await window.db.init();
-                
-                // createDocumentRequest 메서드 존재 확인
-                if (typeof window.db.createDocumentRequest !== 'function') {
-                    console.error('createDocumentRequest 메서드를 찾을 수 없습니다. window.db:', window.db);
-                    alert('시스템 오류가 발생했습니다. 관리자에게 문의해주세요.');
-                    return;
-                }
-                
-                var form = document.getElementById('businessTripForm');
-                var formData = new FormData(form);
-                
-                var requiredFields = ['employeeName', 'department', 'position', 'tripPurpose', 'destination', 'startDate', 'endDate', 'activities', 'results', 'reportDate', 'approver'];
-                for (var i = 0; i < requiredFields.length; i++) {
-                    var field = requiredFields[i];
-                    if (!formData.get(field)) {
-                        alert(getFieldLabel(field) + '을(를) 입력해주세요.');
-                        return;
-                    }
-                }
-
-                // 출장 종료일이 시작일보다 이전인지 검사
-                var startDate = new Date(formData.get('startDate'));
-                var endDate = new Date(formData.get('endDate'));
-                if (endDate < startDate) {
-                    alert('출장 종료일은 시작일보다 늦어야 합니다.');
-                    return;
-                }
-
-                // 현재 로그인 사용자 정보 가져오기
-                var currentUser = await getCurrentUser();
-                if (!currentUser || !currentUser.id) {
-                    alert('로그인 정보를 확인할 수 없습니다.');
-                    return;
-                }
-
-                // 승인자 이름 가져오기
-                const approverName = await getEmployeeName(formData.get('approver'));
-
-                // 서류 요청 데이터 구성
-                const documentData = {
-                    document_type: 'business_trip',
-                    title: '출장 보고서 - ' + formData.get('employeeName'),
-                    content: {
-                        employeeName: formData.get('employeeName'),
-                        employeeId: formData.get('employeeId'),
-                        department: formData.get('department'),
-                        position: formData.get('position'),
-                        tripPurpose: formData.get('tripPurpose'),
-                        destination: formData.get('destination'),
-                        startDate: formData.get('startDate'),
-                        endDate: formData.get('endDate'),
-                        tripCompany: formData.get('tripCompany'),
-                        activities: formData.get('activities'),
-                        results: formData.get('results'),
-                        followUp: formData.get('followUp'),
-                        transportCost: formData.get('transportCost') || '0',
-                        accommodationCost: formData.get('accommodationCost') || '0',
-                        mealCost: formData.get('mealCost') || '0',
-                        otherCost: formData.get('otherCost') || '0',
-                        totalCost: formData.get('totalCost') || '0',
-                        costNote: formData.get('costNote'),
-                        reportDate: formData.get('reportDate'),
-                        approvalComment: formData.get('approvalComment')
-                    },
-                    requester_id: currentUser.id,
-                    requester_name: formData.get('employeeName'),
-                    requester_email: currentUser.email,
-                    company_domain: window.db.getCurrentDomain() || 'namkyungsteel.com',
-                    approver_1_id: formData.get('approver'),
-                    approver_1_name: approverName,
-                    current_approver_id: formData.get('approver'),
-                    current_approver_name: approverName
-                };
-
-                // 데이터베이스에 서류 요청 저장
-                const result = await window.db.createDocumentRequest(documentData);
-
-                if (result.success) {
-                    alert('출장 보고서 승인 요청이 완료되었습니다.\n승인자의 검토를 기다려주세요.');
-                    resetForm();
-                } else {
-                    alert('서류 요청 저장 중 오류가 발생했습니다.');
-                    console.error('저장 오류:', result.error);
-                }
-            } catch (error) {
-                console.error('submitForm 오류:', error);
-                alert('요청 처리 중 오류가 발생했습니다.');
             }
+
+            // 현재 로그인 사용자 정보 가져오기
+            var currentUser = await getCurrentUser();
+            if (!currentUser) {
+                alert('로그인 정보를 확인할 수 없습니다.');
+                return;
+            }
+
+            var proposalData = {
+                id: Date.now().toString(),
+                documentType: 'proposal',
+                requesterId: currentUser.id,
+                requesterName: formData.get('proposerName'),
+                proposerName: formData.get('proposerName'),
+                employeeId: formData.get('employeeId'),
+                department: formData.get('department'),
+                position: formData.get('position'),
+                subject: formData.get('subject'),
+                category: formData.get('category'),
+                priority: formData.get('priority'),
+                background: formData.get('background'),
+                content: formData.get('content'),
+                expectedEffect: formData.get('expectedEffect'),
+                estimatedBudget: formData.get('estimatedBudget'),
+                expectedPeriod: formData.get('expectedPeriod'),
+                implementation: formData.get('implementation'),
+                notes: formData.get('notes'),
+                proposalDate: formData.get('proposalDate'),
+                approvalComment: formData.get('approvalComment'),
+                status: 'pending',
+                approvalChain: [{
+                    approverId: formData.get('approver'),
+                    approverName: await getEmployeeName(formData.get('approver')),
+                    status: 'pending',
+                    level: 1,
+                    requestedAt: new Date().toISOString()
+                }],
+                signatures: [],
+                createdAt: new Date().toISOString()
+            };
+
+            // 데이터베이스에 승인 요청 저장
+            try {
+                const { data, error } = await window.db.client
+                    .from('document_approvals')
+                    .insert([
+                        {
+                            document_type: 'proposal',
+                            document_data: proposalData,
+                            user_id: currentUser.id,
+                            approver_id: formData.get('approver'),
+                            approval_status: 'pending',
+                            created_at: new Date().toISOString()
+                        }
+                    ])
+                    .select()
+                    .single();
+
+                if (error) {
+                    console.error('승인 요청 저장 실패:', error);
+                    alert('승인 요청 저장 중 오류가 발생했습니다.');
+                    return;
+                }
+                
+                proposalData.id = data.id;
+            } catch (error) {
+                console.error('승인 요청 저장 실패:', error);
+                alert('승인 요청 저장 중 오류가 발생했습니다.');
+                return;
+            }
+
+            // 승인자에게 알림 생성
+            await createNotification(formData.get('approver'), {
+                type: 'approval_request',
+                title: '기안서 승인 요청',
+                message: `${formData.get('proposerName')}님이 기안서 승인을 요청했습니다.`,
+                documentId: proposalData.id,
+                documentType: 'proposal',
+                requesterId: currentUser.id,
+                requesterName: formData.get('proposerName'),
+                createdAt: new Date().toISOString()
+            });
+            
+            alert('기안서 승인 요청이 완료되었습니다.\n승인자의 검토를 기다려주세요.');
+            resetForm();
         }
 
         function previewDocument() {
-            var form = document.getElementById('businessTripForm');
+            var form = document.getElementById('proposalForm');
             var formData = new FormData(form);
             
-            var requiredFields = ['employeeName', 'department', 'position', 'tripPurpose', 'destination', 'startDate', 'endDate', 'activities', 'results'];
+            var requiredFields = ['proposerName', 'department', 'position', 'subject', 'category', 'priority', 'background', 'content'];
             for (var i = 0; i < requiredFields.length; i++) {
                 var field = requiredFields[i];
                 if (!formData.get(field)) {
@@ -910,46 +840,34 @@
             previewWindow.document.close();
 
             setTimeout(function() {
-                var docNumber = 'SW-TR-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-                var tripPeriod = formatDate(formData.get('startDate')) + ' ~ ' + formatDate(formData.get('endDate'));
-                
+                var docNumber = 'SW-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000).toString().padStart(4, '0');
                 previewWindow.document.getElementById('preview-docNumber').textContent = docNumber;
-                previewWindow.document.getElementById('preview-employeeName').textContent = formData.get('employeeName');
+                previewWindow.document.getElementById('preview-proposerName').textContent = formData.get('proposerName');
                 previewWindow.document.getElementById('preview-employeeId').textContent = formData.get('employeeId') || '-';
                 previewWindow.document.getElementById('preview-department').textContent = formData.get('department');
                 previewWindow.document.getElementById('preview-position').textContent = formData.get('position');
-                previewWindow.document.getElementById('preview-destination').textContent = formData.get('destination');
-                previewWindow.document.getElementById('preview-tripPurpose').textContent = formData.get('tripPurpose');
-                previewWindow.document.getElementById('preview-tripPeriod').textContent = tripPeriod;
-                previewWindow.document.getElementById('preview-activities').textContent = formData.get('activities');
-                previewWindow.document.getElementById('preview-results').textContent = formData.get('results');
-                previewWindow.document.getElementById('preview-date').textContent = formatDate(formData.get('reportDate'));
-                previewWindow.document.getElementById('preview-reporterName').textContent = formData.get('employeeName');
-                previewWindow.document.getElementById('preview-reporterDept').textContent = formData.get('department');
+                previewWindow.document.getElementById('preview-subject').textContent = formData.get('subject');
+                previewWindow.document.getElementById('preview-category').textContent = formData.get('category');
+                previewWindow.document.getElementById('preview-priority').textContent = formData.get('priority');
+                previewWindow.document.getElementById('preview-background').textContent = formData.get('background');
+                previewWindow.document.getElementById('preview-content').textContent = formData.get('content');
+                previewWindow.document.getElementById('preview-proposalDate').textContent = formatDate(formData.get('proposalDate'));
+                previewWindow.document.getElementById('preview-date').textContent = formatDate(formData.get('proposalDate'));
 
-                // 방문 회사 정보
-                if (formData.get('tripCompany')) {
-                    previewWindow.document.getElementById('preview-company-section').style.display = 'block';
-                    previewWindow.document.getElementById('preview-tripCompany').textContent = formData.get('tripCompany');
+                if (formData.get('expectedEffect')) {
+                    previewWindow.document.getElementById('preview-expectedEffect-section').style.display = 'block';
+                    previewWindow.document.getElementById('preview-expectedEffect').textContent = formData.get('expectedEffect');
                 }
 
-                // 후속 조치 계획
-                if (formData.get('followUp')) {
-                    previewWindow.document.getElementById('preview-followup-section').style.display = 'block';
-                    previewWindow.document.getElementById('preview-followUp').textContent = formData.get('followUp');
+                if (formData.get('implementation')) {
+                    previewWindow.document.getElementById('preview-implementation-section').style.display = 'block';
+                    previewWindow.document.getElementById('preview-implementation').textContent = formData.get('implementation');
                 }
 
-                // 비용 정보
-                previewWindow.document.getElementById('preview-transportCost').textContent = formatCurrency(formData.get('transportCost'));
-                previewWindow.document.getElementById('preview-accommodationCost').textContent = formatCurrency(formData.get('accommodationCost'));
-                previewWindow.document.getElementById('preview-mealCost').textContent = formatCurrency(formData.get('mealCost'));
-                previewWindow.document.getElementById('preview-otherCost').textContent = formatCurrency(formData.get('otherCost'));
-                previewWindow.document.getElementById('preview-totalCost').textContent = formatCurrency(formData.get('totalCost'));
-
-                // 비용 관련 특이사항
-                if (formData.get('costNote')) {
-                    previewWindow.document.getElementById('preview-costnote-section').style.display = 'block';
-                    previewWindow.document.getElementById('preview-costNote').textContent = formData.get('costNote');
+                if (formData.get('estimatedBudget') || formData.get('expectedPeriod')) {
+                    previewWindow.document.getElementById('preview-budget-section').style.display = 'block';
+                    previewWindow.document.getElementById('preview-estimatedBudget').textContent = formData.get('estimatedBudget') || '-';
+                    previewWindow.document.getElementById('preview-expectedPeriod').textContent = formData.get('expectedPeriod') || '-';
                 }
 
                 // 회사정보 업데이트
@@ -957,34 +875,28 @@
             }, 100);
         }
 
-        // Supabase에서 현재 로그인 사용자 정보 가져오기
+        // 현재 로그인 사용자 정보 가져오기
         async function getCurrentUser() {
             try {
-                await window.db.init();
-                
-                // localStorage에서 로그인 정보(이메일)만 가져오기
-                const loginInfo = JSON.parse(localStorage.getItem('currentUser') || '{}');
-                if (!loginInfo || !loginInfo.email) {
-                    console.error('로그인 정보가 없습니다.');
+                const { data, error } = await window.db.client.auth.getUser();
+                if (error || !data.user) {
                     return null;
                 }
 
-                // Supabase users 테이블에서 최신 사용자 정보 조회
-                const { data: user, error } = await window.db.client
+                const { data: userData, error: userError } = await window.db.client
                     .from('users')
                     .select('*')
-                    .eq('email', loginInfo.email)
-                    .eq('is_active', true)
+                    .eq('id', data.user.id)
                     .single();
 
-                if (error) {
-                    console.error('사용자 정보 조회 오류:', error);
+                if (userError) {
+                    console.error('사용자 정보 로드 오류:', userError);
                     return null;
                 }
 
-                return user;
+                return userData;
             } catch (error) {
-                console.error('getCurrentUser 오류:', error);
+                console.error('사용자 정보 로드 오류:', error);
                 return null;
             }
         }
@@ -992,25 +904,20 @@
         // 직원 이름 가져오기
         async function getEmployeeName(employeeId) {
             try {
-                if (!window.db || !window.db.client) {
-                    console.error('데이터베이스 연결이 없습니다.');
-                    return '알 수 없음';
-                }
-
-                const { data: employee, error } = await window.db.client
+                const { data, error } = await window.db.client
                     .from('users')
                     .select('name')
                     .eq('id', employeeId)
                     .single();
-
+                    
                 if (error) {
-                    console.error('직원 정보 조회 오류:', error);
+                    console.error('직원 정보 로드 오류:', error);
                     return '알 수 없음';
                 }
-
-                return employee ? employee.name : '알 수 없음';
+                
+                return data?.name || '알 수 없음';
             } catch (error) {
-                console.error('getEmployeeName 오류:', error);
+                console.error('직원 정보 로드 오류:', error);
                 return '알 수 없음';
             }
         }
@@ -1018,8 +925,6 @@
         // 승인자 목록 로드
         async function loadApprovers() {
             try {
-                await window.db.init();
-                
                 const currentUser = await getCurrentUser();
                 const approverSelect = document.getElementById('approver');
                 
@@ -1028,7 +933,7 @@
                     .from('users')
                     .select('id, name, department, position, email')
                     .eq('company_domain', 'namkyungsteel.com')
-                    .eq('is_active', true)
+                    .not('role', 'is', null)
                     .order('name');
                 
                 if (error) {
@@ -1053,31 +958,61 @@
             }
         }
 
+        // 알림 생성 함수
+        async function createNotification(userId, notification) {
+            try {
+                const { error } = await window.db.client
+                    .from('notifications')
+                    .insert([
+                        {
+                            user_id: userId,
+                            type: notification.type,
+                            title: notification.title,
+                            message: notification.message,
+                            document_id: notification.documentId,
+                            document_type: notification.documentType,
+                            requester_id: notification.requesterId,
+                            requester_name: notification.requesterName,
+                            is_read: false,
+                            created_at: new Date().toISOString()
+                        }
+                    ]);
+                    
+                if (error) {
+                    console.error('알림 생성 오류:', error);
+                }
+            } catch (error) {
+                console.error('알림 생성 오류:', error);
+            }
+        }
 
         document.addEventListener('DOMContentLoaded', async function() {
             await window.db.init();
             var today = new Date().toISOString().split('T')[0];
-            document.getElementById('reportDate').value = today;
+            document.getElementById('proposalDate').value = today;
             
-            // Supabase에서 최신 사용자 정보로 폼 자동 입력
+            // 현재 사용자 정보로 폼 자동 입력
             var currentUser = await getCurrentUser();
             if (currentUser) {
-                document.getElementById('employeeName').value = currentUser.name || '';
+                document.getElementById('proposerName').value = currentUser.name || '';
                 document.getElementById('department').value = currentUser.department || '';
                 document.getElementById('position').value = currentUser.position || '';
+                
+                // 입사일 정보가 있으면 자동 입력 (기안서에 직접적인 입사일 필드는 없지만 미래에 추가 가능)
+                if (currentUser.hireDate) {
+                    // 입사일 필드가 있다면 자동 입력
+                    // document.getElementById('hireDate').value = currentUser.hireDate;
+                } else if (currentUser.hire_date) {
+                    // document.getElementById('hireDate').value = currentUser.hire_date;
+                }
                 
                 document.getElementById('signatureName').textContent = currentUser.name || '________________';
             }
             
             // 승인자 목록 로드
-            await loadApprovers();
+            loadApprovers();
             
-            // 비용 계산기 이벤트 리스너
-            ['transportCost', 'accommodationCost', 'mealCost', 'otherCost'].forEach(function(fieldId) {
-                document.getElementById(fieldId).addEventListener('input', calculateTotalCost);
-            });
-            
-            document.getElementById('employeeName').addEventListener('input', function() {
+            document.getElementById('proposerName').addEventListener('input', function() {
                 document.getElementById('signatureName').textContent = this.value || '________________';
             });
         });

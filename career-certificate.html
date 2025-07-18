@@ -826,8 +826,8 @@
                 }
 
                 // 현재 로그인 사용자 정보 가져오기
-                var currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-                if (!currentUser.id) {
+                var currentUser = await getCurrentUser();
+                if (!currentUser || !currentUser.id) {
                     alert('로그인 정보를 확인할 수 없습니다.');
                     return;
                 }
@@ -939,43 +939,35 @@
             }, 500);
         }
 
-        // 현재 로그인 사용자 정보 가져오기 (localStorage)
-        function getCurrentUser() {
-            try {
-                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-                return currentUser.id ? currentUser : null;
-            } catch (error) {
-                console.error('getCurrentUser 오류:', error);
-                return null;
-            }
-        }
-
-        // Supabase에서 최신 사용자 정보 가져오기
-        async function getCurrentUserFromDB() {
+        // Supabase에서 현재 로그인 사용자 정보 가져오기
+        async function getCurrentUser() {
             try {
                 await window.db.init();
                 
-                const localUser = getCurrentUser();
-                if (!localUser || !localUser.email) {
+                // localStorage에서 로그인 정보(이메일)만 가져오기
+                const loginInfo = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                if (!loginInfo || !loginInfo.email) {
+                    console.error('로그인 정보가 없습니다.');
                     return null;
                 }
 
+                // Supabase users 테이블에서 최신 사용자 정보 조회
                 const { data: user, error } = await window.db.client
                     .from('users')
                     .select('*')
-                    .eq('email', localUser.email)
+                    .eq('email', loginInfo.email)
                     .eq('is_active', true)
                     .single();
 
                 if (error) {
-                    console.error('DB 사용자 정보 조회 오류:', error);
-                    return localUser; // DB 조회 실패 시 localStorage 정보 사용
+                    console.error('사용자 정보 조회 오류:', error);
+                    return null;
                 }
 
                 return user;
             } catch (error) {
-                console.error('getCurrentUserFromDB 오류:', error);
-                return getCurrentUser(); // 에러 시 localStorage 정보 사용
+                console.error('getCurrentUser 오류:', error);
+                return null;
             }
         }
 
@@ -1010,7 +1002,7 @@
             try {
                 await window.db.init();
                 
-                const currentUser = getCurrentUser();
+                const currentUser = await getCurrentUser();
                 const approverSelect = document.getElementById('approver');
                 
                 // 데이터베이스에서 모든 직원 정보 가져오기
@@ -1053,7 +1045,7 @@
                 document.getElementById('requestDate').value = today;
                 
                 // Supabase에서 최신 사용자 정보로 폼 자동 입력
-                var currentUser = await getCurrentUserFromDB();
+                var currentUser = await getCurrentUser();
                 if (currentUser) {
                     document.getElementById('employeeName').value = currentUser.name || '';
                     document.getElementById('department').value = currentUser.department || '';

@@ -383,7 +383,7 @@
         }
 
         // 알림 로드
-        function loadNotifications() {
+        async function loadNotifications() {
             currentUser = getCurrentUser();
             if (!currentUser) {
                 alert('로그인 정보를 확인할 수 없습니다.');
@@ -410,8 +410,60 @@
                 notifications = JSON.parse(localStorage.getItem('notifications_' + userId) || '[]');
                 console.log(`🔔 알림 로드 (${userId}):`, notifications.length, '개');
                 
-                // 관리자인 경우 가입 알림도 로드
+                // 관리자인 경우 데이터베이스에서 승인 대기 사용자 확인 및 알림 생성
                 if (currentUser.role === 'master' || currentUser.role === 'company_CEO' || currentUser.role === 'company_admin' || currentUser.role === 'company_manager') {
+                    console.log('👤 관리자 권한 확인됨, 데이터베이스에서 승인 대기 사용자 조회');
+                    
+                    if (window.db && window.db.client) {
+                        try {
+                            const { data, error } = await window.db.client
+                                .from('users')
+                                .select('id, name, email, created_at')
+                                .is('role', null)  // role이 null인 사용자들 (승인 대기)
+                                .eq('is_active', true);
+                                
+                            if (!error && data && data.length > 0) {
+                                console.log('✅ 승인 대기 사용자 조회 완료:', data.length, '명');
+                                
+                                // 기존 관리자 알림 로드
+                                const adminNotifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
+                                
+                                // 각 승인 대기 사용자에 대해 알림 생성 (중복 방지)
+                                data.forEach(pendingUser => {
+                                    const existingNotification = adminNotifications.find(n => 
+                                        n.type === 'new_user_signup' && 
+                                        n.userInfo && 
+                                        (n.userInfo.email === pendingUser.email || n.userInfo.name === pendingUser.name)
+                                    );
+                                    
+                                    if (!existingNotification) {
+                                        const notification = {
+                                            id: 'signup_' + pendingUser.id + '_' + Date.now(),
+                                            type: 'new_user_signup',
+                                            title: '새로운 사용자 가입',
+                                            message: `${pendingUser.name}님이 가입을 요청했습니다.`,
+                                            timestamp: pendingUser.created_at || new Date().toISOString(),
+                                            isRead: false,
+                                            read: false,
+                                            userInfo: {
+                                                id: pendingUser.id,
+                                                name: pendingUser.name,
+                                                email: pendingUser.email || '이메일 미제공'
+                                            }
+                                        };
+                                        
+                                        adminNotifications.push(notification);
+                                    }
+                                });
+                                
+                                localStorage.setItem('admin_notifications', JSON.stringify(adminNotifications));
+                                console.log('✅ 관리자 알림 업데이트 완료:', adminNotifications.length, '개');
+                            }
+                        } catch (error) {
+                            console.error('❌ 승인 대기 사용자 조회 예외:', error);
+                        }
+                    }
+                    
                     const adminNotifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
                     console.log('📢 관리자 알림 로드:', adminNotifications.length, '개');
                     
@@ -815,12 +867,23 @@
             }
 
             try {
-                // 데이터베이스에서 사용자 승인 처리
+                // 역할 선택 요청
+                const role = prompt(`${notification.userInfo.name}님의 역할을 선택하세요:\n\n1. employee (직원)\n2. company_manager (매니저)\n3. company_admin (관리자)\n\n역할을 입력하세요:`, 'employee');
+                
+                if (!role || !['employee', 'company_manager', 'company_admin'].includes(role)) {
+                    alert('올바른 역할을 선택해주세요.');
+                    return;
+                }
+                
+                // 데이터베이스에서 사용자 승인 처리 (role 설정 포함)
                 const userEmail = notification.userInfo.email;
                 if (userEmail && userEmail !== '이메일 미제공') {
                     const { data, error } = await window.db.client
                         .from('users')
-                        .update({ is_approved: true })
+                        .update({ 
+                            is_approved: true,
+                            role: role
+                        })
                         .eq('email', userEmail);
                     
                     if (error) {
@@ -829,10 +892,13 @@
                         return;
                     }
                 } else {
-                    // 이메일이 없는 경우 OAuth ID로 찾기
+                    // 이메일이 없는 경우 이름으로 찾기
                     const { data, error } = await window.db.client
                         .from('users')
-                        .update({ is_approved: true })
+                        .update({ 
+                            is_approved: true,
+                            role: role
+                        })
                         .eq('name', notification.userInfo.name);
                     
                     if (error) {
