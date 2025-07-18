@@ -4460,7 +4460,7 @@
         });
 
         // 템플릿 삭제
-        function deleteTemplate(templateId) {
+        async function deleteTemplate(templateId) {
             if (templateId === 'career') {
                 alert('기본 경력증명서 템플릿은 삭제할 수 없습니다.');
                 return;
@@ -4695,17 +4695,6 @@
         }
         window.openCorporateCardManagement = openCorporateCardManagement;
 
-        function showCompanyInfoManagement() {
-            // 히스토리에 상태 추가 (해시 변경 없이)
-            history.pushState({ section: 'companyInfo' }, '회사정보', '#companyInfo');
-            
-            // 회사정보 섉션 표시
-            showSection('companyInfo');
-            
-            // 회사정보 데이터 로드
-            loadCompanyInfo();
-        }
-        window.showCompanyInfoManagement = showCompanyInfoManagement;
 
         // 관리자 알림 체크 함수
         function checkAdminNotifications() {
