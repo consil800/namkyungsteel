@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>승인 알림 - 남경스틸(주)</title>
+    
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Database Manager -->
+    <script src="database.js"></script>
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: #f8f9fa;
+            color: #333333;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 1.5rem 2rem;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            color: white;
+            text-decoration: none;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .tab {
+            padding: 1rem 1.5rem;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #666;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: #667eea;
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #667eea;
+        }
+
+        .notifications-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .notification-item {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .notification-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .notification-item.unread {
+            border-left-color: #ef4444;
+            background: #fef2f2;
+        }
+
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+        }
+
+        .notification-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .notification-time {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .notification-message {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .notification-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-approve {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-approve:hover {
+            background: #059669;
+        }
+
+        .btn-reject {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-reject:hover {
+            background: #dc2626;
+        }
+
+        .btn-mark-read {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-mark-read:hover {
+            background: #4b5563;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            color: #dee2e6;
+            margin-bottom: 1rem;
+        }
+
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .tabs {
+                flex-wrap: wrap;
+            }
+            
+            .notification-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 로딩 화면 -->
+    <div class="loading" id="loadingScreen">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- 헤더 -->
+    <header class="header">
+        <div class="header-title">
+            <i class="fas fa-bell"></i>
+            <span>알림</span>
+        </div>
+        <a href="employee-dashboard.html" class="back-btn">
+            <i class="fas fa-arrow-left"></i>
+            대시보드로
+        </a>
+    </header>
+
+    <!-- 메인 콘텐츠 -->
+    <main class="container">
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('all')">전체</button>
+            <button class="tab" onclick="switchTab('unread')">읽지 않음</button>
+            <button class="tab" onclick="switchTab('approval')">승인 요청</button>
+            <button class="tab" onclick="switchTab('signup')">가입 승인</button>
+        </div>
+
+        <div id="notificationsList" class="notifications-list">
+            <!-- 알림 목록이 동적으로 생성됩니다 -->
+        </div>
+    </main>
+
+    <script>
+        let currentUser = null;
+        let notifications = [];
+        let currentTab = 'all';
+
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', async function() {
+            await window.db.init();
+            await loadNotifications();
+        });
+
+        // 데이터베이스에서 현재 사용자 정보 가져오기
+        async function getCurrentUserFromDB() {
+            try {
+                console.log('🔍 getCurrentUserFromDB 시작');
+                
+                if (!window.db) {
+                    console.warn('⚠️ 데이터베이스가 초기화되지 않음');
+                    return null;
+                }
+                
+                await window.db.init();
+                console.log('✅ 데이터베이스 초기화 완료');
+                
+                // 세션 스토리지에서 로그인 정보 가져오기
+                const loginInfo = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+                console.log('📋 세션 스토리지 로그인 정보:', loginInfo);
+                
+                if (!loginInfo || (!loginInfo.email && !loginInfo.id)) {
+                    console.error('❌ 로그인 정보가 없습니다.');
+                    return null;
+                }
+                
+                // Supabase users 테이블에서 최신 사용자 정보 조회 (이메일 또는 ID로)
+                let user, error;
+                if (loginInfo.email && loginInfo.email !== 'null') {
+                    // 이메일로 조회 (Google 로그인)
+                    console.log('🔍 이메일로 사용자 조회:', loginInfo.email);
+                    const result = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .eq('email', loginInfo.email)
+                        .single();
+                    user = result.data;
+                    error = result.error;
+                    console.log('📊 이메일 조회 결과:', { user, error });
+                } else if (loginInfo.id) {
+                    // ID로 조회 (카카오 로그인에서 이메일이 없는 경우)
+                    console.log('🔍 ID로 사용자 조회:', loginInfo.id);
+                    const result = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .eq('id', loginInfo.id)
+                        .single();
+                    user = result.data;
+                    error = result.error;
+                    console.log('📊 ID 조회 결과:', { user, error });
+                }
+                
+                if (error) {
+                    console.error('❌ 사용자 정보 조회 오류:', error);
+                    return null;
+                }
+                
+                if (!user) {
+                    console.error('❌ 사용자를 찾을 수 없습니다');
+                    return null;
+                }
+                
+                console.log('✅ 사용자 정보 조회 성공:', user);
+                return user;
+            } catch (error) {
+                console.error('❌ getCurrentUserFromDB 오류:', error);
+                return null;
+            }
+        }
+
+        // 알림 로드
+        async function loadNotifications() {
+            showLoading();
+            try {
+                currentUser = await getCurrentUserFromDB();
+                if (!currentUser) {
+                    alert('로그인 정보를 확인할 수 없습니다.');
+                    window.location.href = 'employee-dashboard.html';
+                    return;
+                }
+
+                console.log('📋 알림 로드 시작 - 현재 사용자:', currentUser);
+                
+                // 기본 알림 배열 초기화
+                notifications = [];
+                
+                // 관리자/대표자인 경우 승인 요청 알림도 로드
+                if (currentUser.role === 'master' || currentUser.role === 'company_CEO' || currentUser.role === 'company_admin') {
+                    console.log('👤 관리자 권한 확인됨, 승인 대기 사용자 조회 시작');
+                    
+                    // 신규 가입 승인 알림 (데이터베이스 기반)
+                    const unapprovedUsers = await window.db.getUsers();
+                    const pendingUsers = unapprovedUsers.filter(user => !user.is_approved);
+                    
+                    console.log('📋 승인 대기 사용자 목록:', pendingUsers);
+                    
+                    if (pendingUsers.length > 0) {
+                        pendingUsers.forEach(user => {
+                            const notification = {
+                                id: Date.now().toString() + user.id,
+                                type: 'new_user_signup',
+                                title: '새로운 사용자 가입 승인 대기',
+                                message: `${user.name}님이 가입했습니다. 승인이 필요합니다.`,
+                                userInfo: {
+                                    id: user.id.toString(),
+                                    name: user.name,
+                                    email: user.email || '이메일 미제공',
+                                    signupTime: user.created_at
+                                },
+                                isRead: false,
+                                createdAt: user.created_at
+                            };
+                            notifications.unshift(notification);
+                        });
+                    }
+                }
+                
+                // 서류 승인 알림 로드 (데이터베이스 기반)
+                const pendingDocuments = await window.db.getPendingDocuments(currentUser.id);
+                console.log('📋 승인 대기 서류 목록:', pendingDocuments);
+                
+                if (pendingDocuments && pendingDocuments.length > 0) {
+                    pendingDocuments.forEach(doc => {
+                        const notification = {
+                            id: Date.now().toString() + doc.id,
+                            type: 'approval_request',
+                            title: '서류 승인 요청',
+                            message: `${doc.requester_name}님이 ${getDocumentTypeName(doc.document_type)} 승인을 요청했습니다.`,
+                            requestId: doc.id,
+                            isRead: false,
+                            createdAt: doc.created_at
+                        };
+                        notifications.unshift(notification);
+                    });
+                }
+                
+                console.log('✅ 알림 로드 완료:', notifications.length, '개');
+                
+                // 알림 표시
+                displayNotifications();
+                
+            } catch (error) {
+                console.error('❌ 알림 로드 오류:', error);
+                alert('알림을 불러오는 중 오류가 발생했습니다.');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // 서류 타입 이름 변환
+        function getDocumentTypeName(type) {
+            const typeNames = {
+                'proposal': '기안서',
+                'resignation': '사직서',
+                'incident': '경위서',
+                'employment': '재직증명서',
+                'career': '경력증명서',
+                'business_trip': '출장보고서',
+                'leave': '연차신청서'
+            };
+            return typeNames[type] || type;
+        }
+
+        // 알림 표시
+        function displayNotifications() {
+            const notificationsList = document.getElementById('notificationsList');
+            let filteredNotifications = notifications;
+
+            // 탭별 필터링
+            switch (currentTab) {
+                case 'unread':
+                    filteredNotifications = notifications.filter(n => !n.isRead);
+                    break;
+                case 'approval':
+                    filteredNotifications = notifications.filter(n => n.type === 'approval_request');
+                    break;
+                case 'signup':
+                    filteredNotifications = notifications.filter(n => n.type === 'new_user_signup');
+                    break;
+            }
+
+            if (filteredNotifications.length === 0) {
+                notificationsList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-inbox"></i>
+                        </div>
+                        <h3>알림이 없습니다</h3>
+                        <p>새로운 알림이 있을 때 여기에 표시됩니다.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            notificationsList.innerHTML = filteredNotifications.map(notification => {
+                const readClass = notification.isRead ? '' : 'unread';
+                const timeAgo = formatTimeAgo(notification.createdAt);
+                
+                let actionsHtml = '';
+                
+                if (notification.type === 'new_user_signup') {
+                    actionsHtml = `
+                        <div class="notification-actions">
+                            <button class="btn btn-approve" onclick="approveUser('${notification.userInfo.id}')">
+                                승인
+                            </button>
+                            <button class="btn btn-reject" onclick="rejectUser('${notification.userInfo.id}')">
+                                반려
+                            </button>
+                        </div>
+                    `;
+                } else if (notification.type === 'approval_request') {
+                    actionsHtml = `
+                        <div class="notification-actions">
+                            <button class="btn btn-approve" onclick="approveDocument('${notification.requestId}')">
+                                승인
+                            </button>
+                            <button class="btn btn-reject" onclick="rejectDocument('${notification.requestId}')">
+                                반려
+                            </button>
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div class="notification-item ${readClass}">
+                        <div class="notification-header">
+                            <h3 class="notification-title">${notification.title}</h3>
+                            <span class="notification-time">${timeAgo}</span>
+                        </div>
+                        <p class="notification-message">${notification.message}</p>
+                        ${actionsHtml}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 탭 전환
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // 탭 UI 업데이트
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // 알림 목록 업데이트
+            displayNotifications();
+        }
+
+        // 사용자 승인
+        async function approveUser(userId) {
+            try {
+                const result = await window.db.approveUser(parseInt(userId));
+                if (result.success) {
+                    alert('사용자가 승인되었습니다.');
+                    await loadNotifications(); // 알림 목록 새로고침
+                } else {
+                    alert('승인 처리 중 오류가 발생했습니다.');
+                }
+            } catch (error) {
+                console.error('사용자 승인 오류:', error);
+                alert('승인 처리 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 사용자 반려
+        async function rejectUser(userId) {
+            const reason = prompt('반려 사유를 입력해주세요:');
+            if (!reason) return;
+
+            try {
+                const result = await window.db.rejectUser(parseInt(userId), reason);
+                if (result.success) {
+                    alert('사용자가 반려되었습니다.');
+                    await loadNotifications(); // 알림 목록 새로고침
+                } else {
+                    alert('반려 처리 중 오류가 발생했습니다.');
+                }
+            } catch (error) {
+                console.error('사용자 반려 오류:', error);
+                alert('반려 처리 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 서류 승인
+        async function approveDocument(documentId) {
+            try {
+                const result = await window.db.updateDocumentStatus(documentId, 'approved', '승인됨');
+                if (result.success) {
+                    alert('서류가 승인되었습니다.');
+                    await loadNotifications(); // 알림 목록 새로고침
+                } else {
+                    alert('승인 처리 중 오류가 발생했습니다.');
+                }
+            } catch (error) {
+                console.error('서류 승인 오류:', error);
+                alert('승인 처리 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 서류 반려
+        async function rejectDocument(documentId) {
+            const reason = prompt('반려 사유를 입력해주세요:');
+            if (!reason) return;
+
+            try {
+                const result = await window.db.updateDocumentStatus(documentId, 'rejected', reason);
+                if (result.success) {
+                    alert('서류가 반려되었습니다.');
+                    await loadNotifications(); // 알림 목록 새로고침
+                } else {
+                    alert('반려 처리 중 오류가 발생했습니다.');
+                }
+            } catch (error) {
+                console.error('서류 반려 오류:', error);
+                alert('반려 처리 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 시간 포맷팅
+        function formatTimeAgo(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffInSeconds = Math.floor((now - date) / 1000);
+
+            if (diffInSeconds < 60) {
+                return '방금 전';
+            } else if (diffInSeconds < 3600) {
+                const minutes = Math.floor(diffInSeconds / 60);
+                return `${minutes}분 전`;
+            } else if (diffInSeconds < 86400) {
+                const hours = Math.floor(diffInSeconds / 3600);
+                return `${hours}시간 전`;
+            } else {
+                const days = Math.floor(diffInSeconds / 86400);
+                return `${days}일 전`;
+            }
+        }
+
+        // 로딩 표시
+        function showLoading() {
+            document.getElementById('loadingScreen').classList.add('active');
+        }
+
+        // 로딩 숨김
+        function hideLoading() {
+            document.getElementById('loadingScreen').classList.remove('active');
+        }
+    </script>
+</body>
+</html>
