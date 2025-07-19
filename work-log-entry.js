@@ -10,13 +10,26 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 데이터베이스 초기화 대기
     await waitForDatabase();
     
-    // 로그인 확인
-    currentUser = AuthManager.getCurrentUser();
+    // 로그인 확인 (최신 sessionStorage에서 직접 읽기)
+    try {
+        const userJson = sessionStorage.getItem('currentUser');
+        currentUser = userJson ? JSON.parse(userJson) : null;
+    } catch (error) {
+        console.error('사용자 정보 파싱 오류:', error);
+        currentUser = null;
+    }
+    
     if (!currentUser) {
         alert('로그인이 필요합니다.');
         window.location.href = 'login.html';
         return;
     }
+    
+    console.log('🔍 work-log-entry.js - 사용자 정보:', {
+        id: currentUser.id,
+        name: currentUser.name,
+        role: currentUser.role
+    });
 
     // URL에서 업체 ID 추출
     const urlParams = new URLSearchParams(window.location.search);
