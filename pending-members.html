@@ -318,7 +318,9 @@
         // 권한 확인 함수
         function canManageEmployees(user) {
             if (!user) return false;
-            return user.role === 'master' || user.role === 'admin' || user.role === 'hr';
+            // admin-dashboard.html과 동일한 역할 목록 사용
+            const managerRoles = ['master', 'company_CEO', 'company_admin', 'company_manager'];
+            return managerRoles.includes(user.role);
         }
 
         // 승인 대기 회원 목록 로드
