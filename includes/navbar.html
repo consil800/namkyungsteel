@@ -205,6 +205,10 @@
     // 전역 함수로 네비바 상태 업데이트 함수 노출
     window.updateNavbarLoginState = checkAndUpdateNavbarLoginState;
     
+    // 즉시 실행 (네비바 HTML이 로드되는 순간)
+    console.log('🔧 navbar.html: 스크립트 실행됨');
+    checkAndUpdateNavbarLoginState();
+    
     // sessionStorage 변경 감지 (다른 탭에서의 로그인/로그아웃 반영)
     window.addEventListener('storage', function(e) {
         if (e.key === 'currentUser') {
