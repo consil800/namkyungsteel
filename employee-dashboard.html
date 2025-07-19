@@ -1354,7 +1354,32 @@
                 }
                 
                 console.log('✅ 사용자 정보 조회 성공:', user);
-                return user;
+                
+                // 업데이트된 사용자 정보를 sessionStorage에 저장
+                const updatedUser = {
+                    id: user.id,
+                    email: user.email,
+                    name: user.name,
+                    role: user.role,
+                    department: user.department,
+                    position: user.position,
+                    company_domain: user.company_domain,
+                    company_name: user.company_name,
+                    profileImage: user.profile_image,
+                    profile_image: user.profile_image,
+                    oauth_id: user.oauth_id,
+                    oauth_provider: user.oauth_provider,
+                    provider: user.oauth_provider || 'email',
+                    is_approved: user.is_approved,
+                    is_active: user.is_active,
+                    permissions: AuthManager.ROLE_PERMISSIONS[user.role] || AuthManager.ROLE_PERMISSIONS['employee']
+                };
+                sessionStorage.setItem('currentUser', JSON.stringify(updatedUser));
+                sessionStorage.setItem('userRole', user.role);
+                sessionStorage.setItem('userName', user.name);
+                console.log('✅ sessionStorage 업데이트 완료:', updatedUser);
+                
+                return updatedUser;
             } catch (error) {
                 console.error('❌ getCurrentUserFromDB 오류:', error);
                 return null;

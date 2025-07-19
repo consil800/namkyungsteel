@@ -822,9 +822,57 @@
           if (session && session.user) {
             console.log('✅ OAuth 로그인 성공:', session.user);
             
-            // 사용자 정보 저장
+            // 데이터베이스에서 실제 사용자 정보 조회
+            let dbUser = null;
+            try {
+              if (session.user.email) {
+                const { data: existingUserByEmail, error: emailError } = await supabaseClient
+                  .from('users')
+                  .select('*')
+                  .eq('email', session.user.email)
+                  .single();
+                
+                if (!emailError && existingUserByEmail) {
+                  dbUser = existingUserByEmail;
+                  console.log('📋 이메일로 기존 사용자 찾음:', dbUser);
+                }
+              }
+              
+              if (!dbUser && session.user.id) {
+                const { data: existingUserByOAuth, error: oauthError } = await supabaseClient
+                  .from('users')
+                  .select('*')
+                  .eq('oauth_id', session.user.id)
+                  .single();
+                
+                if (!oauthError && existingUserByOAuth) {
+                  dbUser = existingUserByOAuth;
+                  console.log('📋 OAuth ID로 기존 사용자 찾음:', dbUser);
+                }
+              }
+            } catch (lookupError) {
+              console.log('🔍 사용자 조회 중:', lookupError.message);
+            }
+            
+            // 사용자 정보 구성
             const actualProvider = session.user.app_metadata?.provider || 'unknown';
-            const user = {
+            const user = dbUser ? {
+              id: dbUser.id,
+              email: dbUser.email,
+              name: dbUser.name,
+              role: dbUser.role,
+              department: dbUser.department,
+              position: dbUser.position,
+              company_domain: dbUser.company_domain,
+              company_name: dbUser.company_name,
+              profileImage: dbUser.profile_image || session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture,
+              profile_image: dbUser.profile_image,
+              oauth_id: dbUser.oauth_id,
+              oauth_provider: dbUser.oauth_provider,
+              provider: actualProvider,
+              is_approved: dbUser.is_approved,
+              is_active: dbUser.is_active
+            } : {
               id: session.user.id,
               email: session.user.email,
               name: session.user.user_metadata?.name || session.user.user_metadata?.full_name || session.user.email,
@@ -832,7 +880,9 @@
               provider: actualProvider
             };
             
-            // users 테이블에 사용자 정보 저장 (없으면 생성)
+            // users 테이블 저장은 이미 데이터베이스에서 처리됨 (주석 처리)
+            console.log('📋 최종 사용자 정보:', user);
+            /*
             try {
               const { data: existingUser, error: selectError } = await supabaseClient
                 .from('users')
@@ -842,32 +892,12 @@
               
               if (!existingUser) {
                 // 새 사용자라면 users 테이블에 저장
-                const { data: insertData, error: insertError } = await supabaseClient
-                  .from('users')
-                  .insert([
-                    {
-                      id: user.id,
-                      email: user.email,
-                      name: user.name,
-                      company_domain: 'namkyungsteel.com',
-                      company_name: '남경스틸(주)',
-                      role: null,
-                      provider: actualProvider,
-                      is_approved: false,
-                      is_active: true,
-                      created_at: new Date().toISOString()
-                    }
-                  ]);
-                
-                if (insertError) {
-                  console.error('❌ Google 사용자 저장 오류:', insertError);
-                } else {
-                  console.log('✅ Google 사용자 정보 저장 완료:', insertData);
-                }
+                console.log('🔄 새 사용자 저장 건너뜀 (이미 데이터베이스에 존재)');
               }
             } catch (tableError) {
-              console.error('❌ Google 사용자 테이블 처리 예외:', tableError);
+              console.log('🔄 사용자 테이블 처리 건너뜀');
             }
+            */
             
             saveUserAndUpdateUI(user);
             
