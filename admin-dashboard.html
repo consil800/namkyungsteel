@@ -4234,18 +4234,6 @@
             // 데이터베이스 기반 권한 관리로 리다이렉트
             await showPermissionManagement();
         }
-                    html += '<div style="margin-top: 1rem; padding: 0.75rem; background: rgba(34, 197, 94, 0.1); border-radius: 5px; border-left: 3px solid #22c55e;">';
-                    html += '<p style="color: #22c55e; margin: 0; font-size: 0.875rem;"><i class="fas fa-info-circle"></i> 대표이사는 모든 메뉴에 자동으로 접근 권한이 부여됩니다:</p>';
-                    ceoEmployees.forEach(emp => {
-                        html += `<p style="color: #e2e8f0; margin: 0.25rem 0 0 0; font-size: 0.875rem;">• ${emp.name} (${emp.department || '부서 미지정'} - ${emp.position})</p>`;
-                    });
-                    html += '</div>';
-                }
-            }
-            
-            html += '</div>';
-            container.innerHTML = html;
-        }
         
         // 권한 탭 전환
         function switchPermissionTab(menu, type) {

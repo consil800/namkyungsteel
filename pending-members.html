@@ -304,12 +304,25 @@
                 }
             }
             
-            // 권한 확인
+            // 권한 확인 (디버그 정보 추가)
+            console.log('🕵️ 가입 승인 권한 확인:', {
+                currentUser: currentUser,
+                userRole: currentUser?.role,
+                canManage: currentUser ? canManageEmployees(currentUser) : false
+            });
+            
             if (!currentUser || !canManageEmployees(currentUser)) {
+                console.error('❌ 권한 부족:', {
+                    hasUser: !!currentUser,
+                    userRole: currentUser?.role,
+                    allowedRoles: ['master', 'company_CEO', 'company_admin', 'company_manager']
+                });
                 alert('가입 승인 권한이 없습니다.');
                 window.location.href = 'admin-dashboard.html';
                 return;
             }
+            
+            console.log('✅ 가입 승인 권한 확인 완료');
             
             // 승인 대기 목록 로드
             await loadPendingMembers();
