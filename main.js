@@ -18,8 +18,8 @@ document.addEventListener('DOMContentLoaded', function() {
         isFiltered: false
     };
 
-    // 초기 데이터 로드
-    loadCompanies();
+    // 초기 데이터 로드 (사용자 정보가 업데이트될 때까지 대기)
+    // worklog.html에서 getCurrentUserFromDB() 실행 후 loadCompanies()를 호출하므로 여기서는 주석 처리
     
     // 검색 상태 복원
     restoreSearchState();
@@ -27,8 +27,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // 이벤트 리스너 등록
     searchBtn.addEventListener('click', handleSearch);
     addCompanyBtn.addEventListener('click', () => {
-        // 로그인 확인
-        const currentUser = AuthManager.getCurrentUser();
+        // 로그인 확인 (최신 sessionStorage에서 직접 읽기)
+        let currentUser;
+        try {
+            const userJson = sessionStorage.getItem('currentUser');
+            currentUser = userJson ? JSON.parse(userJson) : null;
+        } catch (error) {
+            console.error('사용자 정보 파싱 오류:', error);
+            currentUser = null;
+        }
+        
         if (!currentUser) {
             alert('로그인이 필요합니다.');
             return;
@@ -69,8 +77,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 companyList.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">검색 중...</td></tr>';
             }
             
-            // 현재 로그인한 사용자 확인
-            const currentUser = AuthManager.getCurrentUser();
+            // 현재 로그인한 사용자 확인 (최신 sessionStorage에서 직접 읽기)
+            let currentUser;
+            try {
+                const userJson = sessionStorage.getItem('currentUser');
+                currentUser = userJson ? JSON.parse(userJson) : null;
+            } catch (error) {
+                console.error('사용자 정보 파싱 오류:', error);
+                currentUser = null;
+            }
+            
             if (!currentUser) {
                 if (companyList) {
                     companyList.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px; color: #f00;">로그인이 필요합니다.</td></tr>';
@@ -113,13 +129,23 @@ document.addEventListener('DOMContentLoaded', function() {
     // 현재 로그인한 사용자의 업체 목록 로드
     async function loadCompanies() {
         try {
+            console.log('🔄 main.js loadCompanies 함수 실행 시작');
+            
             // 로딩 표시
             if (companyList) {
                 companyList.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">데이터를 불러오는 중...</td></tr>';
             }
 
-            // 현재 로그인한 사용자 확인
-            const currentUser = AuthManager.getCurrentUser();
+            // 현재 로그인한 사용자 확인 (최신 sessionStorage에서 직접 읽기)
+            let currentUser;
+            try {
+                const userJson = sessionStorage.getItem('currentUser');
+                currentUser = userJson ? JSON.parse(userJson) : null;
+            } catch (error) {
+                console.error('사용자 정보 파싱 오류:', error);
+                currentUser = null;
+            }
+            
             if (!currentUser) {
                 if (companyList) {
                     companyList.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px; color: #f00;">로그인이 필요합니다.</td></tr>';
@@ -152,6 +178,9 @@ document.addEventListener('DOMContentLoaded', function() {
             displayCompanies([]);
         }
     }
+
+    // loadCompanies 함수를 전역으로 노출하여 worklog.html에서 호출 가능하게 함
+    window.loadCompanies = loadCompanies;
 
     // 회사 목록 표시
     async function displayCompanies(companies) {
@@ -263,8 +292,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 삭제 모드 토글
     function handleDeleteMode() {
-        // 로그인 확인
-        const currentUser = AuthManager.getCurrentUser();
+        // 로그인 확인 (최신 sessionStorage에서 직접 읽기)
+        let currentUser;
+        try {
+            const userJson = sessionStorage.getItem('currentUser');
+            currentUser = userJson ? JSON.parse(userJson) : null;
+        } catch (error) {
+            console.error('사용자 정보 파싱 오류:', error);
+            currentUser = null;
+        }
+        
         if (!currentUser) {
             alert('로그인이 필요합니다.');
             return;
@@ -354,8 +391,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // 선택된 업체들 삭제
     async function deleteSelectedCompanies() {
         try {
-            // 로그인 확인
-            const currentUser = AuthManager.getCurrentUser();
+            // 로그인 확인 (최신 sessionStorage에서 직접 읽기)
+            let currentUser;
+            try {
+                const userJson = sessionStorage.getItem('currentUser');
+                currentUser = userJson ? JSON.parse(userJson) : null;
+            } catch (error) {
+                console.error('사용자 정보 파싱 오류:', error);
+                currentUser = null;
+            }
+            
             if (!currentUser) {
                 alert('로그인이 필요합니다.');
                 return;
@@ -555,8 +600,16 @@ document.addEventListener('DOMContentLoaded', function() {
             // 현재 로그인한 사용자의 업체 데이터 가져오기
             let companies = [];
             try {
-                // 로그인한 사용자 확인
-                const currentUser = AuthManager.getCurrentUser();
+                // 로그인한 사용자 확인 (최신 sessionStorage에서 직접 읽기)
+                let currentUser;
+                try {
+                    const userJson = sessionStorage.getItem('currentUser');
+                    currentUser = userJson ? JSON.parse(userJson) : null;
+                } catch (error) {
+                    console.error('사용자 정보 파싱 오류:', error);
+                    currentUser = null;
+                }
+                
                 if (!currentUser) {
                     alert('로그인이 필요합니다.');
                     return;
@@ -728,8 +781,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         console.log('업체 데이터 생성 시도:', companyData.company_name);
                         
-                        // 현재 로그인한 사용자 확인 후 데이터베이스에 저장
-                        const currentUser = AuthManager.getCurrentUser();
+                        // 현재 로그인한 사용자 확인 후 데이터베이스에 저장 (최신 sessionStorage에서 직접 읽기)
+                        let currentUser;
+                        try {
+                            const userJson = sessionStorage.getItem('currentUser');
+                            currentUser = userJson ? JSON.parse(userJson) : null;
+                        } catch (error) {
+                            console.error('사용자 정보 파싱 오류:', error);
+                            currentUser = null;
+                        }
+                        
                         if (!currentUser) {
                             throw new Error('로그인이 필요합니다.');
                         }

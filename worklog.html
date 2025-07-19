@@ -460,6 +460,14 @@
             
             // 지역 목록 로드
             loadRegions();
+            
+            // 사용자 정보 업데이트 후 업체 목록 다시 로드
+            if (currentUser && window.loadCompanies) {
+                console.log('🔄 사용자 정보 업데이트 후 업체 목록 재로드');
+                setTimeout(function() {
+                    window.loadCompanies();
+                }, 100);
+            }
         });
         
         // 대시보드로 이동 함수
