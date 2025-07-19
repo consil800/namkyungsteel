@@ -1092,7 +1092,10 @@
     window.hideProfileModal = hideProfileModal;
     window.handleProfileImageUpload = handleProfileImageUpload;
     window.logout = logout;
-    window.showLoginModal = showLoginModal;
+    
+    // 원본 함수들을 백업 (네비바에서 호출할 수 있도록)
+    window._originalShowLoginModal = showLoginModal;
+    window._originalHandleProfileClick = handleProfileClick;
   </script>
 
   
