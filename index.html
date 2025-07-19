@@ -668,12 +668,20 @@
       sessionStorage.setItem('userRole', user.role || 'employee');
       sessionStorage.setItem('userName', user.name);
       
-      // 네비바 상태 업데이트 (공통 컴포넌트)
-      setTimeout(function() {
+      // 네비바 상태 업데이트 (공통 컴포넌트) - 여러 시점에서 시도
+      function tryUpdateNavbar() {
         if (window.updateNavbarLoginState) {
+          console.log('🔄 index.html: 네비바 상태 업데이트 실행');
           window.updateNavbarLoginState();
+        } else {
+          console.warn('⚠️ index.html: updateNavbarLoginState 함수 없음');
         }
-      }, 100);
+      }
+      
+      setTimeout(tryUpdateNavbar, 100);
+      setTimeout(tryUpdateNavbar, 300);
+      setTimeout(tryUpdateNavbar, 500);
+      setTimeout(tryUpdateNavbar, 1000);
       
       console.log('✅ 사용자 정보 저장 및 네비바 상태 업데이트 완료:', user);
     }
