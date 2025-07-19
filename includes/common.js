@@ -12,9 +12,13 @@ async function loadNavbar() {
         
         // body 시작 부분에 네비바 삽입
         document.body.insertAdjacentHTML('afterbegin', navbarHTML);
+        console.log('✅ 네비바 HTML 삽입 완료');
         
         // 네비바 로드 후 이벤트 리스너 재설정
         initializeNavbar();
+        
+        // 네비바 인증 스크립트 로드
+        loadNavbarAuthScript();
     } catch (error) {
         console.error('네비바 로드 실패:', error);
     }
@@ -101,11 +105,54 @@ document.addEventListener('DOMContentLoaded', async function() {
     await loadNavbar();
     await loadFooter();
     
-    // 네비바 로드 완료 후 로그인 상태 확인
+    // 네비바 로드 완료 후 로그인 상태 확인 (여러 시점에서 시도)
+    console.log('🔄 common.js: 컴포넌트 로드 완료');
+    
+    // 즉시 확인
     setTimeout(function() {
+        console.log('🔄 common.js: 100ms 후 네비바 상태 확인');
         if (window.updateNavbarLoginState) {
-            console.log('🔄 common.js: 네비바 로드 완료 후 로그인 상태 확인');
             window.updateNavbarLoginState();
+        } else {
+            console.warn('⚠️ updateNavbarLoginState 함수를 찾을 수 없음');
         }
     }, 100);
+    
+    // 500ms 후 재확인
+    setTimeout(function() {
+        console.log('🔄 common.js: 500ms 후 네비바 상태 재확인');
+        if (window.updateNavbarLoginState) {
+            window.updateNavbarLoginState();
+        }
+    }, 500);
+    
+    // 1초 후 최종 확인
+    setTimeout(function() {
+        console.log('🔄 common.js: 1000ms 후 네비바 상태 최종 확인');
+        if (window.updateNavbarLoginState) {
+            window.updateNavbarLoginState();
+        }
+    }, 1000);
 });
+
+// 네비바 인증 스크립트 동적 로드
+function loadNavbarAuthScript() {
+    console.log('🔄 네비바 인증 스크립트 로드 시작');
+    
+    // 이미 로드된 스크립트가 있는지 확인
+    if (document.querySelector('script[src*="navbar-auth.js"]')) {
+        console.log('⚠️ 네비바 인증 스크립트가 이미 로드됨');
+        return;
+    }
+    
+    const script = document.createElement('script');
+    script.src = 'includes/navbar-auth.js';
+    script.onload = function() {
+        console.log('✅ 네비바 인증 스크립트 로드 완료');
+    };
+    script.onerror = function() {
+        console.error('❌ 네비바 인증 스크립트 로드 실패');
+    };
+    
+    document.head.appendChild(script);
+}
