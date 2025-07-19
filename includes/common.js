@@ -100,4 +100,12 @@ function setActiveNavItem() {
 document.addEventListener('DOMContentLoaded', async function() {
     await loadNavbar();
     await loadFooter();
+    
+    // 네비바 로드 완료 후 로그인 상태 확인
+    setTimeout(function() {
+        if (window.updateNavbarLoginState) {
+            console.log('🔄 common.js: 네비바 로드 완료 후 로그인 상태 확인');
+            window.updateNavbarLoginState();
+        }
+    }, 100);
 });
