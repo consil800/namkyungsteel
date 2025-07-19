@@ -88,8 +88,11 @@ async function loadCompanyDetails(companyId) {
         }
         
         // 업체 정보 가져오기
+        console.log('🔍 company-detail.js - getClientCompanies 호출 전 currentUser.id:', currentUser.id, 'typeof:', typeof currentUser.id);
         const companies = await window.db.getClientCompanies(currentUser.id);
+        console.log('🔍 company-detail.js - getClientCompanies 결과:', companies.length, '개');
         currentCompany = companies.find(c => c.id == companyId);
+        console.log('🔍 company-detail.js - 찾은 업체:', currentCompany);
         
         if (!currentCompany) {
             throw new Error('업체를 찾을 수 없습니다.');
