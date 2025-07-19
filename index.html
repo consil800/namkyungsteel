@@ -274,11 +274,12 @@
     }
   </style>
   
-  <!-- Common Styles -->
-  <link href="includes/common-styles.css" rel="stylesheet">
 
   <!-- Font Awesome for icons -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  
+  <!-- 공통 컴포넌트 스타일 -->
+  <link href="includes/common-styles.css" rel="stylesheet">
 </head>
 
 <body class="index-page">
@@ -664,11 +665,17 @@
     function saveUserAndUpdateUI(user) {
       // sessionStorage에 사용자 정보 저장 (브라우저 세션 동안만 유지)
       sessionStorage.setItem('currentUser', JSON.stringify(user));
+      sessionStorage.setItem('userRole', user.role || 'employee');
+      sessionStorage.setItem('userName', user.name);
       
-      // UI 업데이트
-      updateUIForLoggedInUser(user);
+      // 네비바 상태 업데이트 (공통 컴포넌트)
+      setTimeout(function() {
+        if (window.updateNavbarLoginState) {
+          window.updateNavbarLoginState();
+        }
+      }, 100);
       
-      console.log('✅ 사용자 정보 저장 및 UI 업데이트 완료:', user);
+      console.log('✅ 사용자 정보 저장 및 네비바 상태 업데이트 완료:', user);
     }
     
     // 로그인된 사용자용 UI 업데이트
@@ -714,7 +721,14 @@
     // 로그아웃
     function logout() {
       sessionStorage.removeItem('currentUser');
-      updateUIForLoggedOutUser();
+      sessionStorage.removeItem('userRole');
+      sessionStorage.removeItem('userName');
+      
+      // 네비바 상태 업데이트 (공통 컴포넌트)
+      if (window.updateNavbarLoginState) {
+        window.updateNavbarLoginState();
+      }
+      
       console.log('🚪 로그아웃 완료');
       
       // 프로필 모달 닫기
@@ -722,7 +736,7 @@
       
       // 메인 페이지로 리다이렉트
       setTimeout(() => {
-        window.location.href = '/index.html';
+        window.location.href = 'index.html';
       }, 100);
     }
     
@@ -883,12 +897,9 @@
       }
     }
     
-    // 페이지 로드 시 사용자 상태 확인 및 OAuth 콜백 처리
+    // 페이지 로드 시 OAuth 콜백 처리만 수행 (로그인 상태는 네비바에서 관리)
     document.addEventListener('DOMContentLoaded', function() {
       console.log('📄 페이지 로드됨');
-      
-      // 먼저 저장된 사용자 정보 확인 및 UI 업데이트
-      checkAndRestoreUserSession();
       
       // OAuth 콜백 처리
       handleOAuthCallback();
@@ -1037,25 +1048,18 @@
       reader.readAsDataURL(file);
     }
 
+    // 전역 함수로 노출 (공통 컴포넌트에서 사용)
     window.handleProfileClick = handleProfileClick;
     window.showProfileModal = showProfileModal;
     window.hideProfileModal = hideProfileModal;
     window.handleProfileImageUpload = handleProfileImageUpload;
     window.logout = logout;
+    window.showLoginModal = showLoginModal;
   </script>
 
-  <!-- Common JavaScript -->
-  <script src="includes/common.js"></script>
   
-  <!-- Main Template JS File - 에러 방지를 위한 조건부 로드 -->
-  <script>
-    // OAuth 콜백 처리 중이 아닐 때만 main.js 로드
-    if (!window.location.hash.includes('access_token') && !window.location.search.includes('code')) {
-      const script = document.createElement('script');
-      script.src = 'assets/js/main.js';
-      document.head.appendChild(script);
-    }
-  </script>
+  <!-- 공통 컴포넌트 로드 -->
+  <script src="includes/common.js"></script>
   
   <!-- Authentication Scripts will be loaded later -->
 
@@ -1197,7 +1201,7 @@
             
             <div class="form-group">
               <label>새 비밀번호 확인</label>
-              <input type="password" id="confirmPassword" required>
+              <input type="password" id="confirmPasswordChange" required>
             </div>
             
             <button type="submit" class="btn-change-password">비밀번호 변경</button>
