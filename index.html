@@ -264,8 +264,10 @@
     
     .footer-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 40px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 30px;
+      max-width: 1200px;
+      margin: 0 auto;
     }
     
     .footer-column h3,
@@ -462,7 +464,7 @@
     }
     
     .navmenu a {
-      color: var(--nav-color, #2c3e50);
+      color: #2c3e50;
       padding: 12px 0;
       font-size: 16px;
       font-weight: 500;
@@ -486,15 +488,17 @@
       padding: 10px 0;
       border-radius: 6px;
       min-width: 180px;
+      flex-direction: column;
     }
     
     /* 드롭다운 호버 시 보이기 */
     .navmenu .dropdown:hover > ul {
-      display: block;
+      display: flex;
     }
     
     .navmenu .dropdown ul li {
       padding: 0;
+      width: 100%;
     }
     
     .navmenu .dropdown ul a {
@@ -502,11 +506,17 @@
       font-size: 15px;
       color: #2c3e50;
       border: none;
+      width: 100%;
+      justify-content: flex-start;
     }
     
     .navmenu .dropdown ul a:hover {
       color: #3498db;
       background-color: #f8f9fa;
+    }
+    
+    .toggle-dropdown {
+      margin-left: 5px;
     }
     
     /* 모바일 네비게이션에서도 드롭다운 처리 */
@@ -524,7 +534,7 @@
       }
       
       .navmenu .dropdown.active > ul {
-        display: block;
+        display: flex;
       }
     }
     

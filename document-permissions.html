@@ -743,10 +743,60 @@
         }
 
         function removeApprovalStep(docId, stepIndex) {
-            if (documentPermissions[docId].approvalChain) {
-                documentPermissions[docId].approvalChain.splice(stepIndex, 1);
+            if (!documentPermissions[docId].approvalChain) {
+                return;
             }
-            generateDocumentCards(); // 화면 새로고침
+            
+            // 첫 번째 단계는 삭제할 수 없음
+            if (stepIndex === 0) {
+                alert('첫 번째 승인 단계는 삭제할 수 없습니다.');
+                return;
+            }
+            
+            // 배열에서 해당 단계 제거
+            documentPermissions[docId].approvalChain.splice(stepIndex, 1);
+            
+            // 해당 문서의 승인 단계만 다시 렌더링
+            refreshApprovalSteps(docId);
+        }
+
+        // 특정 문서의 승인 단계만 새로고침
+        function refreshApprovalSteps(docId) {
+            const container = document.getElementById(`approval-${docId}`);
+            if (!container) return;
+            
+            const approvalChain = documentPermissions[docId].approvalChain || [''];
+            
+            let html = '';
+            approvalChain.forEach((approverId, index) => {
+                const stepNumber = index + 1;
+                const selectedEmployee = employees.find(emp => (emp.id || emp.name) === approverId);
+                
+                html += `
+                    <div class="approval-step">
+                        <div class="step-number">${stepNumber}</div>
+                        <select class="approver-select" onchange="updateApprover('${docId}', ${index}, this.value)">
+                            <option value="">${stepNumber}차 승인자 선택</option>
+                            ${employees.map(emp => {
+                                const empId = emp.id || emp.name;
+                                const selected = empId === approverId ? 'selected' : '';
+                                return `<option value="${empId}" ${selected}>${emp.name} (${emp.position})</option>`;
+                            }).join('')}
+                        </select>
+                        ${index === 0 ? 
+                            `<button class="add-permission-btn" onclick="addApprovalStep('${docId}')">
+                                <i class="fas fa-plus"></i> 단계 추가
+                            </button>` :
+                            `<button class="remove-permission-btn" onclick="removeApprovalStep('${docId}', ${index})">
+                                <i class="fas fa-times"></i>
+                            </button>`
+                        }
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            console.log(`승인 단계 새로고침 완료: ${docId}`);
         }
 
         // 문서 권한 저장
