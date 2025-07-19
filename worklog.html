@@ -412,7 +412,13 @@
                         return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`;
                     }
                     
-                    const profileImage = currentUser.profileImage || generateDefaultAvatar(currentUser.name || 'User');
+                    const profileImage = currentUser.profileImage || currentUser.profile_image || generateDefaultAvatar(currentUser.name || 'User');
+                    console.log('🖼️ 프로필 이미지 설정:', {
+                        profileImage: currentUser.profileImage,
+                        profile_image: currentUser.profile_image,
+                        finalImage: profileImage
+                    });
+                    
                     profileContainer.innerHTML = `
                         <img src="${profileImage}" alt="프로필" 
                              style="width: 40px; height: 40px; border-radius: 50%; 

@@ -791,6 +791,8 @@ class DatabaseManager {
                 const userRole = currentUser.role;
                 
                 console.log('현재 사용자 권한:', userRole);
+                console.log('🔍 getClientCompanies - 전달받은 userId:', userId);
+                console.log('🔍 getClientCompanies - sessionStorage 사용자:', currentUser);
                 
                 // 마스터 관리자는 모든 업체를 볼 수 있음
                 if (userRole === 'master') {
@@ -819,12 +821,20 @@ class DatabaseManager {
                         query = query.eq('user_id', userRecord.id);
                     } else {
                         // 일반 사용자 (numeric ID)
+                        console.log('🔍 일반 사용자 쿼리 - userId:', userId, 'typeof:', typeof userId);
                         query = query.eq('user_id', userId);
                     }
                 }
             }
             
             const { data, error } = await query.order('company_name', { ascending: true });
+            
+            console.log('🔍 getClientCompanies 쿼리 결과:', {
+                userId: userId,
+                dataCount: data ? data.length : 0,
+                error: error,
+                data: data
+            });
             
             if (error) throw error;
             return data || [];

@@ -81,13 +81,21 @@ document.addEventListener('DOMContentLoaded', function() {
             let companies = [];
             
             // 데이터베이스에서 로그인한 사용자의 개인 업체 검색
-            if (window.db && window.db.client) {                
+            if (window.db && window.db.client) {
+                console.log('🔍 사용자 정보 확인:', {
+                    id: currentUser.id,
+                    name: currentUser.name,
+                    email: currentUser.email,
+                    role: currentUser.role
+                });
+                
                 if (region || companyName) {
                     companies = await window.db.searchClientCompanies(region, companyName, currentUser.id);
                 } else {
                     companies = await window.db.getClientCompanies(currentUser.id);
                 }
                 console.log(`${currentUser.name}님의 개인 검색 결과:`, companies.length, '개');
+                console.log('🏢 로드된 업체 목록:', companies);
             } else {
                 console.warn('데이터베이스 연결 없음');
             }
@@ -123,8 +131,16 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // 데이터베이스에서 로그인한 사용자의 개인 업체 목록만 가져오기
             if (window.db && window.db.client) {
+                console.log('🔍 loadCompanies - 사용자 정보 확인:', {
+                    id: currentUser.id,
+                    name: currentUser.name,
+                    email: currentUser.email,
+                    role: currentUser.role
+                });
+                
                 companies = await window.db.getClientCompanies(currentUser.id);
                 console.log(`${currentUser.name}님의 개인 업체 목록 로드됨:`, companies.length, '개');
+                console.log('🏢 loadCompanies - 로드된 업체 목록:', companies);
             } else {
                 console.warn('데이터베이스 연결 없음');
             }
