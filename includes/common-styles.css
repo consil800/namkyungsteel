@@ -177,10 +177,15 @@ body {
 
 .footer-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: 1fr 1fr 1fr 1.2fr;
     gap: 30px;
     max-width: 1200px;
     margin: 0 auto;
+}
+
+/* 고객지원과 연락처 사이 간격 늘리기 */
+.footer-column:nth-child(3) {
+    margin-right: 20px;
 }
 
 .footer-column h3,
