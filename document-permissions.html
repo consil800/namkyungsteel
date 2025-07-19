@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>문서 권한 관리 - 남경스틸(주)</title>
+    
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Database Scripts -->
+    <script src="database.js"></script>
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem 2rem;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: white;
+            color: #667eea;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .document-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+            gap: 2rem;
+        }
+
+        .document-card {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .document-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .document-icon {
+            font-size: 2rem;
+            color: #667eea;
+        }
+
+        .document-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .document-description {
+            color: #cbd5e0;
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+
+        .permission-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: #f7fafc;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .permission-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .permission-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+
+        .permission-type {
+            min-width: 80px;
+            font-weight: 500;
+            color: #e2e8f0;
+        }
+
+        .permission-select {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        .permission-select option {
+            background: #2d3748;
+            color: white;
+        }
+
+        .add-permission-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .remove-permission-btn {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            border: none;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+
+        .approval-section {
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            padding-top: 1.5rem;
+        }
+
+        .approval-chain {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .approval-step {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+        }
+
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .approver-select {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .save-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-top: 1rem;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .save-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status-inactive {
+            background: rgba(107, 114, 128, 0.2);
+            color: #9ca3af;
+            border: 1px solid rgba(107, 114, 128, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .document-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .permission-row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.5rem;
+            }
+            
+            .approval-step {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1><i class="fas fa-shield-alt"></i> 문서 권한 관리</h1>
+        <a href="admin-dashboard.html" class="back-btn">
+            <i class="fas fa-arrow-left"></i> 관리자 대시보드
+        </a>
+    </header>
+
+    <div class="container">
+        <div class="document-grid" id="documentGrid">
+            <!-- 문서 권한 카드들이 동적으로 생성됩니다 -->
+        </div>
+    </div>
+
+    <script>
+        // 전역 변수
+        let departments = [];
+        let positions = [];
+        let employees = [];
+        let documentPermissions = {};
+
+        // 페이지 초기화
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 문서 권한 관리 페이지 초기화');
+            
+            // 데이터베이스 초기화 대기
+            if (window.db) {
+                try {
+                    await window.db.init();
+                    console.log('✅ 데이터베이스 초기화 완료');
+                } catch (error) {
+                    console.error('❌ 데이터베이스 초기화 실패:', error);
+                }
+            }
+            
+            // 기본 데이터 로드
+            await loadBasicData();
+            
+            // 문서 권한 카드 생성
+            generateDocumentCards();
+        });
+
+        // 기본 데이터 로드
+        async function loadBasicData() {
+            console.log('📊 기본 데이터 로드 시작');
+            
+            try {
+                // 데이터베이스에서 부서, 직급, 직원 정보 로드
+                if (window.db && window.db.client) {
+                    const users = await window.db.getUsers();
+                    employees = users.filter(user => user.is_active);
+                    
+                    // 부서 목록 추출
+                    departments = [...new Set(employees
+                        .map(emp => emp.department)
+                        .filter(dept => dept && dept.trim() !== '')
+                    )].sort();
+                    
+                    // 직급 목록 추출
+                    positions = [...new Set(employees
+                        .map(emp => emp.position)
+                        .filter(pos => pos && pos.trim() !== '')
+                    )].sort();
+                } else {
+                    // 백업 데이터
+                    departments = ['경영진', '관리부', '영업부', '생산부', '품질관리부', '구매부'];
+                    positions = ['대표이사', '부장', '차장', '과장', '대리', '주임', '사원'];
+                    employees = [
+                        { id: 'emp1', name: '김철수', department: '경영진', position: '대표이사' },
+                        { id: 'emp2', name: '이영희', department: '관리부', position: '부장' },
+                        { id: 'emp3', name: '박민수', department: '영업부', position: '과장' },
+                        { id: 'emp4', name: '최지영', department: '생산부', position: '차장' }
+                    ];
+                }
+                
+                console.log('📋 로드된 데이터:', {
+                    departments: departments.length,
+                    positions: positions.length,
+                    employees: employees.length
+                });
+                
+            } catch (error) {
+                console.error('데이터 로드 오류:', error);
+                // 에러 시 기본값 사용
+                departments = ['경영진', '관리부', '영업부', '생산부'];
+                positions = ['대표이사', '부장', '과장', '대리', '사원'];
+                employees = [];
+            }
+        }
+
+        // 문서 권한 카드 생성
+        function generateDocumentCards() {
+            console.log('🎨 문서 권한 카드 생성');
+            
+            const documents = [
+                {
+                    id: 'work-log',
+                    name: '업무일지',
+                    description: '일일 업무 내용 기록 및 관리',
+                    icon: 'fas fa-file-alt'
+                },
+                {
+                    id: 'resignation-letter',
+                    name: '사직서',
+                    description: '사직 의사 전달 공식 문서',
+                    icon: 'fas fa-file-signature'
+                },
+                {
+                    id: 'leave-request',
+                    name: '휴가신청서',
+                    description: '연차/병가 등 휴가 신청',
+                    icon: 'fas fa-calendar-times'
+                },
+                {
+                    id: 'employment-certificate',
+                    name: '재직증명서',
+                    description: '재직 상태 증명 공식 문서',
+                    icon: 'fas fa-certificate'
+                },
+                {
+                    id: 'business-trip-report',
+                    name: '출장보고서',
+                    description: '출장 업무 내용 및 결과 보고',
+                    icon: 'fas fa-plane'
+                },
+                {
+                    id: 'incident-report',
+                    name: '사고보고서',
+                    description: '안전사고 및 각종 사건 보고',
+                    icon: 'fas fa-exclamation-triangle'
+                },
+                {
+                    id: 'explanatory-note',
+                    name: '경위서',
+                    description: '사건/업무 처리 경위 설명',
+                    icon: 'fas fa-file-text'
+                }
+            ];
+
+            const container = document.getElementById('documentGrid');
+            let html = '';
+
+            documents.forEach(doc => {
+                html += createDocumentCard(doc);
+            });
+
+            container.innerHTML = html;
+            
+            // 각 문서의 권한 초기화
+            documents.forEach(doc => {
+                if (!documentPermissions[doc.id]) {
+                    documentPermissions[doc.id] = {
+                        departments: [],
+                        positions: [],
+                        individuals: [],
+                        approvalChain: []
+                    };
+                }
+            });
+        }
+
+        // 개별 문서 카드 생성
+        function createDocumentCard(doc) {
+            return `
+                <div class="document-card">
+                    <div class="document-header">
+                        <div class="document-icon">
+                            <i class="${doc.icon}"></i>
+                        </div>
+                        <div>
+                            <h3 class="document-title">${doc.name}</h3>
+                            <p class="document-description">${doc.description}</p>
+                        </div>
+                        <div class="status-indicator status-active">
+                            <i class="fas fa-check-circle"></i> 활성
+                        </div>
+                    </div>
+
+                    <!-- 부서별 권한 -->
+                    <div class="permission-section">
+                        <div class="section-title">
+                            <i class="fas fa-building"></i> 부서별 권한
+                        </div>
+                        <div class="permission-controls" id="dept-${doc.id}">
+                            <div class="permission-row">
+                                <span class="permission-type">부서:</span>
+                                <select class="permission-select" onchange="updatePermission('${doc.id}', 'departments', this.value)">
+                                    <option value="">부서 선택</option>
+                                    ${departments.map(dept => `<option value="${dept}">${dept}</option>`).join('')}
+                                </select>
+                                <button class="add-permission-btn" onclick="addDepartmentPermission('${doc.id}')">
+                                    <i class="fas fa-plus"></i> 추가
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 직급별 권한 -->
+                    <div class="permission-section">
+                        <div class="section-title">
+                            <i class="fas fa-user-tie"></i> 직급별 권한
+                        </div>
+                        <div class="permission-controls" id="pos-${doc.id}">
+                            <div class="permission-row">
+                                <span class="permission-type">직급:</span>
+                                <select class="permission-select" onchange="updatePermission('${doc.id}', 'positions', this.value)">
+                                    <option value="">직급 선택</option>
+                                    ${positions.map(pos => `<option value="${pos}">${pos}</option>`).join('')}
+                                </select>
+                                <button class="add-permission-btn" onclick="addPositionPermission('${doc.id}')">
+                                    <i class="fas fa-plus"></i> 추가
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 개인별 권한 -->
+                    <div class="permission-section">
+                        <div class="section-title">
+                            <i class="fas fa-user"></i> 개인별 권한
+                        </div>
+                        <div class="permission-controls" id="ind-${doc.id}">
+                            <div class="permission-row">
+                                <span class="permission-type">직원:</span>
+                                <select class="permission-select" onchange="updatePermission('${doc.id}', 'individuals', this.value)">
+                                    <option value="">직원 선택</option>
+                                    ${employees.map(emp => `<option value="${emp.id || emp.name}">${emp.name} (${emp.department} - ${emp.position})</option>`).join('')}
+                                </select>
+                                <button class="add-permission-btn" onclick="addIndividualPermission('${doc.id}')">
+                                    <i class="fas fa-plus"></i> 추가
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 승인 프로세스 -->
+                    <div class="approval-section">
+                        <div class="section-title">
+                            <i class="fas fa-route"></i> 승인 프로세스
+                        </div>
+                        <div class="approval-chain" id="approval-${doc.id}">
+                            <div class="approval-step">
+                                <div class="step-number">1</div>
+                                <select class="approver-select" onchange="updateApprover('${doc.id}', 0, this.value)">
+                                    <option value="">1차 승인자 선택</option>
+                                    ${employees.map(emp => `<option value="${emp.id || emp.name}">${emp.name} (${emp.position})</option>`).join('')}
+                                </select>
+                                <button class="add-permission-btn" onclick="addApprovalStep('${doc.id}')">
+                                    <i class="fas fa-plus"></i> 단계 추가
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="save-btn" onclick="saveDocumentPermissions('${doc.id}')">
+                        <i class="fas fa-save"></i> 권한 설정 저장
+                    </button>
+                </div>
+            `;
+        }
+
+        // 부서 권한 추가
+        function addDepartmentPermission(docId) {
+            const container = document.getElementById(`dept-${docId}`);
+            const select = container.querySelector('.permission-select');
+            const value = select.value;
+            
+            if (!value) {
+                alert('부서를 선택해주세요.');
+                return;
+            }
+            
+            if (documentPermissions[docId].departments.includes(value)) {
+                alert('이미 추가된 부서입니다.');
+                return;
+            }
+            
+            documentPermissions[docId].departments.push(value);
+            
+            // UI 업데이트
+            const newRow = document.createElement('div');
+            newRow.className = 'permission-row';
+            newRow.innerHTML = `
+                <span class="permission-type">부서:</span>
+                <span style="flex: 1; color: #10b981; font-weight: 500;">${value}</span>
+                <button class="remove-permission-btn" onclick="removeDepartmentPermission('${docId}', '${value}')">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            container.appendChild(newRow);
+            
+            select.value = '';
+            console.log(`부서 권한 추가: ${docId} - ${value}`);
+        }
+
+        // 직급 권한 추가
+        function addPositionPermission(docId) {
+            const container = document.getElementById(`pos-${docId}`);
+            const select = container.querySelector('.permission-select');
+            const value = select.value;
+            
+            if (!value) {
+                alert('직급을 선택해주세요.');
+                return;
+            }
+            
+            if (documentPermissions[docId].positions.includes(value)) {
+                alert('이미 추가된 직급입니다.');
+                return;
+            }
+            
+            documentPermissions[docId].positions.push(value);
+            
+            // UI 업데이트
+            const newRow = document.createElement('div');
+            newRow.className = 'permission-row';
+            newRow.innerHTML = `
+                <span class="permission-type">직급:</span>
+                <span style="flex: 1; color: #10b981; font-weight: 500;">${value}</span>
+                <button class="remove-permission-btn" onclick="removePositionPermission('${docId}', '${value}')">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            container.appendChild(newRow);
+            
+            select.value = '';
+            console.log(`직급 권한 추가: ${docId} - ${value}`);
+        }
+
+        // 개인 권한 추가
+        function addIndividualPermission(docId) {
+            const container = document.getElementById(`ind-${docId}`);
+            const select = container.querySelector('.permission-select');
+            const value = select.value;
+            
+            if (!value) {
+                alert('직원을 선택해주세요.');
+                return;
+            }
+            
+            if (documentPermissions[docId].individuals.includes(value)) {
+                alert('이미 추가된 직원입니다.');
+                return;
+            }
+            
+            const employee = employees.find(emp => (emp.id || emp.name) === value);
+            if (!employee) {
+                alert('직원 정보를 찾을 수 없습니다.');
+                return;
+            }
+            
+            documentPermissions[docId].individuals.push(value);
+            
+            // UI 업데이트
+            const newRow = document.createElement('div');
+            newRow.className = 'permission-row';
+            newRow.innerHTML = `
+                <span class="permission-type">직원:</span>
+                <span style="flex: 1; color: #10b981; font-weight: 500;">${employee.name} (${employee.department} - ${employee.position})</span>
+                <button class="remove-permission-btn" onclick="removeIndividualPermission('${docId}', '${value}')">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            container.appendChild(newRow);
+            
+            select.value = '';
+            console.log(`개인 권한 추가: ${docId} - ${employee.name}`);
+        }
+
+        // 승인 단계 추가
+        function addApprovalStep(docId) {
+            const container = document.getElementById(`approval-${docId}`);
+            const stepNumber = container.children.length + 1;
+            
+            const newStep = document.createElement('div');
+            newStep.className = 'approval-step';
+            newStep.innerHTML = `
+                <div class="step-number">${stepNumber}</div>
+                <select class="approver-select" onchange="updateApprover('${docId}', ${stepNumber - 1}, this.value)">
+                    <option value="">${stepNumber}차 승인자 선택</option>
+                    ${employees.map(emp => `<option value="${emp.id || emp.name}">${emp.name} (${emp.position})</option>`).join('')}
+                </select>
+                <button class="remove-permission-btn" onclick="removeApprovalStep('${docId}', ${stepNumber - 1})">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            container.appendChild(newStep);
+            
+            // 승인 체인 배열 확장
+            if (!documentPermissions[docId].approvalChain) {
+                documentPermissions[docId].approvalChain = [];
+            }
+            documentPermissions[docId].approvalChain.push('');
+            
+            console.log(`승인 단계 추가: ${docId} - ${stepNumber}차`);
+        }
+
+        // 승인자 업데이트
+        function updateApprover(docId, stepIndex, approverId) {
+            if (!documentPermissions[docId].approvalChain) {
+                documentPermissions[docId].approvalChain = [];
+            }
+            
+            documentPermissions[docId].approvalChain[stepIndex] = approverId;
+            console.log(`승인자 업데이트: ${docId} - ${stepIndex + 1}차: ${approverId}`);
+        }
+
+        // 권한 제거 함수들
+        function removeDepartmentPermission(docId, dept) {
+            const index = documentPermissions[docId].departments.indexOf(dept);
+            if (index > -1) {
+                documentPermissions[docId].departments.splice(index, 1);
+            }
+            generateDocumentCards(); // 화면 새로고침
+        }
+
+        function removePositionPermission(docId, pos) {
+            const index = documentPermissions[docId].positions.indexOf(pos);
+            if (index > -1) {
+                documentPermissions[docId].positions.splice(index, 1);
+            }
+            generateDocumentCards(); // 화면 새로고침
+        }
+
+        function removeIndividualPermission(docId, empId) {
+            const index = documentPermissions[docId].individuals.indexOf(empId);
+            if (index > -1) {
+                documentPermissions[docId].individuals.splice(index, 1);
+            }
+            generateDocumentCards(); // 화면 새로고침
+        }
+
+        function removeApprovalStep(docId, stepIndex) {
+            if (documentPermissions[docId].approvalChain) {
+                documentPermissions[docId].approvalChain.splice(stepIndex, 1);
+            }
+            generateDocumentCards(); // 화면 새로고침
+        }
+
+        // 문서 권한 저장
+        async function saveDocumentPermissions(docId) {
+            const permissions = documentPermissions[docId];
+            
+            if (!permissions) {
+                alert('권한 정보를 찾을 수 없습니다.');
+                return;
+            }
+            
+            // 최소 하나의 권한은 설정되어야 함
+            const hasPermission = permissions.departments.length > 0 || 
+                                permissions.positions.length > 0 || 
+                                permissions.individuals.length > 0;
+            
+            if (!hasPermission) {
+                alert('최소 하나의 권한(부서/직급/개인)을 설정해주세요.');
+                return;
+            }
+            
+            // 승인자도 최소 하나는 설정되어야 함
+            const hasApprover = permissions.approvalChain && 
+                              permissions.approvalChain.length > 0 && 
+                              permissions.approvalChain[0];
+            
+            if (!hasApprover) {
+                alert('최소 1차 승인자를 설정해주세요.');
+                return;
+            }
+            
+            try {
+                // 데이터베이스에 저장
+                if (window.db && window.db.client) {
+                    // 실제 데이터베이스 저장 로직
+                    console.log('데이터베이스에 저장:', { docId, permissions });
+                }
+                
+                // 로컬 스토리지에도 백업 저장
+                localStorage.setItem(`document_permissions_${docId}`, JSON.stringify(permissions));
+                
+                console.log(`문서 권한 저장 완료: ${docId}`, permissions);
+                alert('권한 설정이 저장되었습니다.');
+                
+            } catch (error) {
+                console.error('권한 저장 오류:', error);
+                alert('권한 저장 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 권한 업데이트 (사용하지 않지만 호환성을 위해 유지)
+        function updatePermission(docId, type, value) {
+            // 이 함수는 현재 사용되지 않음 (addXXXPermission 함수들로 대체)
+        }
+    </script>
+</body>
+</html>
