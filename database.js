@@ -393,67 +393,39 @@ class DatabaseManager {
             throw new Error('데이터베이스 연결이 필요합니다.');
         }
 
-        // work_logs 테이블이 없으므로 client_companies의 notes 필드를 활용하여 업무일지 저장
         try {
-            // 기존 업체 정보 가져오기
-            const { data: companies, error: fetchError } = await this.client
-                .from('client_companies')
-                .select('notes')
-                .eq('id', workLogData.company_id)
+            console.log('🔍 업무일지 생성 시작:', workLogData);
+            
+            // user_id가 숫자인 경우 문자열로 변환
+            const userId = workLogData.user_id ? workLogData.user_id.toString() : workLogData.userId?.toString();
+            
+            // work_logs 테이블에 직접 저장
+            const { data, error } = await this.client
+                .from('work_logs')
+                .insert({
+                    company_id: parseInt(workLogData.company_id),
+                    user_id: userId,
+                    visit_date: workLogData.visit_date,
+                    visit_purpose: workLogData.visit_purpose,
+                    meeting_person: workLogData.meeting_person || '',
+                    discussion_content: workLogData.discussion_content,
+                    next_action: workLogData.next_action || '',
+                    follow_up_date: workLogData.follow_up_date || null,
+                    additional_notes: workLogData.additional_notes || ''
+                })
+                .select()
                 .single();
             
-            if (fetchError) throw fetchError;
-            
-            // 기존 notes를 파싱하여 업무일지와 메모 분리
-            let workLogs = [];
-            let originalNotes = companies.notes || '';
-            
-            if (companies && companies.notes) {
-                try {
-                    const notesData = JSON.parse(companies.notes);
-                    if (notesData.workLogs && Array.isArray(notesData.workLogs)) {
-                        workLogs = notesData.workLogs;
-                        originalNotes = notesData.memo || '';
-                    }
-                } catch (e) {
-                    // 기존 notes가 JSON이 아닌 경우 원본 텍스트 보존
-                    originalNotes = companies.notes;
-                    workLogs = [];
-                }
+            if (error) {
+                console.error('❌ 업무일지 생성 오류:', error);
+                throw error;
             }
             
-            // 새 업무일지 추가
-            const newWorkLog = {
-                id: Date.now(), // 간단한 ID 생성
-                user_id: workLogData.user_id || workLogData.userId,
-                visit_date: workLogData.visit_date,
-                visit_purpose: workLogData.visit_purpose,
-                meeting_person: workLogData.meeting_person || '',
-                discussion_content: workLogData.discussion_content,
-                next_action: workLogData.next_action || '',
-                follow_up_date: workLogData.follow_up_date,
-                additional_notes: workLogData.additional_notes || '',
-                created_at: new Date().toISOString()
-            };
-            
-            workLogs.push(newWorkLog);
-            
-            // notes 필드에 업무일지와 메모를 함께 저장
-            const { data, error } = await this.client
-                .from('client_companies')
-                .update({
-                    notes: JSON.stringify({ 
-                        workLogs: workLogs,
-                        memo: originalNotes 
-                    })
-                })
-                .eq('id', workLogData.company_id)
-                .select();
-            
-            if (error) throw error;
-            return { success: true, data: newWorkLog };
+            console.log('✅ 업무일지 생성 성공:', data);
+            // 트리거가 자동으로 업체 방문 통계를 업데이트함
+            return { success: true, data: data };
         } catch (error) {
-            console.error('업무 일지 생성 오류:', error);
+            console.error('업무일지 생성 오류:', error);
             throw error;
         }
     }
@@ -465,39 +437,31 @@ class DatabaseManager {
         }
 
         try {
-            // client_companies의 notes 필드에서 업무일지 가져오기
-            const { data: companies, error } = await this.client
-                .from('client_companies')
-                .select('notes')
-                .eq('id', companyId)
-                .single();
+            console.log('🔍 업무일지 조회 시작 - companyId:', companyId, 'userId:', userId);
             
-            if (error) throw error;
+            // work_logs 테이블에서 직접 조회
+            let query = this.client
+                .from('work_logs')
+                .select('*')
+                .eq('company_id', parseInt(companyId));
             
-            let workLogs = [];
-            if (companies && companies.notes) {
-                try {
-                    const notesData = JSON.parse(companies.notes);
-                    if (notesData.workLogs && Array.isArray(notesData.workLogs)) {
-                        workLogs = notesData.workLogs;
-                        
-                        // userId가 제공된 경우 해당 사용자의 업무일지만 필터링
-                        if (userId) {
-                            workLogs = workLogs.filter(log => log.user_id === userId);
-                        }
-                        
-                        // 날짜순 정렬 (최신순)
-                        workLogs.sort((a, b) => new Date(b.visit_date) - new Date(a.visit_date));
-                    }
-                } catch (e) {
-                    console.error('업무일지 파싱 오류:', e);
-                    workLogs = [];
-                }
+            // userId가 제공된 경우 해당 사용자의 업무일지만 필터링
+            if (userId) {
+                query = query.eq('user_id', userId.toString());
             }
             
-            return workLogs;
+            // 날짜순 정렬 (최신순)
+            const { data: workLogs, error } = await query.order('visit_date', { ascending: false });
+            
+            if (error) {
+                console.error('❌ 업무일지 조회 오류:', error);
+                throw error;
+            }
+            
+            console.log('✅ 업무일지 조회 성공:', workLogs?.length || 0, '개');
+            return workLogs || [];
         } catch (error) {
-            console.error('업체별 업무 일지 조회 오류:', error);
+            console.error('업체별 업무일지 조회 오류:', error);
             throw error;
         }
     }
@@ -509,60 +473,66 @@ class DatabaseManager {
         }
 
         try {
-            // 기존 업체 정보 가져오기
-            const { data: companies, error: fetchError } = await this.client
-                .from('client_companies')
-                .select('notes, visit_count, last_visit_date')
-                .eq('id', companyId)
-                .single();
+            console.log('🔍 업무일지 삭제 시작 - companyId:', companyId, 'workLogId:', workLogId);
+            
+            // work_logs 테이블에서 직접 삭제
+            const { data, error } = await this.client
+                .from('work_logs')
+                .delete()
+                .eq('id', parseInt(workLogId))
+                .eq('company_id', parseInt(companyId))
+                .select();
+            
+            if (error) {
+                console.error('❌ 업무일지 삭제 오류:', error);
+                throw error;
+            }
+            
+            console.log('✅ 업무일지 삭제 성공:', data);
+            // 트리거가 자동으로 업체 방문 통계를 업데이트함
+            return { success: true, data: data };
+        } catch (error) {
+            console.error('업무일지 삭제 오류:', error);
+            throw error;
+        }
+    }
+
+    // 업체의 방문 통계 업데이트
+    async updateCompanyVisitStats(companyId) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            // 해당 업체의 모든 업무일지 가져오기
+            const { data: workLogs, error: fetchError } = await this.client
+                .from('work_logs')
+                .select('visit_date')
+                .eq('company_id', parseInt(companyId))
+                .order('visit_date', { ascending: false });
             
             if (fetchError) throw fetchError;
             
-            let workLogs = [];
-            let originalMemo = '';
+            // 방문횟수와 최근 방문일 계산
+            const visitCount = workLogs ? workLogs.length : 0;
+            const lastVisitDate = workLogs && workLogs.length > 0 ? workLogs[0].visit_date : null;
             
-            if (companies && companies.notes) {
-                try {
-                    const notesData = JSON.parse(companies.notes);
-                    if (notesData.workLogs && Array.isArray(notesData.workLogs)) {
-                        // 삭제할 업무일지를 제외한 나머지만 필터링
-                        workLogs = notesData.workLogs.filter(log => log.id !== workLogId);
-                        originalMemo = notesData.memo || '';
-                    }
-                } catch (e) {
-                    console.error('업무일지 파싱 오류:', e);
-                    throw new Error('업무일지 데이터를 읽을 수 없습니다.');
-                }
-            }
-            
-            // 방문횟수를 남은 업무일지 개수로 설정
-            const newVisitCount = workLogs.length;
-            
-            // 최근 방문일 재계산 (남은 업무일지 중 가장 최근 날짜)
-            let newLastVisitDate = null;
-            if (workLogs.length > 0) {
-                const sortedLogs = workLogs.sort((a, b) => new Date(b.visit_date) - new Date(a.visit_date));
-                newLastVisitDate = sortedLogs[0].visit_date;
-            }
-            
-            // notes 필드와 방문 정보 업데이트
+            // client_companies 테이블 업데이트
             const { data, error } = await this.client
                 .from('client_companies')
                 .update({
-                    notes: JSON.stringify({ 
-                        workLogs: workLogs,
-                        memo: originalMemo 
-                    }),
-                    visit_count: newVisitCount,
-                    last_visit_date: newLastVisitDate
+                    visit_count: visitCount,
+                    last_visit_date: lastVisitDate
                 })
-                .eq('id', companyId)
+                .eq('id', parseInt(companyId))
                 .select();
             
             if (error) throw error;
-            return { success: true };
+            
+            console.log('✅ 업체 방문 통계 업데이트 완료:', { visitCount, lastVisitDate });
+            return { success: true, visitCount, lastVisitDate };
         } catch (error) {
-            console.error('업무 일지 삭제 오류:', error);
+            console.error('업체 방문 통계 업데이트 오류:', error);
             throw error;
         }
     }

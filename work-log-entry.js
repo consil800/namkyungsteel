@@ -223,9 +223,7 @@ function initEventListeners() {
                 console.log('저장 결과:', result);
                 
                 if (result.success) {
-                    // 업체의 방문횟수 증가 및 최근방문일 업데이트
-                    await updateCompanyVisitInfo(companyId, workLogData.visit_date);
-                    
+                    // 트리거가 자동으로 업체 방문 통계를 업데이트함
                     alert('업무일지가 성공적으로 저장되었습니다.');
                     // 업체 상세 페이지로 돌아가기
                     window.location.href = `company-detail.html?id=${companyId}`;
@@ -263,25 +261,7 @@ function initEventListeners() {
     }
 }
 
-// 업체 방문 정보 업데이트
-async function updateCompanyVisitInfo(companyId, visitDate) {
-    try {
-        console.log('업체 방문 정보 업데이트 시작:', companyId, visitDate);
-        
-        // 현재 방문횟수 가져오기
-        const currentVisitCount = currentCompany.visit_count || 0;
-        
-        // 업체 정보 업데이트
-        const updateData = {
-            visit_count: currentVisitCount + 1,
-            last_visit_date: visitDate
-        };
-        
-        const result = await window.db.updateClientCompany(companyId, updateData);
-        console.log('업체 방문 정보 업데이트 결과:', result);
-        
-    } catch (error) {
-        console.error('업체 방문 정보 업데이트 오류:', error);
-        // 에러가 발생해도 업무일지 저장은 성공했으므로 사용자에게는 알리지 않음
-    }
-}
+// 업체 방문 정보 업데이트 (더 이상 필요 없음 - 트리거가 자동 처리)
+// async function updateCompanyVisitInfo(companyId, visitDate) {
+//     // 트리거가 자동으로 처리하므로 이 함수는 더 이상 필요하지 않음
+// }
