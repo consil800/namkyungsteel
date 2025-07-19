@@ -291,6 +291,83 @@
     <script src="shared-assets/js/auth.js?v=20250107"></script>
     <script src="main.js?v=20250107"></script>
     <script>
+        // 데이터베이스에서 현재 사용자 정보 가져오기 (employee-dashboard.html과 동일한 로직)
+        async function getCurrentUserFromDB() {
+            try {
+                console.log('🔍 getCurrentUserFromDB 시작');
+                
+                if (!window.db) {
+                    console.warn('⚠️ 데이터베이스가 초기화되지 않음');
+                    return null;
+                }
+                
+                await window.db.init();
+                console.log('✅ 데이터베이스 초기화 완료');
+                
+                // 세션 스토리지에서 로그인 정보 가져오기
+                const loginInfo = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+                console.log('📋 세션 스토리지 로그인 정보:', loginInfo);
+                
+                if (!loginInfo || (!loginInfo.email && !loginInfo.id)) {
+                    console.error('❌ 로그인 정보가 없습니다.');
+                    return null;
+                }
+                
+                // Supabase users 테이블에서 최신 사용자 정보 조회 (이메일 또는 ID로)
+                let user, error;
+                if (loginInfo.email && loginInfo.email !== 'null') {
+                    // 이메일로 조회 (Google 로그인)
+                    console.log('🔍 이메일로 사용자 조회:', loginInfo.email);
+                    const result = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .eq('email', loginInfo.email)
+                        .single();
+                    user = result.data;
+                    error = result.error;
+                    console.log('📊 이메일 조회 결과:', { user, error });
+                } else if (loginInfo.id) {
+                    // ID로 조회 (카카오 로그인에서 이메일이 없는 경우)
+                    console.log('🔍 ID로 사용자 조회:', loginInfo.id);
+                    const result = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .eq('id', loginInfo.id)
+                        .single();
+                    user = result.data;
+                    error = result.error;
+                    console.log('📊 ID 조회 결과:', { user, error });
+                }
+                
+                if (error) {
+                    console.error('❌ 사용자 정보 조회 오류:', error);
+                    return null;
+                }
+                
+                if (!user) {
+                    console.error('❌ 사용자를 찾을 수 없습니다');
+                    return null;
+                }
+                
+                console.log('✅ 사용자 정보 조회 성공:', user);
+                
+                // 업데이트된 사용자 정보를 sessionStorage에 저장
+                const updatedUser = {
+                    ...user,
+                    permissions: AuthManager.ROLE_PERMISSIONS[user.role] || AuthManager.ROLE_PERMISSIONS['employee']
+                };
+                sessionStorage.setItem('currentUser', JSON.stringify(updatedUser));
+                sessionStorage.setItem('userRole', user.role);
+                sessionStorage.setItem('userName', user.name);
+                console.log('✅ sessionStorage 업데이트 완료:', updatedUser);
+                
+                return user;
+            } catch (error) {
+                console.error('❌ getCurrentUserFromDB 오류:', error);
+                return null;
+            }
+        }
+        
         // 페이지 로드 시 사용자 정보 표시 및 지역 드롭다운 로드
         window.addEventListener('DOMContentLoaded', async function() {
             // 데이터베이스 초기화 대기
@@ -305,8 +382,15 @@
             
             console.log('데이터베이스 초기화 상태:', !!window.db, !!window.db?.client);
             
-            // 현재 로그인한 사용자 정보 가져오기
-            const currentUser = AuthManager.getCurrentUser();
+            // 현재 로그인한 사용자 정보 가져오기 (데이터베이스에서 최신 정보)
+            let currentUser = await getCurrentUserFromDB();
+            console.log('🧪 getCurrentUserFromDB에서 가져온 사용자 정보:', currentUser);
+            
+            // 데이터베이스에서 사용자를 찾지 못한 경우 AuthManager 확인
+            if (!currentUser) {
+                currentUser = AuthManager.getCurrentUser();
+                console.log('🧪 AuthManager에서 가져온 사용자 정보:', currentUser);
+            }
             
             if (currentUser) {
                 // 사용자 이름 표시
