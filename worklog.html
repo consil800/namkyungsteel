@@ -317,13 +317,15 @@
                 if (profileContainer) {
                     // 기본 아바타 생성 함수
                     function generateDefaultAvatar(name) {
+                        // 한글 문자 처리를 위해 encodeURIComponent 사용
                         const initials = name ? name.charAt(0).toUpperCase() : '?';
-                        return `data:image/svg+xml;base64,${btoa(`
+                        const svgString = `
                             <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <circle cx="20" cy="20" r="20" fill="#667eea"/>
                                 <text x="20" y="26" font-family="Arial" font-size="18" fill="white" text-anchor="middle">${initials}</text>
                             </svg>
-                        `)}`;
+                        `;
+                        return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`;
                     }
                     
                     const profileImage = currentUser.profileImage || generateDefaultAvatar(currentUser.name || 'User');

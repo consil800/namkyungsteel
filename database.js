@@ -786,26 +786,41 @@ class DatabaseManager {
             let query = this.client.from('client_companies').select('*');
             
             if (userId) {
-                // UUID 형식인지 확인 (OAuth 사용자)
-                const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+                // 사용자 권한 확인
+                const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+                const userRole = currentUser.role;
                 
-                if (isUUID) {
-                    // OAuth 사용자의 경우 users 테이블에서 numeric ID 찾기
-                    const { data: userRecord, error: userError } = await this.client
-                        .from('users')
-                        .select('id')
-                        .eq('oauth_id', userId)
-                        .single();
-                    
-                    if (userError || !userRecord) {
-                        console.log('OAuth 사용자의 numeric ID를 찾을 수 없음, 빈 결과 반환');
-                        return [];
-                    }
-                    
-                    query = query.eq('user_id', userRecord.id);
+                console.log('현재 사용자 권한:', userRole);
+                
+                // 마스터 관리자는 모든 업체를 볼 수 있음
+                if (userRole === 'master') {
+                    console.log('마스터 관리자 권한으로 모든 업체 데이터 로드');
+                    // 마스터 관리자는 모든 업체 볼 수 있음
                 } else {
-                    // 일반 사용자 (numeric ID)
-                    query = query.eq('user_id', userId);
+                    // 일반 사용자는 자신이 등록한 업체만
+                    console.log('일반 사용자 권한으로 개인 업체만 로드');
+                    
+                    // UUID 형식인지 확인 (OAuth 사용자)
+                    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+                    
+                    if (isUUID) {
+                        // OAuth 사용자의 경우 users 테이블에서 numeric ID 찾기
+                        const { data: userRecord, error: userError } = await this.client
+                            .from('users')
+                            .select('id')
+                            .eq('oauth_id', userId)
+                            .single();
+                        
+                        if (userError || !userRecord) {
+                            console.log('OAuth 사용자의 numeric ID를 찾을 수 없음, 빈 결과 반환');
+                            return [];
+                        }
+                        
+                        query = query.eq('user_id', userRecord.id);
+                    } else {
+                        // 일반 사용자 (numeric ID)
+                        query = query.eq('user_id', userId);
+                    }
                 }
             }
             
