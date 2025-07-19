@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>열연강판 - 남경스틸(주)</title>
+  <meta name="description" content="남경스틸(주)의 고품질 열연강판 제조 서비스">
+  <meta name="keywords" content="철강, 열연강판, 자동차, 건설, 조선">
+
+  <!-- Favicons -->
+  <link href="logo.jpg" rel="icon">
+  <link href="logo.jpg" rel="apple-touch-icon">
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com" rel="preconnect">
+  <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
+
+  <!-- Vendor CSS Files -->
+  <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+  <link href="assets/vendor/aos/aos.css" rel="stylesheet">
+  <link href="assets/vendor/swiper/swiper-bundle.min.css" rel="stylesheet">
+
+  <!-- Main CSS File -->
+  <link href="assets/css/main.css" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'Noto Sans KR', sans-serif !important; }
+    .login-btn { 
+      background: #0066cc; 
+      color: white; 
+      padding: 8px 20px; 
+      border-radius: 5px; 
+      margin-left: 25px;
+      text-decoration: none;
+      transition: all 0.3s;
+    }
+    .login-btn:hover { 
+      background: #0052a3; 
+      color: white;
+    }
+    
+    /* 사용자 프로필 스타일 */
+    .user-profile {
+      margin-left: 25px;
+    }
+    
+    .profile-icon {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      padding: 5px 10px;
+      border-radius: 25px;
+    }
+    
+    .profile-icon:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .profile-icon img {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #fff;
+      margin-right: 8px;
+    }
+    
+    .profile-name {
+      color: #2c3e50;
+      font-weight: 500;
+      font-size: 14px;
+    }
+    
+    /* 🎯 NAVIGATION MENU FIXES */
+    .navmenu ul {
+      display: flex;
+      align-items: center;
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .navmenu > ul > li {
+      white-space: nowrap;
+      padding: 15px 16px; /* 균등한 간격 */
+      position: relative;
+    }
+    
+    .navmenu a {
+      color: var(--nav-color, #2c3e50);
+      padding: 12px 0;
+      font-size: 15px;
+      font-family: var(--nav-font);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      white-space: nowrap;
+      transition: 0.3s;
+      position: relative;
+    }
+    
+    .navmenu a i,
+    .navmenu a .bi {
+      font-size: 12px;
+      line-height: 0;
+      margin-left: 5px;
+      transition: 0.3s;
+    }
+    
+    .navmenu > ul > li > a:before {
+      content: "";
+      position: absolute;
+      width: 100%;
+      height: 2px;
+      bottom: -6px;
+      left: 0;
+      background-color: var(--nav-hover-color);
+      visibility: hidden;
+      transform: scaleX(0);
+      transition: all 0.3s ease-in-out 0s;
+    }
+    
+    .navmenu a:hover:before,
+    .navmenu li:hover > a:before,
+    .navmenu .active:before {
+      visibility: visible;
+      transform: scaleX(1);
+    }
+    
+    .navmenu a:hover,
+    .navmenu .active,
+    .navmenu .active:focus,
+    .navmenu li:hover > a {
+      color: var(--nav-hover-color);
+    }
+    
+    .navmenu .dropdown ul {
+      margin: 0;
+      padding: 10px 0;
+      background: #ffffff;
+      display: block;
+      position: absolute;
+      visibility: hidden;
+      left: 14px;
+      top: 130%;
+      opacity: 0;
+      transition: 0.3s;
+      border-radius: 4px;
+      z-index: 99;
+      box-shadow: 0px 0px 30px rgba(127, 137, 161, 0.25);
+    }
+    
+    .navmenu .dropdown ul li {
+      min-width: 200px;
+    }
+    
+    .navmenu .dropdown ul a {
+      padding: 10px 20px;
+      font-size: 15px;
+      text-transform: none;
+      color: #2c3e50;
+    }
+    
+    .navmenu .dropdown ul a i {
+      font-size: 12px;
+    }
+    
+    .navmenu .dropdown ul a:hover,
+    .navmenu .dropdown ul .active:hover,
+    .navmenu .dropdown ul li:hover > a {
+      color: #3498db;
+      background-color: #f8f9fa;
+    }
+    
+    .navmenu .dropdown:hover > ul {
+      opacity: 1;
+      top: 100%;
+      visibility: visible;
+    }
+    
+    .navmenu .dropdown .dropdown ul {
+      top: 0;
+      left: -90%;
+      visibility: hidden;
+    }
+    
+    .navmenu .dropdown .dropdown:hover > ul {
+      opacity: 1;
+      top: 0;
+      left: -100%;
+      visibility: visible;
+    }
+    
+    .navmenu .dropdown ul a:hover {
+      color: #3498db;
+      background-color: #f8f9fa;
+    }
+    
+    /* 모바일 네비게이션에서도 드롭다운 처리 */
+    @media (max-width: 1199px) {
+      .navmenu .dropdown ul {
+        position: static;
+        display: none;
+        z-index: 99;
+        padding: 10px 0;
+        margin: 10px 20px;
+        background-color: #ffffff;
+        border: 1px solid #e9ecef;
+        box-shadow: none;
+        border-radius: 6px;
+      }
+      
+      .navmenu .dropdown.active > ul {
+        display: block;
+      }
+    }
+  </style>
+</head>
+
+<body class="service-details-page">
+
+  <header id="header" class="header d-flex align-items-center sticky-top">
+    <div class="container-fluid container-xl position-relative d-flex align-items-center">
+
+      <a href="index.html" class="logo d-flex align-items-center me-auto">
+        <h1 class="sitename">남경스틸(주)</h1>
+      </a>
+
+      <nav id="navmenu" class="navmenu">
+        <ul>
+          <li><a href="index.html">홈</a></li>
+          <li class="dropdown"><a href="index.html#about"><span>회사소개</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+            <ul>
+              <li><a href="ceo-message.html">CEO 인사말</a></li>
+              <li><a href="company-history.html">회사연혁</a></li>
+              <li><a href="vision-mission.html">비전/미션</a></li>
+              <li><a href="organization.html">조직도</a></li>
+              <li><a href="certificates.html">인증서</a></li>
+            </ul>
+          </li>
+          <li class="dropdown"><a href="index.html#services"><span>제품소개</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+            <ul>
+              <li><a href="service1-details.html">열연강판</a></li>
+              <li><a href="service2-details.html">냉연강판</a></li>
+              <li><a href="service3-details.html">특수강</a></li>
+              <li><a href="service4-details.html">맞춤 가공</a></li>
+            </ul>
+          </li>
+          <li class="dropdown"><a href="#"><span>사업영역</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+            <ul>
+              <li><a href="steel-manufacturing.html">철강제조</a></li>
+              <li><a href="processing-service.html">가공서비스</a></li>
+              <li><a href="tech-research.html">기술연구</a></li>
+            </ul>
+          </li>
+          <li class="dropdown"><a href="#"><span>고객센터</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+            <ul>
+              <li><a href="quote-inquiry.html">견적문의</a></li>
+              <li><a href="catalog.html">카탈로그</a></li>
+              <li><a href="faq.html">FAQ</a></li>
+              <li><a href="location.html">오시는길</a></li>
+              <li><a href="product-inquiry.html">제품문의</a></li>
+              <li><a href="technical-support.html">기술지원</a></li>
+            </ul>
+          </li>
+          <li class="dropdown"><a href="#"><span>홍보센터</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+            <ul>
+              <li><a href="notice.html">공지사항</a></li>
+              <li><a href="newsroom.html">뉴스룸</a></li>
+              <li><a href="media-materials.html">홍보자료</a></li>
+            </ul>
+          </li>
+        </ul>
+        <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+      </nav>
+
+      <!-- 로그인 전 버튼 -->
+      <a class="login-btn" href="login.html" id="mainLoginBtn">
+        <i class="bi bi-person-circle"></i> <span id="loginBtnText">로그인</span>
+      </a>
+      
+      <!-- 로그인 후 프로필 아이콘 -->
+      <div class="user-profile" id="userProfile" style="display: none;">
+        <div class="profile-icon" onclick="handleProfileClick()">
+          <img id="profileImage" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiM2NjdlZWEiLz4KPHN2ZyB4PSIyMCIgeT0iMjQiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPvCfkYQ8L3N2Zz4KPC9zdmc+" alt="프로필" />
+          <span class="profile-name" id="profileName">사용자</span>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <main class="main">
+
+    <!-- Page Title -->
+    <div class="page-title light-background">
+      <div class="container d-lg-flex justify-content-between align-items-center">
+        <h1 class="mb-2 mb-lg-0">열연강판</h1>
+      </div>
+    </div>
+
+    <!-- Service Details Section -->
+    <section id="service-details" class="service-details section">
+
+      <div class="container" data-aos="fade-up" data-aos-delay="100">
+
+        <div class="row gy-5">
+
+          <div class="col-lg-5">
+            <div class="service-sidebar">
+              <div class="service-list">
+                <h4>우리의 제품</h4>
+                <ul>
+                  <li><a href="service1-details.html" class="active"><i class="bi bi-arrow-right"></i> 열연강판</a></li>
+                  <li><a href="service2-details.html"><i class="bi bi-arrow-right"></i> 냉연강판</a></li>
+                  <li><a href="service3-details.html"><i class="bi bi-arrow-right"></i> 특수강</a></li>
+                  <li><a href="service4-details.html"><i class="bi bi-arrow-right"></i> 맞춤 가공</a></li>
+                </ul>
+              </div>
+
+              <div class="service-box">
+                <i class="bi bi-briefcase-fill"></i>
+                <h4>열연강판</h4>
+                <p>최첨단 설비와 12년 축적된 기술력으로 자동차, 건설, 조선 등 다양한 산업 분야에 최고 품질의 열연강판을 공급합니다.</p>
+              </div>
+
+              <div class="service-contact">
+                <h4>문의하기</h4>
+                <p>더 자세한 정보가 필요하시면 언제든 연락주세요.</p>
+                <div class="contact-info">
+                  <p><i class="bi bi-telephone"></i> 051-314-9701</p>
+                  <p><i class="bi bi-envelope"></i> namkyungst@naver.com</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-7">
+            <div class="service-item">
+              <img src="hot-coil.jpg" alt="열연강판" class="img-fluid">
+              
+              <h3>열연강판 제조 서비스</h3>
+              <p>
+                최첨단 설비와 40년 축적된 기술력으로 자동차, 건설, 조선 등 다양한 산업 분야에 최고 품질의 열연강판을 공급합니다. 
+                고강도, 고연성의 우수한 기계적 성질과 표면 품질 및 치수 정밀도를 보장합니다.
+              </p>
+
+              <div class="service-benefits">
+                <h4>주요 장점</h4>
+                <ul>
+                  <li><i class="bi bi-check-circle"></i> 고강도, 고연성의 우수한 기계적 성질</li>
+                  <li><i class="bi bi-check-circle"></i> 표면 품질 및 치수 정밀도 보장</li>
+                  <li><i class="bi bi-check-circle"></i> 다양한 산업 분야 적용 가능</li>
+                  <li><i class="bi bi-check-circle"></i> 친환경 생산 공정</li>
+                </ul>
+              </div>
+
+              <div class="service-content">
+                <h4>상세 정보</h4>
+                <p>열연강판은 고온에서 압연된 강판으로, 우수한 기계적 성질과 가공성을 가지고 있어 다양한 산업 분야에서 광범위하게 사용됩니다.</p>
+                
+                <h5>적용 분야</h5>
+                <ul>
+                  <li>자동차 차체 및 부품</li>
+                  <li>건설용 구조재</li>
+                  <li>조선업 선체 제작</li>
+                  <li>기계 부품 제조</li>
+                </ul>
+
+                <h5>기술 사양</h5>
+                <ul>
+                  <li>두께: 1.2mm ~ 25mm</li>
+                  <li>폭: 600mm ~ 2000mm</li>
+                  <li>항복강도: 235MPa ~ 690MPa</li>
+                  <li>인장강도: 360MPa ~ 780MPa</li>
+                </ul>
+              </div>
+
+              <div class="service-action">
+                <a href="index.html#contact" class="btn btn-primary">견적 요청</a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer id="footer" class="footer light-background">
+    <div class="container copyright text-center mt-4">
+      <p>&copy; 2025 <strong class="px-1 sitename">남경스틸(주)</strong> All Rights Reserved</p>
+    </div>
+  </footer>
+
+  <!-- Scroll Top -->
+  <a href="#" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+
+  <!-- Vendor JS Files -->
+  <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/vendor/aos/aos.js"></script>
+  <script src="assets/vendor/purecounter/purecounter_vanilla.js"></script>
+  <script src="assets/vendor/swiper/swiper-bundle.min.js"></script>
+
+  <!-- Main JS File -->
+  <script src="assets/js/main.js"></script>
+  
+  <!-- Authentication Scripts -->
+  <script src="shared-assets/js/auth.js"></script>
+  <script src="shared-assets/js/template-login.js"></script>
+  
+  <script>
+    // 프로필 클릭 함수
+    function handleProfileClick() {
+      const user = AuthManager.getCurrentUser();
+      if (user) {
+        AuthManager.redirectToAppropriatePanel();
+      }
+    }
+  </script>
+
+</body>
+
+</html>
