@@ -816,6 +816,32 @@
       const urlParams = new URLSearchParams(window.location.search);
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       
+      // 먼저 오류 확인
+      const error = urlParams.get('error') || hashParams.get('error');
+      const errorDescription = urlParams.get('error_description') || hashParams.get('error_description');
+      
+      if (error) {
+        console.error('❌ OAuth 오류:', error, errorDescription);
+        
+        // 오류 메시지 처리
+        let userMessage = '로그인 중 오류가 발생했습니다.';
+        if (errorDescription) {
+          if (errorDescription.includes('Database error granting user')) {
+            userMessage = '사용자 등록 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+            console.log('📝 Supabase 사용자 권한 오류 - RLS 정책 확인 필요');
+          } else {
+            userMessage = decodeURIComponent(errorDescription);
+          }
+        }
+        
+        // 오류 표시
+        alert(userMessage);
+        
+        // URL 정리
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return;
+      }
+      
       if (urlParams.get('code') || hashParams.get('access_token') || window.location.hash.includes('access_token')) {
         console.log('🔐 OAuth 콜백 감지됨');
         
@@ -824,6 +850,8 @@
           
           if (error && !error.message.includes('skew')) {
             console.error('❌ 세션 확인 오류:', error);
+            alert('로그인 처리 중 오류가 발생했습니다.');
+            window.history.replaceState({}, document.title, window.location.pathname);
             return;
           }
           
