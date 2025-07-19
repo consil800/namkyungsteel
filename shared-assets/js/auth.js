@@ -95,7 +95,7 @@ const AuthManager = {
 
     // 현재 사용자 정보 가져오기
     getCurrentUser() {
-        const userJson = localStorage.getItem('currentUser');
+        const userJson = sessionStorage.getItem('currentUser');
         if (!userJson) return null;
         
         try {
@@ -135,9 +135,9 @@ const AuthManager = {
                     permissions: this.ROLE_PERMISSIONS[user.role] || this.ROLE_PERMISSIONS['employee']
                 };
                 
-                localStorage.setItem('currentUser', JSON.stringify(userWithPermissions));
-                localStorage.setItem('userRole', user.role);
-                localStorage.setItem('userName', user.name);
+                sessionStorage.setItem('currentUser', JSON.stringify(userWithPermissions));
+                sessionStorage.setItem('userRole', user.role);
+                sessionStorage.setItem('userName', user.name);
                 
                 console.log('✅ AuthManager 로그인 성공:', userWithPermissions);
                 return { success: true, user: userWithPermissions };
@@ -336,13 +336,13 @@ const AuthManager = {
                         oauth_id: userId,
                         oauth_provider: provider,
                         name: userName,
-                        role: null, // 가입 시에는 role 없음, 승인 시 설정
+                        role: 'employee', // 기본 역할을 employee로 설정
                         company_domain: 'namkyungsteel.com',
                         company_name: '남경스틸(주)',
                         profile_image: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture,
                         password: 'oauth_user', // OAuth 사용자 표시
                         is_active: true,
-                        is_approved: false, // 새 사용자는 기본적으로 승인 대기 상태
+                        is_approved: true, // OAuth 사용자는 자동 승인
                         created_at: new Date().toISOString()
                     };
                     
@@ -355,12 +355,37 @@ const AuthManager = {
                     if (createError) {
                         console.error('❌ 사용자 생성 오류:', createError);
                         // 트리거가 이미 생성했을 수 있으므로 다시 조회
-                        const { data: retriedUser } = await window.db.client
-                            .from('users')
-                            .select('*')
-                            .eq('email', session.user.email)
-                            .single();
-                        dbUser = retriedUser;
+                        if (userEmail) {
+                            const { data: retriedUser } = await window.db.client
+                                .from('users')
+                                .select('*')
+                                .eq('email', userEmail)
+                                .single();
+                            dbUser = retriedUser;
+                        } else {
+                            const { data: retriedUser } = await window.db.client
+                                .from('users')
+                                .select('*')
+                                .eq('oauth_id', userId)
+                                .single();
+                            dbUser = retriedUser;
+                        }
+                        
+                        if (!dbUser) {
+                            // 여전히 사용자가 없다면 기본 정보로 진행
+                            console.log('⚠️ 사용자 생성 실패, 기본 정보로 진행');
+                            dbUser = {
+                                id: userId,
+                                email: userEmail,
+                                name: userName,
+                                role: 'employee',
+                                company_domain: 'namkyungsteel.com',
+                                company_name: '남경스틸(주)',
+                                profile_image: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture,
+                                is_approved: true,
+                                is_active: true
+                            };
+                        }
                     } else {
                         dbUser = createdUser;
                         
@@ -382,7 +407,7 @@ const AuthManager = {
                         };
                         
                         // 관리자용 알림 저장
-                        const notifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
+                        const notifications = JSON.parse(sessionStorage.getItem('admin_notifications') || '[]');
                         notifications.unshift(notification);
                         
                         // 최대 50개까지만 보관
@@ -390,7 +415,7 @@ const AuthManager = {
                             notifications.splice(50);
                         }
                         
-                        localStorage.setItem('admin_notifications', JSON.stringify(notifications));
+                        sessionStorage.setItem('admin_notifications', JSON.stringify(notifications));
                         console.log('📢 새 사용자 가입 알림 생성:', notification);
                     }
                 } else {
@@ -449,10 +474,10 @@ const AuthManager = {
                     permissions: this.ROLE_PERMISSIONS[dbUser?.role || 'employee']
                 };
                 
-                // 로컬 스토리지에 저장
-                localStorage.setItem('currentUser', JSON.stringify(user));
-                localStorage.setItem('userRole', user.role);
-                localStorage.setItem('userName', user.name);
+                // 세션 스토리지에 저장
+                sessionStorage.setItem('currentUser', JSON.stringify(user));
+                sessionStorage.setItem('userRole', user.role);
+                sessionStorage.setItem('userName', user.name);
                 
                 console.log('✅ OAuth 로그인 완료:', user);
                 return { success: true, user: user };
@@ -460,19 +485,25 @@ const AuthManager = {
             } catch (dbError) {
                 console.error('❌ 데이터베이스 작업 오류:', dbError);
                 // DB 오류가 있어도 기본 정보로 로그인 허용
+                const provider = session.user.app_metadata?.provider || 'unknown';
                 const user = {
                     id: session.user.id,
                     email: session.user.email,
-                    name: session.user.user_metadata?.name || session.user.email,
+                    name: session.user.user_metadata?.full_name || 
+                          session.user.user_metadata?.name || 
+                          session.user.email,
                     role: 'employee',
-                    profileImage: session.user.user_metadata?.avatar_url,
-                    provider: 'google',
+                    company_domain: 'namkyungsteel.com',
+                    company_name: '남경스틸(주)',
+                    profileImage: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture,
+                    provider: provider,
+                    is_approved: true,
                     permissions: this.ROLE_PERMISSIONS['employee']
                 };
                 
-                localStorage.setItem('currentUser', JSON.stringify(user));
-                localStorage.setItem('userRole', user.role);
-                localStorage.setItem('userName', user.name);
+                sessionStorage.setItem('currentUser', JSON.stringify(user));
+                sessionStorage.setItem('userRole', user.role);
+                sessionStorage.setItem('userName', user.name);
                 
                 return { success: true, user: user };
             }
@@ -485,9 +516,9 @@ const AuthManager = {
 
     // 로그아웃
     logout() {
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('userName');
+        sessionStorage.removeItem('currentUser');
+        sessionStorage.removeItem('userRole');
+        sessionStorage.removeItem('userName');
         window.location.href = '../../1-homepage/templates/index.html';
     },
 
