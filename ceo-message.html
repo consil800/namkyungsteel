@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CEO 인사말 - 남경스틸(주)</title>
+    <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+    <link href="assets/css/main.css" rel="stylesheet">
+    
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif !important; }
+        
+        /* Header Styles from index.html */
+        .header {
+            background-color: #ffffff !important;
+            box-shadow: 0 2px 15px rgba(0, 102, 204, 0.08) !important;
+            border-bottom: 1px solid #e9ecef !important;
+            backdrop-filter: blur(10px) !important;
+        }
+        
+        .header .sitename {
+            color: #1a365d !important;
+        }
+        
+        .navmenu a {
+            color: #2c3e50 !important;
+        }
+        
+        .navmenu a:hover {
+            color: #0066cc !important;
+        }
+        
+        .navmenu .active {
+            color: #0066cc !important;
+            font-weight: 600 !important;
+        }
+        
+        /* Login Button Styles */
+        .login-btn { 
+            background: #0066cc; 
+            color: white; 
+            padding: 8px 20px; 
+            border-radius: 5px; 
+            margin-left: 25px;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .login-btn:hover { 
+            background: #0052a3; 
+            color: white;
+        }
+        
+        /* User Profile Styles */
+        .user-profile {
+            margin-left: 25px;
+        }
+        
+        .profile-icon {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 5px 10px;
+            border-radius: 25px;
+        }
+        
+        .profile-icon:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .profile-icon img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #fff;
+            margin-right: 8px;
+        }
+        
+        .profile-name {
+            color: #2c3e50;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        /* Navigation Dropdown Styles */
+        .navmenu ul {
+            display: flex;
+            align-items: center;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .navmenu > ul > li {
+            white-space: nowrap;
+            padding: 15px 16px;
+            position: relative;
+        }
+        
+        .navmenu a {
+            color: #2c3e50;
+            padding: 12px 0;
+            font-size: 16px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            white-space: nowrap;
+            transition: 0.3s;
+            text-decoration: none;
+        }
+        
+        .navmenu .dropdown ul {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            z-index: 99;
+            background-color: #ffffff;
+            box-shadow: 0px 0px 30px rgba(44, 62, 80, 0.15);
+            padding: 10px 0;
+            border-radius: 6px;
+            min-width: 180px;
+            flex-direction: column;
+        }
+        
+        .navmenu .dropdown:hover > ul {
+            display: flex;
+        }
+        
+        .navmenu .dropdown ul li {
+            padding: 0;
+            width: 100%;
+        }
+        
+        .navmenu .dropdown ul a {
+            padding: 10px 20px;
+            font-size: 15px;
+            color: #2c3e50;
+            border: none;
+            width: 100%;
+            justify-content: flex-start;
+        }
+        
+        .navmenu .dropdown ul a:hover {
+            color: #3498db;
+            background-color: #f8f9fa;
+        }
+        
+        .toggle-dropdown {
+            margin-left: 5px;
+        }
+        
+        @media (max-width: 1199px) {
+            .navmenu .dropdown ul {
+                position: static;
+                display: none;
+                z-index: 99;
+                padding: 10px 0;
+                margin: 10px 20px;
+                background-color: #ffffff;
+                border: 1px solid #e9ecef;
+                box-shadow: none;
+                border-radius: 6px;
+            }
+            
+            .navmenu .dropdown.active > ul {
+                display: flex;
+            }
+        }
+        
+        /* Footer Styles from homepage */
+        .footer {
+            background-color: #2d3748;
+            color: #ffffff;
+        }
+        
+        .footer-top {
+            padding: 60px 0 40px;
+        }
+        
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+        }
+        
+        .footer-column h3,
+        .footer-column h4 {
+            margin-bottom: 20px;
+            color: #ffffff;
+            font-weight: 600;
+        }
+        
+        .footer-column ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .footer-column ul li {
+            margin-bottom: 10px;
+        }
+        
+        .footer-column a {
+            color: #e2e8f0;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        
+        .footer-column a:hover {
+            color: #3182ce;
+        }
+        
+        .footer-column p {
+            color: #cbd5e0;
+            line-height: 1.6;
+        }
+        
+        .social-links {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .social-links a {
+            width: 40px;
+            height: 40px;
+            background-color: #4a5568;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            color: #ffffff;
+        }
+        
+        .social-links a:hover {
+            background-color: #3182ce;
+            color: #ffffff;
+        }
+        
+        .contact-info li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 15px;
+            color: #e2e8f0;
+        }
+        
+        .contact-info i {
+            margin-top: 4px;
+            color: #63b3ed;
+        }
+        
+        .footer-bottom {
+            background-color: #1a202c;
+            padding: 20px 0;
+        }
+        
+        .bottom-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .bottom-content p {
+            color: #cbd5e0;
+            margin: 0;
+        }
+        
+        .footer-links {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .footer-links a {
+            color: #a0aec0;
+            font-size: 14px;
+            text-decoration: none;
+        }
+        
+        .footer-links a:hover {
+            color: #3182ce;
+        }
+        
+        @media (max-width: 768px) {
+            .bottom-content {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+            
+            .footer-grid {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+            
+            .social-links {
+                justify-content: center;
+            }
+            
+            .contact-info {
+                text-align: left;
+            }
+        }
+        .page-header {
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('namkyung.png');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            padding: 100px 0;
+            text-align: center;
+        }
+        .ceo-section {
+            padding: 80px 0;
+        }
+        .ceo-photo {
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 5px solid #f8f9fa;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .message-content {
+            background: #f8f9fa;
+            padding: 40px;
+            border-radius: 10px;
+            border-left: 5px solid #007bff;
+        }
+        .signature {
+            text-align: right;
+            margin-top: 30px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header id="header" class="header d-flex align-items-center sticky-top">
+        <div class="container-fluid container-xl position-relative d-flex align-items-center">
+            <a href="index.html" class="logo d-flex align-items-center me-auto">
+                <img src="logo.jpg" alt="남경스틸 로고" style="height: 40px; margin-right: 10px;">
+                <h1 class="sitename" id="companyNameHeader">남경스틸(주)</h1>
+            </a>
+            
+            <nav id="navmenu" class="navmenu">
+                <ul>
+                    <li><a href="index.html">홈</a></li>
+                    <li class="dropdown"><a href="index.html#about"><span>회사소개</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="ceo-message.html">CEO 인사말</a></li>
+                            <li><a href="company-history.html">회사연혁</a></li>
+                            <li><a href="vision-mission.html">비전/미션</a></li>
+                            <li><a href="organization.html">조직도</a></li>
+                            <li><a href="certificates.html">인증서</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown"><a href="index.html#services"><span>제품소개</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="service1-details.html">열연강판</a></li>
+                            <li><a href="service2-details.html">냉연강판</a></li>
+                            <li><a href="service3-details.html">특수강</a></li>
+                            <li><a href="service4-details.html">맞춤 가공</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown"><a href="#"><span>사업영역</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="#">철강제조</a></li>
+                            <li><a href="#">가공서비스</a></li>
+                            <li><a href="#">기술연구</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown"><a href="#"><span>고객센터</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="#">견적문의</a></li>
+                            <li><a href="#">카탈로그</a></li>
+                            <li><a href="#">FAQ</a></li>
+                            <li><a href="#">오시는길</a></li>
+                            <li><a href="product-inquiry.html">제품문의</a></li>
+                            <li><a href="technical-support.html">기술지원</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown"><a href="#"><span>홍보센터</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="#">공지사항</a></li>
+                            <li><a href="#">뉴스룸</a></li>
+                            <li><a href="#">홍보자료</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+            </nav>
+            
+            <!-- 로그인 버튼 -->
+            <a class="login-btn" href="#" onclick="showLoginModal(); return false;" id="mainLoginBtn">
+                <i class="bi bi-person-circle"></i> <span id="loginBtnText">로그인</span>
+            </a>
+            
+            <!-- 로그인 후 프로필 아이콘 -->
+            <div class="user-profile" id="userProfile" style="display: none;">
+                <div class="profile-icon" onclick="handleProfileClick()">
+                    <img id="profileImage" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiM2NjdlZWEiLz4KPHN2ZyB4PSIyMCIgeT0iMjQiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPvCfkYQ8L3N2Zz4KPC9zdmc+" alt="프로필" />
+                    <span class="profile-name" id="profileName">사용자</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container">
+            <h1>CEO 인사말</h1>
+            <p>남경스틸(주) 대표이사 문상혁</p>
+        </div>
+    </div>
+
+    <!-- CEO Message Section -->
+    <section class="ceo-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-4 text-center mb-4">
+                    <img src="assets/img/company-placeholder.svg" alt="CEO 문상혁" class="ceo-photo">
+                    <h3 class="mt-4">문상혁</h3>
+                    <p class="text-muted">대표이사</p>
+                </div>
+                
+                <div class="col-lg-8">
+                    <div class="message-content">
+                        <h2 class="mb-4">안녕하십니까. 남경스틸(주) 대표이사 문상혁입니다.</h2>
+                        
+                        <p>남경스틸(주)를 찾아주신 모든 분들께 진심으로 감사드립니다.</p>
+                        
+                        <p>저희 남경스틸(주)는 2014년 설립 이래 <strong>12년간</strong> 철강 산업의 발전과 함께 성장해왔습니다. 
+                        고객의 신뢰를 바탕으로 최고 품질의 철강 제품을 공급하며, 국내외 시장에서 인정받는 
+                        <strong>철강 전문기업</strong>으로 자리매김하고 있습니다.</p>
+                        
+                        <p>급변하는 글로벌 시장 환경 속에서도 저희는 <strong>혁신과 도전</strong>을 멈추지 않고 있습니다. 
+                        친환경 생산 공정 도입, 디지털 기술 접목, 그리고 지속적인 품질 개선을 통해 
+                        <strong>지속가능한 미래</strong>를 만들어가고 있습니다.</p>
+                        
+                        <p>특히 저희는:</p>
+                        <ul>
+                            <li>연간 <strong>10만톤</strong>의 생산 능력을 보유하여 안정적인 공급을 보장합니다</li>
+                            <li><strong>10개국</strong>으로의 수출을 통해 글로벌 네트워크를 구축하고 있습니다</li>
+                            <li><strong>30명</strong>의 전문 인력이 24시간 최상의 기술 지원을 제공합니다</li>
+                        </ul>
+                        
+                        <p>앞으로도 남경스틸(주)는 고객과의 신뢰를 최우선으로 하며, 
+                        <strong>최고의 품질</strong>과 <strong>최상의 서비스</strong>로 보답하겠습니다.</p>
+                        
+                        <p>저희와 함께 <strong>더 나은 미래</strong>를 만들어갈 여러분의 지속적인 관심과 성원을 부탁드립니다.</p>
+                        
+                        <p class="signature">
+                            <strong>남경스틸(주) 대표이사<br>문상혁</strong>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-top">
+            <div class="container">
+                <div class="footer-grid">
+                    <div class="footer-column">
+                        <h3>남경스틸(주)</h3>
+                        <p>철강산업의 리더로서 최고의 품질과 서비스를 제공합니다.</p>
+                    </div>
+                    <div class="footer-column">
+                        <h4>빠른 링크</h4>
+                        <ul>
+                            <li><a href="#">회사소개</a></li>
+                            <li><a href="#">제품정보</a></li>
+                            <li><a href="#">견적문의</a></li>
+                            <li><a href="#">채용정보</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-column">
+                        <h4>고객지원</h4>
+                        <ul>
+                            <li><a href="#">자주묻는질문</a></li>
+                            <li><a href="#">카탈로그</a></li>
+                            <li><a href="#">A/S 신청</a></li>
+                            <li><a href="#">오시는길</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-column">
+                        <h4>연락처</h4>
+                        <ul class="contact-info">
+                            <li><i class="fas fa-map-marker-alt"></i> 부산시 사상구 낙동대로 832</li>
+                            <li><i class="fas fa-phone"></i> 051-314-9701</li>
+                            <li><i class="fas fa-fax"></i> 051-314-9702</li>
+                            <li><i class="fas fa-envelope"></i> namkyungst@naver.com</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="container">
+                <div class="bottom-content">
+                    <p>&copy; 2025 남경스틸(주). All rights reserved.</p>
+                    <div class="footer-links">
+                        <a href="#">개인정보처리방침</a>
+                        <a href="#">이용약관</a>
+                        <a href="#">이메일무단수집거부</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // 드롭다운 메뉴 클릭 기능 (모바일용)
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropdownToggles = document.querySelectorAll('.toggle-dropdown');
+            
+            dropdownToggles.forEach(function(toggle) {
+                toggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const dropdown = this.closest('.dropdown');
+                    const isActive = dropdown.classList.contains('active');
+                    
+                    // 다른 모든 드롭다운 닫기
+                    document.querySelectorAll('.dropdown.active').forEach(function(activeDropdown) {
+                        if (activeDropdown !== dropdown) {
+                            activeDropdown.classList.remove('active');
+                        }
+                    });
+                    
+                    // 현재 드롭다운 토글
+                    dropdown.classList.toggle('active', !isActive);
+                });
+            });
+            
+            // 외부 클릭 시 드롭다운 닫기
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.dropdown')) {
+                    document.querySelectorAll('.dropdown.active').forEach(function(dropdown) {
+                        dropdown.classList.remove('active');
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

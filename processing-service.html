@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>가공서비스 - 남경스틸(주)</title>
+    <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+    <link href="assets/css/main.css" rel="stylesheet">
+    
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif !important; }
+        
+        /* Header Styles from index.html */
+        .header {
+            background-color: #ffffff !important;
+            box-shadow: 0 2px 15px rgba(0, 102, 204, 0.08) !important;
+            border-bottom: 1px solid #e9ecef !important;
+            backdrop-filter: blur(10px) !important;
+        }
+        
+        .header .sitename {
+            color: #1a365d !important;
+        }
+        
+        .navmenu a {
+            color: #2c3e50 !important;
+        }
+        
+        .navmenu a:hover {
+            color: #0066cc !important;
+        }
+        
+        .navmenu .active {
+            color: #0066cc !important;
+            font-weight: 600 !important;
+        }
+        
+        /* Login Button Styles */
+        .login-btn { 
+            background: #0066cc; 
+            color: white; 
+            padding: 8px 20px; 
+            border-radius: 5px; 
+            margin-left: 25px;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .login-btn:hover { 
+            background: #0052a3; 
+            color: white;
+        }
+        
+        /* User Profile Styles */
+        .user-profile {
+            margin-left: 25px;
+        }
+        
+        .profile-icon {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 5px 10px;
+            border-radius: 25px;
+        }
+        
+        .profile-icon:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .profile-icon img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #fff;
+            margin-right: 8px;
+        }
+        
+        .profile-name {
+            color: #2c3e50;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        /* Navigation Dropdown Styles */
+        .navmenu ul {
+            display: flex;
+            align-items: center;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .navmenu > ul > li {
+            white-space: nowrap;
+            padding: 15px 16px;
+            position: relative;
+        }
+        
+        .navmenu a {
+            color: #2c3e50;
+            padding: 12px 0;
+            font-size: 16px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            white-space: nowrap;
+            transition: 0.3s;
+            text-decoration: none;
+        }
+        
+        .navmenu .dropdown ul {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            z-index: 99;
+            background-color: #ffffff;
+            box-shadow: 0px 0px 30px rgba(44, 62, 80, 0.15);
+            padding: 10px 0;
+            border-radius: 6px;
+            min-width: 180px;
+            flex-direction: column;
+        }
+        
+        .navmenu .dropdown:hover > ul {
+            display: flex;
+        }
+        
+        .navmenu .dropdown ul li {
+            padding: 0;
+            width: 100%;
+        }
+        
+        .navmenu .dropdown ul a {
+            padding: 10px 20px;
+            font-size: 15px;
+            color: #2c3e50;
+            border: none;
+            width: 100%;
+            justify-content: flex-start;
+        }
+        
+        .navmenu .dropdown ul a:hover {
+            color: #3498db;
+            background-color: #f8f9fa;
+        }
+        
+        .toggle-dropdown {
+            margin-left: 5px;
+        }
+        
+        @media (max-width: 1199px) {
+            .navmenu .dropdown ul {
+                position: static;
+                display: none;
+                z-index: 99;
+                padding: 10px 0;
+                margin: 10px 20px;
+                background-color: #ffffff;
+                border: 1px solid #e9ecef;
+                box-shadow: none;
+                border-radius: 6px;
+            }
+            
+            .navmenu .dropdown.active > ul {
+                display: flex;
+            }
+        }
+        
+        /* Footer Styles from namkyungst/index.html */
+        .footer {
+            background-color: #2d3748;
+            color: #ffffff;
+            border-top: 3px solid #0066cc;
+        }
+        
+        .footer-top {
+            padding: 30px 0 20px;
+        }
+        
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+        }
+        
+        .footer-column h3,
+        .footer-column h4 {
+            margin-bottom: 20px;
+            color: #ffffff;
+            font-weight: 600;
+        }
+        
+        .footer-column ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .footer-column ul li {
+            margin-bottom: 10px;
+        }
+        
+        .footer-column a {
+            color: #cbd5e0;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        
+        .footer-column a:hover {
+            color: #0066cc;
+        }
+        
+        .footer-column p {
+            color: #a0aec0;
+            line-height: 1.6;
+        }
+        
+        .contact-info li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 15px;
+            color: #cbd5e0;
+        }
+        
+        .contact-info i {
+            margin-top: 4px;
+            color: #0066cc;
+        }
+        
+        .footer-bottom {
+            background-color: #1a202c;
+            padding: 20px 0;
+        }
+        
+        .bottom-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .bottom-content p {
+            color: #a0aec0;
+            margin: 0;
+        }
+        
+        .footer-links {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .footer-links a {
+            color: #a0aec0;
+            font-size: 14px;
+            text-decoration: none;
+        }
+        
+        .footer-links a:hover {
+            color: #0066cc;
+        }
+        
+        @media (max-width: 768px) {
+            .bottom-content {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+            
+            .footer-grid {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+            
+            .contact-info {
+                text-align: left;
+            }
+        }
+        
+        .page-header {
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('namkyung.png');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            padding: 100px 0;
+            text-align: center;
+        }
+        
+        .service-section {
+            padding: 80px 0;
+        }
+        
+        .service-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
+        }
+        
+        .service-card {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: left;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            border-left: 5px solid #0066cc;
+        }
+        
+        .service-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+        
+        .service-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(45deg, #0066cc, #004499);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            color: white;
+            font-size: 24px;
+        }
+        
+        .capabilities-section {
+            background: #f8f9fa;
+            padding: 80px 0;
+        }
+        
+        .capability-item {
+            background: white;
+            padding: 40px 30px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            border-top: 4px solid #0066cc;
+        }
+        
+        .capability-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #0066cc;
+            margin-bottom: 10px;
+        }
+        
+        .equipment-section {
+            padding: 80px 0;
+        }
+        
+        .equipment-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        
+        .equipment-card {
+            background: linear-gradient(135deg, #ffffff, #f8f9fa);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            border: 1px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+        
+        .equipment-card:hover {
+            transform: translateY(-5px);
+            border-color: #0066cc;
+        }
+        
+        .equipment-icon {
+            width: 60px;
+            height: 60px;
+            background: #0066cc;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            color: white;
+            font-size: 24px;
+        }
+        
+        /* 로그인 버튼 스타일 */
+        .login-btn { 
+            background: #0066cc; 
+            color: white; 
+            padding: 8px 20px; 
+            border-radius: 5px; 
+            margin-left: 25px;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .login-btn:hover { 
+            background: #0052a3; 
+            color: white;
+        }
+        
+        /* 사용자 프로필 스타일 */
+        .user-profile {
+            margin-left: 25px;
+        }
+        
+        .profile-icon {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 5px 10px;
+            border-radius: 25px;
+        }
+        
+        .profile-icon:hover {
+            background: rgba(0, 102, 204, 0.1);
+        }
+        
+        .profile-icon img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #fff;
+            margin-right: 8px;
+        }
+        
+        .profile-name {
+            font-weight: 500;
+            color: #333;
+        }
+        
+        /* 헤더 스타일 (index.html과 동일하게) */
+        .header {
+            background-color: #ffffff !important;
+            box-shadow: 0 2px 15px rgba(0, 102, 204, 0.08) !important;
+            border-bottom: 1px solid #e9ecef !important;
+            backdrop-filter: blur(10px) !important;
+        }
+
+        .header .sitename {
+            color: #1a365d !important;
+        }
+
+        /* Navigation Menu */
+        .navmenu a {
+            color: #2c3e50 !important;
+        }
+
+        .navmenu a:hover {
+            color: #0066cc !important;
+        }
+
+        .navmenu .active {
+            color: #0066cc !important;
+            font-weight: 600 !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header id="header" class="header d-flex align-items-center sticky-top">
+        <div class="container-fluid container-xl position-relative d-flex align-items-center">
+            <a href="index.html" class="logo d-flex align-items-center me-auto">
+                <img src="logo.jpg" alt="남경스틸 로고" style="height: 40px; margin-right: 10px;">
+                <h1 class="sitename" id="companyNameHeader">남경스틸(주)</h1>
+            </a>
+            
+            <nav id="navmenu" class="navmenu">
+                <ul>
+                    <li><a href="index.html">홈</a></li>
+                    <li class="dropdown"><a href="index.html#about"><span>회사소개</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="ceo-message.html">CEO 인사말</a></li>
+                            <li><a href="company-history.html">회사연혁</a></li>
+                            <li><a href="vision-mission.html">비전/미션</a></li>
+                            <li><a href="organization.html">조직도</a></li>
+                            <li><a href="certificates.html">인증서</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown"><a href="index.html#services"><span>제품소개</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="service1-details.html">열연강판</a></li>
+                            <li><a href="service2-details.html">냉연강판</a></li>
+                            <li><a href="service3-details.html">특수강</a></li>
+                            <li><a href="service4-details.html">맞춤 가공</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown"><a href="#"><span>사업영역</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="steel-manufacturing.html">철강제조</a></li>
+                            <li><a href="processing-service.html">가공서비스</a></li>
+                            <li><a href="tech-research.html">기술연구</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown"><a href="#"><span>고객센터</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="quote-inquiry.html">견적문의</a></li>
+                            <li><a href="catalog.html">카탈로그</a></li>
+                            <li><a href="faq.html">FAQ</a></li>
+                            <li><a href="location.html">오시는길</a></li>
+                            <li><a href="product-inquiry.html">제품문의</a></li>
+                            <li><a href="technical-support.html">기술지원</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown"><a href="#"><span>홍보센터</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="notice.html">공지사항</a></li>
+                            <li><a href="newsroom.html">뉴스룸</a></li>
+                            <li><a href="media-materials.html">홍보자료</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+            </nav>
+            
+            <!-- 로그인 버튼 -->
+            <a class="login-btn" href="#" onclick="showLoginModal(); return false;" id="mainLoginBtn">
+                <i class="bi bi-person-circle"></i> <span id="loginBtnText">로그인</span>
+            </a>
+            
+            <!-- 로그인 후 프로필 아이콘 -->
+            <div class="user-profile" id="userProfile" style="display: none;">
+                <div class="profile-icon" onclick="handleProfileClick()">
+                    <img id="profileImage" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiM2NjdlZWEiLz4KPHN2ZyB4PSIyMCIgeT0iMjQiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPvCfkYQ8L3N2Zz4KPC9zdmc+" alt="프로필" />
+                    <span class="profile-name" id="profileName">사용자</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container">
+            <h1>가공서비스</h1>
+            <p>고객 맞춤형 정밀 가공으로 완벽한 솔루션을 제공합니다</p>
+        </div>
+    </div>
+
+    <!-- Service Types Section -->
+    <section class="service-section">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2>가공 서비스 분야</h2>
+                <p class="lead">다양한 고객 요구에 부응하는 전문 가공 서비스</p>
+            </div>
+            
+            <div class="service-grid">
+                <div class="service-card">
+                    <div class="service-icon">
+                        <i class="bi bi-scissors"></i>
+                    </div>
+                    <h4>절단 가공</h4>
+                    <p class="mb-3">정밀한 절단으로 고객이 원하는 규격에 맞춰 가공합니다.</p>
+                    <ul>
+                        <li>플라즈마 절단</li>
+                        <li>레이저 절단</li>
+                        <li>가스 절단</li>
+                        <li>워터젯 절단</li>
+                    </ul>
+                    <div class="mt-3">
+                        <small class="text-muted">두께: 3mm ~ 300mm</small>
+                    </div>
+                </div>
+                
+                <div class="service-card">
+                    <div class="service-icon">
+                        <i class="bi bi-tools"></i>
+                    </div>
+                    <h4>용접 가공</h4>
+                    <p class="mb-3">숙련된 기술자의 전문적인 용접 서비스를 제공합니다.</p>
+                    <ul>
+                        <li>아크 용접</li>
+                        <li>가스 용접</li>
+                        <li>TIG 용접</li>
+                        <li>특수 용접</li>
+                    </ul>
+                    <div class="mt-3">
+                        <small class="text-muted">용접사 자격: 특급 기능사</small>
+                    </div>
+                </div>
+                
+                <div class="service-card">
+                    <div class="service-icon">
+                        <i class="bi bi-circle"></i>
+                    </div>
+                    <h4>구멍 가공</h4>
+                    <p class="mb-3">정밀한 홀 가공으로 완벽한 조립 솔루션을 제공합니다.</p>
+                    <ul>
+                        <li>드릴링</li>
+                        <li>리밍</li>
+                        <li>카운터싱크</li>
+                        <li>탭핑</li>
+                    </ul>
+                    <div class="mt-3">
+                        <small class="text-muted">정밀도: ±0.1mm</small>
+                    </div>
+                </div>
+                
+                <div class="service-card">
+                    <div class="service-icon">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </div>
+                    <h4>굽힘 가공</h4>
+                    <p class="mb-3">고정밀 벤딩 장비로 다양한 형태의 굽힘 가공을 수행합니다.</p>
+                    <ul>
+                        <li>프레스 브레이크</li>
+                        <li>롤 벤딩</li>
+                        <li>파이프 벤딩</li>
+                        <li>각도 조정</li>
+                    </ul>
+                    <div class="mt-3">
+                        <small class="text-muted">최대 압력: 300톤</small>
+                    </div>
+                </div>
+                
+                <div class="service-card">
+                    <div class="service-icon">
+                        <i class="bi bi-brush"></i>
+                    </div>
+                    <h4>표면 처리</h4>
+                    <p class="mb-3">다양한 표면 처리로 내구성과 미관을 향상시킵니다.</p>
+                    <ul>
+                        <li>샌드블라스팅</li>
+                        <li>도장 처리</li>
+                        <li>아연 도금</li>
+                        <li>부식 방지 처리</li>
+                    </ul>
+                    <div class="mt-3">
+                        <small class="text-muted">환경친화적 공정</small>
+                    </div>
+                </div>
+                
+                <div class="service-card">
+                    <div class="service-icon">
+                        <i class="bi bi-puzzle"></i>
+                    </div>
+                    <h4>조립 서비스</h4>
+                    <p class="mb-3">완제품 수준의 조립 서비스로 고객 편의를 극대화합니다.</p>
+                    <ul>
+                        <li>구조물 조립</li>
+                        <li>부품 조립</li>
+                        <li>품질 검사</li>
+                        <li>포장 및 배송</li>
+                    </ul>
+                    <div class="mt-3">
+                        <small class="text-muted">One-Stop 서비스</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Capabilities Section -->
+    <section class="capabilities-section">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2>가공 역량</h2>
+                <p class="lead">업계 최고 수준의 가공 능력</p>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="capability-item">
+                        <div class="capability-number">5,000</div>
+                        <h5>월간 가공량 (톤)</h5>
+                        <p>대용량 물량 처리 가능</p>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="capability-item">
+                        <div class="capability-number">±0.1</div>
+                        <h5>가공 정밀도 (mm)</h5>
+                        <p>초정밀 가공 기술</p>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="capability-item">
+                        <div class="capability-number">72</div>
+                        <h5>평균 납기 (시간)</h5>
+                        <p>신속한 작업 완료</p>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="capability-item">
+                        <div class="capability-number">15</div>
+                        <h5>전문 기술진 (명)</h5>
+                        <p>숙련된 전문가</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Equipment Section -->
+    <section class="equipment-section">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2>보유 장비</h2>
+                <p class="lead">최첨단 가공 장비로 최상의 결과를 보장합니다</p>
+            </div>
+            
+            <div class="equipment-grid">
+                <div class="equipment-card">
+                    <div class="equipment-icon">
+                        <i class="bi bi-lightning-charge"></i>
+                    </div>
+                    <h4>플라즈마 절단기</h4>
+                    <p>고속 정밀 절단</p>
+                    <small>최대 두께: 100mm</small>
+                </div>
+                
+                <div class="equipment-card">
+                    <div class="equipment-icon">
+                        <i class="bi bi-eyedropper"></i>
+                    </div>
+                    <h4>레이저 절단기</h4>
+                    <p>초정밀 절단 가공</p>
+                    <small>정밀도: ±0.05mm</small>
+                </div>
+                
+                <div class="equipment-card">
+                    <div class="equipment-icon">
+                        <i class="bi bi-hammer"></i>
+                    </div>
+                    <h4>프레스 브레이크</h4>
+                    <p>정밀 굽힘 가공</p>
+                    <small>최대 압력: 300톤</small>
+                </div>
+                
+                <div class="equipment-card">
+                    <div class="equipment-icon">
+                        <i class="bi bi-gear-wide"></i>
+                    </div>
+                    <h4>CNC 가공기</h4>
+                    <p>자동화 정밀 가공</p>
+                    <small>3축/5축 가공</small>
+                </div>
+                
+                <div class="equipment-card">
+                    <div class="equipment-icon">
+                        <i class="bi bi-droplet"></i>
+                    </div>
+                    <h4>워터젯 절단기</h4>
+                    <p>특수소재 절단</p>
+                    <small>최대 두께: 200mm</small>
+                </div>
+                
+                <div class="equipment-card">
+                    <div class="equipment-icon">
+                        <i class="bi bi-circle-half"></i>
+                    </div>
+                    <h4>롤 벤딩 머신</h4>
+                    <p>곡선 가공 전문</p>
+                    <small>최대 폭: 3,000mm</small>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-top">
+            <div class="container">
+                <div class="footer-grid">
+                    <div class="footer-column">
+                        <h3>남경스틸(주)</h3>
+                        <p>철강산업의 리더로서 최고의 품질과 서비스를 제공합니다.</p>
+                    </div>
+                    <div class="footer-column">
+                        <h4>빠른 링크</h4>
+                        <ul>
+                            <li><a href="#">회사소개</a></li>
+                            <li><a href="#">제품정보</a></li>
+                            <li><a href="#">견적문의</a></li>
+                            <li><a href="#">채용정보</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-column">
+                        <h4>고객지원</h4>
+                        <ul>
+                            <li><a href="#">자주묻는질문</a></li>
+                            <li><a href="#">카탈로그</a></li>
+                            <li><a href="#">A/S 신청</a></li>
+                            <li><a href="#">오시는길</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-column">
+                        <h4>연락처</h4>
+                        <ul class="contact-info">
+                            <li><i class="fas fa-map-marker-alt"></i> 부산시 사상구 낙동대로 832</li>
+                            <li><i class="fas fa-phone"></i> 051-314-9701</li>
+                            <li><i class="fas fa-fax"></i> 051-314-9702</li>
+                            <li><i class="fas fa-envelope"></i> namkyungst@naver.com</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="container">
+                <div class="bottom-content">
+                    <p>&copy; 2025 남경스틸(주). All rights reserved.</p>
+                    <div class="footer-links">
+                        <a href="#">개인정보처리방침</a>
+                        <a href="#">이용약관</a>
+                        <a href="#">이메일무단수집거부</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // 드롭다운 메뉴 클릭 기능 (모바일용)
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropdownToggles = document.querySelectorAll('.toggle-dropdown');
+            
+            dropdownToggles.forEach(function(toggle) {
+                toggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const dropdown = this.closest('.dropdown');
+                    const isActive = dropdown.classList.contains('active');
+                    
+                    // 다른 모든 드롭다운 닫기
+                    document.querySelectorAll('.dropdown.active').forEach(function(activeDropdown) {
+                        if (activeDropdown !== dropdown) {
+                            activeDropdown.classList.remove('active');
+                        }
+                    });
+                    
+                    // 현재 드롭다운 토글
+                    dropdown.classList.toggle('active', !isActive);
+                });
+            });
+            
+            // 외부 클릭 시 드롭다운 닫기
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.dropdown')) {
+                    document.querySelectorAll('.dropdown.active').forEach(function(dropdown) {
+                        dropdown.classList.remove('active');
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

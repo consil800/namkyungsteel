@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>기술지원 - 남경스틸(주)</title>
+    <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+    <link href="assets/css/main.css" rel="stylesheet">
+    
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif !important; }
+        
+        /* Header Styles from index.html */
+        .header {
+            background-color: #ffffff !important;
+            box-shadow: 0 2px 15px rgba(0, 102, 204, 0.08) !important;
+            border-bottom: 1px solid #e9ecef !important;
+            backdrop-filter: blur(10px) !important;
+        }
+        
+        .header .sitename {
+            color: #1a365d !important;
+        }
+        
+        .navmenu a {
+            color: #2c3e50 !important;
+        }
+        
+        .navmenu a:hover {
+            color: #0066cc !important;
+        }
+        
+        .navmenu .active {
+            color: #0066cc !important;
+            font-weight: 600 !important;
+        }
+        
+        /* Login Button Styles */
+        .login-btn { 
+            background: #0066cc; 
+            color: white; 
+            padding: 8px 20px; 
+            border-radius: 5px; 
+            margin-left: 25px;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .login-btn:hover { 
+            background: #0052a3; 
+            color: white;
+        }
+        
+        /* User Profile Styles */
+        .user-profile {
+            margin-left: 25px;
+        }
+        
+        .profile-icon {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 5px 10px;
+            border-radius: 25px;
+        }
+        
+        .profile-icon:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .profile-icon img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #fff;
+            margin-right: 8px;
+        }
+        
+        .profile-name {
+            color: #2c3e50;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        /* Navigation Dropdown Styles */
+        .navmenu ul {
+            display: flex;
+            align-items: center;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .navmenu > ul > li {
+            white-space: nowrap;
+            padding: 15px 16px;
+            position: relative;
+        }
+        
+        .navmenu a {
+            color: #2c3e50;
+            padding: 12px 0;
+            font-size: 16px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            white-space: nowrap;
+            transition: 0.3s;
+            text-decoration: none;
+        }
+        
+        .navmenu .dropdown ul {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            z-index: 99;
+            background-color: #ffffff;
+            box-shadow: 0px 0px 30px rgba(44, 62, 80, 0.15);
+            padding: 10px 0;
+            border-radius: 6px;
+            min-width: 180px;
+            flex-direction: column;
+        }
+        
+        .navmenu .dropdown:hover > ul {
+            display: flex;
+        }
+        
+        .navmenu .dropdown ul li {
+            padding: 0;
+            width: 100%;
+        }
+        
+        .navmenu .dropdown ul a {
+            padding: 10px 20px;
+            font-size: 15px;
+            color: #2c3e50;
+            border: none;
+            width: 100%;
+            justify-content: flex-start;
+        }
+        
+        .navmenu .dropdown ul a:hover {
+            color: #3498db;
+            background-color: #f8f9fa;
+        }
+        
+        .toggle-dropdown {
+            margin-left: 5px;
+        }
+        
+        @media (max-width: 1199px) {
+            .navmenu .dropdown ul {
+                position: static;
+                display: none;
+                z-index: 99;
+                padding: 10px 0;
+                margin: 10px 20px;
+                background-color: #ffffff;
+                border: 1px solid #e9ecef;
+                box-shadow: none;
+                border-radius: 6px;
+            }
+            
+            .navmenu .dropdown.active > ul {
+                display: flex;
+            }
+        }
+        
+        /* Footer Styles from namkyungst/index.html */
+        .footer {
+            background-color: #2d3748;
+            color: #ffffff;
+            border-top: 3px solid #0066cc;
+        }
+        
+        .footer-top {
+            padding: 30px 0 20px;
+        }
+        
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+        }
+        
+        .footer-column h3,
+        .footer-column h4 {
+            margin-bottom: 20px;
+            color: #ffffff;
+            font-weight: 600;
+        }
+        
+        .footer-column ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .footer-column ul li {
+            margin-bottom: 10px;
+        }
+        
+        .footer-column a {
+            color: #cbd5e0;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        
+        .footer-column a:hover {
+            color: #0066cc;
+        }
+        
+        .footer-column p {
+            color: #a0aec0;
+            line-height: 1.6;
+        }
+        
+        .contact-info li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 15px;
+            color: #cbd5e0;
+        }
+        
+        .contact-info i {
+            margin-top: 4px;
+            color: #0066cc;
+        }
+        
+        .footer-bottom {
+            background-color: #1a202c;
+            padding: 20px 0;
+        }
+        
+        .bottom-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .bottom-content p {
+            color: #a0aec0;
+            margin: 0;
+        }
+        
+        .footer-links {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .footer-links a {
+            color: #a0aec0;
+            font-size: 14px;
+            text-decoration: none;
+        }
+        
+        .footer-links a:hover {
+            color: #0066cc;
+        }
+        
+        @media (max-width: 768px) {
+            .bottom-content {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+            
+            .footer-grid {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+            
+            .contact-info {
+                text-align: left;
+            }
+        }
+        
+        .page-header {
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('namkyung.png');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            padding: 100px 0;
+            text-align: center;
+        }
+        
+        .support-section {
+            padding: 80px 0;
+        }
+        
+        .support-card {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            height: 100%;
+        }
+        
+        .support-card:hover {
+            transform: translateY(-10px);
+            border-color: #0066cc;
+            box-shadow: 0 20px 40px rgba(0, 102, 204, 0.15);
+        }
+        
+        .support-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(45deg, #0066cc, #004499);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 25px;
+            color: white;
+            font-size: 32px;
+        }
+        
+        .request-form {
+            background: #f8f9fa;
+            padding: 80px 0;
+        }
+        
+        .form-container {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .form-control {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 12px 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: #0066cc;
+            box-shadow: 0 0 0 0.2rem rgba(0, 102, 204, 0.15);
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            display: block;
+        }
+        
+        .btn-support {
+            background: linear-gradient(45deg, #0066cc, #004499);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-support:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 102, 204, 0.3);
+            color: white;
+        }
+        
+        .response-info {
+            background: linear-gradient(135deg, #0066cc, #004499);
+            color: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+        }
+        
+        .response-icon {
+            width: 60px;
+            height: 60px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 24px;
+        }
+        
+        .expert-section {
+            background: #f8f9fa;
+            padding: 80px 0;
+        }
+        
+        .expert-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-top: 4px solid #0066cc;
+            transition: transform 0.3s ease;
+        }
+        
+        .expert-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .expert-avatar {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(45deg, #0066cc, #004499);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            color: white;
+            font-size: 32px;
+        }
+        
+        .knowledge-section {
+            padding: 80px 0;
+        }
+        
+        .knowledge-item {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-left: 4px solid #0066cc;
+            transition: all 0.3s ease;
+        }
+        
+        .knowledge-item:hover {
+            transform: translateX(10px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        
+        .knowledge-icon {
+            width: 40px;
+            height: 40px;
+            background: #0066cc;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header id="header" class="header d-flex align-items-center sticky-top">
+        <div class="container-fluid container-xl position-relative d-flex align-items-center">
+            <a href="index.html" class="logo d-flex align-items-center me-auto">
+                <img src="logo.jpg" alt="남경스틸 로고" style="height: 40px; margin-right: 10px;">
+                <h1 class="sitename" id="companyNameHeader">남경스틸(주)</h1>
+            </a>
+            
+            <nav id="navmenu" class="navmenu">
+                <ul>
+                    <li><a href="index.html">홈</a></li>
+                    <li class="dropdown"><a href="index.html#about"><span>회사소개</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="ceo-message.html">CEO 인사말</a></li>
+                            <li><a href="company-history.html">회사연혁</a></li>
+                            <li><a href="vision-mission.html">비전/미션</a></li>
+                            <li><a href="organization.html">조직도</a></li>
+                            <li><a href="certificates.html">인증서</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown"><a href="index.html#services"><span>제품소개</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="service1-details.html">열연강판</a></li>
+                            <li><a href="service2-details.html">냉연강판</a></li>
+                            <li><a href="service3-details.html">특수강</a></li>
+                            <li><a href="service4-details.html">맞춤 가공</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown"><a href="#"><span>사업영역</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="steel-manufacturing.html">철강제조</a></li>
+                            <li><a href="processing-service.html">가공서비스</a></li>
+                            <li><a href="tech-research.html">기술연구</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown"><a href="#"><span>고객센터</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="quote-inquiry.html">견적문의</a></li>
+                            <li><a href="catalog.html">카탈로그</a></li>
+                            <li><a href="faq.html">FAQ</a></li>
+                            <li><a href="location.html">오시는길</a></li>
+                            <li><a href="product-inquiry.html">제품문의</a></li>
+                            <li><a href="technical-support.html">기술지원</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown"><a href="#"><span>홍보센터</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="notice.html">공지사항</a></li>
+                            <li><a href="newsroom.html">뉴스룸</a></li>
+                            <li><a href="media-materials.html">홍보자료</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+            </nav>
+            
+            <!-- 로그인 버튼 -->
+            <a class="login-btn" href="#" onclick="showLoginModal(); return false;" id="mainLoginBtn">
+                <i class="bi bi-person-circle"></i> <span id="loginBtnText">로그인</span>
+            </a>
+            
+            <!-- 로그인 후 프로필 아이콘 -->
+            <div class="user-profile" id="userProfile" style="display: none;">
+                <div class="profile-icon" onclick="handleProfileClick()">
+                    <img id="profileImage" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiM2NjdlZWEiLz4KPHN2ZyB4PSIyMCIgeT0iMjQiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPvCfkYQ8L3N2Zz4KPC9zdmc+" alt="프로필" />
+                    <span class="profile-name" id="profileName">사용자</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container">
+            <h1>기술지원</h1>
+            <p>전문적인 기술 상담과 솔루션을 제공합니다</p>
+        </div>
+    </div>
+
+    <!-- Support Services Section -->
+    <section class="support-section">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2>기술지원 서비스</h2>
+                <p class="lead">다양한 기술적 문제에 대한 전문가 상담과 솔루션을 제공합니다</p>
+            </div>
+            
+            <div class="row">
+                <div class="col-lg-4 mb-4">
+                    <div class="support-card">
+                        <div class="support-icon">
+                            <i class="bi bi-tools"></i>
+                        </div>
+                        <h4>제품 기술 상담</h4>
+                        <p>철강 제품의 특성, 용도, 가공방법 등에 대한 전문적인 기술 상담을 제공합니다.</p>
+                        <ul class="text-start">
+                            <li>재료 선정 가이드</li>
+                            <li>화학성분 분석</li>
+                            <li>기계적 성질 검토</li>
+                            <li>용도별 적합성 평가</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 mb-4">
+                    <div class="support-card">
+                        <div class="support-icon">
+                            <i class="bi bi-gear"></i>
+                        </div>
+                        <h4>공정 기술 지원</h4>
+                        <p>고객의 생산 공정에 최적화된 기술 솔루션과 공정 개선 방안을 제안합니다.</p>
+                        <ul class="text-start">
+                            <li>공정 최적화 컨설팅</li>
+                            <li>품질 향상 방안</li>
+                            <li>생산성 개선 제안</li>
+                            <li>설비 운영 가이드</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 mb-4">
+                    <div class="support-card">
+                        <div class="support-icon">
+                            <i class="bi bi-shield-check"></i>
+                        </div>
+                        <h4>품질 분석 서비스</h4>
+                        <p>제품의 품질 분석과 검사를 통해 정확한 품질 정보를 제공합니다.</p>
+                        <ul class="text-start">
+                            <li>성분 분석</li>
+                            <li>기계적 성질 시험</li>
+                            <li>비파괴 검사</li>
+                            <li>품질 보증서 발급</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Request Form Section -->
+    <section class="request-form">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="form-container">
+                        <h3 class="mb-4">기술지원 요청</h3>
+                        <form id="technicalSupportForm">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">회사명 *</label>
+                                    <input type="text" class="form-control" name="company" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">담당자명 *</label>
+                                    <input type="text" class="form-control" name="contact_name" required>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">연락처 *</label>
+                                    <input type="tel" class="form-control" name="phone" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">이메일 *</label>
+                                    <input type="email" class="form-control" name="email" required>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">지원 분야 *</label>
+                                    <select class="form-control" name="support_type" required>
+                                        <option value="">선택해주세요</option>
+                                        <option value="제품기술상담">제품 기술 상담</option>
+                                        <option value="공정기술지원">공정 기술 지원</option>
+                                        <option value="품질분석">품질 분석 서비스</option>
+                                        <option value="설계자문">설계 자문</option>
+                                        <option value="현장방문">현장 방문 지원</option>
+                                        <option value="기타">기타</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">우선순위</label>
+                                    <select class="form-control" name="priority">
+                                        <option value="보통">보통</option>
+                                        <option value="높음">높음</option>
+                                        <option value="긴급">긴급</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">관련 제품/공정</label>
+                                <input type="text" class="form-control" name="related_product" placeholder="예: 열연강판, 냉연강판, 특수강 등">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">기술지원 요청 내용 *</label>
+                                <textarea class="form-control" name="support_content" rows="6" placeholder="기술적 문제점, 필요한 지원 내용, 현재 상황 등을 상세히 기술해주세요." required></textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">관련 자료 첨부</label>
+                                <input type="file" class="form-control" name="attachment" accept=".pdf,.doc,.docx,.jpg,.png,.dwg,.xls,.xlsx" multiple>
+                                <small class="text-muted">도면, 사진, 데이터 등 관련 자료 (최대 20MB, 복수 파일 가능)</small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">희망 지원 방식</label>
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="support_method[]" value="전화상담" id="phone_support">
+                                            <label class="form-check-label" for="phone_support">전화 상담</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="support_method[]" value="이메일지원" id="email_support">
+                                            <label class="form-check-label" for="email_support">이메일 지원</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="support_method[]" value="현장방문" id="visit_support">
+                                            <label class="form-check-label" for="visit_support">현장 방문</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="support_method[]" value="화상회의" id="video_support">
+                                            <label class="form-check-label" for="video_support">화상 회의</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-center">
+                                <button type="submit" class="btn btn-support">
+                                    <i class="bi bi-send"></i> 기술지원 요청
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4">
+                    <div class="response-info">
+                        <div class="response-icon">
+                            <i class="bi bi-headset"></i>
+                        </div>
+                        <h4>신속한 기술지원</h4>
+                        <h6>응답 시간</h6>
+                        <p>• 일반 문의: 24시간 이내<br>• 긴급 문의: 4시간 이내</p>
+                        
+                        <h6>지원 방식</h6>
+                        <p>• 전화/이메일 상담<br>• 현장 방문 지원<br>• 화상 회의 상담</p>
+                        
+                        <h6>직접 연락</h6>
+                        <p><strong>051-314-9701</strong><br>기술지원팀 직통</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Technical Experts Section -->
+    <section class="expert-section">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2>기술지원 전문가</h2>
+                <p class="lead">각 분야별 전문가가 최적의 기술 솔루션을 제공합니다</p>
+            </div>
+            
+            <div class="row">
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="expert-card">
+                        <div class="expert-avatar">
+                            <i class="bi bi-person-gear"></i>
+                        </div>
+                        <h5>재료공학팀</h5>
+                        <p>철강재료의 특성 분석과 선정 가이드를 제공합니다.</p>
+                        <small>팀장: 김철수 박사</small>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="expert-card">
+                        <div class="expert-avatar">
+                            <i class="bi bi-tools"></i>
+                        </div>
+                        <h5>공정기술팀</h5>
+                        <p>생산공정 최적화와 품질 향상 방안을 제안합니다.</p>
+                        <small>팀장: 박영희 이사</small>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="expert-card">
+                        <div class="expert-avatar">
+                            <i class="bi bi-clipboard-data"></i>
+                        </div>
+                        <h5>품질분석팀</h5>
+                        <p>정밀한 품질 분석과 검사 서비스를 수행합니다.</p>
+                        <small>팀장: 이수진 부장</small>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="expert-card">
+                        <div class="expert-avatar">
+                            <i class="bi bi-lightbulb"></i>
+                        </div>
+                        <h5>설계자문팀</h5>
+                        <p>구조 설계와 응용 기술에 대한 자문을 제공합니다.</p>
+                        <small>팀장: 정한길 차장</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Knowledge Base Section -->
+    <section class="knowledge-section">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2>기술 자료실</h2>
+                <p class="lead">유용한 기술 정보와 자료를 제공합니다</p>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="knowledge-item">
+                        <div class="knowledge-icon">
+                            <i class="bi bi-file-text"></i>
+                        </div>
+                        <h5>기술 매뉴얼</h5>
+                        <p>제품별 상세 기술 사양과 사용 가이드를 제공합니다.</p>
+                        <a href="#" class="btn btn-sm btn-outline-primary">다운로드</a>
+                    </div>
+                    
+                    <div class="knowledge-item">
+                        <div class="knowledge-icon">
+                            <i class="bi bi-graph-up"></i>
+                        </div>
+                        <h5>성능 데이터</h5>
+                        <p>각종 시험 결과와 성능 데이터를 확인할 수 있습니다.</p>
+                        <a href="#" class="btn btn-sm btn-outline-primary">보기</a>
+                    </div>
+                    
+                    <div class="knowledge-item">
+                        <div class="knowledge-icon">
+                            <i class="bi bi-play-circle"></i>
+                        </div>
+                        <h5>기술 동영상</h5>
+                        <p>제품 사용법과 공정 기술에 대한 동영상 자료입니다.</p>
+                        <a href="#" class="btn btn-sm btn-outline-primary">시청</a>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="knowledge-item">
+                        <div class="knowledge-icon">
+                            <i class="bi bi-book"></i>
+                        </div>
+                        <h5>기술 백서</h5>
+                        <p>최신 기술 동향과 연구 결과를 담은 백서를 제공합니다.</p>
+                        <a href="#" class="btn btn-sm btn-outline-primary">다운로드</a>
+                    </div>
+                    
+                    <div class="knowledge-item">
+                        <div class="knowledge-icon">
+                            <i class="bi bi-calculator"></i>
+                        </div>
+                        <h5>계산 도구</h5>
+                        <p>중량, 강도 계산 등 유용한 온라인 계산 도구입니다.</p>
+                        <a href="#" class="btn btn-sm btn-outline-primary">사용하기</a>
+                    </div>
+                    
+                    <div class="knowledge-item">
+                        <div class="knowledge-icon">
+                            <i class="bi bi-question-circle"></i>
+                        </div>
+                        <h5>기술 FAQ</h5>
+                        <p>자주 묻는 기술적 질문과 답변을 모아놓았습니다.</p>
+                        <a href="faq.html" class="btn btn-sm btn-outline-primary">보기</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-top">
+            <div class="container">
+                <div class="footer-grid">
+                    <div class="footer-column">
+                        <h3>남경스틸(주)</h3>
+                        <p>철강산업의 리더로서 최고의 품질과 서비스를 제공합니다.</p>
+                    </div>
+                    <div class="footer-column">
+                        <h4>빠른 링크</h4>
+                        <ul>
+                            <li><a href="#">회사소개</a></li>
+                            <li><a href="#">제품정보</a></li>
+                            <li><a href="#">견적문의</a></li>
+                            <li><a href="#">채용정보</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-column">
+                        <h4>고객지원</h4>
+                        <ul>
+                            <li><a href="#">자주묻는질문</a></li>
+                            <li><a href="#">카탈로그</a></li>
+                            <li><a href="#">A/S 신청</a></li>
+                            <li><a href="#">오시는길</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-column">
+                        <h4>연락처</h4>
+                        <ul class="contact-info">
+                            <li><i class="fas fa-map-marker-alt"></i> 부산시 사상구 낙동대로 832</li>
+                            <li><i class="fas fa-phone"></i> 051-314-9701</li>
+                            <li><i class="fas fa-fax"></i> 051-314-9702</li>
+                            <li><i class="fas fa-envelope"></i> namkyungst@naver.com</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="container">
+                <div class="bottom-content">
+                    <p>&copy; 2025 남경스틸(주). All rights reserved.</p>
+                    <div class="footer-links">
+                        <a href="#">개인정보처리방침</a>
+                        <a href="#">이용약관</a>
+                        <a href="#">이메일무단수집거부</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // 드롭다운 메뉴 클릭 기능 (모바일용)
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropdownToggles = document.querySelectorAll('.toggle-dropdown');
+            
+            dropdownToggles.forEach(function(toggle) {
+                toggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const dropdown = this.closest('.dropdown');
+                    const isActive = dropdown.classList.contains('active');
+                    
+                    // 다른 모든 드롭다운 닫기
+                    document.querySelectorAll('.dropdown.active').forEach(function(activeDropdown) {
+                        if (activeDropdown !== dropdown) {
+                            activeDropdown.classList.remove('active');
+                        }
+                    });
+                    
+                    // 현재 드롭다운 토글
+                    dropdown.classList.toggle('active', !isActive);
+                });
+            });
+            
+            // 외부 클릭 시 드롭다운 닫기
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.dropdown')) {
+                    document.querySelectorAll('.dropdown.active').forEach(function(dropdown) {
+                        dropdown.classList.remove('active');
+                    });
+                }
+            });
+        });
+
+        // 기술지원 폼 제출 처리
+        document.getElementById('technicalSupportForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const required = ['company', 'contact_name', 'phone', 'email', 'support_type', 'support_content'];
+            let isValid = true;
+            
+            required.forEach(field => {
+                if (!formData.get(field)) {
+                    isValid = false;
+                }
+            });
+            
+            if (isValid) {
+                alert('기술지원 요청이 접수되었습니다. 빠른 시일 내에 전문가가 연락드리겠습니다.');
+                this.reset();
+            } else {
+                alert('필수 항목을 모두 입력해주세요.');
+            }
+        });
+    </script>
+</body>
+</html>
