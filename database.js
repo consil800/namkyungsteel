@@ -818,11 +818,12 @@ class DatabaseManager {
                             return [];
                         }
                         
-                        query = query.eq('user_id', userRecord.id);
+                        query = query.eq('user_id', userRecord.id.toString());
                     } else {
-                        // 일반 사용자 (numeric ID)
+                        // 일반 사용자 (numeric ID) - 문자열로 변환해서 검색
                         console.log('🔍 일반 사용자 쿼리 - userId:', userId, 'typeof:', typeof userId);
-                        query = query.eq('user_id', userId);
+                        console.log('🔍 문자열로 변환:', userId.toString());
+                        query = query.eq('user_id', userId.toString());
                     }
                 }
             }
