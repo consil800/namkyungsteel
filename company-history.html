@@ -377,21 +377,23 @@
         }
         .timeline-year {
             position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
+            right: -60px;
+            top: 15px;
             background: #007bff;
             color: white;
-            padding: 10px 20px;
-            border-radius: 25px;
+            padding: 5px 12px;
+            border-radius: 15px;
             font-weight: bold;
-            font-size: 16px;
+            font-size: 12px;
             z-index: 2;
+            min-width: 45px;
+            text-align: center;
         }
         .timeline-item:nth-child(odd) .timeline-year {
-            right: -85px;
+            right: -60px;
         }
         .timeline-item:nth-child(even) .timeline-year {
-            left: -85px;
+            left: -60px;
         }
         
         @media (max-width: 768px) {
@@ -406,6 +408,7 @@
             }
             .timeline-year {
                 left: -30px !important;
+                right: auto !important;
                 transform: none !important;
             }
             .timeline-content::after {
