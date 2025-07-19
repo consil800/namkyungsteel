@@ -43,297 +43,127 @@
     .login-btn:hover { 
       background: #0052a3; 
       color: white;
-    }
-    
-    /* 사용자 프로필 스타일 */
-    .user-profile {
-      margin-left: 25px;
-    }
-    
-    .profile-icon {
-      display: flex;
-      align-items: center;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      padding: 5px 10px;
-      border-radius: 25px;
-    }
-    
-    .profile-icon:hover {
-      background: rgba(255, 255, 255, 0.1);
-    }
-    
-    .profile-icon img {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 2px solid #fff;
-      margin-right: 8px;
-    }
-    
-    .profile-name {
-      color: #2c3e50;
-      font-weight: 500;
-      font-size: 14px;
-    }
-    
-    /* 🎯 NAVIGATION MENU FIXES */
-    .navmenu ul {
-      display: flex;
-      align-items: center;
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-    
-    .navmenu > ul > li {
-      white-space: nowrap;
-      padding: 15px 16px; /* 균등한 간격 */
-      position: relative;
-    }
-    
-    .navmenu a {
-      color: var(--nav-color, #2c3e50);
-      padding: 12px 0;
-      font-size: 15px;
-      font-family: var(--nav-font);
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      white-space: nowrap;
-      transition: 0.3s;
-      position: relative;
-    }
-    
-    .navmenu a i,
-    .navmenu a .bi {
-      font-size: 12px;
-      line-height: 0;
-      margin-left: 5px;
-      transition: 0.3s;
-    }
-    
-    .navmenu > ul > li > a:before {
-      content: "";
-      position: absolute;
-      width: 100%;
-      height: 2px;
-      bottom: -6px;
-      left: 0;
-      background-color: var(--nav-hover-color);
-      visibility: hidden;
-      transform: scaleX(0);
-      transition: all 0.3s ease-in-out 0s;
-    }
-    
-    .navmenu a:hover:before,
-    .navmenu li:hover > a:before,
-    .navmenu .active:before {
-      visibility: visible;
-      transform: scaleX(1);
-    }
-    
-    .navmenu a:hover,
-    .navmenu .active,
-    .navmenu .active:focus,
-    .navmenu li:hover > a {
-      color: var(--nav-hover-color);
-    }
-    
-    .navmenu .dropdown ul {
-      margin: 0;
-      padding: 10px 0;
-      background: #ffffff;
-      display: block;
-      position: absolute;
-      visibility: hidden;
-      left: 14px;
-      top: 130%;
-      opacity: 0;
-      transition: 0.3s;
-      border-radius: 4px;
-      z-index: 99;
-      box-shadow: 0px 0px 30px rgba(127, 137, 161, 0.25);
-    }
-    
-    .navmenu .dropdown ul li {
-      min-width: 200px;
-    }
-    
-    .navmenu .dropdown ul a {
-      padding: 10px 20px;
-      font-size: 15px;
-      text-transform: none;
-      color: #2c3e50;
-    }
-    
-    .navmenu .dropdown ul a i {
-      font-size: 12px;
-    }
-    
-    .navmenu .dropdown ul a:hover,
-    .navmenu .dropdown ul .active:hover,
-    .navmenu .dropdown ul li:hover > a {
-      color: #3498db;
-      background-color: #f8f9fa;
-    }
-    
-    .navmenu .dropdown:hover > ul {
-      opacity: 1;
-      top: 100%;
-      visibility: visible;
-    }
-    
-    .navmenu .dropdown .dropdown ul {
-      top: 0;
-      left: -90%;
-      visibility: hidden;
-    }
-    
-    .navmenu .dropdown .dropdown:hover > ul {
-      opacity: 1;
-      top: 0;
-      left: -100%;
-      visibility: visible;
-    }
-    
-    .navmenu .dropdown ul a:hover {
-      color: #3498db;
-      background-color: #f8f9fa;
-    }
-    
-    /* 모바일 네비게이션에서도 드롭다운 처리 */
-    @media (max-width: 1199px) {
-      .navmenu .dropdown ul {
-        position: static;
-        display: none;
-        z-index: 99;
-        padding: 10px 0;
-        margin: 10px 20px;
-        background-color: #ffffff;
-        border: 1px solid #e9ecef;
-        box-shadow: none;
-        border-radius: 6px;
-      }
-      
-      .navmenu .dropdown.active > ul {
-        display: block;
-      }
-    }
-    
-    /* Footer Styles */
-    .footer {
-      background-color: #2d3748;
-      color: #ffffff;
-      border-top: 3px solid #0066cc;
-    }
-    
-    .footer-top {
-      padding: 30px 0 20px;
-    }
-    
-    .footer-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 40px;
-    }
-    
-    .footer-column h3,
-    .footer-column h4 {
-      margin-bottom: 20px;
-      color: #ffffff;
-      font-weight: 600;
-      text-align: left;
-    }
-    
-    .footer-column ul {
-      list-style: none;
-      padding: 0;
-    }
-    
-    .footer-column ul li {
-      margin-bottom: 10px;
-    }
-    
-    .footer-column a {
-      color: #cbd5e0;
-      transition: all 0.3s ease;
-      text-decoration: none;
-    }
-    
-    .footer-column a:hover {
-      color: #0066cc;
-    }
-    
-    .footer-column p {
-      color: #a0aec0;
-      line-height: 1.6;
-    }
-    
-    .contact-info li {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      margin-bottom: 15px;
-      color: #cbd5e0;
-    }
-    
-    .contact-info {
-      text-align: left;
-    }
-    
-    .contact-info i {
-      margin-top: 4px;
-      color: #0066cc;
-    }
-    
-    .footer-bottom {
-      background-color: #1a202c;
-      padding: 20px 0;
-    }
-    
-    .bottom-content {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .bottom-content p {
-      color: #a0aec0;
-      margin: 0;
-    }
-    
-    .footer-links {
-      display: flex;
-      gap: 20px;
-    }
-    
-    .footer-links a {
-      color: #a0aec0;
-      font-size: 14px;
-      text-decoration: none;
-    }
-    
-    .footer-links a:hover {
-      color: #0066cc;
-    }
-    
-    @media (max-width: 768px) {
-      .bottom-content {
-        flex-direction: column;
-        gap: 20px;
-        text-align: center;
-      }
-      
-      .footer-grid {
-        grid-template-columns: 1fr;
-        text-align: center;
-      }
-      
-      .contact-info {
-        text-align: left;
-      }
+    }        /* Footer Styles - 적당한 대비감 있는 색상 */
+        .footer {
+            background-color: #2d3748;
+            color: #ffffff;
+            border-top: 3px solid #0066cc;
+        }
+        
+        .footer-top {
+            padding: 30px 0 20px;
+        }
+        
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+        }
+        
+        .footer-column h3,
+        .footer-column h4 {
+            margin-bottom: 20px;
+            color: #ffffff;
+            font-weight: 600;
+        }
+        
+        .footer-column ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .footer-column ul li {
+            margin-bottom: 10px;
+        }
+        
+        .footer-column a {
+            color: #cbd5e0;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        
+        .footer-column a:hover {
+            color: #0066cc;
+        }
+        
+        .footer-column p {
+            color: #a0aec0;
+            line-height: 1.6;
+        }
+        
+        .contact-info li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 15px;
+            color: #cbd5e0;
+        }
+        
+        .contact-info {
+            text-align: left;
+        }
+        
+        /* 연락처 섹션만 왼쪽 정렬 */
+        .footer-column:last-child h4 {
+            text-align: left;
+        }
+        
+        .footer-column:last-child {
+            padding-left: 0;
+        }
+        
+        .contact-info i {
+            margin-top: 4px;
+            color: #0066cc;
+        }
+        
+        .footer-bottom {
+            background-color: #1a202c;
+            padding: 20px 0;
+        }
+        
+        .bottom-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .bottom-content p {
+            color: #a0aec0;
+            margin: 0;
+        }
+        
+        .footer-links {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .footer-links a {
+            color: #a0aec0;
+            font-size: 14px;
+            text-decoration: none;
+        }
+        
+        .footer-links a:hover {
+            color: #0066cc;
+        }
+        
+        @media (max-width: 768px) {
+            .bottom-content {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+            
+            .footer-grid {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+            
+            .contact-info {
+                text-align: left;
+            }
+        }
     }
   
         /* 연락처 섹션만 왼쪽 정렬 */

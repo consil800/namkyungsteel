@@ -7,6 +7,7 @@
     <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
     <link href="assets/css/main.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <!-- Supabase JS CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -175,6 +176,7 @@
         }
         
         /* Footer Styles from namkyungst/index.html */
+        /* Footer Styles - 적당한 대비감 있는 색상 */
         .footer {
             background-color: #2d3748;
             color: #ffffff;
@@ -650,6 +652,15 @@
         /* Footer contact info alignment */
         .contact-info {
             text-align: left;
+        }
+        
+        /* 연락처 섹션만 왼쪽 정렬 */
+        .footer-column:last-child h4 {
+            text-align: left;
+        }
+        
+        .footer-column:last-child {
+            padding-left: 0;
         }
     
         /* 연락처 섹션만 왼쪽 정렬 */

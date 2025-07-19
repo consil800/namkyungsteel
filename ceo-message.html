@@ -7,181 +7,21 @@
     <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
     <link href="assets/css/main.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <!-- Supabase JS CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
-        body { font-family: 'Noto Sans KR', sans-serif !important; }
-        
-        /* Header Styles from index.html */
-        .header {
-            background-color: #ffffff !important;
-            box-shadow: 0 2px 15px rgba(0, 102, 204, 0.08) !important;
-            border-bottom: 1px solid #e9ecef !important;
-            backdrop-filter: blur(10px) !important;
-        }
-        
-        .header .sitename {
-            color: #1a365d !important;
-        }
-        
-        .navmenu a {
-            color: #2c3e50 !important;
-        }
-        
-        .navmenu a:hover {
-            color: #0066cc !important;
-        }
-        
-        .navmenu .active {
-            color: #0066cc !important;
-            font-weight: 600 !important;
-        }
-        
-        /* Login Button Styles */
-        .login-btn { 
-            background: #0066cc; 
-            color: white; 
-            padding: 8px 20px; 
-            border-radius: 5px; 
-            margin-left: 25px;
-            text-decoration: none;
-            transition: all 0.3s;
-        }
-        .login-btn:hover { 
-            background: #0052a3; 
-            color: white;
-        }
-        
-        /* User Profile Styles */
-        .user-profile {
-            margin-left: 25px;
-        }
-        
-        .profile-icon {
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            padding: 5px 10px;
-            border-radius: 25px;
-        }
-        
-        .profile-icon:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-        
-        .profile-icon img {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #fff;
-            margin-right: 8px;
-        }
-        
-        .profile-name {
-            color: #2c3e50;
-            font-weight: 500;
-            font-size: 14px;
-        }
-        
-        /* Navigation Dropdown Styles */
-        .navmenu ul {
-            display: flex;
-            align-items: center;
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-        
-        .navmenu > ul > li {
-            white-space: nowrap;
-            padding: 15px 16px;
-            position: relative;
-        }
-        
-        .navmenu a {
-            color: #2c3e50;
-            padding: 12px 0;
-            font-size: 16px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            white-space: nowrap;
-            transition: 0.3s;
-            text-decoration: none;
-        }
-        
-        .navmenu .dropdown ul {
-            display: none;
-            position: absolute;
-            top: 100%;
-            left: 0;
-            z-index: 99;
-            background-color: #ffffff;
-            box-shadow: 0px 0px 30px rgba(44, 62, 80, 0.15);
-            padding: 10px 0;
-            border-radius: 6px;
-            min-width: 180px;
-            flex-direction: column;
-        }
-        
-        .navmenu .dropdown:hover > ul {
-            display: flex;
-        }
-        
-        .navmenu .dropdown ul li {
-            padding: 0;
-            width: 100%;
-        }
-        
-        .navmenu .dropdown ul a {
-            padding: 10px 20px;
-            font-size: 15px;
-            color: #2c3e50;
-            border: none;
-            width: 100%;
-            justify-content: flex-start;
-        }
-        
-        .navmenu .dropdown ul a:hover {
-            color: #3498db;
-            background-color: #f8f9fa;
-        }
-        
-        .toggle-dropdown {
-            margin-left: 5px;
-        }
-        
-        @media (max-width: 1199px) {
-            .navmenu .dropdown ul {
-                position: static;
-                display: none;
-                z-index: 99;
-                padding: 10px 0;
-                margin: 10px 20px;
-                background-color: #ffffff;
-                border: 1px solid #e9ecef;
-                box-shadow: none;
-                border-radius: 6px;
-            }
-            
-            .navmenu .dropdown.active > ul {
-                display: flex;
-            }
-        }
-        
-        /* Footer Styles from homepage */
+        body { font-family: 'Noto Sans KR', sans-serif !important; }        /* Footer Styles - 적당한 대비감 있는 색상 */
         .footer {
             background-color: #2d3748;
             color: #ffffff;
+            border-top: 3px solid #0066cc;
         }
         
         .footer-top {
-            padding: 60px 0 40px;
+            padding: 30px 0 20px;
         }
         
         .footer-grid {
@@ -207,41 +47,18 @@
         }
         
         .footer-column a {
-            color: #e2e8f0;
+            color: #cbd5e0;
             transition: all 0.3s ease;
             text-decoration: none;
         }
         
         .footer-column a:hover {
-            color: #3182ce;
+            color: #0066cc;
         }
         
         .footer-column p {
-            color: #cbd5e0;
+            color: #a0aec0;
             line-height: 1.6;
-        }
-        
-        .social-links {
-            display: flex;
-            gap: 15px;
-            margin-top: 20px;
-        }
-        
-        .social-links a {
-            width: 40px;
-            height: 40px;
-            background-color: #4a5568;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-            color: #ffffff;
-        }
-        
-        .social-links a:hover {
-            background-color: #3182ce;
-            color: #ffffff;
         }
         
         .contact-info li {
@@ -249,12 +66,25 @@
             align-items: flex-start;
             gap: 10px;
             margin-bottom: 15px;
-            color: #e2e8f0;
+            color: #cbd5e0;
+        }
+        
+        .contact-info {
+            text-align: left;
+        }
+        
+        /* 연락처 섹션만 왼쪽 정렬 */
+        .footer-column:last-child h4 {
+            text-align: left;
+        }
+        
+        .footer-column:last-child {
+            padding-left: 0;
         }
         
         .contact-info i {
             margin-top: 4px;
-            color: #63b3ed;
+            color: #0066cc;
         }
         
         .footer-bottom {
@@ -269,7 +99,7 @@
         }
         
         .bottom-content p {
-            color: #cbd5e0;
+            color: #a0aec0;
             margin: 0;
         }
         
@@ -285,7 +115,7 @@
         }
         
         .footer-links a:hover {
-            color: #3182ce;
+            color: #0066cc;
         }
         
         @media (max-width: 768px) {
@@ -300,13 +130,10 @@
                 text-align: center;
             }
             
-            .social-links {
-                justify-content: center;
-            }
-            
             .contact-info {
                 text-align: left;
             }
+        }
         }
         .page-header {
             background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('namkyung.png');
