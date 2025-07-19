@@ -67,16 +67,38 @@
 <script>
 // 공통 네비바 로그인 상태 관리
 (function() {
-    // 페이지 로드 후 약간의 지연을 두고 로그인 상태 확인
-    setTimeout(function() {
-        checkAndUpdateNavbarLoginState();
-    }, 50);
+    // DOM이 완전히 로드된 후 로그인 상태 확인
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(checkAndUpdateNavbarLoginState, 100);
+        });
+    } else {
+        // 이미 로드된 경우 즉시 실행
+        setTimeout(checkAndUpdateNavbarLoginState, 100);
+    }
+    
+    // 추가로 더 긴 지연으로 한 번 더 확인 (다른 스크립트들이 sessionStorage를 업데이트할 시간 제공)
+    setTimeout(checkAndUpdateNavbarLoginState, 500);
+    setTimeout(checkAndUpdateNavbarLoginState, 1000);
     
     // 로그인 상태 확인 및 네비바 업데이트
     function checkAndUpdateNavbarLoginState() {
-        const currentUser = getCurrentUserFromSessionStorage();
+        console.log('🔍 네비바: 로그인 상태 확인 시작');
         
-        if (currentUser) {
+        const currentUser = getCurrentUserFromSessionStorage();
+        console.log('🔍 네비바: sessionStorage에서 가져온 사용자:', currentUser);
+        
+        // 네비바 요소들이 존재하는지 확인
+        const loginBtn = document.getElementById('mainLoginBtn');
+        const userProfile = document.getElementById('userProfile');
+        console.log('🔍 네비바: 요소 확인', {
+            loginBtn: !!loginBtn,
+            userProfile: !!userProfile,
+            loginBtnDisplay: loginBtn ? loginBtn.style.display : 'not found',
+            userProfileDisplay: userProfile ? userProfile.style.display : 'not found'
+        });
+        
+        if (currentUser && currentUser.name) {
             console.log('✅ 네비바: 로그인된 사용자 확인됨:', currentUser.name);
             updateNavbarForLoggedInUser(currentUser);
         } else {
@@ -101,15 +123,29 @@
     
     // 로그인된 사용자용 네비바 업데이트
     function updateNavbarForLoggedInUser(user) {
+        console.log('🔄 네비바: 로그인 상태로 업데이트 시작', user);
+        
         const loginBtn = document.getElementById('mainLoginBtn');
         const userProfile = document.getElementById('userProfile');
         const profileImage = document.getElementById('profileImage');
         const profileName = document.getElementById('profileName');
         
+        console.log('🔄 네비바: 요소 찾기 결과', {
+            loginBtn: !!loginBtn,
+            userProfile: !!userProfile,
+            profileImage: !!profileImage,
+            profileName: !!profileName
+        });
+        
         if (loginBtn && userProfile) {
             // 로그인 버튼 숨기고 프로필 표시
             loginBtn.style.display = 'none';
             userProfile.style.display = 'flex';
+            
+            console.log('✅ 네비바: 버튼 표시 상태 변경 완료', {
+                loginBtnDisplay: loginBtn.style.display,
+                userProfileDisplay: userProfile.style.display
+            });
             
             // 프로필 이미지 설정
             if (profileImage) {
@@ -119,17 +155,23 @@
                     // 기본 아바타 생성
                     profileImage.src = generateNavbarDefaultAvatar(user.name || user.email || 'User');
                 }
+                console.log('🖼️ 네비바: 프로필 이미지 설정 완료');
             }
             
             // 사용자 이름 설정
             if (profileName) {
                 profileName.textContent = user.name || user.email || '사용자';
+                console.log('👤 네비바: 사용자 이름 설정 완료:', profileName.textContent);
             }
+        } else {
+            console.error('❌ 네비바: 필수 요소를 찾을 수 없음');
         }
     }
     
     // 로그아웃 상태용 네비바 업데이트
     function updateNavbarForLoggedOutUser() {
+        console.log('🔄 네비바: 로그아웃 상태로 업데이트 시작');
+        
         const loginBtn = document.getElementById('mainLoginBtn');
         const userProfile = document.getElementById('userProfile');
         
@@ -137,6 +179,13 @@
             // 프로필 숨기고 로그인 버튼 표시
             loginBtn.style.display = 'flex';
             userProfile.style.display = 'none';
+            
+            console.log('✅ 네비바: 로그아웃 상태 업데이트 완료', {
+                loginBtnDisplay: loginBtn.style.display,
+                userProfileDisplay: userProfile.style.display
+            });
+        } else {
+            console.error('❌ 네비바: 로그아웃 업데이트 - 필수 요소를 찾을 수 없음');
         }
     }
     
