@@ -124,22 +124,37 @@ function generateNavbarDefaultAvatar(name) {
 
 // 네비바 로그인 모달 표시 함수 (각 페이지에서 정의된 함수 호출)
 function showLoginModal() {
-    if (window.showLoginModal && typeof window.showLoginModal === 'function') {
-        window.showLoginModal();
+    console.log('🔑 네비바: 로그인 모달 호출됨');
+    
+    // 페이지의 원본 showLoginModal 함수 찾기
+    if (window._originalShowLoginModal && typeof window._originalShowLoginModal === 'function') {
+        console.log('🔑 네비바: 원본 showLoginModal 함수 호출');
+        window._originalShowLoginModal();
+    } else if (document.getElementById('authModal')) {
+        // 로그인 모달이 있으면 직접 표시
+        console.log('🔑 네비바: 로그인 모달 직접 표시');
+        document.getElementById('authModal').style.display = 'flex';
     } else {
         // 기본 로그인 페이지로 이동
+        console.log('🔑 네비바: 로그인 페이지로 이동');
         window.location.href = 'login.html';
     }
 }
 
 // 네비바 프로필 클릭 함수 (각 페이지에서 정의된 함수 호출)
 function handleProfileClick() {
-    if (window.handleProfileClick && typeof window.handleProfileClick === 'function') {
-        window.handleProfileClick();
+    console.log('👤 네비바: 프로필 클릭됨');
+    
+    // 페이지의 원본 handleProfileClick 함수 찾기
+    if (window._originalHandleProfileClick && typeof window._originalHandleProfileClick === 'function') {
+        console.log('👤 네비바: 원본 handleProfileClick 함수 호출');
+        window._originalHandleProfileClick();
     } else if (window.showProfileModal && typeof window.showProfileModal === 'function') {
+        console.log('👤 네비바: showProfileModal 함수 호출');
         window.showProfileModal();
     } else {
         // 기본 대시보드로 이동
+        console.log('👤 네비바: 대시보드로 이동');
         window.location.href = 'employee-dashboard.html';
     }
 }
