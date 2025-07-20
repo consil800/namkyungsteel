@@ -517,13 +517,9 @@
                             <label class="form-label">권한</label>
                             <select class="form-select" id="employeeRole">
                                 <option value="employee">직원</option>
+                                <option value="company_admin">관리자</option>
                             </select>
                         </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">비밀번호</label>
-                        <input type="password" class="form-input" id="employeePassword" placeholder="비밀번호 (수정 시 선택사항)">
                     </div>
                     
                     <div class="modal-actions">
@@ -796,8 +792,7 @@
                     document.getElementById('employeePosition').value = employee.position || '';
                     document.getElementById('employeePhone').value = employee.phone || '';
                     document.getElementById('employeeRole').value = employee.role || 'employee';
-                    // 비밀번호는 수정시 비워둠
-                    document.getElementById('employeePassword').value = '';
+                    // 비밀번호 필드가 제거되었으므로 비밀번호 처리 제거
                 }
             } catch (error) {
                 console.error('❌ 직원 데이터 로드 오류:', error);
@@ -828,10 +823,8 @@
                     is_active: true
                 };
 
-                const password = document.getElementById('employeePassword').value.trim();
-                if (password) {
-                    employeeData.password = password;
-                }
+                // 비밀번호 필드가 제거되었으므로 비밀번호 처리 제거
+                // 비밀번호는 초기 생성 시에만 자동 설정
 
                 if (currentEditingEmployee) {
                     // 수정
@@ -861,6 +854,7 @@
                     .insert([{
                         ...employeeData,
                         username: employeeData.email,
+                        password: null, // 관리자가 추가한 직원은 비밀번호 없음 (직접 가입 필요)
                         created_at: new Date().toISOString(),
                         updated_at: new Date().toISOString()
                     }])
@@ -878,6 +872,7 @@
                 ...employeeData,
                 id: Date.now().toString(),
                 username: employeeData.email,
+                password: 'employee123', // 신규 직원 기본 비밀번호
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             };
@@ -988,9 +983,9 @@
                 options += '<option value="company_manager">부서장</option>';
             } else if (currentUser.role === 'company_CEO') {
                 options += '<option value="company_admin">관리자</option>';
-                options += '<option value="company_manager">부서장</option>';
             } else if (currentUser.role === 'company_admin') {
-                options += '<option value="company_manager">부서장</option>';
+                // 관리자는 직원만 관리 가능
+                // options은 기본 employee만 있음
             }
             
             roleSelect.innerHTML = options;
