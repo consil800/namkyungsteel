@@ -981,8 +981,8 @@
             } else if (currentUser.role === 'company_CEO') {
                 options += '<option value="company_admin">관리자</option>';
             } else if (currentUser.role === 'company_admin') {
-                // 관리자는 직원만 관리 가능
-                // options은 기본 employee만 있음
+                // 관리자는 직원과 관리자 관리 가능
+                options += '<option value="company_admin">관리자</option>';
             }
             
             roleSelect.innerHTML = options;
