@@ -211,6 +211,44 @@
             color: #ef4444;
         }
 
+        .file-upload-area {
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .file-upload-area:hover {
+            border-color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .file-upload-area.dragover {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .upload-preview {
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .upload-preview img {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .upload-info {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
         @media (max-width: 768px) {
             .header {
                 flex-direction: column;
@@ -383,6 +421,23 @@
                     </div>
                 </div>
 
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label class="form-label">회사 직인</label>
+                        <div class="file-upload-area" id="sealUploadArea">
+                            <input type="file" id="sealFileInput" accept="image/*" style="display: none;">
+                            <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: rgba(255, 255, 255, 0.6); margin-bottom: 0.5rem;"></i>
+                            <p style="color: white; margin: 0.5rem 0;">클릭하거나 이미지를 드래그하여 업로드</p>
+                            <p class="upload-info">권장: PNG, JPG (최대 5MB)</p>
+                        </div>
+                        <div class="upload-preview" id="sealPreview">
+                            <img id="sealPreviewImage" src="" alt="직인 미리보기">
+                            <p class="upload-info">현재 직인 이미지</p>
+                        </div>
+                        <input type="hidden" id="companySealUrl" name="company_seal_url">
+                    </div>
+                </div>
+
                 <div class="btn-container">
                     <button type="button" class="btn btn-secondary" onclick="resetForm()">
                         <i class="fas fa-undo"></i> 초기화
@@ -427,6 +482,9 @@
             
             // 폼 제출 이벤트 등록
             document.getElementById('companyInfoForm').addEventListener('submit', handleFormSubmit);
+            
+            // 직인 업로드 이벤트 등록
+            setupSealUpload();
         });
 
         // 권한 확인 함수
@@ -476,6 +534,12 @@
                     input.value = data[key];
                 }
             });
+            
+            // 직인 이미지 표시
+            if (data.company_seal_url) {
+                document.getElementById('sealPreviewImage').src = data.company_seal_url;
+                document.getElementById('sealPreview').style.display = 'block';
+            }
         }
 
         // 폼 제출 처리
@@ -542,6 +606,111 @@
             setTimeout(() => {
                 alertContainer.innerHTML = '';
             }, 3000);
+        }
+
+        // 직인 업로드 설정
+        function setupSealUpload() {
+            const uploadArea = document.getElementById('sealUploadArea');
+            const fileInput = document.getElementById('sealFileInput');
+            const preview = document.getElementById('sealPreview');
+            const previewImage = document.getElementById('sealPreviewImage');
+            
+            // 클릭으로 파일 선택
+            uploadArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+            
+            // 파일 선택 시
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    handleSealFile(file);
+                }
+            });
+            
+            // 드래그 앤 드롭
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                
+                const file = e.dataTransfer.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    handleSealFile(file);
+                }
+            });
+        }
+        
+        // 직인 파일 처리
+        async function handleSealFile(file) {
+            // 파일 크기 체크 (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                showAlert('파일 크기는 5MB를 초과할 수 없습니다.', 'error');
+                return;
+            }
+            
+            // 파일 타입 체크
+            if (!file.type.startsWith('image/')) {
+                showAlert('이미지 파일만 업로드 가능합니다.', 'error');
+                return;
+            }
+            
+            try {
+                // Supabase Storage에 업로드
+                const fileName = `company-seal-${Date.now()}.${file.name.split('.').pop()}`;
+                const { data: uploadData, error: uploadError } = await window.db.client.storage
+                    .from('company-assets')
+                    .upload(fileName, file, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+                
+                if (uploadError) {
+                    // 버킷이 없는 경우 생성 필요
+                    console.error('업로드 오류:', uploadError);
+                    
+                    // 대체 방법: Base64로 저장
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const base64Data = e.target.result;
+                        document.getElementById('companySealUrl').value = base64Data;
+                        
+                        // 미리보기 표시
+                        document.getElementById('sealPreviewImage').src = base64Data;
+                        document.getElementById('sealPreview').style.display = 'block';
+                        
+                        showAlert('직인 이미지가 선택되었습니다.', 'success');
+                    };
+                    reader.readAsDataURL(file);
+                    return;
+                }
+                
+                // 공개 URL 가져오기
+                const { data: urlData } = window.db.client.storage
+                    .from('company-assets')
+                    .getPublicUrl(fileName);
+                
+                if (urlData) {
+                    document.getElementById('companySealUrl').value = urlData.publicUrl;
+                    
+                    // 미리보기 표시
+                    document.getElementById('sealPreviewImage').src = urlData.publicUrl;
+                    document.getElementById('sealPreview').style.display = 'block';
+                    
+                    showAlert('직인 이미지가 업로드되었습니다.', 'success');
+                }
+            } catch (error) {
+                console.error('직인 업로드 오류:', error);
+                showAlert('직인 업로드 중 오류가 발생했습니다.', 'error');
+            }
         }
     </script>
 </body>
