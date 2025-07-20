@@ -44,13 +44,8 @@
         };
 
         window.showCompanyInfoManagement = function() {
-            console.log('showCompanyInfoManagement 함수 호출됨');
-            history.pushState({ section: 'company-info' }, '회사정보', '#company-info');
-            document.querySelector('.management-container').style.display = 'none';
-            const companySection = document.getElementById('company-info') || document.getElementById('companyInfo');
-            if (companySection) {
-                companySection.style.display = 'block';
-            }
+            console.log('회사정보 관리 페이지로 이동');
+            window.location.href = 'company-info.html';
         };
 
         // 대시보드로 돌아가기 함수
