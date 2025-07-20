@@ -20,10 +20,10 @@ CREATE TABLE IF NOT EXISTS quote_requests (
     attachment_url TEXT,
     status VARCHAR(20) DEFAULT 'pending', -- pending, in_progress, completed, cancelled
     priority VARCHAR(10) DEFAULT 'normal', -- high, normal, low
-    assigned_to UUID REFERENCES users(id),
+    assigned_to BIGINT REFERENCES users(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    created_by UUID REFERENCES users(id)
+    created_by BIGINT REFERENCES users(id)
 );
 
 -- 2. 카탈로그 요청 테이블
@@ -37,10 +37,10 @@ CREATE TABLE IF NOT EXISTS catalog_requests (
     request_details TEXT,
     status VARCHAR(20) DEFAULT 'pending',
     priority VARCHAR(10) DEFAULT 'normal',
-    assigned_to UUID REFERENCES users(id),
+    assigned_to BIGINT REFERENCES users(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    created_by UUID REFERENCES users(id)
+    created_by BIGINT REFERENCES users(id)
 );
 
 -- 3. 기술지원 요청 테이블
@@ -58,16 +58,16 @@ CREATE TABLE IF NOT EXISTS technical_support_requests (
     attachment_url TEXT,
     status VARCHAR(20) DEFAULT 'pending',
     priority VARCHAR(10) DEFAULT 'normal',
-    assigned_to UUID REFERENCES users(id),
+    assigned_to BIGINT REFERENCES users(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    created_by UUID REFERENCES users(id)
+    created_by BIGINT REFERENCES users(id)
 );
 
 -- 4. 알림 테이블
 CREATE TABLE IF NOT EXISTS notifications (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id UUID REFERENCES users(id),
+    user_id BIGINT REFERENCES users(id),
     title VARCHAR(255) NOT NULL,
     message TEXT NOT NULL,
     type VARCHAR(50) NOT NULL, -- quote_request, catalog_request, technical_support, system
@@ -99,7 +99,7 @@ CREATE POLICY "Admin can view all quote requests" ON quote_requests
     FOR ALL USING (
         EXISTS (
             SELECT 1 FROM users 
-            WHERE users.id = auth.uid() 
+            WHERE users.id::text = auth.uid()::text 
             AND users.role IN ('admin', 'company_admin')
         )
     );
@@ -108,7 +108,7 @@ CREATE POLICY "Admin can view all catalog requests" ON catalog_requests
     FOR ALL USING (
         EXISTS (
             SELECT 1 FROM users 
-            WHERE users.id = auth.uid() 
+            WHERE users.id::text = auth.uid()::text 
             AND users.role IN ('admin', 'company_admin')
         )
     );
@@ -117,14 +117,14 @@ CREATE POLICY "Admin can view all technical support requests" ON technical_suppo
     FOR ALL USING (
         EXISTS (
             SELECT 1 FROM users 
-            WHERE users.id = auth.uid() 
+            WHERE users.id::text = auth.uid()::text 
             AND users.role IN ('admin', 'company_admin')
         )
     );
 
 -- 사용자는 자신의 알림만 조회 가능
 CREATE POLICY "Users can view their own notifications" ON notifications
-    FOR ALL USING (user_id = auth.uid());
+    FOR ALL USING (user_id::text = auth.uid()::text);
 
 -- 7. 트리거 함수 생성 (업데이트 시간 자동 갱신)
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -157,7 +157,7 @@ CREATE OR REPLACE FUNCTION create_request_notification(
 )
 RETURNS VOID AS $$
 DECLARE
-    admin_user_id UUID;
+    admin_user_id BIGINT;
     notification_title TEXT;
     notification_message TEXT;
 BEGIN

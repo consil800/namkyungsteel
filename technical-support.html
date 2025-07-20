@@ -623,18 +623,27 @@
             
             try {
                 // 폼 데이터 수집
+                // 지원 방식 체크박스 수집
+                const supportMethods = [];
+                const methodCheckboxes = form.querySelectorAll('input[name="support_method[]"]');
+                methodCheckboxes.forEach(checkbox => {
+                    if (checkbox.checked) {
+                        supportMethods.push(checkbox.value);
+                    }
+                });
+                
                 const techData = {
                     company: formData.get('company'),
                     contact_name: formData.get('contact_name'),
                     phone: formData.get('phone'),
                     email: formData.get('email'),
                     support_type: formData.get('support_type'),
-                    product_info: formData.get('product_info'),
-                    issue_description: formData.get('issue_description'),
-                    urgency_level: formData.get('urgency_level') || 'normal',
-                    preferred_contact_method: formData.get('preferred_contact_method'),
+                    product_info: formData.get('related_product'),
+                    issue_description: formData.get('support_content'),
+                    urgency_level: formData.get('priority') || 'normal',
+                    preferred_contact_method: supportMethods.join(', '),
                     status: 'pending',
-                    priority: formData.get('urgency_level') === 'urgent' ? 'high' : 'normal'
+                    priority: formData.get('priority') === '긴급' ? 'high' : 'normal'
                 };
                 
                 // 파일 업로드 처리 (추후 구현 가능)
