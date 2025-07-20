@@ -15,14 +15,10 @@
     <script>
         // 관리 카드 클릭 함수들을 즉시 정의
         window.showEmployeeManagement = function() {
-            console.log('showEmployeeManagement 함수 호출됨');
+            console.log('showEmployeeManagement 함수 호출됨 - 전용 페이지로 이동');
             
-            // 히스토리에 상태 추가
-            history.pushState({ section: 'employees' }, '직원 관리', '#employees');
-            
-            // 직접 화면 전환
-            document.querySelector('.management-container').style.display = 'none';
-            document.getElementById('employees').style.display = 'block';
+            // 전용 직원관리 페이지로 이동
+            window.location.href = 'employee-management.html';
         };
 
         window.showPermissionManagement = function() {
@@ -1635,31 +1631,7 @@
                     </button>
                 </div>
             </div>
-            <section class="content-section" id="employees" style="display: none;">
-                <button class="btn btn-secondary" onclick="backToDashboard()" style="margin-bottom: 1rem;">
-                    <i class="fas fa-arrow-left"></i> 대시보드로 돌아가기
-                </button>
-                <h2 class="section-title">직원 관리</h2>
-                
-                <div class="data-grid">
-                    <div class="grid-header">
-                        <h3 class="grid-title">직원 목록</h3>
-                        <div style="display: flex; gap: 10px;">
-                            <button class="btn" onclick="console.log('⚙️ 설정 버튼 클릭됨'); window.openEmployeeSettingsModal(); return false;" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-                                <i class="fas fa-cog"></i> 설정
-                            </button>
-                            <button class="btn" onclick="console.log('➕ 직원 추가 버튼 클릭됨'); window.openEmployeeModal(); return false;">
-                                <i class="fas fa-plus"></i> 직원 추가
-                            </button>
-                        </div>
-                    </div>
-                    <div style="padding: 2rem;">
-                        <div id="employeeList">
-                            <!-- 직원 목록이 여기에 로드됩니다 -->
-                        </div>
-                    </div>
-                </div>
-            </section>
+            <!-- 직원 관리 섹션은 별도의 employee-management.html 페이지로 이동 -->
 
             <!-- 권한 설정 섹션 -->
             <section class="content-section" id="permissions" style="display: none;">
@@ -1957,111 +1929,7 @@
             </section>
         </main>
 
-        <!-- 직원 모달 (최상위 레벨) -->
-        <div id="employeeModal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 id="modalTitle">직원 정보</h3>
-                    <button class="close" onclick="window.closeEmployeeModal()">&times;</button>
-                </div>
-                <form id="employeeForm" onsubmit="event.preventDefault(); console.log('📤 폼 제출됨'); window.saveEmployee(); return false;" novalidate>
-                    <!-- 첫 번째 행: 이름과 이메일 -->
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">이름 *</label>
-                            <input type="text" class="form-input" id="employeeName" placeholder="이름을 입력하세요">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">이메일 *</label>
-                            <input type="email" class="form-input" id="employeeEmail" placeholder="example@company.com">
-                        </div>
-                    </div>
-                    
-                    <!-- 두 번째 행: 권한과 연락처 -->
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">권한 *</label>
-                            <select class="form-select" id="employeeRole">
-                                <option value="">권한을 선택하세요</option>
-                                <option value="employee">직원</option>
-                                <option value="company_admin">회사 관리자</option>
-                                <option value="company_CEO">회사 대표</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">연락처</label>
-                            <input type="tel" class="form-input" id="employeePhone" placeholder="010-1234-5678">
-                        </div>
-                    </div>
-                    
-                    <!-- 세 번째 행: 소속 부서와 직책 -->
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">소속 부서</label>
-                            <select class="form-select" id="employeeDepartment">
-                                <option value="">부서를 선택하세요</option>
-                                <!-- 동적으로 로드됩니다 -->
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">직책</label>
-                            <select class="form-select" id="employeePosition">
-                                <option value="">직책을 선택하세요</option>
-                                <!-- 동적으로 로드됩니다 -->
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <!-- 버튼 영역 -->
-                    <div class="modal-actions">
-                        <button type="button" class="btn btn-secondary" onclick="window.closeEmployeeModal()">취소</button>
-                        <button type="submit" class="btn btn-primary">저장</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- 직원 설정 모달 -->
-        <div id="employeeSettingsModal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>직원 관리 설정</h3>
-                    <button class="close" onclick="closeEmployeeSettingsModal()">&times;</button>
-                </div>
-                <div style="padding: 1rem;">
-                    <!-- 부서 관리 -->
-                    <div style="margin-bottom: 2rem;">
-                        <h4 style="color: #e2e8f0; margin-bottom: 1rem;">부서 관리</h4>
-                        <div id="departmentsList" style="margin-bottom: 1rem;">
-                            <!-- 현재 부서들이 여기에 표시됩니다 -->
-                        </div>
-                        <div style="display: flex; gap: 10px;">
-                            <input type="text" id="newDepartmentInput" class="form-input" placeholder="새 부서명 입력" style="flex: 1;">
-                            <button class="btn" onclick="addDepartment()" style="background: linear-gradient(135deg, #10b981, #059669);">
-                                <i class="fas fa-plus"></i> 추가
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- 직책 관리 -->
-                    <div style="margin-bottom: 2rem;">
-                        <h4 style="color: #e2e8f0; margin-bottom: 1rem;">직책 관리</h4>
-                        <div id="positionsList" style="margin-bottom: 1rem;">
-                            <!-- 현재 직책들이 여기에 표시됩니다 -->
-                        </div>
-                        <div style="display: flex; gap: 10px;">
-                            <input type="text" id="newPositionInput" class="form-input" placeholder="새 직책명 입력" style="flex: 1;">
-                            <button class="btn" onclick="addPosition()" style="background: linear-gradient(135deg, #10b981, #059669);">
-                                <i class="fas fa-plus"></i> 추가
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeEmployeeSettingsModal()">닫기</button>
-                </div>
-            </div>
-        </div>
+        <!-- 직원 관리 모달들은 employee-management.html로 이동 -->
 
         <!-- 상태 표시 -->
         <div id="statusIndicator" class="status-indicator">
