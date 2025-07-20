@@ -18,19 +18,19 @@
     <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
     <link href="assets/vendor/aos/aos.css" rel="stylesheet">
-    <link href="assets/vendor/swiper/swiper-bundle.min.css" rel="stylesheet">    <!-- Common Styles -->
+    <link href="assets/vendor/swiper/swiper-bundle.min.css" rel="stylesheet">
+    
+    <!-- Main CSS File -->
+    <link href="assets/css/main.css" rel="stylesheet">
+    
+    <!-- Common Styles -->
     <link href="includes/common-styles.css" rel="stylesheet">
-
-
     
     <!-- Font Awesome for icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <!-- Supabase JS CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <!-- Main CSS File -->
-    <link href="assets/css/main.css" rel="stylesheet">
     
     <style>/* 연락처 섹션만 왼쪽 정렬 */
         .footer-column:last-child h4 {
@@ -299,17 +299,12 @@
             color: #0066cc;
             text-decoration: none;
         }
-        /* 연락처 섹션만 왼쪽 정렬 */
-        .footer-column:last-child h4 {
-            text-align: left;
-        }
-
-        .footer-column:last-child {
-            padding-left: 0;
-        }</style>
+        /* Footer styles already defined in common-styles.css */</style>
 </head>
 <body>
 
+    <!-- Header will be loaded by common.js -->
+    
     <!-- Page Header -->
     <div class="page-header">
         <div class="container">
@@ -603,6 +598,8 @@
             </div>
         </div>
     </section>
+
+    <!-- Footer will be loaded by common.js -->
 
     <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
     
@@ -963,14 +960,7 @@
         background: #545b62;
       }
     
-        /* 연락처 섹션만 왼쪽 정렬 */
-        .footer-column:last-child h4 {
-            text-align: left;
-        }
-
-        .footer-column:last-child {
-            padding-left: 0;
-        }</style>
+        /* Footer styles already defined in common-styles.css */</style>
 
     <!-- Vendor JS Files from CDN -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -980,6 +970,70 @@
 
     <!-- Supabase 및 로그인 기능 -->
     <script>
+      // FAQ 기능
+      function toggleFAQ(element) {
+        const answer = element.nextElementSibling;
+        const icon = element.querySelector('.faq-toggle');
+        
+        // 현재 활성화된 다른 FAQ 닫기
+        document.querySelectorAll('.faq-question.active').forEach(activeQuestion => {
+          if (activeQuestion !== element) {
+            activeQuestion.classList.remove('active');
+            activeQuestion.nextElementSibling.classList.remove('active');
+          }
+        });
+        
+        // 현재 FAQ 토글
+        element.classList.toggle('active');
+        answer.classList.toggle('active');
+      }
+      
+      function filterFAQ(category) {
+        const faqItems = document.querySelectorAll('.faq-item');
+        const categoryBtns = document.querySelectorAll('.category-btn');
+        
+        // 카테고리 버튼 활성화 상태 변경
+        categoryBtns.forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+        
+        // FAQ 항목 필터링
+        faqItems.forEach(item => {
+          if (category === 'all' || item.dataset.category === category) {
+            item.style.display = 'block';
+          } else {
+            item.style.display = 'none';
+          }
+        });
+      }
+      
+      function searchFAQ() {
+        const searchTerm = document.getElementById('faqSearch').value.toLowerCase();
+        const faqItems = document.querySelectorAll('.faq-item');
+        
+        faqItems.forEach(item => {
+          const question = item.querySelector('.faq-question span').textContent.toLowerCase();
+          const answer = item.querySelector('.faq-answer').textContent.toLowerCase();
+          
+          if (question.includes(searchTerm) || answer.includes(searchTerm)) {
+            item.style.display = 'block';
+          } else {
+            item.style.display = 'none';
+          }
+        });
+      }
+      
+      // 엔터키로 검색
+      document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('faqSearch');
+        if (searchInput) {
+          searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+              searchFAQ();
+            }
+          });
+        }
+      });
+      
       // Supabase 설정
       const SUPABASE_URL = 'https://zgyawfmjconubxaiamod.supabase.co';
       const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpneWF3Zm1qY29udWJ4YWlhbW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NjQzNzIsImV4cCI6MjA2NzM0MDM3Mn0.shjBE2OQeILwkLLi4E6Bq0-b6YPUs-WFwquexdUiM9A';
