@@ -294,13 +294,25 @@
                 }
             }
             
-            // 현재 사용자 확인 (간단한 체크)
-            const userSession = localStorage.getItem('userSession');
+            // 현재 사용자 확인 (sessionStorage에서 가져오기)
+            const userSession = sessionStorage.getItem('currentUser');
             if (userSession) {
                 try {
                     currentUser = JSON.parse(userSession);
                 } catch (error) {
                     console.error('사용자 세션 파싱 오류:', error);
+                }
+            } else {
+                // sessionStorage에 없으면 localStorage에서 확인
+                const localUserSession = localStorage.getItem('currentUser');
+                if (localUserSession) {
+                    try {
+                        currentUser = JSON.parse(localUserSession);
+                        // sessionStorage에도 동기화
+                        sessionStorage.setItem('currentUser', localUserSession);
+                    } catch (error) {
+                        console.error('로컴 사용자 세션 파싱 오류:', error);
+                    }
                 }
             }
             

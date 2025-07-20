@@ -2072,22 +2072,7 @@
     </div>
 
     <script>
-        // 인증 관리자 (AuthManager)
-        class AuthManager {
-            static setCurrentUser(user) {
-                localStorage.setItem('currentUser', JSON.stringify(user));
-            }
-
-            static getCurrentUser() {
-                const user = localStorage.getItem('currentUser');
-                return user ? JSON.parse(user) : null;
-            }
-
-            static logout() {
-                localStorage.removeItem('currentUser');
-                window.location.href = 'employee-dashboard.html';
-            }
-        }
+        // shared-assets/js/auth.js에서 AuthManager를 로드하므로 여기서는 삭제
 
         // 전역 변수
         let currentTemplate = null;
@@ -2262,6 +2247,13 @@
             setTimeout(() => {
                 checkAdminNotifications();
             }, 500);
+            
+            // AuthManager가 로드되기를 기다림
+            if (typeof AuthManager === 'undefined') {
+                console.error('❌ AuthManager가 로드되지 않았습니다. 재로드합니다.');
+                setTimeout(() => location.reload(), 1000);
+                return;
+            }
             
             let user = AuthManager.getCurrentUser();
             
