@@ -9,6 +9,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Database Manager -->
     <script src="database.js"></script>
+    <!-- Auth Manager -->
+    <script src="shared-assets/js/auth.js"></script>
     
     <script>
         // 관리 카드 클릭 함수들을 즉시 정의
@@ -2307,9 +2309,18 @@
                 updateCompanyTitle(companyId);
             }
             
+            // 디버그 정보 추가
+            console.log('🕵️ 사용자 인증 확인:', {
+                user: user,
+                userRole: user?.role,
+                sessionStorage: sessionStorage.getItem('currentUser'),
+                AuthManager: typeof AuthManager
+            });
+            
             if (!user) {
                 // 데이터베이스에서 실제 사용자 확인 후 리다이렉트
-                console.log('❌ 인증된 사용자가 없습니다. 로그인 페이지로 이동합니다.');
+                console.error('❌ 인증된 사용자가 없습니다. 로그인 페이지로 이동합니다.');
+                alert('로그인 세션이 만료되었습니다. 다시 로그인해주세요.');
                 window.location.href = 'login.html';
                 return;
             }
