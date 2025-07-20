@@ -861,6 +861,30 @@
             transform: translateY(-5px);
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
+        
+        /* 알림 배지 스타일 */
+        .notification-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ff4757;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
 
         .management-card i {
             font-size: 4rem;
@@ -1623,6 +1647,15 @@
                         <i class="fas fa-building"></i>
                         <h3>회사정보</h3>
                         <p>회사 기본정보, 사업자등록증, 법인등록번호 등을 관리합니다.</p>
+                    </button>
+                    
+                    <button class="management-card quote-requests-card" id="quoteRequestsBtn" onclick="window.location.href='request-management.html';">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <h3>견적요청</h3>
+                        <p>견적 요청, 카탈로그 요청, 기술지원 요청을 관리합니다.</p>
+                        <div id="requestNotificationBadge" class="notification-badge" style="display: none;">
+                            <span id="requestNotificationCount">0</span>
+                        </div>
                     </button>
                 </div>
             </div>
@@ -4627,6 +4660,9 @@
                 // 해시가 없으면 메인 대시보드 표시
                 showSection('dashboard');
             }
+            
+            // 요청 알림 체크
+            checkRequestNotifications();
         }
 
         // 이벤트 리스너 등록
@@ -4683,6 +4719,52 @@
                     sealPreview.src = data.company_seal_url;
                     sealPreview.style.display = 'block';
                 }
+            }
+        }
+        
+        // 요청 알림 체크 함수
+        async function checkRequestNotifications() {
+            try {
+                // Supabase 설정
+                const SUPABASE_URL = 'https://zgyawfmjconubxaiamod.supabase.co';
+                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpneWF3Zm1qY29udWJ4YWlhbW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NjQzNzIsImV4cCI6MjA2NzM0MDM3Mn0.shjBE2OQeILwkLLi4E6Bq0-b6YPUs-WFwquexdUiM9A';
+                
+                const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                
+                // 대기 중인 요청 수 조회
+                const [quoteResult, catalogResult, technicalResult] = await Promise.all([
+                    supabaseClient.from('quote_requests').select('id', { count: 'exact' }).eq('status', 'pending'),
+                    supabaseClient.from('catalog_requests').select('id', { count: 'exact' }).eq('status', 'pending'),
+                    supabaseClient.from('technical_support_requests').select('id', { count: 'exact' }).eq('status', 'pending')
+                ]);
+                
+                const pendingQuotes = quoteResult.count || 0;
+                const pendingCatalogs = catalogResult.count || 0;
+                const pendingTechnical = technicalResult.count || 0;
+                const totalPendingRequests = pendingQuotes + pendingCatalogs + pendingTechnical;
+                
+                console.log('📋 대기 중인 요청:', {
+                    견적: pendingQuotes,
+                    카탈로그: pendingCatalogs,
+                    기술지원: pendingTechnical,
+                    총합: totalPendingRequests
+                });
+                
+                // 견적요청 카드 배지 업데이트
+                const requestBadge = document.getElementById('requestNotificationBadge');
+                if (requestBadge) {
+                    if (totalPendingRequests > 0) {
+                        requestBadge.style.display = 'flex';
+                        requestBadge.querySelector('span').textContent = totalPendingRequests;
+                    } else {
+                        requestBadge.style.display = 'none';
+                    }
+                }
+                
+                console.log('✅ 요청 알림 체크 완료:', totalPendingRequests, '건');
+                
+            } catch (error) {
+                console.error('❌ 요청 알림 체크 오류:', error);
             }
         }
         

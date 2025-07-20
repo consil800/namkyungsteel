@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>요청 관리 - 남경스틸(주)</title>
+    
+    <!-- Favicons -->
+    <link href="logo.jpg" rel="icon">
+    <link href="logo.jpg" rel="apple-touch-icon">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com" rel="preconnect">
+    <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Vendor CSS Files -->
+    <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- Main CSS File -->
+    <link href="assets/css/main.css" rel="stylesheet">
+    
+    <!-- Common Styles -->
+    <link href="includes/common-styles.css" rel="stylesheet">
+    
+    <!-- Font Awesome for icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .page-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .page-header h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0;
+        }
+        
+        .page-header p {
+            color: #6c757d;
+            font-size: 1.1rem;
+            margin: 10px 0 0 0;
+        }
+        
+        .back-button {
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+        }
+        
+        .back-button:hover {
+            background: linear-gradient(135deg, #495057, #343a40);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .tabs-container {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 30px;
+            background: #f8f9fa;
+            padding: 5px;
+            border-radius: 15px;
+        }
+        
+        .tab-button {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #6c757d;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .tab-button.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .tab-button:not(.active):hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+        }
+        
+        .tab-badge {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            background: #ff4757;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .filters-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .filters-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .filter-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #495057;
+            text-transform: uppercase;
+        }
+        
+        .filter-select {
+            padding: 8px 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            min-width: 120px;
+        }
+        
+        .filter-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .requests-table {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+        
+        .table {
+            margin: 0;
+            font-size: 14px;
+        }
+        
+        .table thead th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-weight: 600;
+            border: none;
+            padding: 15px 12px;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .table tbody td {
+            padding: 15px 12px;
+            vertical-align: middle;
+            border-bottom: 1px solid #f1f3f4;
+        }
+        
+        .table tbody tr:hover {
+            background: #f8f9ff;
+        }
+        
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-in-progress {
+            background: #cce5ff;
+            color: #004085;
+        }
+        
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .priority-high {
+            color: #dc3545;
+            font-weight: 600;
+        }
+        
+        .priority-normal {
+            color: #6c757d;
+        }
+        
+        .priority-low {
+            color: #28a745;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .btn-action {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 5px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-view {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-view:hover {
+            background: #5a6fd8;
+        }
+        
+        .btn-edit {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-edit:hover {
+            background: #218838;
+        }
+        
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-delete:hover {
+            background: #c82333;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+        
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .loading-spinner {
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 반응형 디자인 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+                margin: 10px;
+            }
+            
+            .tabs-container {
+                flex-direction: column;
+            }
+            
+            .filters-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .filter-group {
+                width: 100%;
+            }
+            
+            .table-responsive {
+                font-size: 12px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header will be loaded by common.js -->
+    
+    <div class="container">
+        <a href="admin-dashboard.html" class="back-button">
+            <i class="fas fa-arrow-left"></i>
+            관리자 대시보드로 돌아가기
+        </a>
+        
+        <div class="page-header">
+            <h1>요청 관리</h1>
+            <p>견적 요청, 카탈로그 요청, 기술지원 요청을 통합 관리합니다</p>
+        </div>
+        
+        <!-- 탭 네비게이션 -->
+        <div class="tabs-container">
+            <button class="tab-button active" data-tab="quote">
+                견적 요청
+                <span class="tab-badge" id="quoteBadge" style="display: none;">0</span>
+            </button>
+            <button class="tab-button" data-tab="catalog">
+                카탈로그 요청
+                <span class="tab-badge" id="catalogBadge" style="display: none;">0</span>
+            </button>
+            <button class="tab-button" data-tab="technical">
+                기술지원 요청
+                <span class="tab-badge" id="technicalBadge" style="display: none;">0</span>
+            </button>
+        </div>
+        
+        <!-- 견적 요청 탭 -->
+        <div id="quoteTab" class="tab-content active">
+            <div class="filters-section">
+                <div class="filters-row">
+                    <div class="filter-group">
+                        <label>상태</label>
+                        <select class="filter-select" id="quoteStatusFilter">
+                            <option value="">전체</option>
+                            <option value="pending">대기중</option>
+                            <option value="in_progress">처리중</option>
+                            <option value="completed">완료</option>
+                            <option value="cancelled">취소</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>우선순위</label>
+                        <select class="filter-select" id="quotePriorityFilter">
+                            <option value="">전체</option>
+                            <option value="high">높음</option>
+                            <option value="normal">보통</option>
+                            <option value="low">낮음</option>
+                        </select>
+                    </div>
+                    <div class="filter-group search-box">
+                        <label>검색</label>
+                        <input type="text" class="search-input" id="quoteSearch" placeholder="회사명, 담당자명, 이메일로 검색...">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="requests-table">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>접수일</th>
+                                <th>회사명</th>
+                                <th>담당자</th>
+                                <th>연락처</th>
+                                <th>제품유형</th>
+                                <th>상태</th>
+                                <th>우선순위</th>
+                                <th>작업</th>
+                            </tr>
+                        </thead>
+                        <tbody id="quoteTableBody">
+                            <tr>
+                                <td colspan="8">
+                                    <div class="loading-spinner">
+                                        <div class="spinner"></div>
+                                        <p>데이터를 불러오는 중...</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 카탈로그 요청 탭 -->
+        <div id="catalogTab" class="tab-content">
+            <div class="filters-section">
+                <div class="filters-row">
+                    <div class="filter-group">
+                        <label>상태</label>
+                        <select class="filter-select" id="catalogStatusFilter">
+                            <option value="">전체</option>
+                            <option value="pending">대기중</option>
+                            <option value="in_progress">처리중</option>
+                            <option value="completed">완료</option>
+                            <option value="cancelled">취소</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>제품분야</label>
+                        <select class="filter-select" id="catalogFieldFilter">
+                            <option value="">전체</option>
+                            <option value="열연강판">열연강판</option>
+                            <option value="냉연강판">냉연강판</option>
+                            <option value="특수강">특수강</option>
+                            <option value="가공서비스">가공서비스</option>
+                        </select>
+                    </div>
+                    <div class="filter-group search-box">
+                        <label>검색</label>
+                        <input type="text" class="search-input" id="catalogSearch" placeholder="회사명, 담당자명, 이메일로 검색...">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="requests-table">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>접수일</th>
+                                <th>회사명</th>
+                                <th>담당자</th>
+                                <th>연락처</th>
+                                <th>제품분야</th>
+                                <th>상태</th>
+                                <th>작업</th>
+                            </tr>
+                        </thead>
+                        <tbody id="catalogTableBody">
+                            <tr>
+                                <td colspan="7">
+                                    <div class="loading-spinner">
+                                        <div class="spinner"></div>
+                                        <p>데이터를 불러오는 중...</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 기술지원 요청 탭 -->
+        <div id="technicalTab" class="tab-content">
+            <div class="filters-section">
+                <div class="filters-row">
+                    <div class="filter-group">
+                        <label>상태</label>
+                        <select class="filter-select" id="technicalStatusFilter">
+                            <option value="">전체</option>
+                            <option value="pending">대기중</option>
+                            <option value="in_progress">처리중</option>
+                            <option value="completed">완료</option>
+                            <option value="cancelled">취소</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>긴급도</label>
+                        <select class="filter-select" id="technicalUrgencyFilter">
+                            <option value="">전체</option>
+                            <option value="urgent">긴급</option>
+                            <option value="high">높음</option>
+                            <option value="normal">보통</option>
+                            <option value="low">낮음</option>
+                        </select>
+                    </div>
+                    <div class="filter-group search-box">
+                        <label>검색</label>
+                        <input type="text" class="search-input" id="technicalSearch" placeholder="회사명, 담당자명, 이메일로 검색...">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="requests-table">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>접수일</th>
+                                <th>회사명</th>
+                                <th>담당자</th>
+                                <th>연락처</th>
+                                <th>지원유형</th>
+                                <th>긴급도</th>
+                                <th>상태</th>
+                                <th>작업</th>
+                            </tr>
+                        </thead>
+                        <tbody id="technicalTableBody">
+                            <tr>
+                                <td colspan="8">
+                                    <div class="loading-spinner">
+                                        <div class="spinner"></div>
+                                        <p>데이터를 불러오는 중...</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer will be loaded by common.js -->
+
+    <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="includes/common.js"></script>
+    
+    <script>
+        // Supabase 설정
+        const SUPABASE_URL = 'https://zgyawfmjconubxaiamod.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpneWF3Zm1qY29udWJ4YWlhbW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NjQzNzIsImV4cCI6MjA2NzM0MDM3Mn0.shjBE2OQeILwkLLi4E6Bq0-b6YPUs-WFwquexdUiM9A';
+        
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // 전역 변수
+        let currentTab = 'quote';
+        let quoteRequests = [];
+        let catalogRequests = [];
+        let technicalRequests = [];
+        
+        // 페이지 로드 시 실행
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePage();
+        });
+        
+        async function initializePage() {
+            // 사용자 권한 확인
+            const user = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+            if (!user.id || !['admin', 'company_admin'].includes(user.role)) {
+                alert('접근 권한이 없습니다.');
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            // 탭 이벤트 리스너 설정
+            setupTabListeners();
+            
+            // 필터 이벤트 리스너 설정
+            setupFilterListeners();
+            
+            // 데이터 로드
+            await loadAllRequests();
+        }
+        
+        function setupTabListeners() {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabName = button.dataset.tab;
+                    switchTab(tabName);
+                });
+            });
+        }
+        
+        function setupFilterListeners() {
+            // 견적 요청 필터
+            document.getElementById('quoteStatusFilter').addEventListener('change', filterQuoteRequests);
+            document.getElementById('quotePriorityFilter').addEventListener('change', filterQuoteRequests);
+            document.getElementById('quoteSearch').addEventListener('input', filterQuoteRequests);
+            
+            // 카탈로그 요청 필터
+            document.getElementById('catalogStatusFilter').addEventListener('change', filterCatalogRequests);
+            document.getElementById('catalogFieldFilter').addEventListener('change', filterCatalogRequests);
+            document.getElementById('catalogSearch').addEventListener('input', filterCatalogRequests);
+            
+            // 기술지원 요청 필터
+            document.getElementById('technicalStatusFilter').addEventListener('change', filterTechnicalRequests);
+            document.getElementById('technicalUrgencyFilter').addEventListener('change', filterTechnicalRequests);
+            document.getElementById('technicalSearch').addEventListener('input', filterTechnicalRequests);
+        }
+        
+        function switchTab(tabName) {
+            currentTab = tabName;
+            
+            // 탭 버튼 활성화 상태 변경
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            
+            // 탭 컨텐츠 표시/숨김
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(`${tabName}Tab`).classList.add('active');
+        }
+        
+        async function loadAllRequests() {
+            try {
+                // 동시에 모든 요청 데이터 로드
+                const [quoteData, catalogData, technicalData] = await Promise.all([
+                    supabaseClient.from('quote_requests').select('*').order('created_at', { ascending: false }),
+                    supabaseClient.from('catalog_requests').select('*').order('created_at', { ascending: false }),
+                    supabaseClient.from('technical_support_requests').select('*').order('created_at', { ascending: false })
+                ]);
+                
+                quoteRequests = quoteData.data || [];
+                catalogRequests = catalogData.data || [];
+                technicalRequests = technicalData.data || [];
+                
+                // 테이블 렌더링
+                renderQuoteRequests();
+                renderCatalogRequests();
+                renderTechnicalRequests();
+                
+                // 배지 업데이트
+                updateTabBadges();
+                
+            } catch (error) {
+                console.error('요청 데이터 로드 실패:', error);
+            }
+        }
+        
+        function updateTabBadges() {
+            const pendingQuotes = quoteRequests.filter(req => req.status === 'pending').length;
+            const pendingCatalogs = catalogRequests.filter(req => req.status === 'pending').length;
+            const pendingTechnical = technicalRequests.filter(req => req.status === 'pending').length;
+            
+            updateBadge('quoteBadge', pendingQuotes);
+            updateBadge('catalogBadge', pendingCatalogs);
+            updateBadge('technicalBadge', pendingTechnical);
+        }
+        
+        function updateBadge(badgeId, count) {
+            const badge = document.getElementById(badgeId);
+            if (count > 0) {
+                badge.textContent = count;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+        
+        function renderQuoteRequests(filteredData = null) {
+            const tbody = document.getElementById('quoteTableBody');
+            const data = filteredData || quoteRequests;
+            
+            if (data.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8">
+                            <div class="empty-state">
+                                <i class="fas fa-file-invoice-dollar"></i>
+                                <h3>견적 요청이 없습니다</h3>
+                                <p>아직 접수된 견적 요청이 없습니다.</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = data.map(request => `
+                <tr>
+                    <td>${formatDate(request.created_at)}</td>
+                    <td><strong>${request.company}</strong></td>
+                    <td>${request.contact_name}</td>
+                    <td>
+                        <div>${request.phone}</div>
+                        <div style="font-size: 12px; color: #6c757d;">${request.email}</div>
+                    </td>
+                    <td>${request.product_type || '-'}</td>
+                    <td><span class="status-badge status-${request.status}">${getStatusText(request.status)}</span></td>
+                    <td><span class="priority-${request.priority}">${getPriorityText(request.priority)}</span></td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn-action btn-view" onclick="viewRequest('quote', '${request.id}')">보기</button>
+                            <button class="btn-action btn-edit" onclick="editRequestStatus('quote', '${request.id}', '${request.status}')">상태변경</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function renderCatalogRequests(filteredData = null) {
+            const tbody = document.getElementById('catalogTableBody');
+            const data = filteredData || catalogRequests;
+            
+            if (data.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty-state">
+                                <i class="fas fa-book"></i>
+                                <h3>카탈로그 요청이 없습니다</h3>
+                                <p>아직 접수된 카탈로그 요청이 없습니다.</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = data.map(request => `
+                <tr>
+                    <td>${formatDate(request.created_at)}</td>
+                    <td><strong>${request.company}</strong></td>
+                    <td>${request.contact_name}</td>
+                    <td>
+                        <div>${request.phone}</div>
+                        <div style="font-size: 12px; color: #6c757d;">${request.email}</div>
+                    </td>
+                    <td>${request.product_field || '-'}</td>
+                    <td><span class="status-badge status-${request.status}">${getStatusText(request.status)}</span></td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn-action btn-view" onclick="viewRequest('catalog', '${request.id}')">보기</button>
+                            <button class="btn-action btn-edit" onclick="editRequestStatus('catalog', '${request.id}', '${request.status}')">상태변경</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function renderTechnicalRequests(filteredData = null) {
+            const tbody = document.getElementById('technicalTableBody');
+            const data = filteredData || technicalRequests;
+            
+            if (data.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8">
+                            <div class="empty-state">
+                                <i class="fas fa-tools"></i>
+                                <h3>기술지원 요청이 없습니다</h3>
+                                <p>아직 접수된 기술지원 요청이 없습니다.</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = data.map(request => `
+                <tr>
+                    <td>${formatDate(request.created_at)}</td>
+                    <td><strong>${request.company}</strong></td>
+                    <td>${request.contact_name}</td>
+                    <td>
+                        <div>${request.phone}</div>
+                        <div style="font-size: 12px; color: #6c757d;">${request.email}</div>
+                    </td>
+                    <td>${request.support_type || '-'}</td>
+                    <td><span class="priority-${request.urgency_level === 'urgent' ? 'high' : 'normal'}">${getUrgencyText(request.urgency_level)}</span></td>
+                    <td><span class="status-badge status-${request.status}">${getStatusText(request.status)}</span></td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn-action btn-view" onclick="viewRequest('technical', '${request.id}')">보기</button>
+                            <button class="btn-action btn-edit" onclick="editRequestStatus('technical', '${request.id}', '${request.status}')">상태변경</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        // 필터링 함수들
+        function filterQuoteRequests() {
+            const statusFilter = document.getElementById('quoteStatusFilter').value;
+            const priorityFilter = document.getElementById('quotePriorityFilter').value;
+            const searchTerm = document.getElementById('quoteSearch').value.toLowerCase();
+            
+            const filtered = quoteRequests.filter(request => {
+                const matchesStatus = !statusFilter || request.status === statusFilter;
+                const matchesPriority = !priorityFilter || request.priority === priorityFilter;
+                const matchesSearch = !searchTerm || 
+                    request.company.toLowerCase().includes(searchTerm) ||
+                    request.contact_name.toLowerCase().includes(searchTerm) ||
+                    request.email.toLowerCase().includes(searchTerm);
+                
+                return matchesStatus && matchesPriority && matchesSearch;
+            });
+            
+            renderQuoteRequests(filtered);
+        }
+        
+        function filterCatalogRequests() {
+            const statusFilter = document.getElementById('catalogStatusFilter').value;
+            const fieldFilter = document.getElementById('catalogFieldFilter').value;
+            const searchTerm = document.getElementById('catalogSearch').value.toLowerCase();
+            
+            const filtered = catalogRequests.filter(request => {
+                const matchesStatus = !statusFilter || request.status === statusFilter;
+                const matchesField = !fieldFilter || request.product_field === fieldFilter;
+                const matchesSearch = !searchTerm || 
+                    request.company.toLowerCase().includes(searchTerm) ||
+                    request.contact_name.toLowerCase().includes(searchTerm) ||
+                    request.email.toLowerCase().includes(searchTerm);
+                
+                return matchesStatus && matchesField && matchesSearch;
+            });
+            
+            renderCatalogRequests(filtered);
+        }
+        
+        function filterTechnicalRequests() {
+            const statusFilter = document.getElementById('technicalStatusFilter').value;
+            const urgencyFilter = document.getElementById('technicalUrgencyFilter').value;
+            const searchTerm = document.getElementById('technicalSearch').value.toLowerCase();
+            
+            const filtered = technicalRequests.filter(request => {
+                const matchesStatus = !statusFilter || request.status === statusFilter;
+                const matchesUrgency = !urgencyFilter || request.urgency_level === urgencyFilter;
+                const matchesSearch = !searchTerm || 
+                    request.company.toLowerCase().includes(searchTerm) ||
+                    request.contact_name.toLowerCase().includes(searchTerm) ||
+                    request.email.toLowerCase().includes(searchTerm);
+                
+                return matchesStatus && matchesUrgency && matchesSearch;
+            });
+            
+            renderTechnicalRequests(filtered);
+        }
+        
+        // 상세보기 함수
+        function viewRequest(type, id) {
+            let request;
+            switch (type) {
+                case 'quote':
+                    request = quoteRequests.find(r => r.id === id);
+                    break;
+                case 'catalog':
+                    request = catalogRequests.find(r => r.id === id);
+                    break;
+                case 'technical':
+                    request = technicalRequests.find(r => r.id === id);
+                    break;
+            }
+            
+            if (request) {
+                showRequestDetails(type, request);
+            }
+        }
+        
+        function showRequestDetails(type, request) {
+            let content = '';
+            
+            switch (type) {
+                case 'quote':
+                    content = `
+                        <h4>견적 요청 상세정보</h4>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>회사명:</strong> ${request.company}</p>
+                                <p><strong>담당자:</strong> ${request.contact_name}</p>
+                                <p><strong>연락처:</strong> ${request.phone}</p>
+                                <p><strong>이메일:</strong> ${request.email}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>제품유형:</strong> ${request.product_type || '-'}</p>
+                                <p><strong>강종:</strong> ${request.grade || '-'}</p>
+                                <p><strong>두께:</strong> ${request.thickness || '-'}mm</p>
+                                <p><strong>폭:</strong> ${request.width || '-'}mm</p>
+                                <p><strong>길이:</strong> ${request.length || '-'}mm</p>
+                                <p><strong>수량:</strong> ${request.quantity || '-'}</p>
+                                <p><strong>납기희망일:</strong> ${request.delivery_date || '-'}</p>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <p><strong>용도:</strong></p>
+                            <p>${request.usage_purpose || '-'}</p>
+                        </div>
+                        <div class="mt-3">
+                            <p><strong>추가 요구사항:</strong></p>
+                            <p>${request.additional_requirements || '-'}</p>
+                        </div>
+                    `;
+                    break;
+                case 'catalog':
+                    content = `
+                        <h4>카탈로그 요청 상세정보</h4>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>회사명:</strong> ${request.company}</p>
+                                <p><strong>담당자:</strong> ${request.contact_name}</p>
+                                <p><strong>연락처:</strong> ${request.phone}</p>
+                                <p><strong>이메일:</strong> ${request.email}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>관심 제품분야:</strong> ${request.product_field || '-'}</p>
+                                <p><strong>접수일:</strong> ${formatDate(request.created_at)}</p>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <p><strong>요청 사항:</strong></p>
+                            <p>${request.request_details || '-'}</p>
+                        </div>
+                    `;
+                    break;
+                case 'technical':
+                    content = `
+                        <h4>기술지원 요청 상세정보</h4>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>회사명:</strong> ${request.company}</p>
+                                <p><strong>담당자:</strong> ${request.contact_name}</p>
+                                <p><strong>연락처:</strong> ${request.phone}</p>
+                                <p><strong>이메일:</strong> ${request.email}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>지원유형:</strong> ${request.support_type || '-'}</p>
+                                <p><strong>긴급도:</strong> ${getUrgencyText(request.urgency_level)}</p>
+                                <p><strong>선호 연락방법:</strong> ${request.preferred_contact_method || '-'}</p>
+                                <p><strong>접수일:</strong> ${formatDate(request.created_at)}</p>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <p><strong>제품 정보:</strong></p>
+                            <p>${request.product_info || '-'}</p>
+                        </div>
+                        <div class="mt-3">
+                            <p><strong>문제 상황:</strong></p>
+                            <p>${request.issue_description || '-'}</p>
+                        </div>
+                    `;
+                    break;
+            }
+            
+            // 모달로 표시 (간단한 alert로 대체)
+            alert(content.replace(/<[^>]*>/g, '\n').replace(/\n+/g, '\n'));
+        }
+        
+        // 상태 변경 함수
+        async function editRequestStatus(type, id, currentStatus) {
+            const newStatus = prompt(
+                `현재 상태: ${getStatusText(currentStatus)}\n\n새로운 상태를 선택하세요:\n` +
+                `pending - 대기중\n` +
+                `in_progress - 처리중\n` +
+                `completed - 완료\n` +
+                `cancelled - 취소`,
+                currentStatus
+            );
+            
+            if (newStatus && ['pending', 'in_progress', 'completed', 'cancelled'].includes(newStatus)) {
+                try {
+                    const tableName = type === 'quote' ? 'quote_requests' :
+                                    type === 'catalog' ? 'catalog_requests' : 'technical_support_requests';
+                    
+                    const { error } = await supabaseClient
+                        .from(tableName)
+                        .update({ status: newStatus })
+                        .eq('id', id);
+                    
+                    if (error) throw error;
+                    
+                    alert('상태가 성공적으로 변경되었습니다.');
+                    
+                    // 데이터 새로고침
+                    await loadAllRequests();
+                    
+                } catch (error) {
+                    console.error('상태 변경 실패:', error);
+                    alert('상태 변경 중 오류가 발생했습니다.');
+                }
+            }
+        }
+        
+        // 유틸리티 함수들
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            }) + ' ' + date.toLocaleTimeString('ko-KR', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        function getStatusText(status) {
+            const statusMap = {
+                'pending': '대기중',
+                'in_progress': '처리중',
+                'completed': '완료',
+                'cancelled': '취소'
+            };
+            return statusMap[status] || status;
+        }
+        
+        function getPriorityText(priority) {
+            const priorityMap = {
+                'high': '높음',
+                'normal': '보통',
+                'low': '낮음'
+            };
+            return priorityMap[priority] || priority;
+        }
+        
+        function getUrgencyText(urgency) {
+            const urgencyMap = {
+                'urgent': '긴급',
+                'high': '높음',
+                'normal': '보통',
+                'low': '낮음'
+            };
+            return urgencyMap[urgency] || urgency;
+        }
+    </script>
+</body>
+</html>

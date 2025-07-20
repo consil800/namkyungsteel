@@ -593,5 +593,80 @@
     
     <!-- Common JavaScript -->
     <script src="includes/common.js"></script>
+    
+    <script>
+        // Supabase 설정
+        const SUPABASE_URL = 'https://zgyawfmjconubxaiamod.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpneWF3Zm1qY29udWJ4YWlhbW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NjQzNzIsImV4cCI6MjA2NzM0MDM3Mn0.shjBE2OQeILwkLLi4E6Bq0-b6YPUs-WFwquexdUiM9A';
+        
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // 기술지원 요청 폼 처리
+        document.addEventListener('DOMContentLoaded', function() {
+            const techForm = document.getElementById('technicalSupportForm');
+            if (techForm) {
+                techForm.addEventListener('submit', handleTechSupportSubmit);
+            }
+        });
+        
+        async function handleTechSupportSubmit(event) {
+            event.preventDefault();
+            
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            // 로딩 상태 표시
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> 요청 중...';
+            submitBtn.disabled = true;
+            
+            try {
+                // 폼 데이터 수집
+                const techData = {
+                    company: formData.get('company'),
+                    contact_name: formData.get('contact_name'),
+                    phone: formData.get('phone'),
+                    email: formData.get('email'),
+                    support_type: formData.get('support_type'),
+                    product_info: formData.get('product_info'),
+                    issue_description: formData.get('issue_description'),
+                    urgency_level: formData.get('urgency_level') || 'normal',
+                    preferred_contact_method: formData.get('preferred_contact_method'),
+                    status: 'pending',
+                    priority: formData.get('urgency_level') === 'urgent' ? 'high' : 'normal'
+                };
+                
+                // 파일 업로드 처리 (추후 구현 가능)
+                const attachment = formData.get('attachment');
+                if (attachment && attachment.size > 0) {
+                    console.log('첨부파일:', attachment.name);
+                }
+                
+                // Supabase에 데이터 저장
+                const { data, error } = await supabaseClient
+                    .from('technical_support_requests')
+                    .insert([techData]);
+                
+                if (error) {
+                    throw error;
+                }
+                
+                // 성공 메시지
+                alert('기술지원 요청이 성공적으로 접수되었습니다.\n전문 기술진이 확인 후 연락드리겠습니다.');
+                
+                // 폼 초기화
+                form.reset();
+                
+            } catch (error) {
+                console.error('기술지원 요청 처리 오류:', error);
+                alert('기술지원 요청 처리 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+            } finally {
+                // 버튼 상태 복원
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+    </script>
 </body>
 </html>

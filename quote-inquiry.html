@@ -471,5 +471,85 @@
     
     <!-- Common JavaScript -->
     <script src="includes/common.js"></script>
+    
+    <script>
+        // Supabase 설정
+        const SUPABASE_URL = 'https://zgyawfmjconubxaiamod.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpneWF3Zm1qY29udWJ4YWlhbW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NjQzNzIsImV4cCI6MjA2NzM0MDM3Mn0.shjBE2OQeILwkLLi4E6Bq0-b6YPUs-WFwquexdUiM9A';
+        
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // 견적 요청 폼 처리
+        document.addEventListener('DOMContentLoaded', function() {
+            const quoteForm = document.getElementById('quoteForm');
+            if (quoteForm) {
+                quoteForm.addEventListener('submit', handleQuoteSubmit);
+            }
+        });
+        
+        async function handleQuoteSubmit(event) {
+            event.preventDefault();
+            
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            // 로딩 상태 표시
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> 요청 중...';
+            submitBtn.disabled = true;
+            
+            try {
+                // 폼 데이터 수집
+                const quoteData = {
+                    company: formData.get('company'),
+                    contact_name: formData.get('contact_name'),
+                    phone: formData.get('phone'),
+                    email: formData.get('email'),
+                    product_type: formData.get('product_type'),
+                    grade: formData.get('grade'),
+                    thickness: formData.get('thickness'),
+                    width: formData.get('width'),
+                    length: formData.get('length'),
+                    quantity: formData.get('quantity'),
+                    delivery_date: formData.get('delivery_date'),
+                    usage_purpose: formData.get('usage_purpose'),
+                    additional_requirements: formData.get('additional_requirements'),
+                    status: 'pending',
+                    priority: 'normal'
+                };
+                
+                // 파일 업로드 처리 (추후 구현 가능)
+                const attachment = formData.get('attachment');
+                if (attachment && attachment.size > 0) {
+                    // 파일 업로드 로직 추가 가능
+                    console.log('첨부파일:', attachment.name);
+                }
+                
+                // Supabase에 데이터 저장
+                const { data, error } = await supabaseClient
+                    .from('quote_requests')
+                    .insert([quoteData]);
+                
+                if (error) {
+                    throw error;
+                }
+                
+                // 성공 메시지
+                alert('견적 요청이 성공적으로 접수되었습니다.\n담당자가 확인 후 연락드리겠습니다.');
+                
+                // 폼 초기화
+                form.reset();
+                
+            } catch (error) {
+                console.error('견적 요청 처리 오류:', error);
+                alert('견적 요청 처리 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+            } finally {
+                // 버튼 상태 복원
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+    </script>
 </body>
 </html>

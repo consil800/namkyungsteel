@@ -1505,6 +1505,64 @@
         console.log('Supabase 클라이언트:', supabaseClient);
         return supabaseClient !== null;
       };
+      
+      // 카탈로그 요청 폼 처리
+      document.addEventListener('DOMContentLoaded', function() {
+        const catalogForm = document.getElementById('catalogRequestForm');
+        if (catalogForm) {
+          catalogForm.addEventListener('submit', handleCatalogSubmit);
+        }
+      });
+      
+      async function handleCatalogSubmit(event) {
+        event.preventDefault();
+        
+        const form = event.target;
+        const formData = new FormData(form);
+        
+        // 로딩 상태 표시
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> 요청 중...';
+        submitBtn.disabled = true;
+        
+        try {
+          // 폼 데이터 수집
+          const catalogData = {
+            company: formData.get('company'),
+            contact_name: formData.get('contact_name'),
+            phone: formData.get('phone'),
+            email: formData.get('email'),
+            product_field: formData.get('product_field'),
+            request_details: formData.get('request_details'),
+            status: 'pending',
+            priority: 'normal'
+          };
+          
+          // Supabase에 데이터 저장
+          const { data, error } = await supabaseClient
+            .from('catalog_requests')
+            .insert([catalogData]);
+          
+          if (error) {
+            throw error;
+          }
+          
+          // 성공 메시지
+          alert('카탈로그 요청이 성공적으로 접수되었습니다.\n요청하신 자료를 준비하여 연락드리겠습니다.');
+          
+          // 폼 초기화
+          form.reset();
+          
+        } catch (error) {
+          console.error('카탈로그 요청 처리 오류:', error);
+          alert('카탈로그 요청 처리 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+        } finally {
+          // 버튼 상태 복원
+          submitBtn.innerHTML = originalText;
+          submitBtn.disabled = false;
+        }
+      }
     </script>
 </body>
 </html>
