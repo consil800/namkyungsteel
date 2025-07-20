@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS company_info (
     website VARCHAR(255),
     business_type VARCHAR(255), -- 업종
     business_items TEXT, -- 사업내용
+    business_category VARCHAR(255), -- 사업분류
     capital_amount BIGINT, -- 자본금
     employee_count INTEGER,
     annual_revenue BIGINT, -- 연간 매출
