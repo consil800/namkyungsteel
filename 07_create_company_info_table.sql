@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS company_info (
     tax_invoice_email VARCHAR(255),
     accounting_manager VARCHAR(100),
     accounting_phone VARCHAR(50),
+    company_seal_url TEXT, -- 회사 직인 이미지 URL
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     FOREIGN KEY (company_domain) REFERENCES companies(domain) ON DELETE CASCADE
