@@ -804,6 +804,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             companyData.company_domain = currentUser.company_domain || 'namkyungsteel.com';
                             
                             console.log('저장할 업체 데이터:', companyData);
+                            console.log('currentUser.id 타입:', typeof currentUser.id, '값:', currentUser.id);
                             
                             const result = await window.db.createClientCompany(companyData);
                             console.log('저장 결과:', result);

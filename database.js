@@ -863,7 +863,7 @@ class DatabaseManager {
                         }
                     } else {
                         actualUserId = userData.id;
-                        console.log('✅ 이메일로 실제 사용자 ID 조회 성공:', actualUserId);
+                        console.log('✅ 이메일로 실제 사용자 ID 조회 성공:', actualUserId, '(타입:', typeof actualUserId, ')');
                     }
                 } else {
                     // 이메일이 없으면 OAuth ID로 조회
@@ -878,14 +878,14 @@ class DatabaseManager {
                         throw new Error('사용자 정보를 찾을 수 없습니다.');
                     } else {
                         actualUserId = oauthUserData.id;
-                        console.log('✅ OAuth ID로 실제 사용자 ID 조회 성공:', actualUserId);
+                        console.log('✅ OAuth ID로 실제 사용자 ID 조회 성공:', actualUserId, '(타입:', typeof actualUserId, ')');
                     }
                 }
             }
 
             const newCompany = {
                 ...companyData,
-                user_id: actualUserId, // 실제 숫자 ID 사용
+                user_id: String(actualUserId), // VARCHAR 필드이므로 문자열로 변환
                 company_domain: companyData.company_domain || this.currentDomain || 'namkyungsteel.com',
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
