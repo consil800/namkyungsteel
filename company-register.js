@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             products: formData.get('products').trim(),
             usage_items: formData.get('usageItems').trim(),
             notes: formData.get('notes').trim(),
-            company_color: formData.get('companyColor') || '',
+            color_code: formData.get('companyColor') || '',
             visit_count: 0,
             last_visit_date: null,
             user_id: currentUser.id,

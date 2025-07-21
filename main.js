@@ -205,7 +205,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         const html = companiesWithStats.map(company => `
-            <tr class="company-row ${company.company_color ? `color-${company.company_color}` : ''}" onclick="${isDeleteMode ? '' : `goToCompanyDetail('${company.id}')`}">
+            <tr class="company-row ${company.color_code ? `color-${company.color_code}` : ''}" onclick="${isDeleteMode ? '' : `goToCompanyDetail('${company.id}')`}">
                 ${isDeleteMode ? `
                     <td>
                         <input type="checkbox" class="company-checkbox" value="${company.id}" 
@@ -214,7 +214,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </td>
                 ` : ''}
                 <td>
-                    ${company.company_color ? `<span class="color-indicator"></span>` : ''}
+                    ${company.color_code ? `<span class="color-indicator"></span>` : ''}
                     <span class="company-name">
                         ${company.company_name || '미입력'}
                     </span>
@@ -224,7 +224,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td>${company.phone || '미입력'}</td>
                 <td>${company.business_type || '미입력'}</td>
                 <td class="visit-count">${company.visitCount || 0}</td>
-                <td class="last-visit">${company.company_color === 'gray' ? '-' : (company.lastVisitDate ? formatDate(company.lastVisitDate) + '일' : '방문기록 없음')}</td>
+                <td class="last-visit">${company.color_code === 'gray' ? '-' : (company.lastVisitDate ? formatDate(company.lastVisitDate) + '일' : '방문기록 없음')}</td>
             </tr>
         `).join('');
 
@@ -536,9 +536,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
                 case 6: // 최근방문일
                     // 회색 업체는 정렬에서 제외하고 맨 뒤로
-                    if (a.company_color === 'gray' && b.company_color === 'gray') return 0;
-                    if (a.company_color === 'gray') return sortDirection === 'asc' ? 1 : -1;
-                    if (b.company_color === 'gray') return sortDirection === 'asc' ? -1 : 1;
+                    if (a.color_code === 'gray' && b.color_code === 'gray') return 0;
+                    if (a.color_code === 'gray') return sortDirection === 'asc' ? 1 : -1;
+                    if (b.color_code === 'gray') return sortDirection === 'asc' ? -1 : 1;
                     
                     aValue = a.lastVisitDate ? new Date(a.lastVisitDate) : new Date(0);
                     bValue = b.lastVisitDate ? new Date(b.lastVisitDate) : new Date(0);
@@ -560,7 +560,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 정렬된 업체 목록 렌더링
     function renderSortedCompanies(companies) {
         const html = companies.map(company => `
-            <tr class="company-row ${company.company_color ? `color-${company.company_color}` : ''}" onclick="${isDeleteMode ? '' : `goToCompanyDetail('${company.id}')`}">
+            <tr class="company-row ${company.color_code ? `color-${company.color_code}` : ''}" onclick="${isDeleteMode ? '' : `goToCompanyDetail('${company.id}')`}">
                 ${isDeleteMode ? `
                     <td>
                         <input type="checkbox" class="company-checkbox" value="${company.id}" 
@@ -569,7 +569,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </td>
                 ` : ''}
                 <td>
-                    ${company.company_color ? `<span class="color-indicator"></span>` : ''}
+                    ${company.color_code ? `<span class="color-indicator"></span>` : ''}
                     <span class="company-name">
                         ${company.company_name || '미입력'}
                     </span>
@@ -579,7 +579,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td>${company.phone || '미입력'}</td>
                 <td>${company.business_type || '미입력'}</td>
                 <td class="visit-count">${company.visitCount || 0}</td>
-                <td class="last-visit">${company.company_color === 'gray' ? '-' : (company.lastVisitDate ? formatDate(company.lastVisitDate) + '일' : '방문기록 없음')}</td>
+                <td class="last-visit">${company.color_code === 'gray' ? '-' : (company.lastVisitDate ? formatDate(company.lastVisitDate) + '일' : '방문기록 없음')}</td>
             </tr>
         `).join('');
 
@@ -650,7 +650,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         company.products || '',
                         company.usage_items || '',
                         company.notes || '',
-                        company.company_color || ''
+                        company.color_code || ''
                     ]);
                 });
             }
@@ -774,7 +774,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             products: row[10] ? row[10].toString().trim() : '',
                             usage_items: row[11] ? row[11].toString().trim() : '',
                             notes: row[12] ? row[12].toString().trim() : '',
-                            company_color: row[13] ? row[13].toString().trim() : '',
+                            color_code: row[13] ? row[13].toString().trim() : '',
                             visit_count: 0,
                             last_visit_date: null
                         };
