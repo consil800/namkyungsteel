@@ -428,21 +428,29 @@ CREATE TABLE user_permissions (
             console.log(`권한 탭 전환: ${menu} - ${type}`);
             
             // 해당 메뉴의 모든 탭 비활성화
-            const menuTabs = document.querySelectorAll(`#${menu}-department`).parentNode.parentNode.querySelectorAll('.permission-tab');
+            const menuContainer = document.querySelector(`#${menu}-department`).closest('.permission-item');
+            const menuTabs = menuContainer.querySelectorAll('.permission-tab');
             menuTabs.forEach(tab => tab.classList.remove('active'));
             
             // 해당 메뉴의 모든 패널 숨기기
-            const menuPanels = document.querySelectorAll(`[id^="${menu}-"]`);
+            const menuPanels = menuContainer.querySelectorAll('.permission-panel');
             menuPanels.forEach(panel => panel.classList.remove('active'));
             
-            // 선택된 탭 활성화
-            event.target.classList.add('active');
+            // 선택된 탭 활성화 (이벤트 객체를 사용하지 않고 직접 찾기)
+            const targetTab = Array.from(menuTabs).find(tab => 
+                tab.onclick.toString().includes(`'${type}'`)
+            );
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
             
             // 선택된 패널 표시
             const targetPanel = document.getElementById(`${menu}-${type}`);
             if (targetPanel) {
                 targetPanel.classList.add('active');
             }
+            
+            console.log(`✅ 탭 전환 완료: ${menu} - ${type}`);
         }
 
         // 권한 설정 로드
