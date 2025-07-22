@@ -384,12 +384,44 @@
             // 데이터베이스 초기화
             if (window.db && window.db.client) {
                 console.log('✅ 데이터베이스 연결 확인됨');
+                await ensurePermissionsTable();
                 await loadPermissions();
             } else {
                 console.error('❌ 데이터베이스 연결 실패');
                 alert('데이터베이스 연결에 실패했습니다.');
             }
         });
+
+        // 권한 테이블 생성 확인
+        async function ensurePermissionsTable() {
+            try {
+                // user_permissions 테이블이 존재하는지 확인
+                const { data, error } = await window.db.client
+                    .from('user_permissions')
+                    .select('id')
+                    .limit(1);
+                
+                if (error && error.code === 'PGRST116') {
+                    console.log('📋 user_permissions 테이블이 존재하지 않습니다. 테이블 구조를 확인해주세요.');
+                    console.log('필요한 테이블 구조:');
+                    console.log(`
+CREATE TABLE user_permissions (
+    id SERIAL PRIMARY KEY,
+    menu VARCHAR(50) NOT NULL,
+    permission_type VARCHAR(20) NOT NULL,
+    target_id VARCHAR(100) NOT NULL,
+    permission VARCHAR(20) NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(menu, permission_type, target_id, permission)
+);
+                    `);
+                } else {
+                    console.log('✅ user_permissions 테이블 확인됨');
+                }
+            } catch (error) {
+                console.log('📋 user_permissions 테이블 확인 중:', error.message);
+            }
+        }
 
         // 권한 탭 전환
         function switchPermissionTab(menu, type) {
@@ -452,39 +484,154 @@
             
             let html = `<h4>${menuNames[menu]} - ${type === 'department' ? '부서별' : type === 'position' ? '직급별' : '개인별'} 권한</h4>`;
             
-            for (const permission of permissions) {
-                const checkboxId = `${menu}-${type}-${permission}`;
-                html += `
-                    <div class="permission-checkbox">
-                        <input type="checkbox" id="${checkboxId}" name="${checkboxId}">
-                        <label for="${checkboxId}">${permission} 권한</label>
-                    </div>
-                `;
+            try {
+                let items = [];
+                
+                if (type === 'department') {
+                    // 부서 목록 가져오기
+                    const { data: departments, error } = await window.db.client
+                        .from('users')
+                        .select('department')
+                        .not('department', 'is', null)
+                        .not('department', 'eq', '');
+                    
+                    if (!error && departments) {
+                        items = [...new Set(departments.map(d => d.department).filter(d => d))];
+                    }
+                } else if (type === 'position') {
+                    // 직급 목록 가져오기
+                    const { data: positions, error } = await window.db.client
+                        .from('users')
+                        .select('position')
+                        .not('position', 'is', null)
+                        .not('position', 'eq', '');
+                    
+                    if (!error && positions) {
+                        items = [...new Set(positions.map(p => p.position).filter(p => p))];
+                    }
+                } else if (type === 'individual') {
+                    // 개인 사용자 목록 가져오기
+                    const { data: users, error } = await window.db.client
+                        .from('users')
+                        .select('id, name, email')
+                        .not('name', 'is', null);
+                    
+                    if (!error && users) {
+                        items = users.map(u => ({ id: u.id, name: u.name, email: u.email }));
+                    }
+                }
+                
+                // 기존 권한 설정 로드
+                const existingPermissions = await loadExistingPermissions(menu, type);
+                
+                if (items.length === 0) {
+                    html += `<p style="color: #64748b; font-style: italic;">등록된 ${type === 'department' ? '부서' : type === 'position' ? '직급' : '사용자'}가 없습니다.</p>`;
+                } else {
+                    for (const item of items) {
+                        const itemKey = type === 'individual' ? item.id : item;
+                        const itemName = type === 'individual' ? `${item.name} (${item.email})` : item;
+                        
+                        html += `<div style="border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 1rem; padding: 1rem;">`;
+                        html += `<h5 style="margin: 0 0 0.75rem 0; color: #374151;">${itemName}</h5>`;
+                        
+                        for (const permission of permissions) {
+                            const checkboxId = `${menu}-${type}-${itemKey}-${permission}`;
+                            const isChecked = existingPermissions[itemKey] && existingPermissions[itemKey].includes(permission) ? 'checked' : '';
+                            
+                            html += `
+                                <div class="permission-checkbox">
+                                    <input type="checkbox" id="${checkboxId}" name="${checkboxId}" data-menu="${menu}" data-type="${type}" data-item="${itemKey}" data-permission="${permission}" ${isChecked}>
+                                    <label for="${checkboxId}">${permission} 권한</label>
+                                </div>
+                            `;
+                        }
+                        
+                        html += `</div>`;
+                    }
+                }
+                
+            } catch (error) {
+                console.error('권한 체크박스 생성 오류:', error);
+                html += `<p style="color: #ef4444;">권한 데이터를 불러오는 중 오류가 발생했습니다.</p>`;
             }
             
             return html;
         }
 
-        // 권한 저장
-        async function savePermissions() {
+        // 기존 권한 설정 로드
+        async function loadExistingPermissions(menu, type) {
             try {
-                console.log('🔄 권한 저장 시작');
+                const { data: permissions, error } = await window.db.client
+                    .from('user_permissions')
+                    .select('*')
+                    .eq('menu', menu)
+                    .eq('permission_type', type);
                 
-                // 모든 체크박스 상태 수집
-                const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-                const permissions = {};
+                if (error) {
+                    console.error('기존 권한 로드 오류:', error);
+                    return {};
+                }
                 
-                checkboxes.forEach(checkbox => {
-                    permissions[checkbox.id] = checkbox.checked;
+                const result = {};
+                permissions?.forEach(perm => {
+                    if (!result[perm.target_id]) {
+                        result[perm.target_id] = [];
+                    }
+                    result[perm.target_id].push(perm.permission);
                 });
                 
-                console.log('📝 저장할 권한 데이터:', permissions);
+                return result;
+            } catch (error) {
+                console.error('기존 권한 로드 실패:', error);
+                return {};
+            }
+        }
+        
+        // 권한 저장 (OR 방식)
+        async function savePermissions() {
+            try {
+                console.log('🔄 권한 저장 시작 (OR 방식)');
                 
-                // 데이터베이스에 저장 (실제 구현 필요)
+                // 모든 체크박스 상태 수집
+                const checkboxes = document.querySelectorAll('input[type="checkbox"][data-menu]');
+                const permissionData = [];
+                
+                checkboxes.forEach(checkbox => {
+                    if (checkbox.checked) {
+                        permissionData.push({
+                            menu: checkbox.dataset.menu,
+                            permission_type: checkbox.dataset.type,
+                            target_id: checkbox.dataset.item,
+                            permission: checkbox.dataset.permission
+                        });
+                    }
+                });
+                
+                console.log('📝 저장할 권한 데이터:', permissionData);
+                
                 if (window.db && window.db.client) {
-                    // TODO: 실제 권한 저장 로직 구현
-                    console.log('✅ 권한 저장 성공 (임시)');
-                    alert('권한이 성공적으로 저장되었습니다.');
+                    // 기존 권한 데이터 삭제
+                    const menus = ['worklog', 'corporate-card', 'documents'];
+                    for (const menu of menus) {
+                        await window.db.client
+                            .from('user_permissions')
+                            .delete()
+                            .eq('menu', menu);
+                    }
+                    
+                    // 새로운 권한 데이터 삽입
+                    if (permissionData.length > 0) {
+                        const { error: insertError } = await window.db.client
+                            .from('user_permissions')
+                            .insert(permissionData);
+                        
+                        if (insertError) {
+                            throw insertError;
+                        }
+                    }
+                    
+                    console.log('✅ OR 방식 권한 저장 성공');
+                    alert('권한이 성공적으로 저장되었습니다.\n\n부서별, 직급별, 개인별 권한 중 하나라도 있으면 해당 사용자는 권한을 가지게 됩니다.');
                 } else {
                     throw new Error('데이터베이스 연결이 없습니다.');
                 }
