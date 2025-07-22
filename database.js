@@ -764,37 +764,31 @@ class DatabaseManager {
                 console.log('🔍 getClientCompanies - 전달받은 userId:', userId);
                 console.log('🔍 getClientCompanies - sessionStorage 사용자:', currentUser);
                 
-                // 마스터 관리자는 모든 업체를 볼 수 있음
-                if (userRole === 'master') {
-                    console.log('마스터 관리자 권한으로 모든 업체 데이터 로드');
-                    // 마스터 관리자는 모든 업체 볼 수 있음
-                } else {
-                    // 일반 사용자는 자신이 등록한 업체만
-                    console.log('일반 사용자 권한으로 개인 업체만 로드');
+                // 모든 사용자는 자신이 등록한 업체만 볼 수 있음 (보안 강화)
+                console.log('사용자별 개인 업체만 로드 (user_id 필터링 적용)');
+                
+                // UUID 형식인지 확인 (OAuth 사용자)
+                const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+                
+                if (isUUID) {
+                    // OAuth 사용자의 경우 users 테이블에서 numeric ID 찾기
+                    const { data: userRecord, error: userError } = await this.client
+                        .from('users')
+                        .select('id')
+                        .eq('oauth_id', userId)
+                        .single();
                     
-                    // UUID 형식인지 확인 (OAuth 사용자)
-                    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
-                    
-                    if (isUUID) {
-                        // OAuth 사용자의 경우 users 테이블에서 numeric ID 찾기
-                        const { data: userRecord, error: userError } = await this.client
-                            .from('users')
-                            .select('id')
-                            .eq('oauth_id', userId)
-                            .single();
-                        
-                        if (userError || !userRecord) {
-                            console.log('OAuth 사용자의 numeric ID를 찾을 수 없음, 빈 결과 반환');
-                            return [];
-                        }
-                        
-                        query = query.eq('user_id', userRecord.id.toString());
-                    } else {
-                        // 일반 사용자 (numeric ID) - 문자열로 변환해서 검색
-                        console.log('🔍 일반 사용자 쿼리 - userId:', userId, 'typeof:', typeof userId);
-                        console.log('🔍 문자열로 변환:', userId.toString());
-                        query = query.eq('user_id', userId.toString());
+                    if (userError || !userRecord) {
+                        console.log('OAuth 사용자의 numeric ID를 찾을 수 없음, 빈 결과 반환');
+                        return [];
                     }
+                    
+                    query = query.eq('user_id', userRecord.id.toString());
+                } else {
+                    // 일반 사용자 (numeric ID) - 문자열로 변환해서 검색
+                    console.log('🔍 일반 사용자 쿼리 - userId:', userId, 'typeof:', typeof userId);
+                    console.log('🔍 문자열로 변환:', userId.toString());
+                    query = query.eq('user_id', userId.toString());
                 }
             }
             
