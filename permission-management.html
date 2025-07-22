@@ -472,7 +472,7 @@ CREATE TABLE user_permissions (
             }
         }
 
-        // 권한 체크박스 생성
+        // 권한 체크박스 생성 (단순화 - 접근 권한만)
         async function generatePermissionCheckboxes(menu, type) {
             const menuNames = {
                 'worklog': '업무일지',
@@ -480,9 +480,7 @@ CREATE TABLE user_permissions (
                 'documents': '결제 서류'
             };
             
-            const permissions = ['읽기', '쓰기', '수정', '삭제', '관리'];
-            
-            let html = `<h4>${menuNames[menu]} - ${type === 'department' ? '부서별' : type === 'position' ? '직급별' : '개인별'} 권한</h4>`;
+            let html = `<h4>${menuNames[menu]} - ${type === 'department' ? '부서별' : type === 'position' ? '직급별' : '개인별'} 접근 권한</h4>`;
             
             try {
                 let items = [];
@@ -529,24 +527,17 @@ CREATE TABLE user_permissions (
                 } else {
                     for (const item of items) {
                         const itemKey = type === 'individual' ? item.id : item;
-                        const itemName = type === 'individual' ? `${item.name} (${item.email})` : item;
+                        const itemName = type === 'individual' ? item.name : item;
                         
-                        html += `<div style="border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 1rem; padding: 1rem;">`;
-                        html += `<h5 style="margin: 0 0 0.75rem 0; color: #374151;">${itemName}</h5>`;
+                        const checkboxId = `${menu}-${type}-${itemKey}`;
+                        const isChecked = existingPermissions[itemKey] ? 'checked' : '';
                         
-                        for (const permission of permissions) {
-                            const checkboxId = `${menu}-${type}-${itemKey}-${permission}`;
-                            const isChecked = existingPermissions[itemKey] && existingPermissions[itemKey].includes(permission) ? 'checked' : '';
-                            
-                            html += `
-                                <div class="permission-checkbox">
-                                    <input type="checkbox" id="${checkboxId}" name="${checkboxId}" data-menu="${menu}" data-type="${type}" data-item="${itemKey}" data-permission="${permission}" ${isChecked}>
-                                    <label for="${checkboxId}">${permission} 권한</label>
-                                </div>
-                            `;
-                        }
-                        
-                        html += `</div>`;
+                        html += `
+                            <div class="permission-checkbox">
+                                <input type="checkbox" id="${checkboxId}" name="${checkboxId}" data-menu="${menu}" data-type="${type}" data-item="${itemKey}" ${isChecked}>
+                                <label for="${checkboxId}">${itemName} 접근 허용</label>
+                            </div>
+                        `;
                     }
                 }
                 
@@ -558,7 +549,7 @@ CREATE TABLE user_permissions (
             return html;
         }
 
-        // 기존 권한 설정 로드
+        // 기존 권한 설정 로드 (단순화)
         async function loadExistingPermissions(menu, type) {
             try {
                 const { data: permissions, error } = await window.db.client
@@ -574,10 +565,7 @@ CREATE TABLE user_permissions (
                 
                 const result = {};
                 permissions?.forEach(perm => {
-                    if (!result[perm.target_id]) {
-                        result[perm.target_id] = [];
-                    }
-                    result[perm.target_id].push(perm.permission);
+                    result[perm.target_id] = true; // 단순히 접근 권한만 확인
                 });
                 
                 return result;
@@ -587,10 +575,10 @@ CREATE TABLE user_permissions (
             }
         }
         
-        // 권한 저장 (OR 방식)
+        // 권한 저장 (단순화된 OR 방식)
         async function savePermissions() {
             try {
-                console.log('🔄 권한 저장 시작 (OR 방식)');
+                console.log('🔄 권한 저장 시작 (단순화된 OR 방식)');
                 
                 // 모든 체크박스 상태 수집
                 const checkboxes = document.querySelectorAll('input[type="checkbox"][data-menu]');
@@ -602,7 +590,7 @@ CREATE TABLE user_permissions (
                             menu: checkbox.dataset.menu,
                             permission_type: checkbox.dataset.type,
                             target_id: checkbox.dataset.item,
-                            permission: checkbox.dataset.permission
+                            permission: 'access' // 단순한 접근 권한
                         });
                     }
                 });
@@ -630,8 +618,8 @@ CREATE TABLE user_permissions (
                         }
                     }
                     
-                    console.log('✅ OR 방식 권한 저장 성공');
-                    alert('권한이 성공적으로 저장되었습니다.\n\n부서별, 직급별, 개인별 권한 중 하나라도 있으면 해당 사용자는 권한을 가지게 됩니다.');
+                    console.log('✅ 단순화된 권한 저장 성공');
+                    alert('권한이 성공적으로 저장되었습니다.\n\n체크된 부서, 직급, 또는 개인은 해당 기능에 접근할 수 있습니다.');
                 } else {
                     throw new Error('데이터베이스 연결이 없습니다.');
                 }

@@ -1,14 +1,21 @@
--- 09_create_user_permissions_table.sql
--- OR 기반 권한 시스템을 위한 user_permissions 테이블 생성
--- 부서별, 직급별, 개인별 권한 중 하나라도 있으면 접근 가능
+-- 11_clean_and_recreate_permissions.sql
+-- 기존 함수와 테이블을 모두 삭제하고 새로 생성
+
+-- 기존 함수들 삭제 (모든 버전)
+DROP FUNCTION IF EXISTS check_user_permission(INTEGER, VARCHAR(50), VARCHAR(20));
+DROP FUNCTION IF EXISTS check_user_permission(INTEGER, VARCHAR(50));
+DROP FUNCTION IF EXISTS update_user_permissions_updated_at();
+
+-- 기존 테이블 삭제
+DROP TABLE IF EXISTS user_permissions CASCADE;
 
 -- user_permissions 테이블 생성
-CREATE TABLE IF NOT EXISTS user_permissions (
+CREATE TABLE user_permissions (
     id SERIAL PRIMARY KEY,
     menu VARCHAR(50) NOT NULL,           -- 메뉴/기능 구분 (worklog, corporate-card, documents)
     permission_type VARCHAR(20) NOT NULL, -- 권한 타입 (department, position, individual)
     target_id VARCHAR(100) NOT NULL,      -- 대상 ID (부서명, 직급명, 또는 사용자 ID)
-    permission VARCHAR(20) NOT NULL,      -- 권한 종류 (읽기, 쓰기, 수정, 삭제, 관리)
+    permission VARCHAR(20) NOT NULL,      -- 권한 종류 (access)
     created_at TIMESTAMP DEFAULT NOW(),
     created_by VARCHAR(255),              -- 권한을 설정한 관리자
     updated_at TIMESTAMP DEFAULT NOW(),
@@ -56,13 +63,6 @@ CREATE TRIGGER trigger_update_user_permissions_timestamp
     BEFORE UPDATE ON user_permissions
     FOR EACH ROW
     EXECUTE FUNCTION update_user_permissions_updated_at();
-
--- 샘플 데이터 (예시)
--- INSERT INTO user_permissions (menu, permission_type, target_id, permission, created_by) VALUES
--- ('worklog', 'department', '영업부', 'access', 'admin@company.com'),
--- ('worklog', 'position', '이사', 'access', 'admin@company.com'),
--- ('corporate-card', 'individual', '123', 'access', 'admin@company.com'),
--- ('documents', 'department', '관리부', 'access', 'admin@company.com');
 
 -- RLS 정책 설정
 ALTER TABLE user_permissions ENABLE ROW LEVEL SECURITY;
@@ -118,27 +118,6 @@ CREATE POLICY "관리자는 권한 설정 삭제 가능" ON user_permissions
             AND users.role IN ('master', 'company_CEO', 'company_admin')
         )
     );
-
--- 권한 확인을 위한 뷰 생성 (선택사항)
-CREATE OR REPLACE VIEW user_permission_check AS
-SELECT 
-    u.id as user_id,
-    u.name as user_name,
-    u.email,
-    u.department,
-    u.position,
-    u.role,
-    up.menu,
-    up.permission,
-    up.permission_type,
-    CASE 
-        WHEN up.permission_type = 'department' THEN u.department = up.target_id
-        WHEN up.permission_type = 'position' THEN u.position = up.target_id
-        WHEN up.permission_type = 'individual' THEN u.id::text = up.target_id
-        ELSE false
-    END as has_permission
-FROM users u
-CROSS JOIN user_permissions up;
 
 -- 권한 확인 함수 (OR 방식, 단순화)
 CREATE OR REPLACE FUNCTION check_user_permission(

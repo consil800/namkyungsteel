@@ -1,10 +1,10 @@
 // 권한 확인 유틸리티 (OR 방식)
 console.log('🔐 permission-checker.js: 권한 확인 유틸리티 로드됨');
 
-// OR 방식으로 사용자 권한 확인
-window.checkUserPermission = async function(menu, permission, user = null) {
+// OR 방식으로 사용자 메뉴 접근 권한 확인 (단순화)
+window.checkUserPermission = async function(menu, user = null) {
     try {
-        console.log(`🔍 권한 확인 시작: ${menu} - ${permission}`);
+        console.log(`🔍 권한 확인 시작: ${menu}`);
         
         // 현재 사용자 정보 가져오기
         if (!user) {
@@ -48,7 +48,7 @@ window.checkUserPermission = async function(menu, permission, user = null) {
             .from('user_permissions')
             .select('*')
             .eq('menu', menu)
-            .eq('permission', permission);
+            .eq('permission', 'access');
         
         if (permError) {
             console.error('❌ 권한 조회 오류:', permError);
@@ -90,23 +90,9 @@ window.checkUserPermission = async function(menu, permission, user = null) {
     }
 };
 
-// 여러 권한을 한번에 확인하는 함수
-window.checkMultiplePermissions = async function(menu, permissions, user = null) {
-    try {
-        const results = {};
-        for (const permission of permissions) {
-            results[permission] = await window.checkUserPermission(menu, permission, user);
-        }
-        return results;
-    } catch (error) {
-        console.error('❌ 다중 권한 확인 중 오류:', error);
-        return {};
-    }
-};
-
-// 메뉴 접근 권한 확인 (읽기 권한 기준)
+// 메뉴 접근 권한 확인 (단순화)
 window.checkMenuAccess = async function(menu, user = null) {
-    return await window.checkUserPermission(menu, '읽기', user);
+    return await window.checkUserPermission(menu, user);
 };
 
 console.log('✅ permission-checker.js: 초기화 완료');
