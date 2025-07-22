@@ -284,6 +284,8 @@
 
 <body class="index-page">
 
+  <!-- 공통 네비게이션 include -->
+  <div id="navbar-placeholder"></div>
 
   <main class="main">
 
@@ -431,8 +433,33 @@
   <script src="https://cdn.jsdelivr.net/npm/@srexi/purecounterjs/dist/purecounter_vanilla.js"></script>
   <script src="https://unpkg.com/swiper@8/swiper-bundle.min.js"></script>
 
-  <!-- Navbar 인증 상태 관리 -->
-  <script src="includes/navbar-auth.js"></script>
+  <!-- 공통 네비게이션 로드 -->
+  <script>
+    fetch('includes/navbar.html')
+      .then(response => response.text())
+      .then(data => {
+        document.getElementById('navbar-placeholder').innerHTML = data;
+        console.log('✅ navbar 로드 완료');
+        
+        // navbar 로드 후 auth 스크립트 로드
+        const authScript = document.createElement('script');
+        authScript.src = 'includes/navbar-auth.js';
+        authScript.onload = function() {
+          console.log('✅ navbar-auth.js 로드 완료');
+          // 인증 상태 즉시 확인
+          if (window.updateNavbarLoginState) {
+            setTimeout(() => {
+              console.log('🔄 즉시 navbar 상태 업데이트');
+              window.updateNavbarLoginState();
+            }, 100);
+          }
+        };
+        document.head.appendChild(authScript);
+      })
+      .catch(error => {
+        console.error('❌ navbar 로드 실패:', error);
+      });
+  </script>
   
   <!-- Supabase 및 로그인 기능 -->
   <script>
@@ -970,19 +997,21 @@
     document.addEventListener('DOMContentLoaded', function() {
       console.log('📄 페이지 로드됨');
       
-      // navbar 상태 강제 업데이트
-      if (window.updateNavbarLoginState) {
-        console.log('🔄 navbar 로그인 상태 강제 업데이트');
-        window.updateNavbarLoginState();
-      }
+      // navbar 상태 강제 업데이트 (navbar가 로드된 후)
+      setTimeout(() => {
+        if (window.updateNavbarLoginState) {
+          console.log('🔄 navbar 로그인 상태 강제 업데이트');
+          window.updateNavbarLoginState();
+        }
+      }, 500);
       
       // 추가 지연 후 재확인
       setTimeout(() => {
         if (window.updateNavbarLoginState) {
-          console.log('🔄 navbar 로그인 상태 재확인 (1초 후)');
+          console.log('🔄 navbar 로그인 상태 재확인 (2초 후)');
           window.updateNavbarLoginState();
         }
-      }, 1000);
+      }, 2000);
       
       // OAuth 콜백 처리
       handleOAuthCallback();
