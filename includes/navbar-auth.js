@@ -8,14 +8,27 @@ function checkAndUpdateNavbarLoginState() {
     const currentUser = getCurrentUserFromSessionStorage();
     console.log('🔍 네비바: sessionStorage에서 가져온 사용자:', currentUser);
     
-    // 네비바 요소들이 존재하는지 확인
-    const loginBtn = document.getElementById('mainLoginBtn');
-    const userProfile = document.getElementById('userProfile');
+    // 네비바 요소들이 존재하는지 확인 (여러 방법으로 시도)
+    let loginBtn = document.getElementById('mainLoginBtn');
+    let userProfile = document.getElementById('userProfile');
+    
+    // 요소가 없으면 다른 방법으로 찾기
+    if (!loginBtn) {
+        loginBtn = document.querySelector('.login-btn') || 
+                  document.querySelector('a[href="#"]') ||
+                  document.querySelector('a[onclick*="showLoginModal"]');
+    }
+    
+    if (!userProfile) {
+        userProfile = document.querySelector('.user-profile');
+    }
+    
     console.log('🔍 네비바: 요소 확인', {
         loginBtn: !!loginBtn,
         userProfile: !!userProfile,
         loginBtnDisplay: loginBtn ? loginBtn.style.display : 'not found',
-        userProfileDisplay: userProfile ? userProfile.style.display : 'not found'
+        userProfileDisplay: userProfile ? userProfile.style.display : 'not found',
+        currentPage: window.location.pathname
     });
     
     if (currentUser && currentUser.name) {
@@ -66,10 +79,11 @@ function getCurrentUserFromSessionStorage() {
 function updateNavbarForLoggedInUser(user) {
     console.log('🔄 네비바: 로그인 상태로 업데이트 시작', user);
     
-    const loginBtn = document.getElementById('mainLoginBtn');
-    const userProfile = document.getElementById('userProfile');
-    const profileImage = document.getElementById('profileImage');
-    const profileName = document.getElementById('profileName');
+    // 요소 찾기 (더 유연하게)
+    let loginBtn = document.getElementById('mainLoginBtn') || document.querySelector('.login-btn');
+    let userProfile = document.getElementById('userProfile') || document.querySelector('.user-profile');
+    let profileImage = document.getElementById('profileImage');
+    let profileName = document.getElementById('profileName') || document.querySelector('.profile-name');
     
     console.log('🔄 네비바: 요소 찾기 결과', {
         loginBtn: !!loginBtn,
@@ -104,6 +118,26 @@ function updateNavbarForLoggedInUser(user) {
             profileName.textContent = user.name || user.email || '사용자';
             console.log('👤 네비바: 사용자 이름 설정 완료:', profileName.textContent);
         }
+    } else if (loginBtn) {
+        // userProfile이 없으면 loginBtn을 직접 수정
+        console.log('🔄 네비바: 로그인 버튼을 직접 사용자 정보로 변경');
+        const displayName = user.name && user.name.length > 15 ? 
+            user.name.substring(0, 15) + '...' : user.name || '사용자';
+        
+        loginBtn.innerHTML = `
+            <i class="bi bi-person-circle"></i> 
+            <span>${displayName}</span>
+        `;
+        loginBtn.onclick = function() {
+            if (window.handleProfileClick) {
+                window.handleProfileClick();
+            } else {
+                window.location.href = 'employee-dashboard.html';
+            }
+        };
+        loginBtn.href = 'javascript:void(0)';
+        
+        console.log('✅ 네비바: 로그인 버튼 직접 변경 완료');
     } else {
         console.error('❌ 네비바: 필수 요소를 찾을 수 없음');
     }
