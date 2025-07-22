@@ -320,20 +320,66 @@
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('권한 관리 페이지 로드됨');
             
-            // 인증 확인
-            const currentUser = AuthManager.getCurrentUser();
+            // 데이터베이스에서 최신 사용자 정보 확인
+            let currentUser = null;
+            
+            try {
+                // 데이터베이스 초기화
+                if (window.db && window.db.client) {
+                    await window.db.init();
+                    
+                    // sessionStorage에서 사용자 정보 가져오기
+                    const sessionUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+                    console.log('🔍 sessionStorage 사용자:', sessionUser);
+                    
+                    if (sessionUser && sessionUser.email) {
+                        // 데이터베이스에서 최신 사용자 정보 조회
+                        const { data: dbUser, error } = await window.db.client
+                            .from('users')
+                            .select('*')
+                            .eq('email', sessionUser.email)
+                            .single();
+                        
+                        if (!error && dbUser) {
+                            currentUser = dbUser;
+                            console.log('✅ 데이터베이스에서 최신 사용자 정보 조회:', currentUser);
+                        } else {
+                            console.error('❌ 데이터베이스 사용자 조회 오류:', error);
+                            currentUser = sessionUser;
+                        }
+                    } else {
+                        currentUser = AuthManager.getCurrentUser();
+                    }
+                } else {
+                    currentUser = AuthManager.getCurrentUser();
+                }
+            } catch (error) {
+                console.error('❌ 사용자 정보 조회 실패:', error);
+                currentUser = AuthManager.getCurrentUser();
+            }
+            
             if (!currentUser) {
                 alert('로그인이 필요합니다.');
                 window.location.href = 'login.html';
                 return;
             }
 
-            // 권한 확인 (관리자만 접근 가능)
-            if (!['master', 'company_representative', 'administrator'].includes(currentUser.role)) {
+            console.log('🔐 권한 확인 - 현재 사용자:', currentUser);
+            console.log('🔐 사용자 역할:', currentUser.role);
+
+            // 권한 확인 (마스터, 회사 대표, 회사 관리자만 접근 가능)
+            const allowedRoles = ['master', 'company_CEO', 'company_admin'];
+            if (!allowedRoles.includes(currentUser.role)) {
+                console.log('❌ 접근 권한 없음:', {
+                    userRole: currentUser.role,
+                    allowedRoles: allowedRoles
+                });
                 alert('권한이 없습니다. 관리자만 접근할 수 있습니다.');
                 window.location.href = 'admin-dashboard.html';
                 return;
             }
+            
+            console.log('✅ 접근 권한 확인됨:', currentUser.role);
 
             // 데이터베이스 초기화
             if (window.db && window.db.client) {
