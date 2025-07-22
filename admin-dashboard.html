@@ -32,6 +32,11 @@
             window.location.href = 'document-permissions.html';
         };
 
+        window.showPermissionManagement = function() {
+            console.log('권한 관리 페이지로 이동');
+            window.location.href = 'permission-management.html';
+        };
+
         window.openCorporateCardManagement = function() {
             console.log('openCorporateCardManagement 함수 호출됨');
             window.location.href = 'corporate-card.html';
@@ -861,6 +866,15 @@
             margin-bottom: 1.5rem;
             display: block;
         }
+        
+        /* 카드별 아이콘 색상 */
+        .employees-card i { color: #3b82f6; }
+        .pending-members-card i { color: #10b981; }
+        .documents-card i { color: #f59e0b; }
+        .permission-card i { color: #8b5cf6; }
+        .corporate-card-card i { color: #ef4444; }
+        .company-info-card i { color: #6366f1; }
+        .quote-requests-card i { color: #06b6d4; }
 
         .management-card h3 {
             font-size: 1.5rem;
@@ -1420,6 +1434,11 @@
                         <p>각종 서류 템플릿을 관리하고 결재 시스템 표시 여부를 설정합니다.</p>
                     </button>
                     
+                    <button class="management-card permission-card" id="permissionManagementBtn" onclick="console.log('권한 관리 클릭'); showPermissionManagement();">
+                        <i class="fas fa-user-shield"></i>
+                        <h3>권한 관리</h3>
+                        <p>사용자별, 부서별, 직급별 세부 권한을 설정하고 관리합니다.</p>
+                    </button>
                     
                     <button class="management-card corporate-card-card" id="corporateCardManagementBtn" onclick="console.log('법인카드 관리 클릭'); openCorporateCardManagement();" style="position: relative;">
                         <i class="fas fa-credit-card"></i>
