@@ -21,12 +21,6 @@
             window.location.href = 'employee-management.html';
         };
 
-        window.showPermissionManagement = function() {
-            console.log('showPermissionManagement 함수 호출됨');
-            history.pushState({ section: 'permissions' }, '권한 설정', '#permissions');
-            document.querySelector('.management-container').style.display = 'none';
-            document.getElementById('permissions').style.display = 'block';
-        };
 
         window.showPendingMembers = function() {
             console.log('가입 승인 페이지로 이동');
@@ -53,7 +47,7 @@
             console.log('backToDashboard 함수 호출됨');
             document.querySelector('.management-container').style.display = 'flex';
             // 모든 섹션 숨기기
-            const sections = ['employees', 'permissions', 'documents', 'company-info', 'companyInfo'];
+            const sections = ['employees', 'documents', 'company-info', 'companyInfo'];
             sections.forEach(id => {
                 const element = document.getElementById(id);
                 if (element) {
@@ -672,30 +666,6 @@
             color: white;
         }
 
-        .permission-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-
-        .permission-item {
-            display: flex;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 1rem;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-        }
-
-        .permission-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .permission-item input[type="checkbox"] {
-            margin-right: 0.75rem;
-            transform: scale(1.2);
-        }
 
         .modal {
             display: none;
@@ -754,7 +724,7 @@
             opacity: 1;
         }
 
-        .employee-card, .permission-card {
+        .employee-card {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 10px;
             padding: 1.5rem;
@@ -765,19 +735,19 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .employee-info h4, .permission-info h4 {
+        .employee-info h4 {
             margin: 0 0 0.5rem 0;
             color: #ffffff;
             font-size: 1.2rem;
         }
 
-        .employee-info p, .permission-info p {
+        .employee-info p {
             margin: 0.25rem 0;
             color: #e2e8f0;
             font-size: 0.9rem;
         }
 
-        .employee-actions, .permission-actions {
+        .employee-actions {
             display: flex;
             gap: 0.5rem;
         }
@@ -916,9 +886,6 @@
             background: linear-gradient(135deg, #8b5cf6, #7c3aed);
         }
 
-        .permissions-card {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-        }
 
         .company-info-card {
             background: linear-gradient(135deg, #06b6d4, #0891b2);
@@ -943,11 +910,6 @@
             margin-right: 0.5rem;
         }
 
-        .permission-badges {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: 0.5rem;
-        }
 
         .badge {
             background: linear-gradient(135deg, #10b981, #059669);
@@ -1059,74 +1021,6 @@
             }
         }
 
-        /* 권한 관리 스타일 */
-        .permission-tabs {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .permission-tab {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #fff;
-            padding: 0.5rem 1rem;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 0.875rem;
-        }
-
-        .permission-tab:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .permission-tab.active {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border-color: transparent;
-        }
-
-        .permission-content {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 8px;
-            padding: 1rem;
-        }
-
-        .permission-panel {
-            display: none;
-        }
-
-        .permission-panel.active {
-            display: block;
-        }
-
-        .permission-checkbox {
-            display: flex;
-            align-items: center;
-            padding: 0.5rem;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 5px;
-            margin-bottom: 0.5rem;
-            transition: all 0.3s ease;
-        }
-
-        .permission-checkbox:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .permission-checkbox input[type="checkbox"] {
-            margin-right: 0.75rem;
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-        }
-
-        .permission-checkbox label {
-            color: #e2e8f0;
-            cursor: pointer;
-            flex: 1;
-            margin: 0;
-        }
 
         /* 문서 관리 스타일 */
         .document-management {
@@ -1345,97 +1239,6 @@
             }
         }
 
-        /* 권한 관리 시스템 CSS */
-        .permission-card {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-        }
-
-        .permission-card:hover {
-            background: rgba(255, 255, 255, 0.15);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .permission-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-        }
-
-        .permission-header h4 {
-            color: #ffffff;
-            margin: 0;
-            font-size: 1.2rem;
-            font-weight: 700;
-        }
-
-        .permission-target {
-            margin: 0.75rem 0;
-        }
-
-        .target-type {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #ffffff;
-        }
-
-        .target-type.user {
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-        }
-
-        .target-type.department {
-            background: linear-gradient(135deg, #10b981, #059669);
-        }
-
-        .target-type.position {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-        }
-
-        .permission-meta {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.8rem;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 15px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .badge-read {
-            background: linear-gradient(135deg, #6b7280, #4b5563);
-            color: #ffffff;
-        }
-
-        .badge-write {
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-            color: #ffffff;
-        }
-
-        .badge-admin {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-            color: #ffffff;
-        }
-
-        .permission-actions {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: 1rem;
-        }
 
         .btn-small {
             padding: 0.5rem 1rem;
@@ -1558,19 +1361,6 @@
         }
 
         @media (max-width: 768px) {
-            .permission-card {
-                padding: 1rem;
-            }
-            
-            .permission-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.5rem;
-            }
-            
-            .permission-actions {
-                flex-direction: column;
-            }
             
             .modal-content {
                 width: 95%;
@@ -1617,11 +1407,6 @@
                         <p>직원 정보를 추가, 수정, 삭제하고 역할을 관리합니다.</p>
                     </button>
                     
-                    <button class="management-card permissions-card" id="permissionManagementBtn" onclick="console.log('권한 설정 클릭'); showPermissionManagement();">
-                        <i class="fas fa-shield-alt"></i>
-                        <h3>권한 설정</h3>
-                        <p>사용자별 접근 권한과 기능 권한을 설정합니다.</p>
-                    </button>
                     
                     <button class="management-card pending-members-card" id="pendingMembersBtn" onclick="console.log('가입 승인 클릭'); showPendingMembers();">
                         <i class="fas fa-user-check"></i>
@@ -1661,83 +1446,6 @@
             </div>
             <!-- 직원 관리 섹션은 별도의 employee-management.html 페이지로 이동 -->
 
-            <!-- 권한 설정 섹션 -->
-            <section class="content-section" id="permissions" style="display: none;">
-                <button class="btn btn-secondary" onclick="backToDashboard()" style="margin-bottom: 1rem;">
-                    <i class="fas fa-arrow-left"></i> 대시보드로 돌아가기
-                </button>
-                <h2 class="section-title">권한 설정</h2>
-                
-                <div class="data-grid">
-                    <div class="grid-header">
-                        <h3 class="grid-title">메뉴 접근 권한 관리</h3>
-                        <button class="btn" onclick="savePermissions()" style="background: linear-gradient(135deg, #10b981, #059669);">
-                            <i class="fas fa-save"></i> 권한 저장
-                        </button>
-                    </div>
-                    <div style="padding: 2rem;">
-                        <!-- 메뉴별 권한 설정 -->
-                        <div style="margin-bottom: 2rem;">
-                            <h4 style="color: #e2e8f0; margin-bottom: 1rem;">메뉴별 접근 권한</h4>
-                            <div id="menuPermissions">
-                                <!-- 업무일지 -->
-                                <div class="permission-menu-item" style="background: rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 10px; margin-bottom: 1rem;">
-                                    <h5 style="color: #fff; margin-bottom: 1rem;">
-                                        <i class="fas fa-file-alt"></i> 업무일지
-                                    </h5>
-                                    <div class="permission-tabs">
-                                        <button class="permission-tab active" onclick="switchPermissionTab('worklog', 'department')">부서별</button>
-                                        <button class="permission-tab" onclick="switchPermissionTab('worklog', 'position')">직급별</button>
-                                        <button class="permission-tab" onclick="switchPermissionTab('worklog', 'individual')">개인별</button>
-                                    </div>
-                                    <div id="worklog-permissions" class="permission-content">
-                                        <div id="worklog-department" class="permission-panel active"></div>
-                                        <div id="worklog-position" class="permission-panel" style="display: none;"></div>
-                                        <div id="worklog-individual" class="permission-panel" style="display: none;"></div>
-                                    </div>
-                                </div>
-
-                                <!-- 법인카드 사용 -->
-                                <div class="permission-menu-item" style="background: rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 10px; margin-bottom: 1rem;">
-                                    <h5 style="color: #fff; margin-bottom: 1rem;">
-                                        <i class="fas fa-credit-card"></i> 법인카드 사용
-                                    </h5>
-                                    <div class="permission-tabs">
-                                        <button class="permission-tab active" onclick="switchPermissionTab('corporate-card', 'department')">부서별</button>
-                                        <button class="permission-tab" onclick="switchPermissionTab('corporate-card', 'position')">직급별</button>
-                                        <button class="permission-tab" onclick="switchPermissionTab('corporate-card', 'individual')">개인별</button>
-                                    </div>
-                                    <div id="corporate-card-permissions" class="permission-content">
-                                        <div id="corporate-card-department" class="permission-panel active"></div>
-                                        <div id="corporate-card-position" class="permission-panel" style="display: none;"></div>
-                                        <div id="corporate-card-individual" class="permission-panel" style="display: none;"></div>
-                                    </div>
-                                </div>
-
-                                <!-- 결제 서류 -->
-                                <div class="permission-menu-item" style="background: rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 10px; margin-bottom: 1rem;">
-                                    <h5 style="color: #fff; margin-bottom: 1rem;">
-                                        <i class="fas fa-file-invoice"></i> 결제 서류
-                                    </h5>
-                                    <div class="permission-tabs">
-                                        <button class="permission-tab active" onclick="switchPermissionTab('documents', 'department')">부서별</button>
-                                        <button class="permission-tab" onclick="switchPermissionTab('documents', 'position')">직급별</button>
-                                        <button class="permission-tab" onclick="switchPermissionTab('documents', 'individual')">개인별</button>
-                                    </div>
-                                    <div id="documents-permissions" class="permission-content">
-                                        <div id="documents-department" class="permission-panel active"></div>
-                                        <div id="documents-position" class="permission-panel" style="display: none;"></div>
-                                        <div id="documents-individual" class="permission-panel" style="display: none;"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-                <button class="btn btn-secondary" onclick="backToDashboard()" style="margin-bottom: 1rem;">
-                    <i class="fas fa-arrow-left"></i> 대시보드로 돌아가기
-                </button>
             <section class="content-section" id="documents" style="display: none;">
                 <button class="btn btn-secondary" onclick="backToDashboard()" style="margin-bottom: 1rem;">
                     <i class="fas fa-arrow-left"></i> 대시보드로 돌아가기
@@ -1931,16 +1639,12 @@
             
             // 관리 카드 이벤트 리스너 추가
             const employeeBtn = document.getElementById('employeeManagementBtn');
-            const permissionBtn = document.getElementById('permissionManagementBtn');
             const documentBtn = document.getElementById('documentManagementBtn');
             const corporateBtn = document.getElementById('corporateCardManagementBtn');
             const companyBtn = document.getElementById('companyInfoManagementBtn');
             
             if (employeeBtn) {
                 employeeBtn.addEventListener('click', showEmployeeManagement);
-            }
-            if (permissionBtn) {
-                permissionBtn.addEventListener('click', showPermissionManagement);
             }
             if (documentBtn) {
                 documentBtn.addEventListener('click', showDocumentManagement);
@@ -2533,14 +2237,6 @@
                 });
             }
 
-            // 권한 폼 제출 - null 체크 추가
-            const permissionForm = document.getElementById('permissionForm');
-            if (permissionForm) {
-                permissionForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    savePermission();
-                });
-            }
         }
 
         function switchSection(sectionId) {
@@ -3325,380 +3021,12 @@
             }
         }
 
-        // 데이터베이스 기반 권한 관리 함수들
-        async function loadPermissions() {
-            const permissionList = document.getElementById('permissionList');
-            
-            // null 체크 추가
-            if (!permissionList) {
-                console.warn('permissionList 요소를 찾을 수 없습니다.');
-                return;
-            }
-            
-            try {
-                console.log('🔄 권한 설정 로딩 시작');
-                
-                // 데이터베이스에서 권한 설정 조회
-                const permissions = await window.db.getPermissionSettings();
-                
-                if (permissions.length === 0) {
-                    permissionList.innerHTML = `
-                        <div class="empty-state">
-                            <i class="fas fa-shield-alt" style="font-size: 3rem; color: #9ca3af; margin-bottom: 1rem;"></i>
-                            <p style="text-align: center; color: #9ca3af;">설정된 권한이 없습니다.</p>
-                            <button class="btn btn-primary" onclick="openPermissionModal()">
-                                <i class="fas fa-plus"></i> 권한 추가
-                            </button>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                console.log('✅ 권한 설정 로드 완료:', permissions.length + '개');
-                
-                permissionList.innerHTML = permissions.map(perm => {
-                    const permissionType = perm.permission_types;
-                    const user = perm.users;
-                    
-                    // 권한 대상 표시
-                    let targetInfo = '';
-                    if (perm.user_id && user) {
-                        targetInfo = `<span class="target-type user">👤 ${user.name} (${user.email})</span>`;
-                    } else if (perm.department) {
-                        targetInfo = `<span class="target-type department">🏢 ${perm.department} 부서</span>`;
-                    } else if (perm.position) {
-                        targetInfo = `<span class="target-type position">💼 ${perm.position} 직급</span>`;
-                    }
-                    
-                    // 권한 레벨 배지
-                    const levelBadge = perm.permission_level === 'admin' ? 
-                        '<span class="badge badge-admin">관리자</span>' :
-                        perm.permission_level === 'write' ?
-                        '<span class="badge badge-write">읽기/쓰기</span>' :
-                        '<span class="badge badge-read">읽기</span>';
-                    
-                    return `
-                        <div class="permission-card" data-permission-id="${perm.id}">
-                            <div class="permission-info">
-                                <div class="permission-header">
-                                    <h4>${permissionType ? permissionType.display_name : '알 수 없음'}</h4>
-                                    ${levelBadge}
-                                </div>
-                                <div class="permission-target">
-                                    ${targetInfo}
-                                </div>
-                                <div class="permission-meta">
-                                    <small>부여일: ${new Date(perm.granted_at).toLocaleDateString('ko-KR')}</small>
-                                </div>
-                            </div>
-                            <div class="permission-actions">
-                                <button class="btn btn-small" onclick="editPermission('${perm.id}')">
-                                    <i class="fas fa-edit"></i> 수정
-                                </button>
-                                <button class="btn btn-small btn-danger" onclick="revokePermission('${perm.id}')">
-                                    <i class="fas fa-trash"></i> 취소
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-                
-            } catch (error) {
-                console.error('❌ 권한 로딩 오류:', error);
-                permissionList.innerHTML = `
-                    <div class="error-state">
-                        <i class="fas fa-exclamation-triangle" style="color: #ef4444; margin-bottom: 1rem;"></i>
-                        <p style="color: #ef4444;">권한 정보를 불러오는데 실패했습니다.</p>
-                        <button class="btn btn-secondary" onclick="loadPermissions()">
-                            <i class="fas fa-redo"></i> 다시 시도
-                        </button>
-                    </div>
-                `;
-            }
-        }
 
-        async function openPermissionModal(permissionId = null) {
-            
-            try {
-                // 권한 유형 목록 로드
-                const permissionTypes = await window.db.getPermissionTypes();
-                const departments = await window.db.getDepartments();
-                const positions = await window.db.getPositions();
-                const users = await window.db.getUsers();
-                
-                // 모달 HTML 동적 생성
-                const modalHTML = `
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h3>${permissionId ? '권한 수정' : '권한 추가'}</h3>
-                            <button class="close-btn" onclick="closePermissionModal()">&times;</button>
-                        </div>
-                        <div class="modal-body">
-                            <form id="permissionForm">
-                                <div class="form-group">
-                                    <label>권한 유형</label>
-                                    <select id="permissionTypeId" required>
-                                        <option value="">권한 유형을 선택하세요</option>
-                                        ${permissionTypes.map(type => 
-                                            `<option value="${type.id}">${type.display_name}</option>`
-                                        ).join('')}
-                                    </select>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label>권한 대상</label>
-                                    <select id="targetType" onchange="updateTargetOptions()" required>
-                                        <option value="">대상을 선택하세요</option>
-                                        <option value="user">개인별</option>
-                                        <option value="department">부서별</option>
-                                        <option value="position">직급별</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="form-group" id="userTargetGroup" style="display: none;">
-                                    <label>사용자</label>
-                                    <select id="targetUserId">
-                                        <option value="">사용자를 선택하세요</option>
-                                        ${users.map(user => 
-                                            `<option value="${user.id}">${user.name} (${user.email})</option>`
-                                        ).join('')}
-                                    </select>
-                                </div>
-                                
-                                <div class="form-group" id="departmentTargetGroup" style="display: none;">
-                                    <label>부서</label>
-                                    <select id="targetDepartment">
-                                        <option value="">부서를 선택하세요</option>
-                                        ${departments.map(dept => 
-                                            `<option value="${dept}">${dept}</option>`
-                                        ).join('')}
-                                    </select>
-                                </div>
-                                
-                                <div class="form-group" id="positionTargetGroup" style="display: none;">
-                                    <label>직급</label>
-                                    <select id="targetPosition">
-                                        <option value="">직급을 선택하세요</option>
-                                        ${positions.map(pos => 
-                                            `<option value="${pos}">${pos}</option>`
-                                        ).join('')}
-                                    </select>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label>권한 레벨</label>
-                                    <select id="permissionLevel" required>
-                                        <option value="read">읽기</option>
-                                        <option value="write">읽기/쓰기</option>
-                                        <option value="admin">관리자</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="form-actions">
-                                    <button type="button" class="btn btn-secondary" onclick="closePermissionModal()">취소</button>
-                                    <button type="submit" class="btn btn-primary">저장</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                `;
-                
-                // 모달 표시
-                let modal = document.getElementById('permissionModal');
-                if (!modal) {
-                    modal = document.createElement('div');
-                    modal.id = 'permissionModal';
-                    modal.className = 'modal';
-                    document.body.appendChild(modal);
-                }
-                
-                modal.innerHTML = modalHTML;
-                modal.style.display = 'block';
-                
-                // 폼 제출 이벤트 추가
-                document.getElementById('permissionForm').addEventListener('submit', handlePermissionSave);
-                
-                // 기존 권한 수정인 경우 데이터 로드
-                if (permissionId) {
-                    await loadPermissionForEdit(permissionId);
-                }
-                
-            } catch (error) {
-                console.error('❌ 권한 모달 열기 오류:', error);
-                alert('권한 설정 모달을 여는데 실패했습니다.');
-            }
-        }
 
-        function closePermissionModal() {
-            const modal = document.getElementById('permissionModal');
-            if (modal) {
-                modal.style.display = 'none';
-            }
-        }
-        
-        function updateTargetOptions() {
-            const targetType = document.getElementById('targetType').value;
-            
-            // 모든 타겟 그룹 숨기기
-            document.getElementById('userTargetGroup').style.display = 'none';
-            document.getElementById('departmentTargetGroup').style.display = 'none';
-            document.getElementById('positionTargetGroup').style.display = 'none';
-            
-            // 선택된 타입에 따라 해당 그룹 표시
-            if (targetType === 'user') {
-                document.getElementById('userTargetGroup').style.display = 'block';
-            } else if (targetType === 'department') {
-                document.getElementById('departmentTargetGroup').style.display = 'block';
-            } else if (targetType === 'position') {
-                document.getElementById('positionTargetGroup').style.display = 'block';
-            }
-        }
 
-        async function handlePermissionSave(event) {
-            event.preventDefault();
-            
-            const permissionTypeId = document.getElementById('permissionTypeId').value;
-            const targetType = document.getElementById('targetType').value;
-            const permissionLevel = document.getElementById('permissionLevel').value;
-            
-            if (!permissionTypeId || !targetType || !permissionLevel) {
-                alert('모든 필수 항목을 입력해주세요.');
-                return;
-            }
-            
-            try {
-                const currentUser = AuthManager.getCurrentUser();
-                if (!currentUser || !currentUser.id) {
-                    alert('현재 사용자 정보를 찾을 수 없습니다.');
-                    return;
-                }
-                
-                let result;
-                
-                // 대상 유형에 따라 다른 메서드 호출
-                if (targetType === 'user') {
-                    const userId = document.getElementById('targetUserId').value;
-                    if (!userId) {
-                        alert('사용자를 선택해주세요.');
-                        return;
-                    }
-                    result = await window.db.grantUserPermission(
-                        parseInt(permissionTypeId), 
-                        parseInt(userId), 
-                        permissionLevel, 
-                        currentUser.id
-                    );
-                } else if (targetType === 'department') {
-                    const department = document.getElementById('targetDepartment').value;
-                    if (!department) {
-                        alert('부서를 선택해주세요.');
-                        return;
-                    }
-                    result = await window.db.grantDepartmentPermission(
-                        parseInt(permissionTypeId), 
-                        department, 
-                        permissionLevel, 
-                        currentUser.id
-                    );
-                } else if (targetType === 'position') {
-                    const position = document.getElementById('targetPosition').value;
-                    if (!position) {
-                        alert('직급을 선택해주세요.');
-                        return;
-                    }
-                    result = await window.db.grantPositionPermission(
-                        parseInt(permissionTypeId), 
-                        position, 
-                        permissionLevel, 
-                        currentUser.id
-                    );
-                }
-                
-                console.log('✅ 권한 저장 완료:', result);
-                alert('권한이 성공적으로 저장되었습니다.');
-                
-                closePermissionModal();
-                await loadPermissions();
-                
-            } catch (error) {
-                console.error('❌ 권한 저장 오류:', error);
-                alert('권한 저장에 실패했습니다: ' + error.message);
-            }
-        }
 
-        function editPermission(permissionId) {
-            // TODO: 권한 수정 기능은 추후 구현
-            alert('권한 수정 기능은 추후 구현 예정입니다. 현재는 취소 후 새로 추가해주세요.');
-        }
-        
-        async function revokePermission(permissionId) {
-            if (!confirm('정말로 이 권한을 취소하시겠습니까?')) {
-                return;
-            }
-            
-            try {
-                await window.db.revokePermission(permissionId);
-                console.log('✅ 권한 취소 완료');
-                alert('권한이 취소되었습니다.');
-                
-                await loadPermissions();
-                
-            } catch (error) {
-                console.error('❌ 권한 취소 오류:', error);
-                alert('권한 취소에 실패했습니다: ' + error.message);
-            }
-        }
 
-        // 권한 확인 헬퍼 함수
-        async function checkPermission(permissionType) {
-            try {
-                const currentUser = AuthManager.getCurrentUser();
-                if (!currentUser || !currentUser.id) {
-                    return { hasPermission: false, permissionLevel: 'none' };
-                }
-                
-                return await window.db.checkUserPermission(currentUser.id, permissionType);
-            } catch (error) {
-                console.error('권한 확인 오류:', error);
-                return { hasPermission: false, permissionLevel: 'none' };
-            }
-        }
-        
-        // 중복된 함수 정의 제거됨 (상단에서 이미 정의함)
 
-        async function showPermissionManagement() {
-            // 데이터베이스 초기화 대기
-            if (!window.db || !window.db.client) {
-                console.log('데이터베이스 초기화 중...');
-                for (let i = 0; i < 50; i++) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    if (window.db && window.db.client) {
-                        break;
-                    }
-                }
-                if (!window.db || !window.db.client) {
-                    alert('데이터베이스 연결을 확인할 수 없습니다. 페이지를 새로고침해주세요.');
-                    return;
-                }
-            }
-            
-            // 권한 체크
-            const user = AuthManager.getCurrentUser();
-            if (!user || !(await canManageEmployees(user))) {
-                alert('권한 설정 권한이 없습니다. 마스터, 회사대표, 관리자만 접근 가능합니다.');
-                return;
-            }
-            
-            // 히스토리에 상태 추가 (해시 변경 없이)
-            history.pushState({ section: 'permissions' }, '권한 설정', '#permissions');
-            
-            // 권한 설정 섉션 표시
-            showSection('permissions');
-            
-            // 데이터베이스 기반 권한 데이터 로드
-            await loadPermissions();
-        }
-        window.showPermissionManagement = showPermissionManagement;
 
 
         function backToDashboard() {
@@ -3760,8 +3088,6 @@
                     return;
                 }
                 showSection('employees');
-            } else if (hash === 'permissions') {
-                showSection('permissions');
             } else {
                 showSection('dashboard');
             }
@@ -3979,83 +3305,7 @@
             }
         }
 
-        // ==================== 권한 관리 함수들 ====================
         
-        // 데이터베이스 기반 권한 로드
-        async function loadMenuPermissions() {
-            console.log('ℹ️ 기존 localStorage 기반 권한 시스템은 데이터베이스 기반으로 대체되었습니다.');
-            console.log('🔄 권한 설정 페이지로 이동하세요: #permissions');
-            
-            // 데이터베이스 기반 권한 관리로 리다이렉트
-            await showPermissionManagement();
-        }
-        
-        // 권한 탭 전환
-        function switchPermissionTab(menu, type) {
-            // 탭 버튼 활성화 상태 변경
-            const tabs = document.querySelectorAll(`#${menu}-permissions .permission-tab`);
-            tabs.forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
-            
-            // 패널 표시/숨김
-            const panels = document.querySelectorAll(`#${menu}-permissions .permission-panel`);
-            panels.forEach(panel => {
-                panel.style.display = 'none';
-                panel.classList.remove('active');
-            });
-            
-            const activePanel = document.getElementById(`${menu}-${type}`);
-            if (activePanel) {
-                activePanel.style.display = 'block';
-                activePanel.classList.add('active');
-            }
-        }
-        
-        // 데이터베이스 기반 권한 저장
-        async function savePermissions() {
-            console.log('💾 데이터베이스 기반 권한 저장 시작');
-            
-            try {
-                // 모든 체크박스에서 권한 정보 수집
-                const checkboxes = document.querySelectorAll('#menuPermissions input[type="checkbox"]');
-                
-                for (const checkbox of checkboxes) {
-                    const menu = checkbox.dataset.menu;
-                    const type = checkbox.dataset.type;
-                    const value = checkbox.dataset.value;
-                    const isChecked = checkbox.checked;
-                    
-                    if (isChecked && window.db) {
-                        // 데이터베이스에 권한 부여
-                        const permissionTypeId = getPermissionTypeId(menu);
-                        const currentUser = AuthManager.getCurrentUser();
-                        
-                        if (type === 'individuals') {
-                            await window.db.grantUserPermission(permissionTypeId, value, 'read', currentUser.id, 'namkyungsteel.com');
-                        } else if (type === 'departments') {
-                            await window.db.grantDepartmentPermission(permissionTypeId, value, 'read', currentUser.id, 'namkyungsteel.com');
-                        } else if (type === 'positions') {
-                            await window.db.grantPositionPermission(permissionTypeId, value, 'read', currentUser.id, 'namkyungsteel.com');
-                        }
-                    }
-                }
-                
-                console.log('✅ 데이터베이스 권한 저장 완료');
-                alert('권한 설정이 저장되었습니다.');
-            } catch (error) {
-                console.error('❌ 권한 저장 오류:', error);
-                alert('권한 저장 중 오류가 발생했습니다.');
-            }
-        }
-        
-        function getPermissionTypeId(menu) {
-            const typeMap = {
-                'work_log': 1,
-                'corporate_card': 2, 
-                'payment_documents': 3
-            };
-            return typeMap[menu] || 1;
-        }
 
 
 
@@ -4641,8 +3891,6 @@
                         showSection('dashboard');
                         alert('직원 관리 권한이 없습니다.');
                     }
-                } else if (hash === 'permissions') {
-                    await loadMenuPermissions();
                 } else if (hash === 'documents') {
                     // 문서 관리 섹션
                     await loadDocumentTemplates();
@@ -4672,9 +3920,6 @@
         document.addEventListener('DOMContentLoaded', initializePage);
 
         // 전역 함수 등록
-        window.switchPermissionTab = switchPermissionTab;
-        window.savePermissions = savePermissions;
-        window.loadMenuPermissions = loadMenuPermissions;
         window.showDocumentManagement = showDocumentManagement;
         window.saveDocumentSettings = saveDocumentSettings;
         window.handlePopState = handlePopState;
