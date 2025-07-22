@@ -31,9 +31,30 @@ function checkAndUpdateNavbarLoginState() {
 function getCurrentUserFromSessionStorage() {
     try {
         const userJson = sessionStorage.getItem('currentUser');
-        if (!userJson) return null;
+        const userName = sessionStorage.getItem('userName');
+        const userRole = sessionStorage.getItem('userRole');
+        
+        console.log('🔍 sessionStorage 검사:', {
+            currentUser: userJson ? 'exists' : 'null',
+            userName: userName,
+            userRole: userRole,
+            userJsonLength: userJson ? userJson.length : 0
+        });
+        
+        if (!userJson || userJson === 'null' || userJson === 'undefined') {
+            console.log('❌ 유효하지 않은 사용자 정보');
+            return null;
+        }
         
         const user = JSON.parse(userJson);
+        
+        // 추가 검증
+        if (!user || !user.name) {
+            console.log('❌ 사용자 객체가 유효하지 않음:', user);
+            return null;
+        }
+        
+        console.log('✅ 유효한 사용자 정보 확인:', user.name);
         return user;
     } catch (error) {
         console.error('❌ 네비바: 사용자 정보 파싱 오류:', error);
@@ -166,6 +187,14 @@ window.updateNavbarLoginState = checkAndUpdateNavbarLoginState;
 setTimeout(checkAndUpdateNavbarLoginState, 100);
 setTimeout(checkAndUpdateNavbarLoginState, 500);
 setTimeout(checkAndUpdateNavbarLoginState, 1000);
+setTimeout(checkAndUpdateNavbarLoginState, 2000);
+
+// 페이지 로드 완료 시에도 재확인
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔄 navbar-auth: DOM 로드 완료, 인증 상태 재확인');
+    setTimeout(checkAndUpdateNavbarLoginState, 100);
+    setTimeout(checkAndUpdateNavbarLoginState, 500);
+});
 
 // sessionStorage 변경 감지 (다른 탭에서의 로그인/로그아웃 반영)
 window.addEventListener('storage', function(e) {
