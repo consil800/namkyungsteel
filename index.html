@@ -431,6 +431,9 @@
   <script src="https://cdn.jsdelivr.net/npm/@srexi/purecounterjs/dist/purecounter_vanilla.js"></script>
   <script src="https://unpkg.com/swiper@8/swiper-bundle.min.js"></script>
 
+  <!-- Navbar 인증 상태 관리 -->
+  <script src="includes/navbar-auth.js"></script>
+  
   <!-- Supabase 및 로그인 기능 -->
   <script>
     // Supabase 설정
@@ -963,9 +966,23 @@
       }
     }
     
-    // 페이지 로드 시 OAuth 콜백 처리만 수행 (로그인 상태는 네비바에서 관리)
+    // 페이지 로드 시 OAuth 콜백 처리 및 navbar 상태 업데이트
     document.addEventListener('DOMContentLoaded', function() {
       console.log('📄 페이지 로드됨');
+      
+      // navbar 상태 강제 업데이트
+      if (window.updateNavbarLoginState) {
+        console.log('🔄 navbar 로그인 상태 강제 업데이트');
+        window.updateNavbarLoginState();
+      }
+      
+      // 추가 지연 후 재확인
+      setTimeout(() => {
+        if (window.updateNavbarLoginState) {
+          console.log('🔄 navbar 로그인 상태 재확인 (1초 후)');
+          window.updateNavbarLoginState();
+        }
+      }, 1000);
       
       // OAuth 콜백 처리
       handleOAuthCallback();
