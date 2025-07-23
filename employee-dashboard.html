@@ -1263,12 +1263,11 @@
                     console.error('법인카드 사용 카운트 조회 오류:', error);
                 }
                 
-                // 4. 관리 거래처 카운트 (client_companies 테이블에서 조회)
+                // 4. 관리 거래처 카운트 (데이터베이스에서 전체 조회)
                 try {
-                    // 사용자 ID 확인 및 변환 (업무일지와 동일한 로직)
+                    // 사용자 ID 확인 및 변환
                     let actualUserId = user.id;
                     if (typeof user.id === 'string' && user.id.includes('-')) {
-                        // OAuth 사용자인 경우 실제 ID 조회
                         const { data: userData, error: userError } = await window.db.client
                             .from('users')
                             .select('id')
@@ -1280,15 +1279,17 @@
                         }
                     }
                     
-                    const { data: clientCompanies, error: clientError } = await window.db.client
+                    // 전체 기간 동안 사용자가 등록한 거래처 수 조회 (이번 달만이 아니라 전체)
+                    const { data: allClientCompanies, error: clientError } = await window.db.client
                         .from('client_companies')
-                        .select('id')
-                        .eq('user_id', actualUserId.toString())
-                        .gte('created_at', startOfMonth.toISOString())
-                        .lte('created_at', endOfMonth.toISOString());
+                        .select('id, created_at')
+                        .eq('user_id', actualUserId.toString());
                     
-                    if (!clientError && clientCompanies) {
-                        clientCount = clientCompanies.length;
+                    if (!clientError && allClientCompanies) {
+                        clientCount = allClientCompanies.length;
+                        console.log('전체 관리 거래처 수:', clientCount);
+                    } else {
+                        console.error('거래처 조회 오류:', clientError);
                     }
                 } catch (error) {
                     console.error('관리 거래처 카운트 조회 오류:', error);
@@ -1318,14 +1319,29 @@
             const currentDate = new Date();
             const oneMonthAgo = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, currentDate.getDate());
             
+            console.log('활동 로드 시작 - 사용자:', user);
+            console.log('날짜 범위:', oneMonthAgo.toISOString(), '~', currentDate.toISOString());
+            
             try {
                 // 데이터베이스 초기화
                 if (!window.db) {
                     console.warn('⚠️ 데이터베이스가 초기화되지 않음');
+                    const activityList = document.getElementById('activityList');
+                    activityList.innerHTML = `
+                        <div class="activity-item" style="text-align: center; padding: 2rem;">
+                            <div style="color: #ff6b6b; font-size: 1.1rem;">
+                                <i class="fas fa-exclamation-triangle" style="margin-right: 0.5rem;"></i>
+                                데이터베이스 연결 오류
+                            </div>
+                        </div>
+                    `;
                     return;
                 }
                 
                 await window.db.init();
+                console.log('데이터베이스 초기화 완료');
+                
+                console.log('사용자 ID로 활동 조회 시작:', user.id);
                 
                 // 1. 서류 작성 활동 (데이터베이스에서)
                 try {
@@ -1337,7 +1353,10 @@
                         .order('created_at', { ascending: false })
                         .limit(5);
                     
-                    if (!docError && documents) {
+                    console.log('서류 조회 결과:', { documents, docError, userId: user.id });
+                    
+                    if (!docError && documents && documents.length > 0) {
+                        console.log('서류 활동 발견:', documents.length, '건');
                         documents.forEach(doc => {
                             const docTypeNames = {
                                 'proposal': '기안서',
@@ -1357,6 +1376,8 @@
                                 originalData: doc
                             });
                         });
+                    } else {
+                        console.log('서류 활동 없음 또는 오류:', docError);
                     }
                 } catch (error) {
                     console.error('서류 활동 조회 오류:', error);
@@ -1437,6 +1458,8 @@
                         .order('created_at', { ascending: false })
                         .limit(3);
                     
+                    console.log('거래처 활동 조회 결과:', { clientCompanies, clientError, actualUserId });
+                    
                     if (!clientError && clientCompanies) {
                         clientCompanies.forEach(company => {
                             activities.push({
@@ -1447,6 +1470,7 @@
                                 originalData: company
                             });
                         });
+                        console.log('거래처 활동 추가됨:', clientCompanies.length, '개');
                     }
                 } catch (error) {
                     console.error('거래처 활동 조회 오류:', error);
@@ -1454,6 +1478,20 @@
                 
             } catch (error) {
                 console.error('활동 데이터 로드 중 오류:', error);
+                
+                // 오류 시 사용자에게 메시지 표시
+                const activityList = document.getElementById('activityList');
+                activityList.innerHTML = `
+                    <div class="activity-item" style="text-align: center; padding: 2rem;">
+                        <div style="color: #ff6b6b; font-size: 1.1rem;">
+                            <i class="fas fa-exclamation-triangle" style="margin-right: 0.5rem;"></i>
+                            활동 내역을 불러오는 중 오류가 발생했습니다.
+                        </div>
+                        <div style="color: #999; font-size: 0.9rem; margin-top: 0.5rem;">
+                            데이터베이스 연결을 확인해주세요.
+                        </div>
+                    </div>
+                `;
             }
             
             // 날짜별 정렬 (최신순)
@@ -1462,14 +1500,22 @@
             // 최대 8개 활동만 표시
             const recentActivities = activities.slice(0, 8);
             
+            console.log('전체 활동 수:', activities.length, '표시할 활동 수:', recentActivities.length);
+            console.log('활동 내역:', activities.map(a => ({ type: a.type, title: a.title, date: a.date })));
+            
             // 활동 목록 업데이트
             const activityList = document.getElementById('activityList');
             if (recentActivities.length === 0) {
+                // 데이터베이스 오류 시 더 자세한 정보 표시
+                console.log('활돔 데이터 없음 - 사용자 ID:', user.id, '활동 배열 길이:', activities.length);
                 activityList.innerHTML = `
                     <div class="activity-item" style="text-align: center; padding: 2rem;">
                         <div style="color: #666; font-size: 1.1rem;">
                             <i class="fas fa-info-circle" style="margin-right: 0.5rem;"></i>
                             최근 한 달간 활동 내역이 없습니다.
+                        </div>
+                        <div style="color: #999; font-size: 0.9rem; margin-top: 0.5rem;">
+                            데이터베이스에서 활동 내역을 조회하는 중입니다...
                         </div>
                     </div>
                 `;
