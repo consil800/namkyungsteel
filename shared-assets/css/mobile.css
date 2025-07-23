@@ -1,0 +1,534 @@
+/* 
+ * 남경스틸(주) 모바일/태블릿 반응형 CSS
+ * 모든 페이지에서 공통으로 사용하는 모바일 최적화 스타일
+ */
+
+/* ===================================
+   태블릿 반응형 (768px - 1024px)
+   =================================== */
+@media (min-width: 769px) and (max-width: 1024px) {
+    /* 컨테이너 조정 */
+    .container,
+    .header-container,
+    .dashboard-content,
+    .main-content {
+        max-width: 100%;
+        padding: 0 1.5rem;
+    }
+    
+    /* 헤더 스타일 */
+    .header,
+    .dashboard-header {
+        padding: 1.5rem 0;
+    }
+    
+    .header h1,
+    .welcome-section h1 {
+        font-size: 1.5rem;
+    }
+    
+    .header p,
+    .welcome-section p {
+        font-size: 0.95rem;
+    }
+    
+    /* 네비게이션 */
+    .navbar {
+        padding: 0.75rem 1rem;
+    }
+    
+    .nav-link {
+        font-size: 0.9rem;
+        padding: 0.5rem 0.75rem;
+    }
+    
+    /* 버튼 스타일 */
+    .btn,
+    .header-btn,
+    .action-btn {
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    /* 카드 레이아웃 */
+    .card-grid,
+    .menu-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+    }
+    
+    .card,
+    .menu-card {
+        padding: 1.5rem;
+    }
+    
+    /* 폼 요소 */
+    input,
+    select,
+    textarea {
+        font-size: 0.95rem;
+        padding: 0.6rem 0.8rem;
+    }
+    
+    /* 테이블 */
+    table {
+        font-size: 0.9rem;
+    }
+    
+    th, td {
+        padding: 0.6rem;
+    }
+    
+    /* 모달 */
+    .modal-content {
+        max-width: 80%;
+    }
+}
+
+/* ===================================
+   모바일 반응형 (768px 이하)
+   =================================== */
+@media (max-width: 768px) {
+    /* 기본 설정 */
+    body {
+        font-size: 0.9rem;
+        -webkit-text-size-adjust: 100%; /* iOS 텍스트 크기 자동 조정 방지 */
+    }
+    
+    /* 컨테이너 조정 */
+    .container,
+    .header-container,
+    .dashboard-content,
+    .main-content {
+        max-width: 100%;
+        padding: 0 1rem;
+    }
+    
+    /* 헤더 스타일 */
+    .header,
+    .dashboard-header {
+        padding: 1rem 0;
+    }
+    
+    .header-container {
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .welcome-section {
+        flex: 1;
+        min-width: 0; /* 텍스트 오버플로우 방지 */
+    }
+    
+    .header h1,
+    .welcome-section h1 {
+        font-size: 1.1rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 0.25rem;
+    }
+    
+    .header p,
+    .welcome-section p {
+        font-size: 0.8rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    /* 프로필 이미지 */
+    .user-profile img,
+    .user-profile-dashboard img {
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        min-height: 40px !important;
+    }
+    
+    /* 헤더 버튼 */
+    .header-actions {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 0.25rem;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .header-btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.75rem;
+        white-space: nowrap;
+        min-width: fit-content;
+        flex-shrink: 0;
+    }
+    
+    .header-btn i {
+        font-size: 0.9rem;
+    }
+    
+    /* 모바일에서 버튼 텍스트 숨기기 (아이콘만 표시) */
+    .header-btn span:not(.notification-badge):not(.notification-badge-header) {
+        display: none;
+    }
+    
+    /* 네비게이션 */
+    .navbar {
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .navbar-toggler {
+        padding: 0.25rem 0.5rem;
+        font-size: 1rem;
+    }
+    
+    .nav-link {
+        font-size: 0.85rem;
+        padding: 0.5rem;
+    }
+    
+    .dropdown-menu {
+        font-size: 0.85rem;
+    }
+    
+    /* 메인 콘텐츠 */
+    .main-content,
+    .dashboard-content {
+        margin: 1.5rem auto;
+    }
+    
+    /* 카드 레이아웃 */
+    .card-grid,
+    .menu-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .card,
+    .menu-card {
+        padding: 1.25rem;
+        border-radius: 10px;
+    }
+    
+    .card h3,
+    .menu-card h3 {
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .card p,
+    .menu-card p {
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+    
+    /* 아이콘 */
+    .card-icon,
+    .menu-icon {
+        width: 45px;
+        height: 45px;
+        font-size: 1.1rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    /* 버튼 스타일 */
+    .btn {
+        padding: 0.6rem 1rem;
+        font-size: 0.85rem;
+        min-height: 38px;
+        touch-action: manipulation; /* 더블탭 줌 방지 */
+    }
+    
+    .btn-lg {
+        padding: 0.75rem 1.25rem;
+        font-size: 0.9rem;
+    }
+    
+    .btn-sm {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.8rem;
+    }
+    
+    /* 폼 요소 */
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    label {
+        font-size: 0.85rem;
+        margin-bottom: 0.4rem;
+    }
+    
+    input,
+    select,
+    textarea {
+        font-size: 16px; /* iOS 줌 방지 */
+        padding: 0.6rem;
+        border-radius: 5px;
+        width: 100%;
+        -webkit-appearance: none; /* iOS 기본 스타일 제거 */
+    }
+    
+    /* 테이블 반응형 */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 0 -1rem;
+        padding: 0 1rem;
+    }
+    
+    table {
+        font-size: 0.85rem;
+        min-width: 600px; /* 최소 너비 설정 */
+    }
+    
+    th, td {
+        padding: 0.5rem;
+        white-space: nowrap;
+    }
+    
+    /* 모달 */
+    .modal-dialog {
+        margin: 1rem;
+        max-width: calc(100% - 2rem);
+    }
+    
+    .modal-content {
+        border-radius: 10px;
+    }
+    
+    .modal-header {
+        padding: 1rem;
+    }
+    
+    .modal-header h2,
+    .modal-header h3,
+    .modal-header h4 {
+        font-size: 1.25rem;
+    }
+    
+    .modal-body {
+        padding: 1rem;
+    }
+    
+    .modal-footer {
+        padding: 1rem;
+        gap: 0.5rem;
+    }
+    
+    /* 통계 섹션 */
+    .stats-section {
+        padding: 1.25rem;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+    
+    .stat-item {
+        padding: 0.75rem;
+        text-align: center;
+    }
+    
+    .stat-value {
+        font-size: 1.75rem;
+    }
+    
+    .stat-label {
+        font-size: 0.75rem;
+    }
+    
+    /* 탭 네비게이션 */
+    .nav-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .nav-tabs .nav-link {
+        white-space: nowrap;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+    }
+    
+    /* 페이지네이션 */
+    .pagination {
+        font-size: 0.85rem;
+    }
+    
+    .page-link {
+        padding: 0.4rem 0.6rem;
+    }
+    
+    /* 알림 배지 */
+    .notification-badge,
+    .notification-badge-header {
+        width: 18px;
+        height: 18px;
+        font-size: 0.65rem;
+    }
+    
+    /* 드롭다운 */
+    .dropdown-toggle {
+        font-size: 0.85rem;
+    }
+    
+    .dropdown-menu {
+        max-width: 90vw;
+    }
+    
+    /* 로딩 스피너 */
+    .spinner {
+        width: 40px;
+        height: 40px;
+    }
+    
+    /* 터치 최적화 */
+    a, button, input, select, textarea {
+        touch-action: manipulation;
+    }
+    
+    /* 가로 스크롤 방지 */
+    html, body {
+        overflow-x: hidden;
+    }
+}
+
+/* ===================================
+   매우 작은 모바일 (400px 이하)
+   =================================== */
+@media (max-width: 400px) {
+    /* 헤더 조정 */
+    .header h1,
+    .welcome-section h1 {
+        font-size: 0.95rem;
+    }
+    
+    .header p,
+    .welcome-section p {
+        display: none; /* 부가 정보 숨기기 */
+    }
+    
+    /* 헤더 버튼 - 아이콘만 표시 */
+    .header-btn {
+        padding: 0.5rem;
+        font-size: 0;
+    }
+    
+    .header-btn i {
+        font-size: 1.1rem;
+        margin: 0;
+    }
+    
+    /* 컨테이너 패딩 축소 */
+    .container,
+    .header-container,
+    .dashboard-content,
+    .main-content {
+        padding: 0 0.75rem;
+    }
+    
+    /* 카드 패딩 축소 */
+    .card,
+    .menu-card {
+        padding: 1rem;
+    }
+    
+    /* 통계 그리드 단일 열 */
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    /* 폼 요소 */
+    input,
+    select,
+    textarea {
+        padding: 0.5rem;
+    }
+    
+    /* 버튼 크기 축소 */
+    .btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+    }
+    
+    /* 모달 여백 축소 */
+    .modal-dialog {
+        margin: 0.5rem;
+        max-width: calc(100% - 1rem);
+    }
+}
+
+/* ===================================
+   가로 모드 최적화
+   =================================== */
+@media (max-width: 768px) and (orientation: landscape) {
+    /* 헤더 높이 축소 */
+    .header,
+    .dashboard-header {
+        padding: 0.5rem 0;
+    }
+    
+    /* 콘텐츠 여백 축소 */
+    .main-content,
+    .dashboard-content {
+        margin: 1rem auto;
+    }
+    
+    /* 카드 그리드 2열 */
+    .card-grid,
+    .menu-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* ===================================
+   터치 디바이스 최적화
+   =================================== */
+@media (hover: none) and (pointer: coarse) {
+    /* 호버 효과 제거 */
+    .btn:hover,
+    .card:hover,
+    .menu-card:hover {
+        transform: none;
+    }
+    
+    /* 터치 타겟 크기 확보 */
+    a, button {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* 스크롤 성능 최적화 */
+    * {
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* ===================================
+   프린트 스타일
+   =================================== */
+@media print {
+    /* 불필요한 요소 숨기기 */
+    .header-actions,
+    .navbar,
+    .sidebar,
+    .footer,
+    .btn,
+    .notification-badge {
+        display: none !important;
+    }
+    
+    /* 색상 단순화 */
+    * {
+        color: black !important;
+        background: white !important;
+    }
+    
+    /* 페이지 나누기 */
+    .page-break {
+        page-break-before: always;
+    }
+}
