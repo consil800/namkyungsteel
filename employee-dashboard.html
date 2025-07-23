@@ -346,20 +346,220 @@
             }
         }
 
-        /* 반응형 */
-        @media (max-width: 768px) {
+        /* 태블릿 반응형 (768px - 1024px) */
+        @media (min-width: 769px) and (max-width: 1024px) {
             .header-container {
-                flex-direction: column;
-                text-align: center;
-                gap: 1.5rem;
+                padding: 0 1rem;
+            }
+            
+            .welcome-section h1 {
+                font-size: 1.5rem;
+            }
+            
+            .welcome-section p {
+                font-size: 0.95rem;
+            }
+            
+            .header-actions {
+                gap: 0.5rem;
+            }
+            
+            .header-btn {
+                padding: 0.6rem 1rem;
+                font-size: 0.9rem;
             }
             
             .menu-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1.5rem;
             }
             
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        /* 모바일 반응형 (768px 이하) */
+        @media (max-width: 768px) {
+            .dashboard-header {
+                padding: 1rem 0;
+            }
+            
+            .header-container {
+                padding: 0 1rem;
+                gap: 1rem;
+                /* flex-direction을 row로 유지하여 가로 배치 유지 */
+            }
+            
+            .welcome-section {
+                flex: 1;
+                min-width: 0; /* 텍스트 오버플로우 방지 */
+            }
+            
+            .welcome-section h1 {
+                font-size: 1.1rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                margin: 0 0 0.25rem 0;
+            }
+            
+            .welcome-section p {
+                font-size: 0.8rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            
+            .user-profile-dashboard img {
+                width: 40px !important;
+                height: 40px !important;
+                min-width: 40px !important;
+                min-height: 40px !important;
+                max-width: 40px !important;
+                max-height: 40px !important;
+            }
+            
+            .header-actions {
+                flex-wrap: nowrap; /* 버튼이 줄바꿈되지 않도록 */
+                gap: 0.25rem;
+                overflow-x: auto; /* 필요시 가로 스크롤 */
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .header-btn {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.75rem;
+                white-space: nowrap; /* 버튼 텍스트 줄바꿈 방지 */
+                min-width: fit-content;
+                flex-shrink: 0; /* 버튼 크기 축소 방지 */
+            }
+            
+            .header-btn i {
+                font-size: 0.9rem;
+            }
+            
+            /* 모바일에서 아이콘만 표시하는 옵션 */
+            .header-btn span:not(.notification-badge-header) {
+                display: none; /* 버튼 텍스트 숨기기 */
+            }
+            
+            .header-btn i::after {
+                content: attr(title);
+                display: none; /* 툴팁으로 대체 */
+            }
+            
+            .dashboard-content {
+                margin: 2rem auto;
+                padding: 0 1rem;
+            }
+            
+            .menu-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .menu-card {
+                padding: 1.5rem;
+            }
+            
+            .menu-icon {
+                width: 50px;
+                height: 50px;
+                font-size: 1.25rem;
+                margin-bottom: 1rem;
+            }
+            
+            .menu-card h3 {
+                font-size: 1.1rem;
+                margin-bottom: 0.5rem;
+            }
+            
+            .menu-card p {
+                font-size: 0.9rem;
+                line-height: 1.4;
+            }
+            
+            .stats-section {
+                padding: 1.5rem;
+            }
+            
+            .stats-header h2 {
+                font-size: 1.25rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+            }
+            
+            .stat-item {
+                padding: 1rem;
+            }
+            
+            .stat-value {
+                font-size: 2rem;
+            }
+            
+            .stat-label {
+                font-size: 0.8rem;
+            }
+            
+            .activity-section {
+                padding: 1.5rem;
+            }
+            
+            .activity-header h2 {
+                font-size: 1.25rem;
+            }
+            
+            .activity-item {
+                padding: 0.75rem;
+                gap: 0.75rem;
+            }
+            
+            .activity-icon {
+                width: 35px;
+                height: 35px;
+                font-size: 0.9rem;
+            }
+            
+            .activity-title {
+                font-size: 0.9rem;
+            }
+            
+            .activity-time {
+                font-size: 0.75rem;
+            }
+        }
+        
+        /* 매우 작은 화면 (400px 이하) */
+        @media (max-width: 400px) {
+            .welcome-section h1 {
+                font-size: 0.95rem;
+            }
+            
+            .welcome-section p {
+                display: none; /* 매우 작은 화면에서는 부가 정보 숨기기 */
+            }
+            
+            .header-btn {
+                padding: 0.5rem;
+                gap: 0.25rem;
+            }
+            
+            /* 버튼에서 텍스트 완전히 제거하고 아이콘만 표시 */
+            .header-btn {
+                font-size: 0;
+            }
+            
+            .header-btn i {
+                font-size: 1.1rem;
+                margin: 0;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
             }
         }
         
@@ -425,18 +625,18 @@
                 </div>
             </div>
             <div class="header-actions">
-                <a href="#" class="header-btn" onclick="goToHomepage()">
-                    <i class="fas fa-home"></i> 홈페이지
+                <a href="#" class="header-btn" onclick="goToHomepage()" title="홈페이지">
+                    <i class="fas fa-home"></i> <span>홈페이지</span>
                 </a>
-                <button class="header-btn" id="approvalNotificationBtn" onclick="openApprovalNotifications()" style="position: relative;">
-                    <i class="fas fa-bell"></i> 알림
+                <button class="header-btn" id="approvalNotificationBtn" onclick="openApprovalNotifications()" style="position: relative;" title="알림">
+                    <i class="fas fa-bell"></i> <span>알림</span>
                     <span id="approvalNotificationBadgeHeader" class="notification-badge-header" style="display: none;">0</span>
                 </button>
-                <button class="header-btn" id="settingsBtn" onclick="goToSettings()">
-                    <i class="fas fa-cog"></i> 설정
+                <button class="header-btn" id="settingsBtn" onclick="goToSettings()" title="설정">
+                    <i class="fas fa-cog"></i> <span>설정</span>
                 </button>
-                <button class="header-btn logout-btn" onclick="handleLogout()">
-                    <i class="fas fa-sign-out-alt"></i> 로그아웃
+                <button class="header-btn logout-btn" onclick="handleLogout()" title="로그아웃">
+                    <i class="fas fa-sign-out-alt"></i> <span>로그아웃</span>
                 </button>
             </div>
         </div>
