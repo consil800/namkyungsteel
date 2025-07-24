@@ -1199,63 +1199,131 @@
             });
             
             if (isActive) {
+              // 메뉴 닫기
               body.classList.remove('mobile-nav-active');
               mobileNavToggle.classList.remove('bi-x');
               mobileNavToggle.classList.add('bi-list');
+              
+              // 드로워 메뉴 숨기기
+              const mobileDrawer = document.getElementById('mobileDrawerMenu');
+              if (mobileDrawer) {
+                mobileDrawer.style.display = 'none';
+              }
               console.log('❌ 모바일 메뉴 닫기');
             } else {
+              // 메뉴 열기
               body.classList.add('mobile-nav-active');
               mobileNavToggle.classList.remove('bi-list');
               mobileNavToggle.classList.add('bi-x');
               console.log('✅ 모바일 메뉴 열기');
               
-              // 강제로 메뉴 보이게 하기 (모바일 최적화)
-              if (navmenuUl) {
-                navmenuUl.style.display = 'block';
-                navmenuUl.style.position = 'fixed';
-                navmenuUl.style.top = '70px';
-                navmenuUl.style.left = '10px';
-                navmenuUl.style.right = '10px';
-                navmenuUl.style.bottom = '20px';
-                navmenuUl.style.background = '#fff';
-                navmenuUl.style.zIndex = '10000';
-                navmenuUl.style.borderRadius = '15px';
-                navmenuUl.style.boxShadow = '0px 10px 50px rgba(0, 0, 0, 0.3)';
-                navmenuUl.style.padding = '20px 0';
-                navmenuUl.style.maxHeight = '80vh';
-                navmenuUl.style.overflowY = 'auto';
-                console.log('🎯 모바일 최적화 스타일 적용 완료');
+              // 드로워 메뉴 생성 또는 표시
+              let mobileDrawer = document.getElementById('mobileDrawerMenu');
+              if (!mobileDrawer) {
+                // 드로워 메뉴 생성
+                mobileDrawer = document.createElement('div');
+                mobileDrawer.id = 'mobileDrawerMenu';
+                mobileDrawer.style.cssText = `
+                  position: fixed;
+                  top: 0;
+                  left: 0;
+                  width: 280px;
+                  height: 100%;
+                  background: #fff;
+                  z-index: 10001;
+                  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+                  overflow-y: auto;
+                  transform: translateX(0);
+                  transition: transform 0.3s ease;
+                `;
                 
-                // 메뉴 항목들도 크게 만들기
-                const menuLinks = navmenuUl.querySelectorAll('li > a');
-                menuLinks.forEach(link => {
-                  if (!link.classList.contains('toggle-dropdown')) {
-                    link.style.padding = '18px 25px';
-                    link.style.fontSize = '18px';
-                    link.style.fontWeight = '500';
-                    link.style.minHeight = '60px';
-                    link.style.display = 'flex';
-                    link.style.alignItems = 'center';
-                    link.style.borderBottom = '1px solid #f0f0f0';
-                    link.style.color = '#2c3e50';
-                  }
+                // 드로워 헤더
+                const drawerHeader = document.createElement('div');
+                drawerHeader.style.cssText = `
+                  padding: 20px;
+                  border-bottom: 1px solid #e0e0e0;
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  background: #f8f9fa;
+                `;
+                drawerHeader.innerHTML = `
+                  <h3 style="margin: 0; font-size: 20px; color: #333;">메뉴</h3>
+                  <button id="closeDrawer" style="border: none; background: none; font-size: 24px; cursor: pointer; padding: 5px;">&times;</button>
+                `;
+                
+                // 메뉴 컨테이너
+                const menuContainer = document.createElement('div');
+                menuContainer.style.cssText = `
+                  padding: 0;
+                `;
+                
+                // 기존 네비바 메뉴 복사
+                if (navmenuUl) {
+                  const menuItems = navmenuUl.querySelectorAll('li');
+                  menuItems.forEach(item => {
+                    const menuItem = item.cloneNode(true);
+                    const link = menuItem.querySelector('a');
+                    if (link && !link.classList.contains('toggle-dropdown')) {
+                      link.style.cssText = `
+                        display: block;
+                        padding: 16px 24px;
+                        font-size: 16px;
+                        color: #333;
+                        text-decoration: none;
+                        border-bottom: 1px solid #f0f0f0;
+                        transition: background 0.2s;
+                      `;
+                      link.onmouseover = function() {
+                        this.style.background = '#f8f9fa';
+                      };
+                      link.onmouseout = function() {
+                        this.style.background = 'transparent';
+                      };
+                    }
+                    menuContainer.appendChild(menuItem);
+                  });
+                }
+                
+                mobileDrawer.appendChild(drawerHeader);
+                mobileDrawer.appendChild(menuContainer);
+                document.body.appendChild(mobileDrawer);
+                
+                // 닫기 버튼 이벤트
+                document.getElementById('closeDrawer').addEventListener('click', function() {
+                  toggleMobileNav();
                 });
-                console.log('📱 메뉴 링크 스타일 적용 완료');
+                
+                // 배경 오버레이 생성
+                const overlay = document.createElement('div');
+                overlay.id = 'mobileMenuOverlay';
+                overlay.style.cssText = `
+                  position: fixed;
+                  top: 0;
+                  left: 0;
+                  width: 100%;
+                  height: 100%;
+                  background: rgba(0, 0, 0, 0.5);
+                  z-index: 10000;
+                `;
+                overlay.addEventListener('click', function() {
+                  toggleMobileNav();
+                });
+                document.body.appendChild(overlay);
+              } else {
+                // 이미 존재하면 표시
+                mobileDrawer.style.display = 'block';
+                mobileDrawer.style.transform = 'translateX(0)';
+                
+                // 오버레이도 표시
+                const overlay = document.getElementById('mobileMenuOverlay');
+                if (overlay) {
+                  overlay.style.display = 'block';
+                }
               }
+              
+              console.log('🎯 드로워 메뉴 표시 완료');
             }
-            
-            // 0.1초 후 상태 재확인
-            setTimeout(() => {
-              const finalCheck = body.classList.contains('mobile-nav-active');
-              console.log('⏰ 0.1초 후 상태 확인:', finalCheck);
-              if (navmenuUl) {
-                console.log('📊 navmenu ul 스타일:', {
-                  display: navmenuUl.style.display,
-                  position: navmenuUl.style.position,
-                  computedDisplay: window.getComputedStyle(navmenuUl).display
-                });
-              }
-            }, 100);
           }
           
           // 클릭 이벤트
