@@ -283,6 +283,65 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /*--------------------------------------------------------------
+# Dropdown Navigation (Desktop)
+--------------------------------------------------------------*/
+@media (min-width: 1200px) {
+  .navmenu .dropdown ul {
+    display: flex;
+    position: absolute;
+    inset: auto 0 auto 0;
+    top: 100%;
+    margin: 0;
+    padding: 10px 0;
+    z-index: 99;
+    opacity: 0;
+    visibility: hidden;
+    background: var(--nav-dropdown-background-color);
+    box-shadow: 0px 0px 30px rgba(127, 137, 161, 0.25);
+    transition: 0.3s;
+    border-radius: 4px;
+    flex-direction: column;
+  }
+
+  .navmenu .dropdown ul li {
+    min-width: 200px;
+  }
+
+  .navmenu .dropdown ul a {
+    padding: 10px 20px;
+    font-size: 15px;
+    text-transform: none;
+    color: var(--nav-dropdown-color);
+  }
+
+  .navmenu .dropdown ul a i {
+    font-size: 12px;
+  }
+
+  .navmenu .dropdown ul a:hover,
+  .navmenu .dropdown ul .active:hover,
+  .navmenu .dropdown ul li:hover > a {
+    color: var(--nav-dropdown-hover-color);
+  }
+
+  .navmenu .dropdown:hover > ul {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .navmenu .dropdown .dropdown ul {
+    top: 0;
+    left: -90%;
+  }
+
+  .navmenu .dropdown .dropdown:hover > ul {
+    opacity: 1;
+    visibility: visible;
+    left: -100%;
+  }
+}
+
+/*--------------------------------------------------------------
 # Mobile Navigation
 --------------------------------------------------------------*/
 @media (max-width: 1199px) {
@@ -361,7 +420,7 @@ h1, h2, h3, h4, h5, h6 {
   }
 
   /* Dropdown navigation */
-  .navmenu .dropdown > .dropdown-active {
+  .navmenu .dropdown > ul.dropdown-active {
     display: block;
   }
 
