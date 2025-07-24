@@ -1187,7 +1187,16 @@
           function toggleMobileNav() {
             console.log('🔄 모바일 메뉴 토글 실행');
             const body = document.querySelector('body');
+            const navmenu = document.querySelector('.navmenu');
+            const navmenuUl = document.querySelector('.navmenu > ul');
             const isActive = body.classList.contains('mobile-nav-active');
+            
+            console.log('📍 현재 상태:', {
+              isActive: isActive,
+              body: body,
+              navmenu: navmenu,
+              navmenuUl: navmenuUl
+            });
             
             if (isActive) {
               body.classList.remove('mobile-nav-active');
@@ -1199,7 +1208,35 @@
               mobileNavToggle.classList.remove('bi-list');
               mobileNavToggle.classList.add('bi-x');
               console.log('✅ 모바일 메뉴 열기');
+              
+              // 강제로 메뉴 보이게 하기
+              if (navmenuUl) {
+                navmenuUl.style.display = 'block';
+                navmenuUl.style.position = 'absolute';
+                navmenuUl.style.top = '80px';
+                navmenuUl.style.left = '15px';
+                navmenuUl.style.right = '15px';
+                navmenuUl.style.background = '#fff';
+                navmenuUl.style.zIndex = '10000';
+                navmenuUl.style.borderRadius = '10px';
+                navmenuUl.style.boxShadow = '0px 0px 30px rgba(0, 0, 0, 0.2)';
+                navmenuUl.style.padding = '10px 0';
+                console.log('🎯 강제 스타일 적용 완료');
+              }
             }
+            
+            // 0.1초 후 상태 재확인
+            setTimeout(() => {
+              const finalCheck = body.classList.contains('mobile-nav-active');
+              console.log('⏰ 0.1초 후 상태 확인:', finalCheck);
+              if (navmenuUl) {
+                console.log('📊 navmenu ul 스타일:', {
+                  display: navmenuUl.style.display,
+                  position: navmenuUl.style.position,
+                  computedDisplay: window.getComputedStyle(navmenuUl).display
+                });
+              }
+            }, 100);
           }
           
           // 클릭 이벤트
