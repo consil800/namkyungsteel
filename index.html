@@ -1152,6 +1152,9 @@
   <!-- 공통 컴포넌트 로드 -->
   <script src="includes/common.js"></script>
   
+  <!-- Main JS 파일 로드 -->
+  <script src="assets/js/main.js"></script>
+  
   <!-- Authentication Scripts will be loaded later -->
 
   <!-- Initialize AOS and PureCounter -->
@@ -1171,39 +1174,59 @@
       new PureCounter();
     }
     
-    // 드롭다운 메뉴 클릭 기능 (모바일용)
-    document.addEventListener('DOMContentLoaded', function() {
-      const dropdownToggles = document.querySelectorAll('.toggle-dropdown');
-      
-      dropdownToggles.forEach(function(toggle) {
-        toggle.addEventListener('click', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
+    // 햄버거 메뉴 강제 초기화 (안전장치)
+    function initMobileMenuFallback() {
+      setTimeout(function() {
+        const mobileNavToggle = document.querySelector('.mobile-nav-toggle');
+        console.log('🔍 햄버거 버튼 찾기:', mobileNavToggle);
+        
+        if (mobileNavToggle && !mobileNavToggle.hasAttribute('data-initialized')) {
+          console.log('✅ 햄버거 메뉴 강제 초기화 시작');
+          mobileNavToggle.setAttribute('data-initialized', 'true');
           
-          const dropdown = this.closest('.dropdown');
-          const isActive = dropdown.classList.contains('active');
-          
-          // 다른 모든 드롭다운 닫기
-          document.querySelectorAll('.dropdown.active').forEach(function(activeDropdown) {
-            if (activeDropdown !== dropdown) {
-              activeDropdown.classList.remove('active');
+          function toggleMobileNav() {
+            console.log('🔄 모바일 메뉴 토글 실행');
+            const body = document.querySelector('body');
+            const isActive = body.classList.contains('mobile-nav-active');
+            
+            if (isActive) {
+              body.classList.remove('mobile-nav-active');
+              mobileNavToggle.classList.remove('bi-x');
+              mobileNavToggle.classList.add('bi-list');
+              console.log('❌ 모바일 메뉴 닫기');
+            } else {
+              body.classList.add('mobile-nav-active');
+              mobileNavToggle.classList.remove('bi-list');
+              mobileNavToggle.classList.add('bi-x');
+              console.log('✅ 모바일 메뉴 열기');
             }
+          }
+          
+          // 클릭 이벤트
+          mobileNavToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleMobileNav();
           });
           
-          // 현재 드롭다운 토글
-          dropdown.classList.toggle('active', !isActive);
-        });
-      });
-      
-      // 외부 클릭 시 드롭다운 닫기
-      document.addEventListener('click', function(e) {
-        if (!e.target.closest('.dropdown')) {
-          document.querySelectorAll('.dropdown.active').forEach(function(dropdown) {
-            dropdown.classList.remove('active');
+          // 터치 이벤트 (모바일용)
+          mobileNavToggle.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleMobileNav();
           });
+          
+          console.log('🎯 햄버거 메뉴 이벤트 리스너 추가 완료');
         }
-      });
-    });
+      }, 500);
+    }
+    
+    // 네비바 로드 후 실행
+    document.addEventListener('DOMContentLoaded', initMobileMenuFallback);
+    
+    // 추가 안전장치 - 1초 후 재시도
+    setTimeout(initMobileMenuFallback, 1000);
+    setTimeout(initMobileMenuFallback, 2000);
     
     // Initialize Swiper if needed
     if (typeof Swiper !== 'undefined') {
