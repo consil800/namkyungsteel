@@ -1260,27 +1260,98 @@
                 
                 // 기존 네비바 메뉴 복사
                 if (navmenuUl) {
-                  const menuItems = navmenuUl.querySelectorAll('li');
+                  const menuItems = navmenuUl.querySelectorAll('> li');
                   menuItems.forEach(item => {
                     const menuItem = item.cloneNode(true);
-                    const link = menuItem.querySelector('a');
-                    if (link && !link.classList.contains('toggle-dropdown')) {
-                      link.style.cssText = `
-                        display: block;
+                    const mainLink = menuItem.querySelector('> a');
+                    const dropdownUl = menuItem.querySelector('ul');
+                    
+                    if (mainLink) {
+                      mainLink.style.cssText = `
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
                         padding: 16px 24px;
                         font-size: 16px;
                         color: #333;
                         text-decoration: none;
                         border-bottom: 1px solid #f0f0f0;
                         transition: background 0.2s;
+                        cursor: pointer;
                       `;
-                      link.onmouseover = function() {
-                        this.style.background = '#f8f9fa';
+                      
+                      // 드롭다운이 있는 메뉴 처리
+                      if (dropdownUl) {
+                        // 드롭다운 초기 숨김
+                        dropdownUl.style.cssText = `
+                          display: none;
+                          background: #f8f9fa;
+                          padding: 0;
+                          margin: 0;
+                          list-style: none;
+                        `;
+                        
+                        // 드롭다운 화살표 추가
+                        const arrow = document.createElement('span');
+                        arrow.innerHTML = '▼';
+                        arrow.style.cssText = `
+                          font-size: 12px;
+                          transition: transform 0.3s;
+                        `;
+                        mainLink.appendChild(arrow);
+                        
+                        // 메인 링크 클릭 이벤트
+                        mainLink.addEventListener('click', function(e) {
+                          e.preventDefault();
+                          const isOpen = dropdownUl.style.display === 'block';
+                          
+                          if (isOpen) {
+                            dropdownUl.style.display = 'none';
+                            arrow.style.transform = 'rotate(0deg)';
+                          } else {
+                            dropdownUl.style.display = 'block';
+                            arrow.style.transform = 'rotate(180deg)';
+                          }
+                        });
+                        
+                        // 드롭다운 아이템 스타일
+                        const dropdownItems = dropdownUl.querySelectorAll('li > a');
+                        dropdownItems.forEach(dropLink => {
+                          dropLink.style.cssText = `
+                            display: block;
+                            padding: 12px 24px 12px 40px;
+                            font-size: 14px;
+                            color: #666;
+                            text-decoration: none;
+                            border-bottom: 1px solid #e0e0e0;
+                            transition: background 0.2s;
+                          `;
+                          dropLink.onmouseover = function() {
+                            this.style.background = '#e8e8e8';
+                          };
+                          dropLink.onmouseout = function() {
+                            this.style.background = 'transparent';
+                          };
+                        });
+                      } else {
+                        // 드롭다운이 없는 일반 메뉴
+                        mainLink.addEventListener('click', function(e) {
+                          // 페이지 이동은 그대로 진행
+                        });
+                      }
+                      
+                      mainLink.onmouseover = function() {
+                        if (!dropdownUl) {
+                          this.style.background = '#f8f9fa';
+                        }
                       };
-                      link.onmouseout = function() {
-                        this.style.background = 'transparent';
+                      mainLink.onmouseout = function() {
+                        if (!dropdownUl) {
+                          this.style.background = 'transparent';
+                        }
                       };
                     }
+                    
                     menuContainer.appendChild(menuItem);
                   });
                 }
