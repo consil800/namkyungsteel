@@ -4,15 +4,22 @@ async function loadNavbar() {
         const response = await fetch('includes/navbar.html');
         const navbarHTML = await response.text();
         
-        // 기존 네비바가 있다면 제거
-        const existingHeader = document.querySelector('header');
-        if (existingHeader) {
-            existingHeader.remove();
+        // navbar-placeholder가 있으면 그곳에 삽입, 없으면 body 시작 부분에 삽입
+        const navbarPlaceholder = document.getElementById('navbar-placeholder');
+        if (navbarPlaceholder) {
+            navbarPlaceholder.innerHTML = navbarHTML;
+            console.log('✅ 네비바 HTML을 navbar-placeholder에 삽입 완료');
+        } else {
+            // 기존 네비바가 있다면 제거
+            const existingHeader = document.querySelector('header');
+            if (existingHeader) {
+                existingHeader.remove();
+            }
+            
+            // body 시작 부분에 네비바 삽입
+            document.body.insertAdjacentHTML('afterbegin', navbarHTML);
+            console.log('✅ 네비바 HTML을 body 시작 부분에 삽입 완료');
         }
-        
-        // body 시작 부분에 네비바 삽입
-        document.body.insertAdjacentHTML('afterbegin', navbarHTML);
-        console.log('✅ 네비바 HTML 삽입 완료');
         
         // 네비바 로드 후 이벤트 리스너 재설정
         initializeNavbar();
@@ -44,6 +51,9 @@ async function loadFooter() {
 
 // 네비바 이벤트 리스너 초기화
 function initializeNavbar() {
+    // 모바일 네비게이션 토글 버튼 초기화
+    initializeMobileNavigation();
+    
     // 드롭다운 메뉴 클릭 기능 (모바일용)
     const dropdownToggles = document.querySelectorAll('.toggle-dropdown');
     
@@ -78,6 +88,69 @@ function initializeNavbar() {
     
     // 현재 페이지에 따라 active 클래스 설정
     setActiveNavItem();
+}
+
+// 모바일 네비게이션 초기화
+function initializeMobileNavigation() {
+    const mobileNavToggleBtn = document.querySelector('.mobile-nav-toggle');
+    
+    function mobileNavToogle() {
+        document.querySelector('body').classList.toggle('mobile-nav-active');
+        mobileNavToggleBtn.classList.toggle('bi-list');
+        mobileNavToggleBtn.classList.toggle('bi-x');
+    }
+    
+    if (mobileNavToggleBtn) {
+        console.log('✅ 모바일 네비게이션 버튼 발견, 이벤트 리스너 추가');
+        mobileNavToggleBtn.addEventListener('click', mobileNavToogle);
+        
+        // 터치 이벤트도 추가 (모바일 디바이스 지원)
+        mobileNavToggleBtn.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            mobileNavToogle();
+        });
+    } else {
+        console.warn('⚠️ 모바일 네비게이션 버튼을 찾을 수 없음');
+    }
+    
+    // 모바일 네비게이션 메뉴 항목 클릭 처리
+    document.querySelectorAll('#navmenu a').forEach(navmenu => {
+        navmenu.addEventListener('click', (e) => {
+            if (document.querySelector('.mobile-nav-active')) {
+                // 드롭다운 토글이 아닌 일반 링크인 경우에만 메뉴 닫기
+                if (!e.target.classList.contains('toggle-dropdown')) {
+                    mobileNavToogle();
+                }
+            }
+        });
+    });
+    
+    // 터치 디바이스 지원
+    if ('ontouchstart' in window) {
+        document.addEventListener('touchstart', function() {}, {passive: true});
+        
+        // 모바일에서 링크 클릭 이벤트 보장
+        document.querySelectorAll('a').forEach(link => {
+            link.addEventListener('touchend', function(e) {
+                if (this.href && this.href !== '#' && !this.classList.contains('toggle-dropdown')) {
+                    // 터치 이벤트 후 클릭 이벤트 방지
+                    e.preventDefault();
+                    const href = this.href;
+                    
+                    // 모바일 메뉴가 열려있으면 닫기
+                    if (document.querySelector('.mobile-nav-active') && this.closest('#navmenu')) {
+                        mobileNavToogle();
+                        // 메뉴 닫힌 후 페이지 이동
+                        setTimeout(() => {
+                            window.location.href = href;
+                        }, 300);
+                    } else {
+                        window.location.href = href;
+                    }
+                }
+            });
+        });
+    }
 }
 
 // 현재 페이지에 따라 네비 메뉴 활성화
