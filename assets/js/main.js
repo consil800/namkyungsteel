@@ -38,22 +38,56 @@
    * Hide mobile nav on same-page/hash links
    */
   document.querySelectorAll('#navmenu a').forEach(navmenu => {
-    navmenu.addEventListener('click', () => {
+    navmenu.addEventListener('click', (e) => {
       if (document.querySelector('.mobile-nav-active')) {
-        mobileNavToogle();
+        // 드롭다운 토글이 아닌 일반 링크인 경우에만 메뉴 닫기
+        if (!e.target.classList.contains('toggle-dropdown')) {
+          mobileNavToogle();
+        }
       }
     });
   });
+  
+  /**
+   * Prevent click event issues on mobile devices
+   */
+  if ('ontouchstart' in window) {
+    document.addEventListener('touchstart', function() {}, {passive: true});
+    
+    // 모바일에서 링크 클릭 이벤트 보장
+    document.querySelectorAll('a').forEach(link => {
+      link.addEventListener('touchend', function(e) {
+        if (this.href && this.href !== '#' && !this.classList.contains('toggle-dropdown')) {
+          // 터치 이벤트 후 클릭 이벤트 방지
+          e.preventDefault();
+          const href = this.href;
+          
+          // 모바일 메뉴가 열려있으면 닫기
+          if (document.querySelector('.mobile-nav-active') && this.closest('#navmenu')) {
+            mobileNavToogle();
+            // 메뉴 닫힌 후 페이지 이동
+            setTimeout(() => {
+              window.location.href = href;
+            }, 300);
+          } else {
+            window.location.href = href;
+          }
+        }
+      });
+    });
+  }
 
   /**
    * Toggle mobile nav dropdowns
    */
   document.querySelectorAll('.navmenu .toggle-dropdown').forEach(navmenu => {
     navmenu.addEventListener('click', function(e) {
-      e.preventDefault();
-      this.parentNode.classList.toggle('active');
-      this.parentNode.nextElementSibling.classList.toggle('dropdown-active');
-      e.stopImmediatePropagation();
+      if (document.querySelector('.mobile-nav-active')) {
+        e.preventDefault();
+        this.parentNode.classList.toggle('active');
+        this.parentNode.nextElementSibling.classList.toggle('dropdown-active');
+        e.stopImmediatePropagation();
+      }
     });
   });
 
@@ -121,6 +155,11 @@
           behavior: 'smooth',
           block: 'start'
         });
+        
+        // 모바일 메뉴가 열려있으면 닫기
+        if (document.querySelector('.mobile-nav-active')) {
+          mobileNavToogle();
+        }
       }
     });
   });
@@ -132,6 +171,11 @@
   const navbar = document.querySelector('.header');
   
   window.addEventListener('scroll', function() {
+    // 모바일 메뉴가 열려있을 때는 navbar 숨기기 비활성화
+    if (document.querySelector('.mobile-nav-active')) {
+      return;
+    }
+    
     let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
     
     if (scrollTop > lastScrollTop && scrollTop > 100) {
