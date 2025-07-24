@@ -92,6 +92,20 @@
             margin-bottom: 20px;
         }
         
+        .color-select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            font-size: 14px;
+        }
+        
+        .color-select option {
+            padding: 8px;
+            font-weight: bold;
+        }
+        
         @media (max-width: 768px) {
             .info-grid {
                 grid-template-columns: 1fr;
@@ -186,6 +200,13 @@
                 <div class="form-group">
                     <label for="editUsageItems">사용품목</label>
                     <textarea id="editUsageItems" name="editUsageItems" rows="3" placeholder="주로 사용하는 철강 품목을 입력하세요 (예: H빔, 각관, 철판 등)"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="editCompanyColor">업체 색상</label>
+                    <select id="editCompanyColor" name="editCompanyColor" class="color-select">
+                        <option value="">색상을 선택하세요</option>
+                        <!-- 동적으로 생성됩니다 -->
+                    </select>
                 </div>
                 <div class="form-group">
                     <label for="editNotes">비고</label>

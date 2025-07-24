@@ -326,6 +326,70 @@ class DatabaseManager {
         }
     }
 
+    // 사용자 설정 관리
+    async getUserSettings(userId) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            const { data, error } = await this.client
+                .from('users')
+                .select('settings')
+                .eq('id', userId)
+                .single();
+            
+            if (error) throw error;
+            
+            // settings가 없거나 null인 경우 기본값 반환
+            return data?.settings || {
+                paymentTerms: [],
+                industries: [],
+                regions: [],
+                visitPurposes: [],
+                colors: []
+            };
+        } catch (error) {
+            console.error('사용자 설정 조회 오류:', error);
+            // 오류 발생 시 기본값 반환
+            return {
+                paymentTerms: [],
+                industries: [],
+                regions: [],
+                visitPurposes: [],
+                colors: []
+            };
+        }
+    }
+
+    async updateUserSettings(userId, settings) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            const { data, error } = await this.client
+                .from('users')
+                .update({ 
+                    settings: settings,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', userId)
+                .select();
+            
+            if (error) throw error;
+            
+            if (!data || data.length === 0) {
+                throw new Error('사용자를 찾을 수 없습니다.');
+            }
+            
+            return { success: true, data: data[0].settings };
+        } catch (error) {
+            console.error('사용자 설정 업데이트 오류:', error);
+            throw error;
+        }
+    }
+
     // 직원 관리 (Employees)
     async getEmployees(companyId = null) {
         if (!this.client) {

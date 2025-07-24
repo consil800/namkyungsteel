@@ -202,9 +202,9 @@ function initEventListeners() {
     });
     
     // 업체 정보 수정 버튼
-    document.getElementById('editCompanyBtn').addEventListener('click', function() {
+    document.getElementById('editCompanyBtn').addEventListener('click', async function() {
         if (currentCompany) {
-            populateEditForm(currentCompany);
+            await populateEditForm(currentCompany);
             document.getElementById('editModal').style.display = 'block';
         }
     });
@@ -221,6 +221,11 @@ function initEventListeners() {
         document.getElementById('editModal').style.display = 'none';
     });
     
+    // 취소 버튼
+    document.getElementById('cancelEditBtn').addEventListener('click', function() {
+        document.getElementById('editModal').style.display = 'none';
+    });
+    
     // 수정 폼 제출
     document.getElementById('editCompanyForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -234,8 +239,80 @@ function initEventListeners() {
     });
 }
 
+// 색상 옵션 로드
+async function loadColorOptions() {
+    try {
+        const db = new DatabaseManager();
+        await db.init();
+        const settings = await db.getUserSettings(currentUser.id);
+        
+        const colorSelect = document.getElementById('editCompanyColor');
+        if (!colorSelect) return;
+        
+        // 기본 옵션 제외하고 기존 옵션들 제거
+        colorSelect.innerHTML = '<option value="">색상을 선택하세요</option>';
+        
+        // 색상 옵션들 추가
+        const colors = settings.colors || [];
+        colors.forEach(color => {
+            const option = document.createElement('option');
+            option.value = color.key;
+            option.textContent = color.name;
+            option.style.backgroundColor = color.value;
+            option.style.color = getContrastColor(color.value);
+            colorSelect.appendChild(option);
+        });
+        
+    } catch (error) {
+        console.error('색상 옵션 로드 오류:', error);
+        // 기본 색상들로 대체
+        loadDefaultColors();
+    }
+}
+
+// 기본 색상 로드
+function loadDefaultColors() {
+    const defaultColors = [
+        { key: 'red', name: '빨강', value: '#e74c3c' },
+        { key: 'orange', name: '주황', value: '#f39c12' },
+        { key: 'yellow', name: '노랑', value: '#f1c40f' },
+        { key: 'green', name: '초록', value: '#27ae60' },
+        { key: 'blue', name: '파랑', value: '#3498db' },
+        { key: 'purple', name: '보라', value: '#9b59b6' },
+        { key: 'gray', name: '회색', value: '#95a5a6' }
+    ];
+    
+    const colorSelect = document.getElementById('editCompanyColor');
+    if (!colorSelect) return;
+    
+    colorSelect.innerHTML = '<option value="">색상을 선택하세요</option>';
+    
+    defaultColors.forEach(color => {
+        const option = document.createElement('option');
+        option.value = color.key;
+        option.textContent = color.name;
+        option.style.backgroundColor = color.value;
+        option.style.color = getContrastColor(color.value);
+        colorSelect.appendChild(option);
+    });
+}
+
+// 대비 색상 계산 (텍스트 가독성을 위해)
+function getContrastColor(hexColor) {
+    // hex 색상을 RGB로 변환
+    const r = parseInt(hexColor.slice(1, 3), 16);
+    const g = parseInt(hexColor.slice(3, 5), 16);
+    const b = parseInt(hexColor.slice(5, 7), 16);
+    
+    // 밝기 계산 (0-255)
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    
+    // 밝기에 따라 흰색 또는 검은색 반환
+    return brightness > 128 ? '#000000' : '#ffffff';
+}
+
 // 수정 폼에 현재 정보 채우기
-function populateEditForm(company) {
+async function populateEditForm(company) {
     document.getElementById('editCompanyName').value = company.company_name || '';
     document.getElementById('editRegion').value = company.region || '';
     document.getElementById('editAddress').value = company.address || '';
@@ -249,6 +326,13 @@ function populateEditForm(company) {
     document.getElementById('editProducts').value = company.products || '';
     document.getElementById('editUsageItems').value = company.usage_items || '';
     document.getElementById('editNotes').value = company.notes || '';
+    
+    // 색상 선택 드롭다운 로드 및 설정
+    await loadColorOptions();
+    const colorSelect = document.getElementById('editCompanyColor');
+    if (colorSelect && company.color) {
+        colorSelect.value = company.color;
+    }
 }
 
 // 업체 정보 수정
@@ -268,7 +352,8 @@ async function updateCompany() {
             business_type: formData.get('editBusinessType').trim(),
             products: formData.get('editProducts').trim(),
             usage_items: formData.get('editUsageItems').trim(),
-            notes: formData.get('editNotes').trim()
+            notes: formData.get('editNotes').trim(),
+            color: formData.get('editCompanyColor') || ''
         };
         
         if (!updateData.company_name) {
