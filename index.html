@@ -1209,19 +1209,38 @@
               mobileNavToggle.classList.add('bi-x');
               console.log('✅ 모바일 메뉴 열기');
               
-              // 강제로 메뉴 보이게 하기
+              // 강제로 메뉴 보이게 하기 (모바일 최적화)
               if (navmenuUl) {
                 navmenuUl.style.display = 'block';
-                navmenuUl.style.position = 'absolute';
-                navmenuUl.style.top = '80px';
-                navmenuUl.style.left = '15px';
-                navmenuUl.style.right = '15px';
+                navmenuUl.style.position = 'fixed';
+                navmenuUl.style.top = '70px';
+                navmenuUl.style.left = '10px';
+                navmenuUl.style.right = '10px';
+                navmenuUl.style.bottom = '20px';
                 navmenuUl.style.background = '#fff';
                 navmenuUl.style.zIndex = '10000';
-                navmenuUl.style.borderRadius = '10px';
-                navmenuUl.style.boxShadow = '0px 0px 30px rgba(0, 0, 0, 0.2)';
-                navmenuUl.style.padding = '10px 0';
-                console.log('🎯 강제 스타일 적용 완료');
+                navmenuUl.style.borderRadius = '15px';
+                navmenuUl.style.boxShadow = '0px 10px 50px rgba(0, 0, 0, 0.3)';
+                navmenuUl.style.padding = '20px 0';
+                navmenuUl.style.maxHeight = '80vh';
+                navmenuUl.style.overflowY = 'auto';
+                console.log('🎯 모바일 최적화 스타일 적용 완료');
+                
+                // 메뉴 항목들도 크게 만들기
+                const menuLinks = navmenuUl.querySelectorAll('li > a');
+                menuLinks.forEach(link => {
+                  if (!link.classList.contains('toggle-dropdown')) {
+                    link.style.padding = '18px 25px';
+                    link.style.fontSize = '18px';
+                    link.style.fontWeight = '500';
+                    link.style.minHeight = '60px';
+                    link.style.display = 'flex';
+                    link.style.alignItems = 'center';
+                    link.style.borderBottom = '1px solid #f0f0f0';
+                    link.style.color = '#2c3e50';
+                  }
+                });
+                console.log('📱 메뉴 링크 스타일 적용 완료');
               }
             }
             
