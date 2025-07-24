@@ -385,48 +385,65 @@ h1, h2, h3, h4, h5, h6 {
     transition: 0.3s;
   }
 
-  /* Mobile nav active state */
-  .mobile-nav-active .navmenu {
-    position: fixed;
+  /* Mobile nav active state - 더 강한 우선순위 */
+  body.mobile-nav-active .navmenu {
+    position: fixed !important;
     overflow: hidden;
     inset: 0;
     background: rgba(33, 37, 41, 0.8);
     transition: 0.3s;
+    z-index: 9999 !important;
   }
 
-  .mobile-nav-active .navmenu > ul {
-    display: block;
-    position: absolute;
-    top: 55px;
+  body.mobile-nav-active .navmenu > ul {
+    display: block !important;
+    position: absolute !important;
+    top: 80px;
     right: 15px;
     bottom: 15px;
     left: 15px;
     padding: 10px 0;
-    margin-top: 15px;
-    margin-bottom: 15px;
+    margin: 0;
     border-radius: 10px;
     background-color: #fff;
     overflow-y: auto;
     transition: 0.3s;
     box-shadow: 0px 0px 30px rgba(28, 47, 63, 0.2);
+    z-index: 10000 !important;
   }
 
-  .mobile-nav-active .mobile-nav-toggle {
-    color: #fff;
+  /* 추가 강제 스타일 */
+  body.mobile-nav-active .navmenu ul {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  /* 메뉴 항목들이 보이도록 */
+  body.mobile-nav-active .navmenu li {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  body.mobile-nav-active .navmenu a {
+    display: flex !important;
+    padding: 15px 20px !important;
+    color: #333 !important;
+    border-bottom: 1px solid #eee;
+  }
+
+  body.mobile-nav-active .mobile-nav-toggle {
+    color: #fff !important;
     position: fixed;
     top: 25px;
     right: 25px;
-    z-index: 9999;
+    z-index: 10001 !important;
   }
 
-  /* Dropdown navigation */
-  .navmenu .dropdown > ul.dropdown-active {
-    display: block;
-  }
-
-  .navmenu .dropdown ul {
+  /* Dropdown navigation - 모바일에서 */
+  body.mobile-nav-active .navmenu .dropdown > ul {
+    display: none !important;
     position: static;
-    display: none;
     padding: 10px 0;
     margin: 10px 20px;
     background-color: rgba(33, 37, 41, 0.03);
@@ -434,34 +451,39 @@ h1, h2, h3, h4, h5, h6 {
     transition: all 0.5s ease-in-out;
   }
 
-  .navmenu .dropdown ul a {
+  body.mobile-nav-active .navmenu .dropdown.active > ul {
+    display: block !important;
+  }
+
+  body.mobile-nav-active .navmenu .dropdown ul a {
     padding: 10px 20px;
     font-size: 15px;
   }
 
-  .navmenu .dropdown ul li {
+  body.mobile-nav-active .navmenu .dropdown ul li {
     background: none;
   }
 
-  .navmenu .dropdown ul a i {
+  body.mobile-nav-active .navmenu .dropdown ul a i {
     font-size: 12px;
   }
 
-  .navmenu .dropdown ul a:hover,
-  .navmenu .dropdown ul .active:hover,
-  .navmenu .dropdown ul li:hover > a {
+  body.mobile-nav-active .navmenu .dropdown ul a:hover,
+  body.mobile-nav-active .navmenu .dropdown ul .active:hover,
+  body.mobile-nav-active .navmenu .dropdown ul li:hover > a {
     color: var(--nav-dropdown-hover-color);
   }
 
-  .mobile-nav-active {
-    overflow: hidden;
+  body.mobile-nav-active {
+    overflow: hidden !important;
   }
 
-  .mobile-nav-active .header {
+  body.mobile-nav-active .header {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
+    z-index: 9998 !important;
   }
 }
 
