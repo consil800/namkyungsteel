@@ -435,33 +435,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@srexi/purecounterjs/dist/purecounter_vanilla.js"></script>
   <script src="https://unpkg.com/swiper@8/swiper-bundle.min.js"></script>
 
-  <!-- 공통 네비게이션 로드 -->
-  <script>
-    fetch('includes/navbar.html')
-      .then(response => response.text())
-      .then(data => {
-        document.getElementById('navbar-placeholder').innerHTML = data;
-        console.log('✅ navbar 로드 완료');
-        
-        // navbar 로드 후 auth 스크립트 로드
-        const authScript = document.createElement('script');
-        authScript.src = 'includes/navbar-auth.js';
-        authScript.onload = function() {
-          console.log('✅ navbar-auth.js 로드 완료');
-          // 인증 상태 즉시 확인
-          if (window.updateNavbarLoginState) {
-            setTimeout(() => {
-              console.log('🔄 즉시 navbar 상태 업데이트');
-              window.updateNavbarLoginState();
-            }, 100);
-          }
-        };
-        document.head.appendChild(authScript);
-      })
-      .catch(error => {
-        console.error('❌ navbar 로드 실패:', error);
-      });
-  </script>
+  <!-- 네비게이션은 common.js에서 로드됩니다 -->
   
   <!-- Supabase 및 로그인 기능 -->
   <script>
