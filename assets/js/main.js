@@ -82,10 +82,32 @@
    */
   document.querySelectorAll('.navmenu .toggle-dropdown').forEach(navmenu => {
     navmenu.addEventListener('click', function(e) {
+      e.preventDefault();
+      
+      // 모바일 메뉴가 활성화된 경우에만 드롭다운 토글
       if (document.querySelector('.mobile-nav-active')) {
-        e.preventDefault();
-        this.parentNode.classList.toggle('active');
-        this.parentNode.nextElementSibling.classList.toggle('dropdown-active');
+        const dropdownParent = this.parentNode;
+        const dropdownMenu = dropdownParent.querySelector('ul');
+        
+        if (dropdownMenu) {
+          // 현재 드롭다운 상태 확인
+          const isActive = dropdownMenu.classList.contains('dropdown-active');
+          
+          // 다른 모든 드롭다운 닫기
+          document.querySelectorAll('.navmenu .dropdown ul').forEach(ul => {
+            ul.classList.remove('dropdown-active');
+          });
+          document.querySelectorAll('.navmenu .dropdown').forEach(dropdown => {
+            dropdown.classList.remove('active');
+          });
+          
+          // 현재 드롭다운 토글
+          if (!isActive) {
+            dropdownMenu.classList.add('dropdown-active');
+            dropdownParent.classList.add('active');
+          }
+        }
+        
         e.stopImmediatePropagation();
       }
     });
