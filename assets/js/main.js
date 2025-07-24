@@ -35,18 +35,40 @@
   }
 
   /**
-   * Hide mobile nav on same-page/hash links
+   * Hide mobile nav on same-page/hash links and handle navigation
    */
-  document.querySelectorAll('#navmenu a').forEach(navmenu => {
-    navmenu.addEventListener('click', (e) => {
-      if (document.querySelector('.mobile-nav-active')) {
-        // 드롭다운 토글이 아닌 일반 링크인 경우에만 메뉴 닫기
-        if (!e.target.classList.contains('toggle-dropdown')) {
-          mobileNavToogle();
+  function handleMobileNavigation() {
+    document.querySelectorAll('#navmenu a').forEach(navmenu => {
+      navmenu.addEventListener('click', (e) => {
+        if (document.querySelector('.mobile-nav-active')) {
+          // 드롭다운 토글이 아닌 일반 링크인 경우
+          if (!e.target.classList.contains('toggle-dropdown') && !e.target.closest('.toggle-dropdown')) {
+            // 링크가 있는 경우 메뉴 닫고 페이지 이동
+            if (navmenu.href && navmenu.href !== '#' && navmenu.href !== window.location.href) {
+              e.preventDefault();
+              mobileNavToogle();
+              setTimeout(() => {
+                window.location.href = navmenu.href;
+              }, 300);
+            } else {
+              mobileNavToogle();
+            }
+          }
         }
-      }
+      });
     });
-  });
+  }
+  
+  // DOM이 로드된 후 실행
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', handleMobileNavigation);
+  } else {
+    handleMobileNavigation();
+  }
+  
+  // 추가로 타이머로도 실행 (네비바가 동적 로드되는 경우)
+  setTimeout(handleMobileNavigation, 1000);
+  setTimeout(handleMobileNavigation, 2000);
   
   /**
    * Prevent click event issues on mobile devices
