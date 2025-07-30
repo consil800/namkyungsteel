@@ -1824,6 +1824,185 @@ class DatabaseManager {
             throw error;
         }
     }
+
+    // ========================================
+    // 알림(Notification) 관리 메서드들
+    // ========================================
+
+    // 알림 생성
+    async createNotification(notificationData) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            const notification = {
+                ...notificationData,
+                created_at: new Date().toISOString(),
+                is_read: false
+            };
+
+            const { data, error } = await this.client
+                .from('notifications')
+                .insert([notification])
+                .select();
+            
+            if (error) throw error;
+            return { success: true, data: data[0] };
+        } catch (error) {
+            console.error('알림 생성 오류:', error);
+            throw error;
+        }
+    }
+
+    // 여러 사용자에게 알림 생성
+    async createNotificationsForUsers(userIds, notificationTemplate) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            const notifications = userIds.map(userId => ({
+                ...notificationTemplate,
+                user_id: userId,
+                created_at: new Date().toISOString(),
+                is_read: false
+            }));
+
+            const { data, error } = await this.client
+                .from('notifications')
+                .insert(notifications)
+                .select();
+            
+            if (error) throw error;
+            return { success: true, data };
+        } catch (error) {
+            console.error('다중 알림 생성 오류:', error);
+            throw error;
+        }
+    }
+
+    // 특정 역할의 모든 사용자에게 알림 생성
+    async createNotificationForRoles(roles, companyDomain, notificationTemplate) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            // 해당 역할의 사용자들 조회
+            const { data: users, error: userError } = await this.client
+                .from('users')
+                .select('id')
+                .in('role', roles)
+                .eq('company_domain', companyDomain)
+                .eq('is_active', true);
+            
+            if (userError) throw userError;
+            
+            if (!users || users.length === 0) {
+                return { success: true, data: [] };
+            }
+
+            // 알림 생성
+            const userIds = users.map(user => user.id);
+            return await this.createNotificationsForUsers(userIds, notificationTemplate);
+        } catch (error) {
+            console.error('역할별 알림 생성 오류:', error);
+            throw error;
+        }
+    }
+
+    // 사용자의 알림 목록 조회
+    async getUserNotifications(userId, limit = 50) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            const { data, error } = await this.client
+                .from('notifications')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false })
+                .limit(limit);
+            
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error('알림 목록 조회 오류:', error);
+            throw error;
+        }
+    }
+
+    // 알림 읽음 처리
+    async markNotificationAsRead(notificationId) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            const { data, error } = await this.client
+                .from('notifications')
+                .update({ 
+                    is_read: true,
+                    read_at: new Date().toISOString()
+                })
+                .eq('id', notificationId)
+                .select();
+            
+            if (error) throw error;
+            return { success: true, data: data[0] };
+        } catch (error) {
+            console.error('알림 읽음 처리 오류:', error);
+            throw error;
+        }
+    }
+
+    // 모든 알림 읽음 처리
+    async markAllNotificationsAsRead(userId) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            const { data, error } = await this.client
+                .from('notifications')
+                .update({ 
+                    is_read: true,
+                    read_at: new Date().toISOString()
+                })
+                .eq('user_id', userId)
+                .eq('is_read', false)
+                .select();
+            
+            if (error) throw error;
+            return { success: true, count: data.length };
+        } catch (error) {
+            console.error('모든 알림 읽음 처리 오류:', error);
+            throw error;
+        }
+    }
+
+    // 읽지 않은 알림 개수 조회
+    async getUnreadNotificationCount(userId) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            const { count, error } = await this.client
+                .from('notifications')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', userId)
+                .eq('is_read', false);
+            
+            if (error) throw error;
+            return count || 0;
+        } catch (error) {
+            console.error('읽지 않은 알림 개수 조회 오류:', error);
+            throw error;
+        }
+    }
 }
 
 // 전역 데이터베이스 매니저 인스턴스

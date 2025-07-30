@@ -1428,8 +1428,9 @@
                     </button>
                     
                     
-                    <button class="management-card pending-members-card" id="pendingMembersBtn" onclick="console.log('가입 승인 클릭'); showPendingMembers();">
+                    <button class="management-card pending-members-card" id="pendingMembersBtn" onclick="console.log('가입 승인 클릭'); showPendingMembers();" style="position: relative;">
                         <i class="fas fa-user-check"></i>
+                        <span id="pendingMembersBadge" class="notification-badge" style="display: none;">0</span>
                         <h3>가입 승인</h3>
                         <p>신규 회원가입 요청을 검토하고 승인/반려를 처리합니다.</p>
                     </button>
@@ -1680,6 +1681,9 @@
             if (companyBtn) {
                 companyBtn.addEventListener('click', showCompanyInfoManagement);
             }
+            
+            // 승인 대기 인원 수 확인
+            await checkPendingMembers();
             
             // localStorage 초기 상태 확인
             console.log('🔍 페이지 로드 시 localStorage 상태:');
@@ -3966,6 +3970,53 @@
         }
         window.openCorporateCardManagement = openCorporateCardManagement;
 
+        // 승인 대기 회원 수 확인
+        async function checkPendingMembers() {
+            console.log('📋 승인 대기 회원 수 확인');
+            
+            if (!window.db || !window.db.client) {
+                console.log('데이터베이스 연결 대기 중...');
+                setTimeout(checkPendingMembers, 1000);
+                return;
+            }
+            
+            try {
+                // 승인 대기 중인 사용자 수 조회
+                const { count, error } = await window.db.client
+                    .from('users')
+                    .select('*', { count: 'exact', head: true })
+                    .is('role', null)
+                    .eq('is_active', true);
+                
+                if (error) {
+                    console.error('승인 대기 인원 조회 오류:', error);
+                    return;
+                }
+                
+                console.log('✅ 승인 대기 인원:', count || 0);
+                
+                // 배지 업데이트
+                const badge = document.getElementById('pendingMembersBadge');
+                if (badge) {
+                    if (count > 0) {
+                        badge.textContent = count;
+                        badge.style.display = 'block';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+                
+                // 현재 사용자의 읽지 않은 알림 개수도 확인
+                const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+                if (currentUser.id) {
+                    const unreadCount = await window.db.getUnreadNotificationCount(currentUser.id);
+                    console.log('📬 읽지 않은 알림:', unreadCount);
+                }
+                
+            } catch (error) {
+                console.error('승인 대기 확인 오류:', error);
+            }
+        }
 
         // 관리자 알림 체크 함수
         function checkAdminNotifications() {

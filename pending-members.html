@@ -428,9 +428,8 @@
                                 <select class="role-select" id="roleSelect_${member.id}">
                                     <option value="">역할 선택</option>
                                     <option value="employee">일반 직원</option>
-                                    <option value="manager">팀장</option>
-                                    <option value="hr">인사담당자</option>
-                                    <option value="admin">관리자</option>
+                                    <option value="company_manager">회사 관리자</option>
+                                    <option value="company_CEO">회사 대표</option>
                                 </select>
                                 <button class="btn btn-approve" onclick="approveMember('${member.id}')">
                                     <i class="fas fa-check"></i> 승인
@@ -464,6 +463,19 @@
             
             try {
                 if (window.db && window.db.client) {
+                    // 사용자 정보 먼저 가져오기
+                    const { data: userData, error: userError } = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .eq('id', memberId)
+                        .single();
+                    
+                    if (userError || !userData) {
+                        console.error('❌ 사용자 조회 오류:', userError);
+                        alert('사용자 정보를 찾을 수 없습니다.');
+                        return;
+                    }
+                    
                     // 사용자 역할 업데이트 및 승인 처리
                     const { error } = await window.db.client
                         .from('users')
@@ -479,6 +491,34 @@
                         console.error('❌ 회원 승인 오류:', error);
                         alert('회원 승인 중 오류가 발생했습니다.');
                         return;
+                    }
+                    
+                    // 승인 알림 생성
+                    try {
+                        await window.db.createNotification({
+                            user_id: memberId,
+                            type: 'user_approved',
+                            title: '회원가입 승인 완료',
+                            message: `귀하의 회원가입이 승인되었습니다. ${getRoleDisplayName(selectedRole)} 권한이 부여되었습니다.`,
+                            company_domain: userData.company_domain || 'namkyungsteel.com'
+                        });
+                        
+                        // 관련 회원가입 알림들을 읽음 처리
+                        const { data: notifications } = await window.db.client
+                            .from('notifications')
+                            .select('id')
+                            .eq('type', 'user_registration')
+                            .eq('related_id', memberId)
+                            .eq('is_read', false);
+                        
+                        if (notifications && notifications.length > 0) {
+                            for (const notif of notifications) {
+                                await window.db.markNotificationAsRead(notif.id);
+                            }
+                        }
+                    } catch (notifError) {
+                        console.error('알림 처리 오류:', notifError);
+                        // 알림 실패해도 승인은 성공한 것으로 처리
                     }
                     
                     console.log('✅ 회원 승인 완료:', memberId);
@@ -547,10 +587,9 @@
         function getRoleDisplayName(role) {
             const roleNames = {
                 'employee': '일반 직원',
-                'manager': '팀장',
-                'hr': '인사담당자',
-                'admin': '관리자',
-                'master': '최고관리자'
+                'company_manager': '회사 관리자',
+                'company_CEO': '회사 대표',
+                'master': '최고 관리자'
             };
             return roleNames[role] || role;
         }
