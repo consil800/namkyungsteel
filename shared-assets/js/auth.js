@@ -192,6 +192,29 @@ const AuthManager = {
             
             if (result.success) {
                 console.log('✅ 회원가입 성공:', result.data);
+                
+                // 관리자들에게 알림 생성
+                try {
+                    const notificationTemplate = {
+                        type: 'user_registration',
+                        title: '신규 회원가입 승인 요청',
+                        message: `${enhancedUserData.name}님이 회원가입을 신청했습니다. 승인이 필요합니다.`,
+                        related_id: result.data.id,
+                        company_domain: enhancedUserData.company_domain || 'namkyungsteel.com'
+                    };
+                    
+                    // master, company_CEO, company_admin 역할에게 알림 발송
+                    await window.db.createNotificationForRoles(
+                        ['master', 'company_CEO', 'company_admin'],
+                        enhancedUserData.company_domain || 'namkyungsteel.com',
+                        notificationTemplate
+                    );
+                    console.log('✅ 관리자 알림 생성 완료');
+                } catch (notificationError) {
+                    console.error('알림 생성 실패:', notificationError);
+                    // 알림 실패해도 회원가입은 성공한 것으로 처리
+                }
+                
                 return { success: true, user: result.data };
             } else {
                 return { success: false, message: result.error || '회원가입에 실패했습니다.' };
