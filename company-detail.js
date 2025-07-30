@@ -242,9 +242,14 @@ function initEventListeners() {
 // 색상 옵션 로드
 async function loadColorOptions() {
     try {
-        const db = new DatabaseManager();
-        await db.init();
-        const settings = await db.getUserSettings(currentUser.id);
+        // 글로벌 db 인스턴스 사용
+        if (!window.db || !window.db.client) {
+            console.error('데이터베이스 연결이 없습니다.');
+            loadDefaultColors();
+            return;
+        }
+        
+        const settings = await window.db.getUserSettings(currentUser.id);
         
         const colorSelect = document.getElementById('editCompanyColor');
         if (!colorSelect) return;
@@ -254,6 +259,12 @@ async function loadColorOptions() {
         
         // 색상 옵션들 추가
         const colors = settings.colors || [];
+        if (colors.length === 0) {
+            // 색상이 없으면 기본 색상 사용
+            loadDefaultColors();
+            return;
+        }
+        
         colors.forEach(color => {
             const option = document.createElement('option');
             option.value = color.key;
