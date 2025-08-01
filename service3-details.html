@@ -427,6 +427,9 @@
   <!-- Main JS File -->
   <script src="assets/js/main.js"></script>
   
+  <!-- Common JavaScript -->
+  <script src="includes/common.js"></script>
+  
   <!-- Authentication Scripts -->
   <script src="shared-assets/js/auth.js"></script>
   <script src="shared-assets/js/template-login.js"></script>
@@ -439,6 +442,118 @@
         AuthManager.redirectToAppropriatePanel();
       }
     }
+    
+    // Service 페이지 전용 모바일 드로워 초기화
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('🔄 Service 페이지: 모바일 드로워 직접 초기화 시작');
+      
+      // 드로워 요소들 찾기
+      const mobileNavToggle = document.querySelector('.mobile-nav-toggle');
+      const mobileDrawer = document.getElementById('mobileDrawer');
+      const mobileDrawerOverlay = document.getElementById('mobileDrawerOverlay');
+      const mobileDrawerClose = document.querySelector('.mobile-drawer-close');
+      
+      if (!mobileNavToggle || !mobileDrawer || !mobileDrawerOverlay) {
+        console.warn('⚠️ Service 페이지: 모바일 드로워 요소를 찾을 수 없음');
+        return;
+      }
+      
+      console.log('✅ Service 페이지: 모바일 드로워 요소 발견');
+      
+      // 드로워 열기 함수
+      function openDrawer() {
+        console.log('📱 Service 페이지: 드로워 열기');
+        mobileDrawer.classList.add('active');
+        mobileDrawerOverlay.classList.add('active');
+        
+        // 햄버거 아이콘을 X로 변경
+        const icon = mobileNavToggle.querySelector('i');
+        if (icon) {
+          icon.classList.remove('bi-list');
+          icon.classList.add('bi-x');
+        }
+        
+        // body 스크롤 방지
+        document.body.style.overflow = 'hidden';
+      }
+      
+      // 드로워 닫기 함수
+      function closeDrawer() {
+        console.log('📱 Service 페이지: 드로워 닫기');
+        mobileDrawer.classList.remove('active');
+        mobileDrawerOverlay.classList.remove('active');
+        
+        // X를 햄버거 아이콘으로 변경
+        const icon = mobileNavToggle.querySelector('i');
+        if (icon) {
+          icon.classList.remove('bi-x');
+          icon.classList.add('bi-list');
+        }
+        
+        // body 스크롤 복원
+        document.body.style.overflow = '';
+      }
+      
+      // 햄버거 메뉴 클릭 이벤트
+      mobileNavToggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('🔄 Service 페이지: 햄버거 버튼 클릭됨');
+        openDrawer();
+      });
+      
+      // 오버레이 클릭 이벤트
+      mobileDrawerOverlay.addEventListener('click', function(e) {
+        e.preventDefault();
+        console.log('🔄 Service 페이지: 오버레이 클릭됨');
+        closeDrawer();
+      });
+      
+      // 닫기 버튼 클릭 이벤트
+      if (mobileDrawerClose) {
+        mobileDrawerClose.addEventListener('click', function(e) {
+          e.preventDefault();
+          console.log('🔄 Service 페이지: 닫기 버튼 클릭됨');
+          closeDrawer();
+        });
+      }
+      
+      // 드로워 내 드롭다운 메뉴 처리
+      const drawerDropdowns = mobileDrawer.querySelectorAll('.dropdown');
+      console.log('🔍 Service 페이지: 드롭다운 메뉴 발견:', drawerDropdowns.length);
+      
+      drawerDropdowns.forEach(dropdown => {
+        const toggle = dropdown.querySelector('.dropdown-toggle');
+        const subMenu = dropdown.querySelector('ul');
+        if (toggle && subMenu) {
+          toggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('🔄 Service 페이지: 드롭다운 토글 클릭됨');
+            
+            // 다른 드롭다운 닫기
+            drawerDropdowns.forEach(otherDropdown => {
+              if (otherDropdown !== dropdown) {
+                otherDropdown.classList.remove('active');
+                const otherSubMenu = otherDropdown.querySelector('ul');
+                if (otherSubMenu) {
+                  otherSubMenu.style.display = 'none';
+                }
+              }
+            });
+            
+            // 현재 드롭다운 토글
+            dropdown.classList.toggle('active');
+            if (dropdown.classList.contains('active')) {
+              subMenu.style.display = 'block';
+            } else {
+              subMenu.style.display = 'none';
+            }
+          });
+        }
+      });
+      
+      console.log('✅ Service 페이지: 모바일 드로워 초기화 완료');
+    });
   </script>
 
 </body>
