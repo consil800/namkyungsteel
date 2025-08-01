@@ -53,6 +53,9 @@ async function loadFooter() {
 function initializeNavbar() {
     console.log('🔄 네비바 초기화 시작');
     
+    // 모바일 드로워 메뉴 초기화
+    initializeMobileDrawer();
+    
     // 드롭다운 메뉴 클릭 기능 (모바일용)
     const dropdownToggles = document.querySelectorAll('.toggle-dropdown');
     console.log('🔍 드롭다운 토글 버튼 발견:', dropdownToggles.length);
@@ -90,6 +93,104 @@ function initializeNavbar() {
     setActiveNavItem();
     
     console.log('✅ 네비바 초기화 완료');
+}
+
+// 모바일 드로워 메뉴 초기화
+function initializeMobileDrawer() {
+    const mobileNavToggle = document.querySelector('.mobile-nav-toggle');
+    const mobileDrawer = document.getElementById('mobileDrawer');
+    const mobileDrawerOverlay = document.getElementById('mobileDrawerOverlay');
+    const mobileDrawerClose = document.querySelector('.mobile-drawer-close');
+    
+    if (!mobileNavToggle || !mobileDrawer || !mobileDrawerOverlay) {
+        console.warn('⚠️ 모바일 드로워 요소를 찾을 수 없음');
+        return;
+    }
+    
+    // 햄버거 메뉴 클릭
+    mobileNavToggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        openMobileDrawer();
+    });
+    
+    // 닫기 버튼 클릭
+    if (mobileDrawerClose) {
+        mobileDrawerClose.addEventListener('click', closeMobileDrawer);
+    }
+    
+    // 오버레이 클릭
+    mobileDrawerOverlay.addEventListener('click', closeMobileDrawer);
+    
+    // 드로워 내 드롭다운 메뉴
+    const drawerDropdowns = mobileDrawer.querySelectorAll('.dropdown');
+    drawerDropdowns.forEach(dropdown => {
+        const toggle = dropdown.querySelector('.dropdown-toggle');
+        if (toggle) {
+            toggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // 다른 드롭다운 닫기
+                drawerDropdowns.forEach(otherDropdown => {
+                    if (otherDropdown !== dropdown) {
+                        otherDropdown.classList.remove('active');
+                    }
+                });
+                
+                // 현재 드롭다운 토글
+                dropdown.classList.toggle('active');
+            });
+        }
+    });
+    
+    console.log('✅ 모바일 드로워 초기화 완료');
+}
+
+// 모바일 드로워 열기
+function openMobileDrawer() {
+    const mobileDrawer = document.getElementById('mobileDrawer');
+    const mobileDrawerOverlay = document.getElementById('mobileDrawerOverlay');
+    const mobileNavToggle = document.querySelector('.mobile-nav-toggle');
+    
+    if (mobileDrawer && mobileDrawerOverlay) {
+        mobileDrawer.classList.add('active');
+        mobileDrawerOverlay.classList.add('active');
+        
+        // 햄버거 아이콘을 X로 변경
+        if (mobileNavToggle) {
+            const icon = mobileNavToggle.querySelector('i');
+            if (icon) {
+                icon.classList.remove('bi-list');
+                icon.classList.add('bi-x');
+            }
+        }
+        
+        // body 스크롤 방지
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+// 모바일 드로워 닫기
+function closeMobileDrawer() {
+    const mobileDrawer = document.getElementById('mobileDrawer');
+    const mobileDrawerOverlay = document.getElementById('mobileDrawerOverlay');
+    const mobileNavToggle = document.querySelector('.mobile-nav-toggle');
+    
+    if (mobileDrawer && mobileDrawerOverlay) {
+        mobileDrawer.classList.remove('active');
+        mobileDrawerOverlay.classList.remove('active');
+        
+        // X를 햄버거 아이콘으로 변경
+        if (mobileNavToggle) {
+            const icon = mobileNavToggle.querySelector('i');
+            if (icon) {
+                icon.classList.remove('bi-x');
+                icon.classList.add('bi-list');
+            }
+        }
+        
+        // body 스크롤 복원
+        document.body.style.overflow = '';
+    }
 }
 
 
