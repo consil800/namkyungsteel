@@ -226,8 +226,19 @@ function setActiveNavItem() {
 
 // 페이지 로드 시 네비바와 푸터 로드
 document.addEventListener('DOMContentLoaded', async function() {
-    await loadNavbar();
-    await loadFooter();
+    // 네비바 placeholder가 있으면 동적 로드, 없으면 인라인 네비바로 간주
+    const navbarPlaceholder = document.getElementById('navbar-placeholder');
+    
+    if (navbarPlaceholder) {
+        // 동적 네비바 로드
+        await loadNavbar();
+        await loadFooter();
+    } else {
+        // 인라인 네비바가 이미 존재하는 경우 초기화만 실행
+        console.log('🔄 인라인 네비바 감지됨 - 초기화 실행');
+        initializeNavbar();
+        await loadFooter();
+    }
     
     // 네비바 로드 완료 후 로그인 상태 확인 (여러 시점에서 시도)
     console.log('🔄 common.js: 컴포넌트 로드 완료');
