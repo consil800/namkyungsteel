@@ -213,9 +213,9 @@
   </style>
 
   <!-- Main CSS File -->
-  <link href="assets/css/main.css?v=1.1" rel="stylesheet">
+  <link href="assets/css/main.css?v=1.2" rel="stylesheet">
   <!-- Mobile CSS File -->
-  <link href="shared-assets/css/mobile.css?v=1.1" rel="stylesheet">
+  <link href="shared-assets/css/mobile.css?v=1.2" rel="stylesheet">
   
   <style>
     body { 
@@ -1176,19 +1176,12 @@
         
         if (mobileNavToggle) {
           console.log('✅ Index 페이지: 햄버거 버튼 발견됨');
-          console.log('📱 Index 페이지: 햄버거 버튼 위치:', mobileNavToggle.getBoundingClientRect());
           
-          // 터치 이벤트 테스트
+          // 기존 이벤트 리스너가 있는지 확인
           mobileNavToggle.addEventListener('click', function(e) {
-            console.log('🔄 Index 페이지: 햄버거 버튼 클릭 감지됨! (click)');
-          });
-          
-          mobileNavToggle.addEventListener('touchstart', function(e) {
-            console.log('🔄 Index 페이지: 햄버거 버튼 터치 감지됨! (touchstart)');
-          });
-          
-          mobileNavToggle.addEventListener('touchend', function(e) {
-            console.log('🔄 Index 페이지: 햄버거 버튼 터치 종료 감지됨! (touchend)');
+            console.log('🔄 Index 페이지: 햄버거 버튼 클릭 감지됨!');
+            e.preventDefault();
+            e.stopPropagation();
           });
         } else {
           console.warn('⚠️ Index 페이지: 햄버거 버튼을 찾을 수 없음');
