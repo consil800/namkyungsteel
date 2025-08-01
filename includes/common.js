@@ -163,7 +163,9 @@ function openMobileDrawer() {
     
     if (mobileDrawer && mobileDrawerOverlay) {
         mobileDrawer.classList.add('active');
+        mobileDrawer.style.visibility = 'visible';
         mobileDrawerOverlay.classList.add('active');
+        mobileDrawerOverlay.style.display = 'block';
         
         // 햄버거 아이콘을 X로 변경
         if (mobileNavToggle) {
@@ -187,7 +189,9 @@ function closeMobileDrawer() {
     
     if (mobileDrawer && mobileDrawerOverlay) {
         mobileDrawer.classList.remove('active');
+        mobileDrawer.style.visibility = 'hidden';
         mobileDrawerOverlay.classList.remove('active');
+        mobileDrawerOverlay.style.display = 'none';
         
         // X를 햄버거 아이콘으로 변경
         if (mobileNavToggle) {
