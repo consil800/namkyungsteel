@@ -321,21 +321,19 @@ body {
 .mobile-drawer {
     position: fixed;
     top: 0;
-    left: -280px;
+    left: 0;
     width: 280px;
     height: 100%;
     background-color: #ffffff;
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
-    transform: translateX(0);
-    transition: left 0.3s ease, transform 0.3s ease;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
     z-index: 10001;
     overflow-y: auto;
-    visibility: hidden;
 }
 
 .mobile-drawer.active {
-    left: 0;
-    visibility: visible;
+    transform: translateX(0);
 }
 
 .mobile-drawer-header {
@@ -438,15 +436,13 @@ body {
     background-color: rgba(0, 0, 0, 0.5);
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
+    transition: opacity 0.3s ease;
     z-index: 10000;
-    display: none;
 }
 
 .mobile-drawer-overlay.active {
     opacity: 1;
     visibility: visible;
-    display: block;
 }
 
 /* Mobile Nav Toggle Button */
