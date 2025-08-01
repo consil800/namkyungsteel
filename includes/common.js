@@ -125,7 +125,8 @@ function initializeMobileDrawer() {
     const drawerDropdowns = mobileDrawer.querySelectorAll('.dropdown');
     drawerDropdowns.forEach(dropdown => {
         const toggle = dropdown.querySelector('.dropdown-toggle');
-        if (toggle) {
+        const subMenu = dropdown.querySelector('ul');
+        if (toggle && subMenu) {
             toggle.addEventListener('click', function(e) {
                 e.preventDefault();
                 
@@ -133,11 +134,20 @@ function initializeMobileDrawer() {
                 drawerDropdowns.forEach(otherDropdown => {
                     if (otherDropdown !== dropdown) {
                         otherDropdown.classList.remove('active');
+                        const otherSubMenu = otherDropdown.querySelector('ul');
+                        if (otherSubMenu) {
+                            otherSubMenu.style.display = 'none';
+                        }
                     }
                 });
                 
                 // 현재 드롭다운 토글
                 dropdown.classList.toggle('active');
+                if (dropdown.classList.contains('active')) {
+                    subMenu.style.display = 'block';
+                } else {
+                    subMenu.style.display = 'none';
+                }
             });
         }
     });

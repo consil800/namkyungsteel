@@ -280,18 +280,19 @@ body {
 .mobile-drawer {
     position: fixed;
     top: 0;
-    left: -280px;
+    left: 0;
     width: 280px;
     height: 100%;
     background-color: #ffffff;
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    transform: translateX(-100%);
     transition: transform 0.3s ease;
     z-index: 10001;
     overflow-y: auto;
 }
 
 .mobile-drawer.active {
-    transform: translateX(280px);
+    transform: translateX(0);
 }
 
 .mobile-drawer-header {
