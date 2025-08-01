@@ -162,10 +162,16 @@ function openMobileDrawer() {
     const mobileNavToggle = document.querySelector('.mobile-nav-toggle');
     
     if (mobileDrawer && mobileDrawerOverlay) {
-        mobileDrawer.classList.add('active');
+        // 강제로 스타일 설정
+        mobileDrawer.style.display = 'block';
         mobileDrawer.style.visibility = 'visible';
-        mobileDrawerOverlay.classList.add('active');
+        mobileDrawer.style.left = '0px';
+        mobileDrawer.classList.add('active');
+        
         mobileDrawerOverlay.style.display = 'block';
+        mobileDrawerOverlay.style.visibility = 'visible';
+        mobileDrawerOverlay.style.opacity = '1';
+        mobileDrawerOverlay.classList.add('active');
         
         // 햄버거 아이콘을 X로 변경
         if (mobileNavToggle) {
@@ -188,10 +194,16 @@ function closeMobileDrawer() {
     const mobileNavToggle = document.querySelector('.mobile-nav-toggle');
     
     if (mobileDrawer && mobileDrawerOverlay) {
-        mobileDrawer.classList.remove('active');
+        // 강제로 스타일 설정
+        mobileDrawer.style.display = 'none';
         mobileDrawer.style.visibility = 'hidden';
-        mobileDrawerOverlay.classList.remove('active');
+        mobileDrawer.style.left = '-280px';
+        mobileDrawer.classList.remove('active');
+        
         mobileDrawerOverlay.style.display = 'none';
+        mobileDrawerOverlay.style.visibility = 'hidden';
+        mobileDrawerOverlay.style.opacity = '0';
+        mobileDrawerOverlay.classList.remove('active');
         
         // X를 햄버거 아이콘으로 변경
         if (mobileNavToggle) {
@@ -228,10 +240,35 @@ function setActiveNavItem() {
     }
 }
 
+// drawer 강제 숨김 함수
+function forceHideDrawer() {
+    const mobileDrawer = document.getElementById('mobileDrawer');
+    const mobileDrawerOverlay = document.getElementById('mobileDrawerOverlay');
+    
+    if (mobileDrawer) {
+        mobileDrawer.style.display = 'none';
+        mobileDrawer.style.visibility = 'hidden';
+        mobileDrawer.style.left = '-280px';
+        mobileDrawer.classList.remove('active');
+    }
+    
+    if (mobileDrawerOverlay) {
+        mobileDrawerOverlay.style.display = 'none';
+        mobileDrawerOverlay.style.visibility = 'hidden';
+        mobileDrawerOverlay.style.opacity = '0';
+        mobileDrawerOverlay.classList.remove('active');
+    }
+}
+
 // 페이지 로드 시 네비바와 푸터 로드
 document.addEventListener('DOMContentLoaded', async function() {
     await loadNavbar();
     await loadFooter();
+    
+    // drawer 강제 숨김
+    setTimeout(forceHideDrawer, 100);
+    setTimeout(forceHideDrawer, 500);
+    setTimeout(forceHideDrawer, 1000);
     
     // 네비바 로드 완료 후 로그인 상태 확인 (여러 시점에서 시도)
     console.log('🔄 common.js: 컴포넌트 로드 완료');
