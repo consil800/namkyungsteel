@@ -168,8 +168,11 @@
             </ul>
           </li>
         </ul>
-        <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
       </nav>
+      
+      <button class="mobile-nav-toggle d-xl-none" aria-label="Toggle navigation menu">
+        <i class="bi bi-list"></i>
+      </button>
 
       <a class="login-btn" href="#" onclick="showLoginModal(); return false;" id="mainLoginBtn">
         <i class="bi bi-person-circle"></i> <span id="loginBtnText">로그인</span>
@@ -184,6 +187,72 @@
 
     </div>
   </header>
+
+  <!-- Mobile Drawer Menu -->
+  <div class="mobile-drawer" id="mobileDrawer">
+    <div class="mobile-drawer-header">
+      <h3>메뉴</h3>
+      <button class="mobile-drawer-close" aria-label="Close menu">
+        &times;
+      </button>
+    </div>
+    <nav class="mobile-drawer-nav">
+      <ul>
+        <li><a href="index.html">홈</a></li>
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle">
+            <span>회사소개</span>
+            <span class="dropdown-arrow">▼</span>
+          </a>
+          <ul style="display: none;">
+            <li><a href="ceo-message.html">CEO 인사말</a></li>
+            <li><a href="company-history.html">회사연혁</a></li>
+            <li><a href="vision-mission.html">비전/미션</a></li>
+            <li><a href="organization.html">조직도</a></li>
+            <li><a href="location.html">오시는길</a></li>
+            <li><a href="certificates.html">인증서</a></li>
+          </ul>
+        </li>
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle">
+            <span>제품소개</span>
+            <span class="dropdown-arrow">▼</span>
+          </a>
+          <ul style="display: none;">
+            <li><a href="service1-details.html">열연강판</a></li>
+            <li><a href="service2-details.html">냉연강판</a></li>
+            <li><a href="service3-details.html">특수강</a></li>
+            <li><a href="service4-details.html">맞춤 가공</a></li>
+          </ul>
+        </li>
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle">
+            <span>사업영역</span>
+            <span class="dropdown-arrow">▼</span>
+          </a>
+          <ul style="display: none;">
+            <li><a href="steel-manufacturing.html">철강제조</a></li>
+            <li><a href="processing-service.html">가공서비스</a></li>
+            <li><a href="tech-research.html">기술연구</a></li>
+          </ul>
+        </li>
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle">
+            <span>고객센터</span>
+            <span class="dropdown-arrow">▼</span>
+          </a>
+          <ul style="display: none;">
+            <li><a href="quote-inquiry.html">견적문의</a></li>
+            <li><a href="catalog.html">카탈로그</a></li>
+            <li><a href="faq.html">FAQ</a></li>
+            <li><a href="product-inquiry.html">제품문의</a></li>
+            <li><a href="technical-support.html">기술지원</a></li>
+          </ul>
+        </li>
+      </ul>
+    </nav>
+  </div>
+  <div class="mobile-drawer-overlay" id="mobileDrawerOverlay"></div>
 
   <main class="main">
 
