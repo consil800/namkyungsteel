@@ -489,7 +489,16 @@ body {
     transition: color 0.3s;
     border: none;
     background: none;
-    padding: 5px;
+    padding: 12px;
+    min-width: 48px;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .mobile-nav-toggle:hover {
@@ -502,7 +511,9 @@ body {
     }
     
     .mobile-nav-toggle {
-        display: block !important;
+        display: flex !important;
+        position: relative;
+        z-index: 1000;
     }
 }
 

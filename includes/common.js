@@ -107,19 +107,33 @@ function initializeMobileDrawer() {
         return;
     }
     
-    // 햄버거 메뉴 클릭
-    mobileNavToggle.addEventListener('click', function(e) {
+    // 햄버거 메뉴 클릭 (터치와 클릭 모두 지원)
+    function handleMobileNavToggle(e) {
         e.preventDefault();
+        e.stopPropagation();
+        console.log('🔄 햄버거 버튼 이벤트 감지:', e.type);
         openMobileDrawer();
-    });
-    
-    // 닫기 버튼 클릭
-    if (mobileDrawerClose) {
-        mobileDrawerClose.addEventListener('click', closeMobileDrawer);
     }
     
-    // 오버레이 클릭
-    mobileDrawerOverlay.addEventListener('click', closeMobileDrawer);
+    mobileNavToggle.addEventListener('click', handleMobileNavToggle);
+    mobileNavToggle.addEventListener('touchstart', handleMobileNavToggle, { passive: false });
+    
+    // 닫기 버튼 클릭 (터치와 클릭 모두 지원)
+    function handleCloseDrawer(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('🔄 드로워 닫기 이벤트 감지:', e.type);
+        closeMobileDrawer();
+    }
+    
+    if (mobileDrawerClose) {
+        mobileDrawerClose.addEventListener('click', handleCloseDrawer);
+        mobileDrawerClose.addEventListener('touchstart', handleCloseDrawer, { passive: false });
+    }
+    
+    // 오버레이 클릭 (터치와 클릭 모두 지원)
+    mobileDrawerOverlay.addEventListener('click', handleCloseDrawer);
+    mobileDrawerOverlay.addEventListener('touchstart', handleCloseDrawer, { passive: false });
     
     // 드로워 내 드롭다운 메뉴
     const drawerDropdowns = mobileDrawer.querySelectorAll('.dropdown');
