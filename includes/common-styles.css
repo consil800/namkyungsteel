@@ -423,11 +423,11 @@ body {
 
 @media (max-width: 1199px) {
     .navmenu {
-        display: none;
+        display: none !important;
     }
     
     .mobile-nav-toggle {
-        display: block;
+        display: block !important;
     }
 }
 
