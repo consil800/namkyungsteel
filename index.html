@@ -1155,6 +1155,53 @@
   <!-- Main JS 파일 로드 -->
   <script src="assets/js/main.js"></script>
   
+  <!-- Index 페이지 모바일 드로워 디버깅 -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('🔄 Index 페이지: DOMContentLoaded 시작');
+      
+      // 네비바가 로드될 때까지 기다림
+      setTimeout(function() {
+        console.log('🔍 Index 페이지: 모바일 드로워 요소 확인');
+        
+        const mobileNavToggle = document.querySelector('.mobile-nav-toggle');
+        const mobileDrawer = document.getElementById('mobileDrawer');
+        const mobileDrawerOverlay = document.getElementById('mobileDrawerOverlay');
+        
+        console.log('📱 Index 페이지: 요소 발견 상태:', {
+          hamburger: !!mobileNavToggle,
+          drawer: !!mobileDrawer,
+          overlay: !!mobileDrawerOverlay
+        });
+        
+        if (mobileNavToggle) {
+          console.log('✅ Index 페이지: 햄버거 버튼 발견됨');
+          
+          // 기존 이벤트 리스너가 있는지 확인
+          mobileNavToggle.addEventListener('click', function(e) {
+            console.log('🔄 Index 페이지: 햄버거 버튼 클릭 감지됨!');
+            e.preventDefault();
+            e.stopPropagation();
+          });
+        } else {
+          console.warn('⚠️ Index 페이지: 햄버거 버튼을 찾을 수 없음');
+        }
+        
+        if (mobileDrawer) {
+          console.log('✅ Index 페이지: 모바일 드로워 발견됨');
+        } else {
+          console.warn('⚠️ Index 페이지: 모바일 드로워를 찾을 수 없음');
+        }
+        
+        if (mobileDrawerOverlay) {
+          console.log('✅ Index 페이지: 드로워 오버레이 발견됨');
+        } else {
+          console.warn('⚠️ Index 페이지: 드로워 오버레이를 찾을 수 없음');
+        }
+      }, 1000);
+    });
+  </script>
+  
   <!-- Authentication Scripts will be loaded later -->
 
   <!-- Initialize AOS and PureCounter -->
