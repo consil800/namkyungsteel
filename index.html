@@ -1176,12 +1176,19 @@
         
         if (mobileNavToggle) {
           console.log('✅ Index 페이지: 햄버거 버튼 발견됨');
+          console.log('📱 Index 페이지: 햄버거 버튼 위치:', mobileNavToggle.getBoundingClientRect());
           
-          // 기존 이벤트 리스너가 있는지 확인
+          // 터치 이벤트 테스트
           mobileNavToggle.addEventListener('click', function(e) {
-            console.log('🔄 Index 페이지: 햄버거 버튼 클릭 감지됨!');
-            e.preventDefault();
-            e.stopPropagation();
+            console.log('🔄 Index 페이지: 햄버거 버튼 클릭 감지됨! (click)');
+          });
+          
+          mobileNavToggle.addEventListener('touchstart', function(e) {
+            console.log('🔄 Index 페이지: 햄버거 버튼 터치 감지됨! (touchstart)');
+          });
+          
+          mobileNavToggle.addEventListener('touchend', function(e) {
+            console.log('🔄 Index 페이지: 햄버거 버튼 터치 종료 감지됨! (touchend)');
           });
         } else {
           console.warn('⚠️ Index 페이지: 햄버거 버튼을 찾을 수 없음');
