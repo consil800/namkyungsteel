@@ -38,10 +38,30 @@ body {
     margin-left: 25px;
     text-decoration: none;
     transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }
 .login-btn:hover { 
     background: #0052a3; 
     color: white;
+}
+
+/* 모바일에서 로그인 버튼 정렬 */
+@media (max-width: 1199px) {
+    .login-btn {
+        margin-left: 15px;
+        padding: 6px 16px;
+        font-size: 14px;
+    }
+    
+    .header .container-fluid {
+        align-items: center;
+    }
+    
+    .header .d-flex {
+        align-items: center !important;
+    }
 }
 
 /* 사용자 프로필 스타일 */
