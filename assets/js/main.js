@@ -21,54 +21,23 @@
   window.addEventListener('load', toggleScrolled);
 
   /**
-   * Mobile nav toggle
+   * Mobile nav toggle - DISABLED (Using drawer instead)
    */
-  const mobileNavToggleBtn = document.querySelector('.mobile-nav-toggle');
+  // const mobileNavToggleBtn = document.querySelector('.mobile-nav-toggle');
 
-  function mobileNavToogle() {
-    document.querySelector('body').classList.toggle('mobile-nav-active');
-    mobileNavToggleBtn.classList.toggle('bi-list');
-    mobileNavToggleBtn.classList.toggle('bi-x');
-  }
-  if (mobileNavToggleBtn) {
-    mobileNavToggleBtn.addEventListener('click', mobileNavToogle);
-  }
+  // function mobileNavToogle() {
+  //   document.querySelector('body').classList.toggle('mobile-nav-active');
+  //   mobileNavToggleBtn.classList.toggle('bi-list');
+  //   mobileNavToggleBtn.classList.toggle('bi-x');
+  // }
+  // if (mobileNavToggleBtn) {
+  //   mobileNavToggleBtn.addEventListener('click', mobileNavToogle);
+  // }
 
   /**
-   * Hide mobile nav on same-page/hash links and handle navigation
+   * Hide mobile nav on same-page/hash links and handle navigation - DISABLED
    */
-  function handleMobileNavigation() {
-    document.querySelectorAll('#navmenu a').forEach(navmenu => {
-      navmenu.addEventListener('click', (e) => {
-        if (document.querySelector('.mobile-nav-active')) {
-          // 드롭다운 토글이 아닌 일반 링크인 경우
-          if (!e.target.classList.contains('toggle-dropdown') && !e.target.closest('.toggle-dropdown')) {
-            // 링크가 있는 경우 메뉴 닫고 페이지 이동
-            if (navmenu.href && navmenu.href !== '#' && navmenu.href !== window.location.href) {
-              e.preventDefault();
-              mobileNavToogle();
-              setTimeout(() => {
-                window.location.href = navmenu.href;
-              }, 300);
-            } else {
-              mobileNavToogle();
-            }
-          }
-        }
-      });
-    });
-  }
-  
-  // DOM이 로드된 후 실행
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', handleMobileNavigation);
-  } else {
-    handleMobileNavigation();
-  }
-  
-  // 추가로 타이머로도 실행 (네비바가 동적 로드되는 경우)
-  setTimeout(handleMobileNavigation, 1000);
-  setTimeout(handleMobileNavigation, 2000);
+  // Drawer navigation is handled in common.js
   
   /**
    * Prevent click event issues on mobile devices
@@ -84,56 +53,17 @@
           e.preventDefault();
           const href = this.href;
           
-          // 모바일 메뉴가 열려있으면 닫기
-          if (document.querySelector('.mobile-nav-active') && this.closest('#navmenu')) {
-            mobileNavToogle();
-            // 메뉴 닫힌 후 페이지 이동
-            setTimeout(() => {
-              window.location.href = href;
-            }, 300);
-          } else {
-            window.location.href = href;
-          }
+          // 페이지 이동
+          window.location.href = href;
         }
       });
     });
   }
 
   /**
-   * Toggle mobile nav dropdowns
+   * Toggle mobile nav dropdowns - DISABLED
    */
-  document.querySelectorAll('.navmenu .toggle-dropdown').forEach(navmenu => {
-    navmenu.addEventListener('click', function(e) {
-      e.preventDefault();
-      
-      // 모바일 메뉴가 활성화된 경우에만 드롭다운 토글
-      if (document.querySelector('.mobile-nav-active')) {
-        const dropdownParent = this.parentNode;
-        const dropdownMenu = dropdownParent.querySelector('ul');
-        
-        if (dropdownMenu) {
-          // 현재 드롭다운 상태 확인
-          const isActive = dropdownMenu.classList.contains('dropdown-active');
-          
-          // 다른 모든 드롭다운 닫기
-          document.querySelectorAll('.navmenu .dropdown ul').forEach(ul => {
-            ul.classList.remove('dropdown-active');
-          });
-          document.querySelectorAll('.navmenu .dropdown').forEach(dropdown => {
-            dropdown.classList.remove('active');
-          });
-          
-          // 현재 드롭다운 토글
-          if (!isActive) {
-            dropdownMenu.classList.add('dropdown-active');
-            dropdownParent.classList.add('active');
-          }
-        }
-        
-        e.stopImmediatePropagation();
-      }
-    });
-  });
+  // Dropdown navigation is handled in common.js for drawer menu
 
   /**
    * Scroll top button
@@ -200,10 +130,7 @@
           block: 'start'
         });
         
-        // 모바일 메뉴가 열려있으면 닫기
-        if (document.querySelector('.mobile-nav-active')) {
-          mobileNavToogle();
-        }
+        // Mobile menu handling is done in drawer
       }
     });
   });
@@ -215,8 +142,8 @@
   const navbar = document.querySelector('.header');
   
   window.addEventListener('scroll', function() {
-    // 모바일 메뉴가 열려있을 때는 navbar 숨기기 비활성화
-    if (document.querySelector('.mobile-nav-active')) {
+    // Drawer menu check
+    if (document.querySelector('.mobile-drawer.active')) {
       return;
     }
     
