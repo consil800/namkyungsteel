@@ -18,6 +18,20 @@ document.addEventListener('DOMContentLoaded', function() {
         isFiltered: false
     };
 
+    // 한글 색상을 영어로 변환하는 함수 (전역 함수로 정의)
+    const convertColorCode = (colorCode) => {
+        const colorMapping = {
+            '빨강': 'red',
+            '주황': 'orange', 
+            '노랑': 'yellow',
+            '초록': 'green',
+            '파랑': 'blue',
+            '보라': 'purple',
+            '회색': 'gray'
+        };
+        return colorMapping[colorCode] || colorCode;
+    };
+
     // 초기 데이터 로드 (사용자 정보가 업데이트될 때까지 대기)
     // worklog.html에서 getCurrentUserFromDB() 실행 후 loadCompanies()를 호출하므로 여기서는 주석 처리
     
@@ -204,19 +218,7 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         });
 
-        // 한글 색상을 영어로 변환하는 함수
-        const convertColorCode = (colorCode) => {
-            const colorMapping = {
-                '빨강': 'red',
-                '주황': 'orange', 
-                '노랑': 'yellow',
-                '초록': 'green',
-                '파랑': 'blue',
-                '보라': 'purple',
-                '회색': 'gray'
-            };
-            return colorMapping[colorCode] || colorCode;
-        };
+        // 한글 색상을 영어로 변환 (전역 함수 사용)
 
         // 색상 디버깅 로그
         console.log('🎨 색상 디버깅:', companiesWithStats.slice(0, 3).map(c => ({
