@@ -1011,7 +1011,7 @@ class DatabaseManager {
         }
     }
 
-    // 사용자 설정 가져오기
+    // 사용자 설정 가져오기 (client_companies 테이블에서 고유값 추출)
     async getUserSettings(userId) {
         if (!this.client) {
             throw new Error('데이터베이스 연결이 필요합니다.');
@@ -1020,83 +1020,80 @@ class DatabaseManager {
         try {
             console.log('🔍 사용자 설정 조회 시작 - userId:', userId);
             
-            // user_settings 테이블에서 설정 조회
-            const { data, error } = await this.client
-                .from('user_settings')
-                .select('*')
-                .eq('user_id', userId)
-                .single();
+            // client_companies 테이블에서 해당 사용자의 모든 데이터 조회
+            const { data: companies, error } = await this.client
+                .from('client_companies')
+                .select('region, payment_terms, business_type, color_code')
+                .eq('user_id', userId.toString());
             
             if (error) {
-                if (error.code === 'PGRST116') {
-                    // 설정이 없는 경우 빈 배열 반환
-                    console.log('📝 사용자 설정이 없음, 빈 설정 반환');
-                    const emptySettings = {
-                        paymentTerms: [],
-                        businessTypes: [],
-                        visitPurposes: [],
-                        regions: [],
-                        colors: []
-                    };
-                    
-                    // 빈 설정을 데이터베이스에 저장
-                    await this.updateUserSettings(userId, emptySettings);
-                    return emptySettings;
-                }
-                throw error;
+                console.error('업체 데이터 조회 오류:', error);
+                return {
+                    paymentTerms: [],
+                    businessTypes: [],
+                    visitPurposes: [], // work_logs에서 가져와야 함
+                    regions: [],
+                    colors: []
+                };
             }
+            
+            // 고유값들 추출
+            const uniqueRegions = [...new Set(companies.map(c => c.region).filter(Boolean))].sort();
+            const uniquePaymentTerms = [...new Set(companies.map(c => c.payment_terms).filter(Boolean))].sort();
+            const uniqueBusinessTypes = [...new Set(companies.map(c => c.business_type).filter(Boolean))].sort();
+            
+            // 색상은 색상 코드에서 고유값 추출 (간단한 색상 매핑)
+            const colorMapping = {
+                'red': { key: 'red', name: '빨강', value: '#e74c3c' },
+                'orange': { key: 'orange', name: '주황', value: '#f39c12' },
+                'yellow': { key: 'yellow', name: '노랑', value: '#f1c40f' },
+                'green': { key: 'green', name: '초록', value: '#27ae60' },
+                'blue': { key: 'blue', name: '파랑', value: '#3498db' },
+                'purple': { key: 'purple', name: '보라', value: '#9b59b6' },
+                'gray': { key: 'gray', name: '회색', value: '#95a5a6' }
+            };
+            
+            const uniqueColorCodes = [...new Set(companies.map(c => c.color_code).filter(Boolean))];
+            const uniqueColors = uniqueColorCodes.map(code => colorMapping[code] || {
+                key: code,
+                name: code,
+                value: '#808080'
+            });
+            
+            // work_logs에서 방문목적 가져오기
+            const { data: workLogs } = await this.client
+                .from('work_logs')
+                .select('visit_purpose')
+                .eq('user_id', userId.toString());
+            
+            const uniqueVisitPurposes = [...new Set((workLogs || []).map(w => w.visit_purpose).filter(Boolean))].sort();
             
             console.log('✅ 사용자 설정 조회 성공');
             
-            // JSON 데이터 파싱
             return {
-                paymentTerms: data.payment_terms || [],
-                businessTypes: data.business_types || [],
-                visitPurposes: data.visit_purposes || [],
-                regions: data.regions || [],
-                colors: data.colors || []
+                paymentTerms: uniquePaymentTerms,
+                businessTypes: uniqueBusinessTypes,
+                visitPurposes: uniqueVisitPurposes,
+                regions: uniqueRegions,
+                colors: uniqueColors
             };
         } catch (error) {
             console.error('사용자 설정 조회 오류:', error);
-            throw error;
+            // 오류 시 빈 배열 반환
+            return {
+                paymentTerms: [],
+                businessTypes: [],
+                visitPurposes: [],
+                regions: [],
+                colors: []
+            };
         }
     }
 
-    // 사용자 설정 업데이트
+    // 사용자 설정 업데이트 (실제로는 아무것도 하지 않음 - 기존 데이터에서 추출하므로)
     async updateUserSettings(userId, settings) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            console.log('📝 사용자 설정 업데이트 시작 - userId:', userId);
-            
-            const settingsData = {
-                user_id: userId,
-                payment_terms: settings.paymentTerms || [],
-                business_types: settings.businessTypes || [],
-                visit_purposes: settings.visitPurposes || [],
-                regions: settings.regions || [],
-                colors: settings.colors || [],
-                updated_at: new Date().toISOString()
-            };
-            
-            // upsert (존재하면 업데이트, 없으면 삽입)
-            const { data, error } = await this.client
-                .from('user_settings')
-                .upsert(settingsData, {
-                    onConflict: 'user_id'
-                })
-                .select();
-            
-            if (error) throw error;
-            
-            console.log('✅ 사용자 설정 업데이트 성공');
-            return { success: true, data: data[0] };
-        } catch (error) {
-            console.error('사용자 설정 업데이트 오류:', error);
-            throw error;
-        }
+        console.log('📝 설정 업데이트 요청 - 기존 데이터에서 추출하므로 별도 저장하지 않음');
+        return { success: true, message: 'settings_from_existing_data' };
     }
 
     async searchClientCompanies(region = null, companyName = null, userId = null) {

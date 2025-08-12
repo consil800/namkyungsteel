@@ -29,44 +29,29 @@ const DropdownLoader = {
                         return;
                     }
 
+                    // 간단히 새 옵션을 드롭다운에 추가
                     const db = new DatabaseManager();
                     await db.init();
                     const settings = await db.getUserSettings(userId);
                     
-                    // 설정에 새 값 추가
-                    let updated = false;
+                    // 중복 체크
+                    let exists = false;
                     switch(inputType) {
                         case '지역':
-                            if (!settings.regions.includes(customValue)) {
-                                settings.regions.push(customValue);
-                                settings.regions.sort((a, b) => a.localeCompare(b));
-                                updated = true;
-                            }
+                            exists = settings.regions.includes(customValue);
                             break;
                         case '결제조건':
-                            if (!settings.paymentTerms.includes(customValue)) {
-                                settings.paymentTerms.push(customValue);
-                                updated = true;
-                            }
+                            exists = settings.paymentTerms.includes(customValue);
                             break;
                         case '업종':
-                            if (!settings.businessTypes.includes(customValue)) {
-                                settings.businessTypes.push(customValue);
-                                updated = true;
-                            }
+                            exists = settings.businessTypes.includes(customValue);
                             break;
                         case '방문목적':
-                            if (!settings.visitPurposes.includes(customValue)) {
-                                settings.visitPurposes.push(customValue);
-                                updated = true;
-                            }
+                            exists = settings.visitPurposes.includes(customValue);
                             break;
                     }
                     
-                    if (updated) {
-                        // 데이터베이스에 저장
-                        await db.updateUserSettings(userId, settings);
-                        
+                    if (!exists) {
                         // 새 옵션을 드롭다운에 추가
                         const newOption = document.createElement('option');
                         newOption.value = customValue;
@@ -79,7 +64,7 @@ const DropdownLoader = {
                         // 새로 추가한 값 선택
                         selectElement.value = customValue;
                         
-                        alert(`${inputType}이(가) 추가되었습니다.`);
+                        alert(`${inputType}이(가) 추가되었습니다. 실제 데이터는 업체 등록이나 업무일지 작성 시 저장됩니다.`);
                     } else {
                         alert('이미 존재하는 값입니다.');
                         selectElement.value = customValue;
@@ -135,18 +120,8 @@ const DropdownLoader = {
                         return;
                     }
                     
-                    // 새 색상 추가
+                    // 새 색상을 드롭다운에 추가
                     const newKey = 'custom_' + Date.now();
-                    settings.colors.push({
-                        key: newKey,
-                        name: colorName,
-                        value: colorValue
-                    });
-                    
-                    // 데이터베이스에 저장
-                    await db.updateUserSettings(userId, settings);
-                    
-                    // 새 옵션을 드롭다운에 추가
                     const newOption = document.createElement('option');
                     newOption.value = newKey;
                     newOption.textContent = colorName;
@@ -160,7 +135,7 @@ const DropdownLoader = {
                     // 새로 추가한 색상 선택
                     selectElement.value = newKey;
                     
-                    alert('색상이 추가되었습니다.');
+                    alert('색상이 추가되었습니다. 실제 데이터는 업체 등록 시 저장됩니다.');
                 } catch (error) {
                     console.error('색상 추가 오류:', error);
                     alert('색상 추가 중 오류가 발생했습니다.');
