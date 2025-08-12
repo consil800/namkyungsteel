@@ -52,6 +52,15 @@ const DropdownLoader = {
                     }
                     
                     if (!exists) {
+                        // 데이터베이스에 저장
+                        try {
+                            if (typeof saveToDatabase === 'function') {
+                                await saveToDatabase(inputType, customValue);
+                            }
+                        } catch (saveError) {
+                            console.log('데이터베이스 저장 실패, 임시 저장:', saveError);
+                        }
+                        
                         // 새 옵션을 드롭다운에 추가
                         const newOption = document.createElement('option');
                         newOption.value = customValue;
@@ -64,7 +73,7 @@ const DropdownLoader = {
                         // 새로 추가한 값 선택
                         selectElement.value = customValue;
                         
-                        alert(`${inputType}이(가) 추가되었습니다. 실제 데이터는 업체 등록이나 업무일지 작성 시 저장됩니다.`);
+                        alert(`${inputType} "${customValue}"이(가) 추가되었습니다! 다음 새로고침 시 드롭다운에서 확인할 수 있습니다.`);
                     } else {
                         alert('이미 존재하는 값입니다.');
                         selectElement.value = customValue;

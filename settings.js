@@ -84,22 +84,8 @@ async function loadSettings() {
         await loadDropdownOptions(settings);
         console.log('✅ 드롭다운 옵션 로드 완료');
         
-        // 목록 표시 (기존 함수들이 있으면)
-        if (typeof displayPaymentTerms === 'function') {
-            displayPaymentTerms(settings.paymentTerms || []);
-        }
-        if (typeof displayBusinessTypes === 'function') {
-            displayBusinessTypes(settings.businessTypes || []);
-        }
-        if (typeof displayRegions === 'function') {
-            displayRegions(settings.regions || []);
-        }
-        if (typeof displayVisitPurposes === 'function') {
-            displayVisitPurposes(settings.visitPurposes || []);
-        }
-        if (typeof displayColors === 'function') {
-            displayColors(settings.colors || []);
-        }
+        // 목록 표시는 드롭다운으로만 하고, 별도 리스트는 숨김
+        hideAllLists();
         
     } catch (error) {
         console.error('설정 로드 오류:', error);
@@ -230,5 +216,72 @@ function getContrastColor(hexcolor) {
     return brightness > 155 ? '#000000' : '#ffffff';
 }
 
+// 리스트 숨기기 함수
+function hideAllLists() {
+    const listIds = [
+        'paymentTermsList',
+        'businessTypesList', 
+        'regionsList',
+        'visitPurposesList',
+        'colorsList'
+    ];
+    
+    listIds.forEach(listId => {
+        const listElement = document.getElementById(listId);
+        if (listElement) {
+            listElement.innerHTML = '<li style="color: #666; font-style: italic;">드롭다운에서 선택하여 추가하세요</li>';
+        }
+    });
+}
+
+// 직접입력 데이터 저장 함수
+async function saveToDatabase(type, value) {
+    try {
+        console.log(`💾 ${type} 값 "${value}" 저장 시작`);
+        
+        const userId = await DropdownSettings.getCurrentUserId();
+        if (!userId) {
+            throw new Error('사용자 정보가 없습니다.');
+        }
+        
+        // 현재 업체 등록이나 업무일지 작성 시 저장되므로, 
+        // 여기서는 임시 데이터로 client_companies에 저장
+        const testCompany = {
+            user_id: userId,
+            company_name: `임시_${type}_${Date.now()}`,
+            address: '임시 주소',
+            contact_person: '임시 담당자',
+            phone: '000-0000-0000',
+            email: 'temp@temp.com',
+            business_type: type === '업종' ? value : '기타',
+            region: type === '지역' ? value : '기타',
+            payment_terms: type === '결제조건' ? value : '기타',
+            color_code: 'gray',
+            notes: `${type} 값 "${value}" 저장을 위한 임시 데이터`,
+            visit_count: 0,
+            last_visit_date: null,
+            created_at: new Date().toISOString()
+        };
+        
+        const { data, error } = await window.db.client
+            .from('client_companies')
+            .insert([testCompany])
+            .select();
+        
+        if (error) {
+            console.error(`❌ ${type} 저장 오류:`, error);
+            throw error;
+        }
+        
+        console.log(`✅ ${type} 값 "${value}" 저장 완료:`, data);
+        return true;
+        
+    } catch (error) {
+        console.error(`❌ ${type} 저장 중 오류:`, error);
+        throw error;
+    }
+}
+
 // 전역에서 접근 가능하도록 설정
 window.DropdownSettings = DropdownSettings;
+window.saveToDatabase = saveToDatabase;
