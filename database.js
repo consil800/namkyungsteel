@@ -1023,7 +1023,7 @@ class DatabaseManager {
             // client_companies 테이블에서 해당 사용자의 모든 데이터 조회 (생성일 순으로)
             const { data: companies, error } = await this.client
                 .from('client_companies')
-                .select('region, payment_terms, business_type, color_code, created_at')
+                .select('region, payment_terms, business_type, color_code, visit_purpose, created_at')
                 .eq('user_id', userId.toString())
                 .order('created_at', { ascending: true });
             
@@ -1047,10 +1047,12 @@ class DatabaseManager {
             const seenRegions = new Set();
             const seenPaymentTerms = new Set();
             const seenBusinessTypes = new Set();
+            const seenVisitPurposes = new Set();
             
             const uniqueRegions = [];
             const uniquePaymentTerms = [];
             const uniqueBusinessTypes = [];
+            const uniqueVisitPurposes = [];
             
             companies.forEach(company => {
                 if (company.region && !seenRegions.has(company.region)) {
@@ -1064,6 +1066,10 @@ class DatabaseManager {
                 if (company.business_type && !seenBusinessTypes.has(company.business_type)) {
                     seenBusinessTypes.add(company.business_type);
                     uniqueBusinessTypes.push(company.business_type);
+                }
+                if (company.visit_purpose && !seenVisitPurposes.has(company.visit_purpose)) {
+                    seenVisitPurposes.add(company.visit_purpose);
+                    uniqueVisitPurposes.push(company.visit_purpose);
                 }
             });
             
@@ -1100,21 +1106,6 @@ class DatabaseManager {
                         value: '#808080'
                     };
                     uniqueColors.push(colorData);
-                }
-            });
-            
-            // 방문목적도 client_companies 테이블의 notes 필드에서 추출
-            const seenVisitPurposes = new Set();
-            const uniqueVisitPurposes = [];
-            
-            companies.forEach(company => {
-                // notes에서 방문목적 추출: "방문목적 값 "신규영업" 저장을 위한 임시 데이터 (방문목적: 신규영업)"
-                if (company.notes && company.notes.includes('방문목적') && company.notes.includes('(방문목적:')) {
-                    const match = company.notes.match(/\(방문목적:\s*([^)]+)\)/);
-                    if (match && match[1] && !seenVisitPurposes.has(match[1])) {
-                        seenVisitPurposes.add(match[1]);
-                        uniqueVisitPurposes.push(match[1]);
-                    }
                 }
             });
             

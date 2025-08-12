@@ -214,8 +214,9 @@ async function saveToDatabase(type, value) {
             business_type: type === '업종' ? value : '기타',
             region: type === '지역' ? value : '기타',
             payment_terms: type === '결제조건' ? value : '기타',
+            visit_purpose: type === '방문목적' ? value : null,
             color_code: 'gray',
-            notes: `${type} 값 "${value}" 저장을 위한 임시 데이터${type === '방문목적' ? ` (방문목적: ${value})` : ''}`,
+            notes: `${type} 값 "${value}" 저장을 위한 임시 데이터`,
             visit_count: 0,
             last_visit_date: null,
             created_at: new Date().toISOString()
@@ -466,12 +467,12 @@ async function deleteItemFromDatabase(type, item, userId) {
                 defaultValue = '기타';
                 break;
             case '방문목적':
-                // 방문목적도 client_companies의 notes에서 삭제
+                // 방문목적은 visit_purpose 필드에서 삭제
                 const { error: visitPurposeError } = await window.db.client
                     .from('client_companies')
                     .delete()
                     .eq('user_id', userId)
-                    .like('notes', `%방문목적: ${item}%`);
+                    .eq('visit_purpose', item);
                 
                 if (visitPurposeError) {
                     throw visitPurposeError;
