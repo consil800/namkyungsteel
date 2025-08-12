@@ -123,76 +123,32 @@ async function loadDropdownOptions() {
     console.log('드롭다운 옵션 로드 시작');
     
     try {
-        // 로컬 스토리지에서 설정 가져오기
-        const storedSettings = localStorage.getItem('dropdownSettings');
-        let settings;
-        
-        if (storedSettings) {
-            settings = JSON.parse(storedSettings);
-        } else {
-            // 기본값 설정
-            settings = {
-                paymentTerms: ['현금', '월말결제', '30일', '45일', '60일', '90일', '어음', '기타'],
-                businessTypes: ['제조업', '건설업', '유통업', '기타'],
-                regions: ['서울','부산','대구','경주','김해','양산','함안','밀양','창원','창녕','울산','목포','광주','광양'].sort((a, b) => a.localeCompare(b)),
-                colors: [
-                    { key: 'red', name: '빨강', value: '#e74c3c' },
-                    { key: 'orange', name: '주황', value: '#f39c12' },
-                    { key: 'yellow', name: '노랑', value: '#f1c40f' },
-                    { key: 'green', name: '초록', value: '#27ae60' },
-                    { key: 'blue', name: '파랑', value: '#3498db' },
-                    { key: 'purple', name: '보라', value: '#9b59b6' },
-                    { key: 'gray', name: '회색', value: '#95a5a6' }
-                ]
-            };
+        // 데이터베이스 초기화 대기
+        if (!window.DropdownLoader) {
+            console.error('DropdownLoader가 로드되지 않았습니다.');
+            loadBasicOptions();
+            return;
         }
 
-        console.log('드롭다운 설정:', settings);
-
-        // 지역 드롭다운 로드
+        // 각 드롭다운 로드
         const regionSelect = document.getElementById('region');
-        if (regionSelect && settings.regions) {
-            settings.regions.forEach(region => {
-                const option = document.createElement('option');
-                option.value = region;
-                option.textContent = region;
-                regionSelect.appendChild(option);
-            });
+        if (regionSelect) {
+            await DropdownLoader.loadRegions(regionSelect);
         }
 
-        // 결제조건 드롭다운 로드
         const paymentTermsSelect = document.getElementById('paymentTerms');
-        if (paymentTermsSelect && settings.paymentTerms) {
-            settings.paymentTerms.forEach(term => {
-                const option = document.createElement('option');
-                option.value = term;
-                option.textContent = term;
-                paymentTermsSelect.appendChild(option);
-            });
+        if (paymentTermsSelect) {
+            await DropdownLoader.loadPaymentTerms(paymentTermsSelect);
         }
 
-        // 업종 드롭다운 로드
         const businessTypeSelect = document.getElementById('businessType');
-        if (businessTypeSelect && settings.businessTypes) {
-            settings.businessTypes.forEach(type => {
-                const option = document.createElement('option');
-                option.value = type;
-                option.textContent = type;
-                businessTypeSelect.appendChild(option);
-            });
+        if (businessTypeSelect) {
+            await DropdownLoader.loadBusinessTypes(businessTypeSelect);
         }
 
-        // 색상 드롭다운 로드
         const colorSelect = document.getElementById('companyColor');
-        if (colorSelect && settings.colors) {
-            settings.colors.forEach(color => {
-                const option = document.createElement('option');
-                option.value = color.key;
-                option.textContent = color.name;
-                option.style.backgroundColor = color.value;
-                option.style.color = getContrastColor(color.value);
-                colorSelect.appendChild(option);
-            });
+        if (colorSelect) {
+            await DropdownLoader.loadColors(colorSelect);
         }
 
         console.log('드롭다운 옵션 로드 완료');

@@ -120,47 +120,37 @@ async function loadVisitPurposes() {
     console.log('방문목적 옵션 로드 시작');
     
     try {
-        // 로컬 스토리지에서 설정 가져오기
-        const storedSettings = localStorage.getItem('dropdownSettings');
-        let visitPurposes;
-        
-        if (storedSettings) {
-            const settings = JSON.parse(storedSettings);
-            visitPurposes = settings.visitPurposes || [];
-        }
-        
-        // 기본값이 없으면 기본 방문목적 사용
-        if (!visitPurposes || visitPurposes.length === 0) {
-            visitPurposes = ['신규영업', '기존고객관리', '견적제공', '계약협의', '수금협의', '클레임처리', '기타'];
+        // 데이터베이스 기반 로드를 위해 DropdownLoader 사용
+        if (!window.DropdownLoader) {
+            console.error('DropdownLoader가 로드되지 않았습니다.');
+            loadBasicVisitPurposes();
+            return;
         }
 
-        // 방문목적 드롭다운 로드
         const visitPurposeSelect = document.getElementById('visitPurpose');
-        if (visitPurposeSelect && visitPurposes) {
-            visitPurposes.forEach(purpose => {
-                const option = document.createElement('option');
-                option.value = purpose;
-                option.textContent = purpose;
-                visitPurposeSelect.appendChild(option);
-            });
+        if (visitPurposeSelect) {
+            await DropdownLoader.loadVisitPurposes(visitPurposeSelect);
         }
 
-        console.log('방문목적 옵션 로드 완료:', visitPurposes.length, '개');
+        console.log('방문목적 옵션 로드 완료');
 
     } catch (error) {
         console.error('방문목적 옵션 로드 오류:', error);
-        
-        // 오류 시 기본값 로드
-        const basicPurposes = ['신규영업', '기존고객관리', '견적제공', '계약협의', '수금협의', '클레임처리', '기타'];
-        const visitPurposeSelect = document.getElementById('visitPurpose');
-        if (visitPurposeSelect) {
-            basicPurposes.forEach(purpose => {
-                const option = document.createElement('option');
-                option.value = purpose;
-                option.textContent = purpose;
-                visitPurposeSelect.appendChild(option);
-            });
-        }
+        loadBasicVisitPurposes();
+    }
+}
+
+// 기본 방문목적 로드 (오류 시 백업)
+function loadBasicVisitPurposes() {
+    const basicPurposes = ['신규영업', '기존고객관리', '견적제공', '계약협의', '수금협의', '클레임처리', '기타'];
+    const visitPurposeSelect = document.getElementById('visitPurpose');
+    if (visitPurposeSelect) {
+        basicPurposes.forEach(purpose => {
+            const option = document.createElement('option');
+            option.value = purpose;
+            option.textContent = purpose;
+            visitPurposeSelect.appendChild(option);
+        });
     }
 }
 

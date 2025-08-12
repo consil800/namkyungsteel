@@ -1011,6 +1011,102 @@ class DatabaseManager {
         }
     }
 
+    // 사용자 설정 가져오기
+    async getUserSettings(userId) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            console.log('🔍 사용자 설정 조회 시작 - userId:', userId);
+            
+            // user_settings 테이블에서 설정 조회
+            const { data, error } = await this.client
+                .from('user_settings')
+                .select('*')
+                .eq('user_id', userId)
+                .single();
+            
+            if (error) {
+                if (error.code === 'PGRST116') {
+                    // 설정이 없는 경우 기본값 반환
+                    console.log('📝 사용자 설정이 없음, 기본값 반환');
+                    const defaultSettings = {
+                        paymentTerms: ['현금', '월말결제', '30일', '45일', '60일', '90일', '어음', '기타'],
+                        businessTypes: ['제조업', '건설업', '유통업', '기타'],
+                        visitPurposes: ['신규영업', '기존고객관리', '견적제공', '계약협의', '수금협의', '클레임처리', '기타'],
+                        regions: ['서울','부산','대구','경주','김해','양산','함안','밀양','창원','창녕','울산','목포','광주','광양'].sort((a, b) => a.localeCompare(b)),
+                        colors: [
+                            { key: 'red', name: '빨강', value: '#e74c3c' },
+                            { key: 'orange', name: '주황', value: '#f39c12' },
+                            { key: 'yellow', name: '노랑', value: '#f1c40f' },
+                            { key: 'green', name: '초록', value: '#27ae60' },
+                            { key: 'blue', name: '파랑', value: '#3498db' },
+                            { key: 'purple', name: '보라', value: '#9b59b6' },
+                            { key: 'gray', name: '회색', value: '#95a5a6' }
+                        ]
+                    };
+                    
+                    // 기본 설정을 데이터베이스에 저장
+                    await this.updateUserSettings(userId, defaultSettings);
+                    return defaultSettings;
+                }
+                throw error;
+            }
+            
+            console.log('✅ 사용자 설정 조회 성공');
+            
+            // JSON 데이터 파싱
+            return {
+                paymentTerms: data.payment_terms || [],
+                businessTypes: data.business_types || [],
+                visitPurposes: data.visit_purposes || [],
+                regions: data.regions || [],
+                colors: data.colors || []
+            };
+        } catch (error) {
+            console.error('사용자 설정 조회 오류:', error);
+            throw error;
+        }
+    }
+
+    // 사용자 설정 업데이트
+    async updateUserSettings(userId, settings) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            console.log('📝 사용자 설정 업데이트 시작 - userId:', userId);
+            
+            const settingsData = {
+                user_id: userId,
+                payment_terms: settings.paymentTerms || [],
+                business_types: settings.businessTypes || [],
+                visit_purposes: settings.visitPurposes || [],
+                regions: settings.regions || [],
+                colors: settings.colors || [],
+                updated_at: new Date().toISOString()
+            };
+            
+            // upsert (존재하면 업데이트, 없으면 삽입)
+            const { data, error } = await this.client
+                .from('user_settings')
+                .upsert(settingsData, {
+                    onConflict: 'user_id'
+                })
+                .select();
+            
+            if (error) throw error;
+            
+            console.log('✅ 사용자 설정 업데이트 성공');
+            return { success: true, data: data[0] };
+        } catch (error) {
+            console.error('사용자 설정 업데이트 오류:', error);
+            throw error;
+        }
+    }
+
     async searchClientCompanies(region = null, companyName = null, userId = null) {
         if (!this.client) {
             throw new Error('데이터베이스 연결이 필요합니다.');
