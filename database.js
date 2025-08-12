@@ -1103,30 +1103,23 @@ class DatabaseManager {
                 }
             });
             
-            // work_logs에서 방문목적 가져오기 (생성일 순으로)
-            const { data: workLogs, error: workLogsError } = await this.client
-                .from('work_logs')
-                .select('visit_purpose, created_at')
-                .eq('user_id', userId.toString())
-                .order('created_at', { ascending: true });
-            
-            if (workLogsError) {
-                console.log('work_logs 조회 오류 (테이블이 없을 수 있음):', workLogsError);
-            }
-            
-            // 방문목적도 생성 순서 유지
+            // 방문목적도 client_companies 테이블의 notes 필드에서 추출
             const seenVisitPurposes = new Set();
             const uniqueVisitPurposes = [];
             
-            (workLogs || []).forEach(log => {
-                if (log.visit_purpose && !seenVisitPurposes.has(log.visit_purpose)) {
-                    seenVisitPurposes.add(log.visit_purpose);
-                    uniqueVisitPurposes.push(log.visit_purpose);
+            companies.forEach(company => {
+                // notes에서 방문목적 추출: "방문목적 값 "신규영업" 저장을 위한 임시 데이터 (방문목적: 신규영업)"
+                if (company.notes && company.notes.includes('방문목적') && company.notes.includes('(방문목적:')) {
+                    const match = company.notes.match(/\(방문목적:\s*([^)]+)\)/);
+                    if (match && match[1] && !seenVisitPurposes.has(match[1])) {
+                        seenVisitPurposes.add(match[1]);
+                        uniqueVisitPurposes.push(match[1]);
+                    }
                 }
             });
             
-            console.log('📊 work_logs 조회 결과:', {
-                workLogsCount: workLogs ? workLogs.length : 0,
+            console.log('📊 방문목적 추출 결과:', {
+                visitPurposesCount: uniqueVisitPurposes.length,
                 visitPurposes: uniqueVisitPurposes
             });
             

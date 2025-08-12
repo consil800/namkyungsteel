@@ -203,62 +203,35 @@ async function saveToDatabase(type, value) {
             throw new Error('사용자 정보가 없습니다.');
         }
         
-        if (type === '방문목적') {
-            // 방문목적은 work_logs 테이블에 임시 데이터 저장
-            const testWorkLog = {
-                user_id: userId,
-                company_id: null,
-                visit_date: new Date().toISOString().split('T')[0],
-                visit_purpose: value,
-                meeting_person: '임시',
-                discussion_content: `${type} 값 "${value}" 저장을 위한 임시 데이터`,
-                follow_up_actions: '',
-                next_visit_plan: '',
-                created_at: new Date().toISOString()
-            };
-            
-            const { data, error } = await window.db.client
-                .from('work_logs')
-                .insert([testWorkLog])
-                .select();
-            
-            if (error) {
-                console.error(`❌ ${type} 저장 오류:`, error);
-                throw error;
-            }
-            
-            console.log(`✅ ${type} 값 "${value}" work_logs에 저장 완료:`, data);
-        } else {
-            // 다른 항목들은 client_companies 테이블에 저장
-            const testCompany = {
-                user_id: userId,
-                company_name: `임시_${type}_${Date.now()}`,
-                address: '임시 주소',
-                contact_person: '임시 담당자',
-                phone: '000-0000-0000',
-                email: 'temp@temp.com',
-                business_type: type === '업종' ? value : '기타',
-                region: type === '지역' ? value : '기타',
-                payment_terms: type === '결제조건' ? value : '기타',
-                color_code: 'gray',
-                notes: `${type} 값 "${value}" 저장을 위한 임시 데이터`,
-                visit_count: 0,
-                last_visit_date: null,
-                created_at: new Date().toISOString()
-            };
-            
-            const { data, error } = await window.db.client
-                .from('client_companies')
-                .insert([testCompany])
-                .select();
-            
-            if (error) {
-                console.error(`❌ ${type} 저장 오류:`, error);
-                throw error;
-            }
-            
-            console.log(`✅ ${type} 값 "${value}" client_companies에 저장 완료:`, data);
+        // 모든 항목을 client_companies 테이블에 저장 (방문목적도 포함)
+        const testCompany = {
+            user_id: userId,
+            company_name: `임시_${type}_${Date.now()}`,
+            address: '임시 주소',
+            contact_person: '임시 담당자',
+            phone: '000-0000-0000',
+            email: 'temp@temp.com',
+            business_type: type === '업종' ? value : '기타',
+            region: type === '지역' ? value : '기타',
+            payment_terms: type === '결제조건' ? value : '기타',
+            color_code: 'gray',
+            notes: `${type} 값 "${value}" 저장을 위한 임시 데이터${type === '방문목적' ? ` (방문목적: ${value})` : ''}`,
+            visit_count: 0,
+            last_visit_date: null,
+            created_at: new Date().toISOString()
+        };
+        
+        const { data, error } = await window.db.client
+            .from('client_companies')
+            .insert([testCompany])
+            .select();
+        
+        if (error) {
+            console.error(`❌ ${type} 저장 오류:`, error);
+            throw error;
         }
+        
+        console.log(`✅ ${type} 값 "${value}" client_companies에 저장 완료:`, data);
         
         return true;
         
@@ -493,8 +466,18 @@ async function deleteItemFromDatabase(type, item, userId) {
                 defaultValue = '기타';
                 break;
             case '방문목적':
-                // 방문목적은 업무일지에서 사용되므로 별도 처리 필요
-                console.log(`방문목적 "${item}" 삭제 - 업무일지 데이터는 유지됨`);
+                // 방문목적도 client_companies의 notes에서 삭제
+                const { error: visitPurposeError } = await window.db.client
+                    .from('client_companies')
+                    .delete()
+                    .eq('user_id', userId)
+                    .like('notes', `%방문목적: ${item}%`);
+                
+                if (visitPurposeError) {
+                    throw visitPurposeError;
+                }
+                
+                console.log(`✅ 방문목적 "${item}" 삭제 완료`);
                 return;
                 break;
         }
