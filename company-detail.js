@@ -407,6 +407,7 @@ async function updateCompany() {
         
         console.log('업체 정보 수정 시작:', updateData);
         console.log('🔍 updateData 키 목록:', Object.keys(updateData));
+        console.log('🎨 color_code 값:', updateData.color_code);
         
         // color 필드가 있으면 color_code로 변경
         if ('color' in updateData) {
@@ -421,8 +422,10 @@ async function updateCompany() {
             alert('업체 정보가 성공적으로 수정되었습니다.');
             document.getElementById('editModal').style.display = 'none';
             
+            console.log('✅ 수정 완료, 업체 정보 다시 로드 중...');
             // 업체 정보 다시 로드
             await loadCompanyDetails(currentCompany.id);
+            console.log('✅ 업체 정보 재로드 완료, 새로운 색상:', currentCompany?.color_code);
         } else {
             throw new Error('업체 정보 수정에 실패했습니다.');
         }
