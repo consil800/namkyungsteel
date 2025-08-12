@@ -415,6 +415,22 @@ async function updateCompany() {
             updateData.color_code = updateData.color;
             delete updateData.color;
         }
+
+        // 한글 색상을 영어로 변환
+        const colorMapping = {
+            '빨강': 'red',
+            '주황': 'orange', 
+            '노랑': 'yellow',
+            '초록': 'green',
+            '파랑': 'blue',
+            '보라': 'purple',
+            '회색': 'gray'
+        };
+
+        if (updateData.color_code && colorMapping[updateData.color_code]) {
+            console.log(`🔄 색상 변환: "${updateData.color_code}" → "${colorMapping[updateData.color_code]}"`);
+            updateData.color_code = colorMapping[updateData.color_code];
+        }
         
         const result = await window.db.updateClientCompany(currentCompany.id, updateData);
         

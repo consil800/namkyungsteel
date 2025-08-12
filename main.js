@@ -204,15 +204,30 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         });
 
+        // 한글 색상을 영어로 변환하는 함수
+        const convertColorCode = (colorCode) => {
+            const colorMapping = {
+                '빨강': 'red',
+                '주황': 'orange', 
+                '노랑': 'yellow',
+                '초록': 'green',
+                '파랑': 'blue',
+                '보라': 'purple',
+                '회색': 'gray'
+            };
+            return colorMapping[colorCode] || colorCode;
+        };
+
         // 색상 디버깅 로그
         console.log('🎨 색상 디버깅:', companiesWithStats.slice(0, 3).map(c => ({
             name: c.company_name,
-            color_code: c.color_code,
-            colorClass: c.color_code ? `color-${c.color_code}` : 'no-color'
+            original_color: c.color_code,
+            converted_color: convertColorCode(c.color_code),
+            colorClass: c.color_code ? `color-${convertColorCode(c.color_code)}` : 'no-color'
         })));
 
         const html = companiesWithStats.map(company => `
-            <tr class="company-row ${company.color_code ? `color-${company.color_code}` : ''}" onclick="${isDeleteMode ? '' : `goToCompanyDetail('${company.id}')`}">
+            <tr class="company-row ${company.color_code ? `color-${convertColorCode(company.color_code)}` : ''}" onclick="${isDeleteMode ? '' : `goToCompanyDetail('${company.id}')`}">
                 ${isDeleteMode ? `
                     <td>
                         <input type="checkbox" class="company-checkbox" value="${company.id}" 
@@ -567,7 +582,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 정렬된 업체 목록 렌더링
     function renderSortedCompanies(companies) {
         const html = companies.map(company => `
-            <tr class="company-row ${company.color_code ? `color-${company.color_code}` : ''}" onclick="${isDeleteMode ? '' : `goToCompanyDetail('${company.id}')`}">
+            <tr class="company-row ${company.color_code ? `color-${convertColorCode(company.color_code)}` : ''}" onclick="${isDeleteMode ? '' : `goToCompanyDetail('${company.id}')`}">
                 ${isDeleteMode ? `
                     <td>
                         <input type="checkbox" class="company-checkbox" value="${company.id}" 
