@@ -138,7 +138,10 @@
                     <!-- 동적으로 생성됩니다 -->
                 </ul>
                 <div class="add-option-form">
-                    <input type="text" id="newPaymentTerm" placeholder="새 결제조건 입력 (예: 120일)">
+                    <select id="paymentTermsDropdown" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-right: 10px;">
+                        <option value="">결제조건 선택</option>
+                    </select>
+                    <input type="text" id="newPaymentTerm" placeholder="새 결제조건 입력 (예: 120일)" style="flex: 1; display: none;">
                     <button class="btn btn-primary" onclick="addPaymentTerm()">추가</button>
                 </div>
             </div>
@@ -150,7 +153,10 @@
                     <!-- 동적으로 생성됩니다 -->
                 </ul>
                 <div class="add-option-form">
-                    <input type="text" id="newBusinessType" placeholder="새 업종 입력 (예: 서비스업)">
+                    <select id="businessTypesDropdown" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-right: 10px;">
+                        <option value="">업종 선택</option>
+                    </select>
+                    <input type="text" id="newBusinessType" placeholder="새 업종 입력 (예: 서비스업)" style="flex: 1; display: none;">
                     <button class="btn btn-primary" onclick="addBusinessType()">추가</button>
                 </div>
             </div>
@@ -162,7 +168,10 @@
                     <!-- 동적으로 생성됩니다 -->
                 </ul>
                 <div class="add-option-form">
-                    <input type="text" id="newRegion" placeholder="새 지역 입력 (예: 진주)">
+                    <select id="regionsDropdown" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-right: 10px;">
+                        <option value="">지역 선택</option>
+                    </select>
+                    <input type="text" id="newRegion" placeholder="새 지역 입력 (예: 진주)" style="flex: 1; display: none;">
                     <button class="btn btn-primary" onclick="addRegion()">추가</button>
                 </div>
             </div>
@@ -174,7 +183,10 @@
                     <!-- 동적으로 생성됩니다 -->
                 </ul>
                 <div class="add-option-form">
-                    <input type="text" id="newVisitPurpose" placeholder="새 방문목적 입력 (예: 제품소개)">
+                    <select id="visitPurposesDropdown" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-right: 10px;">
+                        <option value="">방문목적 선택</option>
+                    </select>
+                    <input type="text" id="newVisitPurpose" placeholder="새 방문목적 입력 (예: 제품소개)" style="flex: 1; display: none;">
                     <button class="btn btn-primary" onclick="addVisitPurpose()">추가</button>
                 </div>
             </div>
@@ -186,9 +198,12 @@
                     <!-- 동적으로 생성됩니다 -->
                 </ul>
                 <div class="add-option-form color-option-form">
-                    <input type="text" id="newColorName" placeholder="색상 이름 (예: 분홍)">
-                    <input type="color" id="newColorValue" value="#ff69b4">
-                    <button class="btn btn-primary" onclick="addColor()">추가</button>
+                    <select id="colorsDropdown" style="grid-column: 1/3; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="">색상 선택</option>
+                    </select>
+                    <input type="text" id="newColorName" placeholder="색상 이름 (예: 분홍)" style="display: none;">
+                    <input type="color" id="newColorValue" value="#ff69b4" style="display: none;">
+                    <button class="btn btn-primary" onclick="addColor()" style="grid-column: 3;">추가</button>
                 </div>
             </div>
 
