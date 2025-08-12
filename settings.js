@@ -242,33 +242,30 @@ function loadColorDropdown(selectElement, colors) {
 
 // 색상 드롭다운 변경 처리
 function handleColorDropdownChange(selectElement) {
-    const nameInput = document.getElementById('newColorName');
-    const valueInput = document.getElementById('newColorValue');
+    const colorInputArea = document.getElementById('colorInputArea');
     
     console.log(`🎨 색상 드롭다운 변경: ${selectElement.value}`);
     
     if (selectElement.value === '__custom__') {
-        // 직접입력 선택 시 입력창들 보이기
-        if (nameInput) {
-            nameInput.style.display = 'block';
-            nameInput.focus();
+        // 직접입력 선택 시 색상 입력 영역 보이기
+        if (colorInputArea) {
+            colorInputArea.style.display = 'block';
+            // 색상 이름 입력창에 포커스
+            const nameInput = document.getElementById('newColorName');
+            if (nameInput) {
+                setTimeout(() => nameInput.focus(), 100);
+            }
+            // 색상 미리보기 업데이트
+            updateColorPreview();
         }
-        if (valueInput) {
-            valueInput.style.display = 'block';
-        }
-        console.log('✅ 색상 입력창들 표시됨');
+        console.log('✅ 색상 입력 영역 표시됨');
         
         // 드롭다운은 초기값으로 되돌리기
         selectElement.value = '';
     } else {
-        // 다른 값 선택 시 입력창들 숨기기
-        if (nameInput) {
-            nameInput.style.display = 'none';
-            nameInput.value = '';
-        }
-        if (valueInput) {
-            valueInput.style.display = 'none';
-            valueInput.value = '#ff69b4';
+        // 다른 값 선택 시 색상 입력 영역 숨기기
+        if (colorInputArea) {
+            colorInputArea.style.display = 'none';
         }
     }
 }
@@ -374,7 +371,18 @@ async function addVisitPurpose() {
     await addItem('방문목적', 'newVisitPurpose');
 }
 
+// 색상 추가 버튼 클릭 (드롭다운에서 "직접입력" 선택하게 함)
 async function addColor() {
+    const colorsDropdown = document.getElementById('colorsDropdown');
+    if (colorsDropdown) {
+        // "직접입력" 옵션 선택
+        colorsDropdown.value = '__custom__';
+        handleColorDropdownChange(colorsDropdown);
+    }
+}
+
+// 색상 추가 확인
+async function confirmAddColor() {
     const nameInput = document.getElementById('newColorName');
     const valueInput = document.getElementById('newColorValue');
     
@@ -388,21 +396,67 @@ async function addColor() {
     
     if (!colorName) {
         alert('색상 이름을 입력해주세요.');
+        nameInput.focus();
         return;
     }
     
     try {
-        // 색상은 특별한 저장 방식 필요
+        // 색상을 데이터베이스에 저장
         await saveColorToDatabase(colorName, colorValue);
         
-        // 입력창 초기화
-        nameInput.value = '';
-        valueInput.value = '#ff69b4';
+        // 입력 영역 숨기기 및 초기화
+        cancelColorInput();
         
         alert(`색상 "${colorName}"이(가) 추가되었습니다! 새로고침 후 확인하세요.`);
+        
+        // 설정 다시 로드하여 드롭다운 업데이트
+        setTimeout(async () => {
+            await loadSettings();
+        }, 1000);
+        
     } catch (error) {
         console.error('색상 추가 오류:', error);
         alert('색상 추가 중 오류가 발생했습니다.');
+    }
+}
+
+// 색상 입력 취소
+function cancelColorInput() {
+    const colorInputArea = document.getElementById('colorInputArea');
+    const nameInput = document.getElementById('newColorName');
+    const valueInput = document.getElementById('newColorValue');
+    
+    // 입력 영역 숨기기
+    if (colorInputArea) {
+        colorInputArea.style.display = 'none';
+    }
+    
+    // 입력값 초기화
+    if (nameInput) {
+        nameInput.value = '';
+    }
+    if (valueInput) {
+        valueInput.value = '#ff69b4';
+    }
+    
+    // 미리보기 업데이트
+    updateColorPreview();
+}
+
+// 색상 미리보기 업데이트
+function updateColorPreview() {
+    const valueInput = document.getElementById('newColorValue');
+    const colorPreview = document.getElementById('colorPreview');
+    
+    if (valueInput && colorPreview) {
+        const color = valueInput.value;
+        colorPreview.style.backgroundColor = color;
+        colorPreview.style.color = getContrastColor(color);
+        colorPreview.textContent = `${color.toUpperCase()}`;
+        
+        // 색상 변경 이벤트 리스너 추가 (없으면)
+        valueInput.removeEventListener('input', updateColorPreview);
+        valueInput.addEventListener('input', updateColorPreview);
     }
 }
 
@@ -486,3 +540,6 @@ window.addBusinessType = addBusinessType;
 window.addRegion = addRegion;
 window.addVisitPurpose = addVisitPurpose;
 window.addColor = addColor;
+window.confirmAddColor = confirmAddColor;
+window.cancelColorInput = cancelColorInput;
+window.updateColorPreview = updateColorPreview;
