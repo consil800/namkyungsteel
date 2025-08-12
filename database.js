@@ -1037,10 +1037,21 @@ class DatabaseManager {
                 };
             }
             
+            console.log('📊 client_companies 조회 결과:', {
+                companiesCount: companies.length,
+                companies: companies
+            });
+            
             // 고유값들 추출
             const uniqueRegions = [...new Set(companies.map(c => c.region).filter(Boolean))].sort();
             const uniquePaymentTerms = [...new Set(companies.map(c => c.payment_terms).filter(Boolean))].sort();
             const uniqueBusinessTypes = [...new Set(companies.map(c => c.business_type).filter(Boolean))].sort();
+            
+            console.log('📊 추출된 고유값들:', {
+                regions: uniqueRegions,
+                paymentTerms: uniquePaymentTerms,
+                businessTypes: uniqueBusinessTypes
+            });
             
             // 색상은 색상 코드에서 고유값 추출 (간단한 색상 매핑)
             const colorMapping = {
@@ -1061,12 +1072,21 @@ class DatabaseManager {
             });
             
             // work_logs에서 방문목적 가져오기
-            const { data: workLogs } = await this.client
+            const { data: workLogs, error: workLogsError } = await this.client
                 .from('work_logs')
                 .select('visit_purpose')
                 .eq('user_id', userId.toString());
             
+            if (workLogsError) {
+                console.log('work_logs 조회 오류 (테이블이 없을 수 있음):', workLogsError);
+            }
+            
             const uniqueVisitPurposes = [...new Set((workLogs || []).map(w => w.visit_purpose).filter(Boolean))].sort();
+            
+            console.log('📊 work_logs 조회 결과:', {
+                workLogsCount: workLogs ? workLogs.length : 0,
+                visitPurposes: uniqueVisitPurposes
+            });
             
             console.log('✅ 사용자 설정 조회 성공');
             
