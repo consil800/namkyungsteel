@@ -518,60 +518,64 @@ async function deleteColorFromDatabase(colorName, userId) {
     try {
         console.log(`🔍 데이터베이스에서 색상 삭제 시작 - 사용자: ${userId}, 색상: "${colorName}"`);
         
-        // 먼저 custom_color_name으로 찾기 시도
-        let { data: existingRecords, error: selectError } = await window.db.client
-            .from('client_companies')
-            .select('id, custom_color_name, custom_color_value, company_name, notes')
-            .eq('user_id', userId)
-            .eq('custom_color_name', colorName);
+        // 표준 색상 매핑 (getUserSettings와 동일한 매핑)
+        const standardColorMapping = {
+            '빨강': 'red',
+            '주황': 'orange', 
+            '노랑': 'yellow',
+            '초록': 'green',
+            '파랑': 'blue',
+            '보라': 'purple',
+            '회색': 'gray'
+        };
         
-        if (selectError) {
-            console.error('❌ 색상 레코드 조회 오류 (custom_color_name):', selectError);
-        }
-        
-        // custom_color_name으로 못찾으면 notes에서 찾기
-        if (!existingRecords || existingRecords.length === 0) {
-            console.log('⚠️ custom_color_name으로 찾지 못함, notes에서 검색 시도...');
-            
-            const { data: notesRecords, error: notesError } = await window.db.client
-                .from('client_companies')
-                .select('id, company_name, notes, color_code')
-                .eq('user_id', userId)
-                .like('notes', `%색상 "${colorName}"%`);
-            
-            if (notesError) {
-                console.error('❌ 색상 레코드 조회 오류 (notes):', notesError);
-                throw notesError;
-            }
-            
-            existingRecords = notesRecords;
-        }
-        
-        console.log(`📊 찾은 색상 레코드:`, existingRecords);
-        
-        if (!existingRecords || existingRecords.length === 0) {
-            console.log('⚠️ 삭제할 색상 레코드를 찾을 수 없습니다');
-            throw new Error(`색상 "${colorName}" 레코드를 찾을 수 없습니다.`);
-        }
-        
-        // 삭제 시도 - custom_color_name 또는 notes 기반
         let deletedData, deleteError;
         
-        // custom_color_name이 있으면 해당 필드로 삭제
-        if (existingRecords[0].custom_color_name) {
-            const result = await window.db.client
+        // 1. 먼저 custom_color_name으로 찾아서 삭제 시도
+        console.log('🔍 custom_color_name으로 삭제 시도...');
+        let result = await window.db.client
+            .from('client_companies')
+            .delete()
+            .eq('user_id', userId)
+            .eq('custom_color_name', colorName)
+            .select();
+        
+        deletedData = result.data;
+        deleteError = result.error;
+        
+        if (deleteError) {
+            console.error('❌ custom_color_name 삭제 오류:', deleteError);
+        }
+        
+        // 2. custom_color_name으로 삭제된 항목이 없으면 표준 색상으로 시도
+        if (!deletedData || deletedData.length === 0) {
+            console.log('⚠️ custom_color_name으로 삭제 실패, 표준 색상으로 시도...');
+            
+            // 색상 이름을 color_code로 변환
+            const colorCode = standardColorMapping[colorName] || colorName;
+            console.log(`🎨 변환된 color_code: "${colorCode}"`);
+            
+            // color_code로 삭제 시도
+            result = await window.db.client
                 .from('client_companies')
                 .delete()
                 .eq('user_id', userId)
-                .eq('custom_color_name', colorName)
+                .eq('color_code', colorCode)
                 .select();
             
             deletedData = result.data;
             deleteError = result.error;
-        } 
-        // 없으면 notes 기반으로 삭제
-        else {
-            const result = await window.db.client
+            
+            if (deleteError) {
+                console.error('❌ color_code 삭제 오류:', deleteError);
+            }
+        }
+        
+        // 3. 여전히 삭제된 항목이 없으면 notes에서 검색해서 삭제
+        if (!deletedData || deletedData.length === 0) {
+            console.log('⚠️ 표준 색상으로도 삭제 실패, notes에서 검색 시도...');
+            
+            result = await window.db.client
                 .from('client_companies')
                 .delete()
                 .eq('user_id', userId)
@@ -580,14 +584,20 @@ async function deleteColorFromDatabase(colorName, userId) {
             
             deletedData = result.data;
             deleteError = result.error;
+            
+            if (deleteError) {
+                console.error('❌ notes 기반 삭제 오류:', deleteError);
+                throw deleteError;
+            }
         }
         
-        if (deleteError) {
-            console.error('❌ 색상 삭제 오류:', deleteError);
-            throw deleteError;
+        if (!deletedData || deletedData.length === 0) {
+            console.log('⚠️ 모든 방법으로 삭제 실패 - 색상을 찾을 수 없습니다');
+            throw new Error(`색상 "${colorName}" 레코드를 찾을 수 없습니다.`);
         }
         
-        console.log(`✅ 색상 "${colorName}" 삭제 완료, 삭제된 레코드:`, deletedData);
+        console.log(`✅ 색상 "${colorName}" 삭제 완료, 삭제된 레코드 수: ${deletedData.length}`);
+        console.log('📊 삭제된 레코드:', deletedData);
         
     } catch (error) {
         console.error(`❌ 색상 데이터베이스 삭제 오류:`, error);
