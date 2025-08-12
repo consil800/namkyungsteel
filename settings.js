@@ -425,11 +425,16 @@ async function deleteItem(type, item) {
 // 색상 삭제 함수 (리스트에서 삭제 버튼 클릭 시)
 async function deleteColor(colorName) {
     try {
+        console.log(`🗑️ 색상 삭제 시작: "${colorName}"`);
+        
         if (!confirm(`색상 "${colorName}"을(를) 정말 삭제하시겠습니까?\n\n주의: 이 색상을 사용하는 모든 업체의 색상이 기본값으로 변경됩니다.`)) {
+            console.log('❌ 사용자가 삭제를 취소했습니다.');
             return;
         }
         
         const userId = await DropdownSettings.getCurrentUserId();
+        console.log(`👤 사용자 ID: ${userId}`);
+        
         if (!userId) {
             alert('로그인이 필요합니다.');
             return;
@@ -438,14 +443,16 @@ async function deleteColor(colorName) {
         await deleteColorFromDatabase(colorName, userId);
         alert(`색상 "${colorName}"이(가) 삭제되었습니다.`);
         
+        console.log(`✅ 색상 "${colorName}" 삭제 완료, 설정 다시 로드 중...`);
+        
         // 설정 다시 로드
         setTimeout(async () => {
             await loadSettings();
         }, 500);
         
     } catch (error) {
-        console.error('색상 삭제 오류:', error);
-        alert('색상 삭제 중 오류가 발생했습니다.');
+        console.error('❌ 색상 삭제 오류:', error);
+        alert('색상 삭제 중 오류가 발생했습니다: ' + error.message);
     }
 }
 
@@ -509,18 +516,78 @@ async function deleteItemFromDatabase(type, item, userId) {
 // 데이터베이스에서 색상 삭제
 async function deleteColorFromDatabase(colorName, userId) {
     try {
-        // 커스텀 색상 레코드 삭제 (custom_color_name으로 찾기)
-        const { error } = await window.db.client
+        console.log(`🔍 데이터베이스에서 색상 삭제 시작 - 사용자: ${userId}, 색상: "${colorName}"`);
+        
+        // 먼저 custom_color_name으로 찾기 시도
+        let { data: existingRecords, error: selectError } = await window.db.client
             .from('client_companies')
-            .delete()
+            .select('id, custom_color_name, custom_color_value, company_name, notes')
             .eq('user_id', userId)
             .eq('custom_color_name', colorName);
         
-        if (error) {
-            throw error;
+        if (selectError) {
+            console.error('❌ 색상 레코드 조회 오류 (custom_color_name):', selectError);
         }
         
-        console.log(`✅ 색상 "${colorName}" 삭제 완료`);
+        // custom_color_name으로 못찾으면 notes에서 찾기
+        if (!existingRecords || existingRecords.length === 0) {
+            console.log('⚠️ custom_color_name으로 찾지 못함, notes에서 검색 시도...');
+            
+            const { data: notesRecords, error: notesError } = await window.db.client
+                .from('client_companies')
+                .select('id, company_name, notes, color_code')
+                .eq('user_id', userId)
+                .like('notes', `%색상 "${colorName}"%`);
+            
+            if (notesError) {
+                console.error('❌ 색상 레코드 조회 오류 (notes):', notesError);
+                throw notesError;
+            }
+            
+            existingRecords = notesRecords;
+        }
+        
+        console.log(`📊 찾은 색상 레코드:`, existingRecords);
+        
+        if (!existingRecords || existingRecords.length === 0) {
+            console.log('⚠️ 삭제할 색상 레코드를 찾을 수 없습니다');
+            throw new Error(`색상 "${colorName}" 레코드를 찾을 수 없습니다.`);
+        }
+        
+        // 삭제 시도 - custom_color_name 또는 notes 기반
+        let deletedData, deleteError;
+        
+        // custom_color_name이 있으면 해당 필드로 삭제
+        if (existingRecords[0].custom_color_name) {
+            const result = await window.db.client
+                .from('client_companies')
+                .delete()
+                .eq('user_id', userId)
+                .eq('custom_color_name', colorName)
+                .select();
+            
+            deletedData = result.data;
+            deleteError = result.error;
+        } 
+        // 없으면 notes 기반으로 삭제
+        else {
+            const result = await window.db.client
+                .from('client_companies')
+                .delete()
+                .eq('user_id', userId)
+                .like('notes', `%색상 "${colorName}"%`)
+                .select();
+            
+            deletedData = result.data;
+            deleteError = result.error;
+        }
+        
+        if (deleteError) {
+            console.error('❌ 색상 삭제 오류:', deleteError);
+            throw deleteError;
+        }
+        
+        console.log(`✅ 색상 "${colorName}" 삭제 완료, 삭제된 레코드:`, deletedData);
         
     } catch (error) {
         console.error(`❌ 색상 데이터베이스 삭제 오류:`, error);
