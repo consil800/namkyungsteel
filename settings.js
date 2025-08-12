@@ -155,7 +155,44 @@ function loadDropdown(selectElement, items, type) {
     customOption.style.fontStyle = 'italic';
     selectElement.appendChild(customOption);
     
+    // 드롭다운 변경 이벤트 리스너 추가
+    selectElement.addEventListener('change', function() {
+        handleDropdownChange(this, type);
+    });
+    
     console.log(`✅ ${type} 드롭다운 로드 완료 - 총 ${selectElement.options.length}개 옵션`);
+}
+
+// 드롭다운 변경 처리
+function handleDropdownChange(selectElement, type) {
+    const inputMap = {
+        '결제조건': 'newPaymentTerm',
+        '업종': 'newBusinessType',
+        '지역': 'newRegion',
+        '방문목적': 'newVisitPurpose'
+    };
+    
+    const inputId = inputMap[type];
+    const inputElement = document.getElementById(inputId);
+    
+    console.log(`🔄 드롭다운 변경: ${type}, 선택값: ${selectElement.value}`);
+    
+    if (selectElement.value === '__custom__') {
+        // 직접입력 선택 시 입력창 보이기
+        if (inputElement) {
+            inputElement.style.display = 'block';
+            inputElement.focus();
+            console.log(`✅ ${type} 입력창 표시됨`);
+        }
+        // 드롭다운은 초기값으로 되돌리기
+        selectElement.value = '';
+    } else {
+        // 다른 값 선택 시 입력창 숨기기
+        if (inputElement) {
+            inputElement.style.display = 'none';
+            inputElement.value = '';
+        }
+    }
 }
 
 // 색상 드롭다운 로드
@@ -195,7 +232,45 @@ function loadColorDropdown(selectElement, colors) {
     customOption.style.fontStyle = 'italic';
     selectElement.appendChild(customOption);
     
+    // 색상 드롭다운 변경 이벤트 리스너
+    selectElement.addEventListener('change', function() {
+        handleColorDropdownChange(this);
+    });
+    
     console.log(`✅ 색상 드롭다운 로드 완료 - 총 ${selectElement.options.length}개 옵션`);
+}
+
+// 색상 드롭다운 변경 처리
+function handleColorDropdownChange(selectElement) {
+    const nameInput = document.getElementById('newColorName');
+    const valueInput = document.getElementById('newColorValue');
+    
+    console.log(`🎨 색상 드롭다운 변경: ${selectElement.value}`);
+    
+    if (selectElement.value === '__custom__') {
+        // 직접입력 선택 시 입력창들 보이기
+        if (nameInput) {
+            nameInput.style.display = 'block';
+            nameInput.focus();
+        }
+        if (valueInput) {
+            valueInput.style.display = 'block';
+        }
+        console.log('✅ 색상 입력창들 표시됨');
+        
+        // 드롭다운은 초기값으로 되돌리기
+        selectElement.value = '';
+    } else {
+        // 다른 값 선택 시 입력창들 숨기기
+        if (nameInput) {
+            nameInput.style.display = 'none';
+            nameInput.value = '';
+        }
+        if (valueInput) {
+            valueInput.style.display = 'none';
+            valueInput.value = '#ff69b4';
+        }
+    }
 }
 
 // 텍스트 대비 색상 계산
@@ -282,6 +357,132 @@ async function saveToDatabase(type, value) {
     }
 }
 
+// 추가 버튼 클릭 시 호출되는 함수들
+async function addPaymentTerm() {
+    await addItem('결제조건', 'newPaymentTerm');
+}
+
+async function addBusinessType() {
+    await addItem('업종', 'newBusinessType');
+}
+
+async function addRegion() {
+    await addItem('지역', 'newRegion');
+}
+
+async function addVisitPurpose() {
+    await addItem('방문목적', 'newVisitPurpose');
+}
+
+async function addColor() {
+    const nameInput = document.getElementById('newColorName');
+    const valueInput = document.getElementById('newColorValue');
+    
+    if (!nameInput || !valueInput) {
+        alert('색상 입력 요소를 찾을 수 없습니다.');
+        return;
+    }
+    
+    const colorName = nameInput.value.trim();
+    const colorValue = valueInput.value;
+    
+    if (!colorName) {
+        alert('색상 이름을 입력해주세요.');
+        return;
+    }
+    
+    try {
+        // 색상은 특별한 저장 방식 필요
+        await saveColorToDatabase(colorName, colorValue);
+        
+        // 입력창 초기화
+        nameInput.value = '';
+        valueInput.value = '#ff69b4';
+        
+        alert(`색상 "${colorName}"이(가) 추가되었습니다! 새로고침 후 확인하세요.`);
+    } catch (error) {
+        console.error('색상 추가 오류:', error);
+        alert('색상 추가 중 오류가 발생했습니다.');
+    }
+}
+
+// 일반 아이템 추가 공통 함수
+async function addItem(type, inputId) {
+    const inputElement = document.getElementById(inputId);
+    
+    if (!inputElement) {
+        alert(`${type} 입력 요소를 찾을 수 없습니다.`);
+        return;
+    }
+    
+    const value = inputElement.value.trim();
+    
+    if (!value) {
+        alert(`${type}을(를) 입력해주세요.`);
+        return;
+    }
+    
+    try {
+        await saveToDatabase(type, value);
+        
+        // 입력창 초기화 및 숨기기
+        inputElement.value = '';
+        inputElement.style.display = 'none';
+        
+        alert(`${type} "${value}"이(가) 추가되었습니다! 새로고침 후 드롭다운에서 확인하세요.`);
+        
+        // 설정 다시 로드하여 드롭다운 업데이트
+        setTimeout(async () => {
+            await loadSettings();
+        }, 1000);
+        
+    } catch (error) {
+        console.error(`${type} 추가 오류:`, error);
+        alert(`${type} 추가 중 오류가 발생했습니다.`);
+    }
+}
+
+// 색상 저장 함수
+async function saveColorToDatabase(colorName, colorValue) {
+    const userId = await DropdownSettings.getCurrentUserId();
+    if (!userId) {
+        throw new Error('사용자 정보가 없습니다.');
+    }
+    
+    const testCompany = {
+        user_id: userId,
+        company_name: `임시_색상_${Date.now()}`,
+        address: '임시 주소',
+        contact_person: '임시 담당자',
+        phone: '000-0000-0000',
+        email: 'temp@temp.com',
+        business_type: '기타',
+        region: '기타',
+        payment_terms: '기타',
+        color_code: colorValue.replace('#', ''), // # 제거
+        notes: `색상 "${colorName}" (${colorValue}) 저장을 위한 임시 데이터`,
+        visit_count: 0,
+        last_visit_date: null,
+        created_at: new Date().toISOString()
+    };
+    
+    const { data, error } = await window.db.client
+        .from('client_companies')
+        .insert([testCompany])
+        .select();
+    
+    if (error) {
+        throw error;
+    }
+    
+    return data;
+}
+
 // 전역에서 접근 가능하도록 설정
 window.DropdownSettings = DropdownSettings;
 window.saveToDatabase = saveToDatabase;
+window.addPaymentTerm = addPaymentTerm;
+window.addBusinessType = addBusinessType;
+window.addRegion = addRegion;
+window.addVisitPurpose = addVisitPurpose;
+window.addColor = addColor;
