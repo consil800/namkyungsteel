@@ -114,6 +114,34 @@ async function loadCompanyDetails(companyId) {
     }
 }
 
+// 색상 코드로 색상 값 가져오기
+function getColorValue(colorCode) {
+    const colorMap = {
+        'red': '#e74c3c',
+        'orange': '#f39c12',
+        'yellow': '#f1c40f',
+        'green': '#27ae60',
+        'blue': '#3498db',
+        'purple': '#9b59b6',
+        'gray': '#95a5a6'
+    };
+    return colorMap[colorCode] || '#95a5a6'; // 기본값은 회색
+}
+
+// 색상 코드로 색상 이름 가져오기
+function getColorName(colorCode) {
+    const colorNameMap = {
+        'red': '빨강',
+        'orange': '주황',
+        'yellow': '노랑',
+        'green': '초록',
+        'blue': '파랑',
+        'purple': '보라',
+        'gray': '회색'
+    };
+    return colorNameMap[colorCode] || '회색';
+}
+
 // 업체 정보 표시
 function displayCompanyDetails(company) {
     // 제목 설정
@@ -181,6 +209,11 @@ function displayCompanyDetails(company) {
         <div class="info-item">
             <label>메모:</label>
             <span>${getCompanyNotes(company.notes) || '-'}</span>
+        </div>
+        <div class="info-item">
+            <label>업체 색상:</label>
+            <span style="display: inline-block; width: 20px; height: 20px; background-color: ${getColorValue(company.color_code)}; border: 1px solid #ddd; border-radius: 3px; vertical-align: middle;"></span>
+            <span style="margin-left: 10px;">${getColorName(company.color_code) || '기본'}</span>
         </div>
         <div class="info-item">
             <label>등록일:</label>
@@ -373,6 +406,14 @@ async function updateCompany() {
         }
         
         console.log('업체 정보 수정 시작:', updateData);
+        console.log('🔍 updateData 키 목록:', Object.keys(updateData));
+        
+        // color 필드가 있으면 color_code로 변경
+        if ('color' in updateData) {
+            console.warn('⚠️ color 필드 발견! color_code로 변경합니다.');
+            updateData.color_code = updateData.color;
+            delete updateData.color;
+        }
         
         const result = await window.db.updateClientCompany(currentCompany.id, updateData);
         
