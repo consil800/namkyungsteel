@@ -1029,27 +1029,19 @@ class DatabaseManager {
             
             if (error) {
                 if (error.code === 'PGRST116') {
-                    // 설정이 없는 경우 기본값 반환
-                    console.log('📝 사용자 설정이 없음, 기본값 반환');
-                    const defaultSettings = {
-                        paymentTerms: ['현금', '월말결제', '30일', '45일', '60일', '90일', '어음', '기타'],
-                        businessTypes: ['제조업', '건설업', '유통업', '기타'],
-                        visitPurposes: ['신규영업', '기존고객관리', '견적제공', '계약협의', '수금협의', '클레임처리', '기타'],
-                        regions: ['서울','부산','대구','경주','김해','양산','함안','밀양','창원','창녕','울산','목포','광주','광양'].sort((a, b) => a.localeCompare(b)),
-                        colors: [
-                            { key: 'red', name: '빨강', value: '#e74c3c' },
-                            { key: 'orange', name: '주황', value: '#f39c12' },
-                            { key: 'yellow', name: '노랑', value: '#f1c40f' },
-                            { key: 'green', name: '초록', value: '#27ae60' },
-                            { key: 'blue', name: '파랑', value: '#3498db' },
-                            { key: 'purple', name: '보라', value: '#9b59b6' },
-                            { key: 'gray', name: '회색', value: '#95a5a6' }
-                        ]
+                    // 설정이 없는 경우 빈 배열 반환
+                    console.log('📝 사용자 설정이 없음, 빈 설정 반환');
+                    const emptySettings = {
+                        paymentTerms: [],
+                        businessTypes: [],
+                        visitPurposes: [],
+                        regions: [],
+                        colors: []
                     };
                     
-                    // 기본 설정을 데이터베이스에 저장
-                    await this.updateUserSettings(userId, defaultSettings);
-                    return defaultSettings;
+                    // 빈 설정을 데이터베이스에 저장
+                    await this.updateUserSettings(userId, emptySettings);
+                    return emptySettings;
                 }
                 throw error;
             }

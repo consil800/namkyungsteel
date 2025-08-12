@@ -10,21 +10,13 @@ document.addEventListener('DOMContentLoaded', function() {
     loadSettings();
 });
 
-// 기본 설정값
+// 빈 설정값 (사용자가 직접 추가해야 함)
 const defaultSettings = {
-    paymentTerms: ['현금', '월말결제', '30일', '45일', '60일', '90일', '어음', '기타'],
-    businessTypes: ['제조업', '건설업', '유통업', '기타'],
-    visitPurposes: ['신규영업', '기존고객관리', '견적제공', '계약협의', '수금협의', '클레임처리', '기타'],
-    regions: ['서울','부산','대구','경주','김해','양산','함안','밀양','창원','창녕','울산','목포','광주','광양'].sort((a, b) => a.localeCompare(b)),
-    colors: [
-        { key: 'red', name: '빨강', value: '#e74c3c' },
-        { key: 'orange', name: '주황', value: '#f39c12' },
-        { key: 'yellow', name: '노랑', value: '#f1c40f' },
-        { key: 'green', name: '초록', value: '#27ae60' },
-        { key: 'blue', name: '파랑', value: '#3498db' },
-        { key: 'purple', name: '보라', value: '#9b59b6' },
-        { key: 'gray', name: '회색', value: '#95a5a6' }
-    ]
+    paymentTerms: [],
+    businessTypes: [],
+    visitPurposes: [],
+    regions: [],
+    colors: []
 };
 
 // 설정 데이터 관리 (Supabase 사용)
@@ -53,7 +45,7 @@ const DropdownSettings = {
         try {
             const userId = await this.getCurrentUserId();
             if (!userId) {
-                console.warn('사용자 정보가 없습니다. 기본값을 사용합니다.');
+                console.warn('사용자 정보가 없습니다.');
                 return { ...defaultSettings };
             }
 
@@ -91,11 +83,17 @@ const DropdownSettings = {
         }
     },
 
-    // 기본값으로 초기화
+    // 초기화 (모든 설정 삭제)
     reset: async function() {
-        const resetSettings = { ...defaultSettings };
-        await this.save(resetSettings);
-        return resetSettings;
+        const emptySettings = {
+            paymentTerms: [],
+            businessTypes: [],
+            visitPurposes: [],
+            regions: [],
+            colors: []
+        };
+        await this.save(emptySettings);
+        return emptySettings;
     },
 
     // 로컬 스토리지 정리
@@ -679,16 +677,16 @@ function cancelEdit(editFormId) {
     editForm.classList.remove('active');
 }
 
-// 기본값으로 초기화
+// 모든 설정 삭제
 async function resetToDefaults() {
-    if (!confirm('모든 드롭다운 설정을 기본값으로 초기화하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.')) {
+    if (!confirm('모든 드롭다운 설정을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.')) {
         return;
     }
     
     try {
         const settings = await DropdownSettings.reset();
         await loadSettings();
-        alert('모든 설정이 기본값으로 초기화되었습니다.');
+        alert('모든 설정이 삭제되었습니다.');
     } catch (error) {
         console.error('설정 초기화 오류:', error);
         alert('설정 초기화 중 오류가 발생했습니다.');
