@@ -12,7 +12,18 @@ const DropdownLoader = {
             if (customValue && customValue.trim()) {
                 try {
                     // 현재 사용자 설정 가져오기
-                    const userId = AuthManager.getCurrentUser()?.id;
+                    let userId = null;
+                    
+                    // currentUser에서 먼저 시도
+                    const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+                    if (currentUser.id) {
+                        userId = currentUser.id;
+                    } else {
+                        // AuthManager 사용
+                        const user = AuthManager.getCurrentUser();
+                        userId = user?.id;
+                    }
+                    
                     if (!userId) {
                         alert('로그인이 필요합니다.');
                         return;
@@ -96,7 +107,19 @@ const DropdownLoader = {
                 const colorValue = prompt('색상 코드를 입력하세요 (예: #ff0000):') || '#808080';
                 
                 try {
-                    const userId = AuthManager.getCurrentUser()?.id;
+                    // 현재 사용자 설정 가져오기
+                    let userId = null;
+                    
+                    // currentUser에서 먼저 시도
+                    const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+                    if (currentUser.id) {
+                        userId = currentUser.id;
+                    } else {
+                        // AuthManager 사용
+                        const user = AuthManager.getCurrentUser();
+                        userId = user?.id;
+                    }
+                    
                     if (!userId) {
                         alert('로그인이 필요합니다.');
                         return;
@@ -152,7 +175,15 @@ const DropdownLoader = {
     // 지역 드롭다운 로드
     loadRegions: async function(selectElement) {
         try {
-            const userId = AuthManager.getCurrentUser()?.id;
+            // 현재 사용자 ID 가져오기
+            let userId = null;
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+            if (currentUser.id) {
+                userId = currentUser.id;
+            } else {
+                const user = AuthManager.getCurrentUser();
+                userId = user?.id;
+            }
             if (!userId) return;
 
             const db = new DatabaseManager();
@@ -194,7 +225,15 @@ const DropdownLoader = {
     // 결제조건 드롭다운 로드
     loadPaymentTerms: async function(selectElement) {
         try {
-            const userId = AuthManager.getCurrentUser()?.id;
+            // 현재 사용자 ID 가져오기
+            let userId = null;
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+            if (currentUser.id) {
+                userId = currentUser.id;
+            } else {
+                const user = AuthManager.getCurrentUser();
+                userId = user?.id;
+            }
             if (!userId) return;
 
             const db = new DatabaseManager();
@@ -236,7 +275,15 @@ const DropdownLoader = {
     // 업종 드롭다운 로드
     loadBusinessTypes: async function(selectElement) {
         try {
-            const userId = AuthManager.getCurrentUser()?.id;
+            // 현재 사용자 ID 가져오기
+            let userId = null;
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+            if (currentUser.id) {
+                userId = currentUser.id;
+            } else {
+                const user = AuthManager.getCurrentUser();
+                userId = user?.id;
+            }
             if (!userId) return;
 
             const db = new DatabaseManager();
@@ -278,7 +325,15 @@ const DropdownLoader = {
     // 색상 드롭다운 로드
     loadColors: async function(selectElement) {
         try {
-            const userId = AuthManager.getCurrentUser()?.id;
+            // 현재 사용자 ID 가져오기
+            let userId = null;
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+            if (currentUser.id) {
+                userId = currentUser.id;
+            } else {
+                const user = AuthManager.getCurrentUser();
+                userId = user?.id;
+            }
             if (!userId) return;
 
             const db = new DatabaseManager();
@@ -322,7 +377,15 @@ const DropdownLoader = {
     // 방문목적 드롭다운 로드 (업무일지용)
     loadVisitPurposes: async function(selectElement) {
         try {
-            const userId = AuthManager.getCurrentUser()?.id;
+            // 현재 사용자 ID 가져오기
+            let userId = null;
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+            if (currentUser.id) {
+                userId = currentUser.id;
+            } else {
+                const user = AuthManager.getCurrentUser();
+                userId = user?.id;
+            }
             if (!userId) return;
 
             const db = new DatabaseManager();

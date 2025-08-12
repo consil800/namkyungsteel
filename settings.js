@@ -31,6 +31,19 @@ const defaultSettings = {
 const DropdownSettings = {
     // 현재 사용자 ID 가져오기
     getCurrentUserId: async function() {
+        // currentUser에서 먼저 시도
+        const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+        if (currentUser.id) {
+            return currentUser.id;
+        }
+        
+        // AuthManager 사용
+        const user = AuthManager.getCurrentUser();
+        if (user && user.id) {
+            return user.id;
+        }
+        
+        // userInfo로도 시도 (레거시 지원)
         const userInfo = JSON.parse(sessionStorage.getItem('userInfo') || '{}');
         return userInfo.id || null;
     },
