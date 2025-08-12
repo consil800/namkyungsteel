@@ -1100,11 +1100,40 @@ class DatabaseManager {
             companies.forEach(company => {
                 if (company.color_code && !seenColors.has(company.color_code)) {
                     seenColors.add(company.color_code);
-                    const colorData = colorMapping[company.color_code] || {
-                        key: company.color_code,
-                        name: company.color_code,
-                        value: '#808080'
-                    };
+                    
+                    let colorData;
+                    
+                    // 기본 색상 매핑에서 확인
+                    if (colorMapping[company.color_code]) {
+                        colorData = colorMapping[company.color_code];
+                    }
+                    // notes에서 커스텀 색상 정보 추출
+                    else if (company.notes && company.notes.includes('색상 "') && company.notes.includes('(#')) {
+                        // notes 형식: "색상 "핑크" (#ff69b4) 저장을 위한 임시 데이터"
+                        const match = company.notes.match(/색상 "([^"]+)" \(([^)]+)\)/);
+                        if (match && match[1] && match[2]) {
+                            colorData = {
+                                key: company.color_code,
+                                name: match[1], // 예: "핑크"
+                                value: match[2].startsWith('#') ? match[2] : '#' + match[2] // 예: "#ff69b4"
+                            };
+                        } else {
+                            colorData = {
+                                key: company.color_code,
+                                name: company.color_code,
+                                value: '#' + company.color_code
+                            };
+                        }
+                    }
+                    // 기본값
+                    else {
+                        colorData = {
+                            key: company.color_code,
+                            name: company.color_code,
+                            value: '#' + company.color_code
+                        };
+                    }
+                    
                     uniqueColors.push(colorData);
                 }
             });
@@ -1112,6 +1141,11 @@ class DatabaseManager {
             console.log('📊 방문목적 추출 결과:', {
                 visitPurposesCount: uniqueVisitPurposes.length,
                 visitPurposes: uniqueVisitPurposes
+            });
+            
+            console.log('🎨 색상 추출 결과:', {
+                colorsCount: uniqueColors.length,
+                colors: uniqueColors
             });
             
             console.log('✅ 사용자 설정 조회 성공');
