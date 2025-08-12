@@ -138,10 +138,7 @@
                     <!-- 동적으로 생성됩니다 -->
                 </ul>
                 <div class="add-option-form">
-                    <select id="paymentTermsDropdown" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-right: 10px;">
-                        <option value="">결제조건 선택</option>
-                    </select>
-                    <input type="text" id="newPaymentTerm" placeholder="새 결제조건 입력 (예: 120일)" style="flex: 1; display: none;">
+                    <input type="text" id="newPaymentTerm" placeholder="새 결제조건 입력 (예: 120일)" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                     <button class="btn btn-primary" onclick="addPaymentTerm()">추가</button>
                 </div>
             </div>
@@ -153,10 +150,7 @@
                     <!-- 동적으로 생성됩니다 -->
                 </ul>
                 <div class="add-option-form">
-                    <select id="businessTypesDropdown" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-right: 10px;">
-                        <option value="">업종 선택</option>
-                    </select>
-                    <input type="text" id="newBusinessType" placeholder="새 업종 입력 (예: 서비스업)" style="flex: 1; display: none;">
+                    <input type="text" id="newBusinessType" placeholder="새 업종 입력 (예: 서비스업)" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                     <button class="btn btn-primary" onclick="addBusinessType()">추가</button>
                 </div>
             </div>
@@ -168,10 +162,7 @@
                     <!-- 동적으로 생성됩니다 -->
                 </ul>
                 <div class="add-option-form">
-                    <select id="regionsDropdown" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-right: 10px;">
-                        <option value="">지역 선택</option>
-                    </select>
-                    <input type="text" id="newRegion" placeholder="새 지역 입력 (예: 진주)" style="flex: 1; display: none;">
+                    <input type="text" id="newRegion" placeholder="새 지역 입력 (예: 진주)" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                     <button class="btn btn-primary" onclick="addRegion()">추가</button>
                 </div>
             </div>
@@ -183,10 +174,7 @@
                     <!-- 동적으로 생성됩니다 -->
                 </ul>
                 <div class="add-option-form">
-                    <select id="visitPurposesDropdown" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-right: 10px;">
-                        <option value="">방문목적 선택</option>
-                    </select>
-                    <input type="text" id="newVisitPurpose" placeholder="새 방문목적 입력 (예: 제품소개)" style="flex: 1; display: none;">
+                    <input type="text" id="newVisitPurpose" placeholder="새 방문목적 입력 (예: 제품소개)" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                     <button class="btn btn-primary" onclick="addVisitPurpose()">추가</button>
                 </div>
             </div>
@@ -197,39 +185,16 @@
                 <ul class="option-list" id="colorsList">
                     <!-- 동적으로 생성됩니다 -->
                 </ul>
-                <div class="add-option-form">
-                    <select id="colorsDropdown" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-right: 10px;">
-                        <option value="">색상 선택</option>
-                    </select>
-                    <button class="btn btn-primary" onclick="addColor()">추가</button>
-                </div>
-                
-                <!-- 색상 직접입력 영역 -->
-                <div id="colorInputArea" class="color-input-area" style="display: none; margin-top: 15px; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 2px solid #e9ecef;">
-                    <div class="color-input-header" style="margin-bottom: 15px;">
-                        <h4 style="margin: 0; color: #495057; font-size: 16px;">🎨 새로운 색상 추가</h4>
-                        <p style="margin: 5px 0 0 0; color: #6c757d; font-size: 14px;">색상 이름을 입력하고 원하는 색상을 선택하세요</p>
+                <!-- 색상 추가 영역 -->
+                <div class="add-option-form" style="align-items: flex-start; gap: 15px; flex-wrap: wrap;">
+                    <div style="flex: 2; min-width: 200px;">
+                        <input type="text" id="newColorName" placeholder="새 색상 이름 입력 (예: 연한 파랑)" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                     </div>
-                    
-                    <div class="color-input-controls" style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-                        <div class="color-name-input" style="flex: 1; min-width: 200px;">
-                            <label for="newColorName" style="display: block; margin-bottom: 5px; font-weight: 500; color: #495057;">색상 이름:</label>
-                            <input type="text" id="newColorName" placeholder="예: 연한 파랑, 진한 빨강, 금색" style="width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px;">
-                        </div>
-                        
-                        <div class="color-picker-input" style="text-align: center;">
-                            <label for="newColorValue" style="display: block; margin-bottom: 5px; font-weight: 500; color: #495057;">색상 선택:</label>
-                            <div class="color-picker-container" style="position: relative;">
-                                <input type="color" id="newColorValue" value="#ff69b4" style="width: 80px; height: 40px; border: 2px solid #ced4da; border-radius: 8px; cursor: pointer; background: none;">
-                                <div id="colorPreview" style="margin-top: 5px; padding: 5px 10px; background: #ff69b4; color: white; border-radius: 4px; font-size: 12px; text-align: center; min-height: 20px; line-height: 20px;">미리보기</div>
-                            </div>
-                        </div>
-                        
-                        <div class="color-buttons" style="display: flex; gap: 10px; align-items: end; padding-top: 25px;">
-                            <button type="button" onclick="confirmAddColor()" class="btn btn-success" style="padding: 8px 15px;">확인</button>
-                            <button type="button" onclick="cancelColorInput()" class="btn btn-secondary" style="padding: 8px 15px;">취소</button>
-                        </div>
+                    <div style="flex: 0 0 auto; display: flex; align-items: center; gap: 10px;">
+                        <input type="color" id="newColorValue" value="#ff69b4" style="width: 50px; height: 36px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;">
+                        <div id="colorPreview" style="padding: 5px 10px; background: #ff69b4; color: white; border-radius: 4px; font-size: 12px; min-width: 60px; text-align: center;">미리보기</div>
                     </div>
+                    <button class="btn btn-primary" onclick="confirmAddColor()">추가</button>
                 </div>
             </div>
 

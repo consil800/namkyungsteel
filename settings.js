@@ -79,200 +79,22 @@ async function loadSettings() {
         const settings = await DropdownSettings.get();
         console.log('📊 가져온 설정 데이터:', settings);
         
-        // 드롭다운 로드
-        console.log('🔄 드롭다운 옵션 로드 시작');
-        await loadDropdownOptions(settings);
-        console.log('✅ 드롭다운 옵션 로드 완료');
-        
         // 리스트 형태로 항목들을 표시 (삭제 버튼 포함)
         displayItemLists(settings);
+        
+        // 색상 미리보기 초기화
+        updateColorPreview();
         
     } catch (error) {
         console.error('설정 로드 오류:', error);
         
-        // 오류 발생 시 빈 설정으로 드롭다운 로드
+        // 오류 발생 시 빈 설정으로 리스트 표시
         const emptySettings = { ...defaultSettings };
-        await loadDropdownOptions(emptySettings);
+        displayItemLists(emptySettings);
     }
 }
 
-// 드롭다운 옵션 로드
-async function loadDropdownOptions(settings) {
-    console.log('🔄 loadDropdownOptions 호출됨, settings:', settings);
-    
-    // 결제조건 드롭다운
-    const paymentTermsDropdown = document.getElementById('paymentTermsDropdown');
-    loadDropdown(paymentTermsDropdown, settings.paymentTerms || [], '결제조건');
-    
-    // 업종 드롭다운
-    const businessTypesDropdown = document.getElementById('businessTypesDropdown');
-    loadDropdown(businessTypesDropdown, settings.businessTypes || [], '업종');
-    
-    // 지역 드롭다운
-    const regionsDropdown = document.getElementById('regionsDropdown');
-    loadDropdown(regionsDropdown, settings.regions || [], '지역');
-    
-    // 방문목적 드롭다운
-    const visitPurposesDropdown = document.getElementById('visitPurposesDropdown');
-    loadDropdown(visitPurposesDropdown, settings.visitPurposes || [], '방문목적');
-    
-    // 색상 드롭다운
-    const colorsDropdown = document.getElementById('colorsDropdown');
-    loadColorDropdown(colorsDropdown, settings.colors || []);
-}
 
-// 일반 드롭다운 로드 헬퍼 함수
-function loadDropdown(selectElement, items, type) {
-    console.log(`🔄 loadDropdown 호출됨 - type: ${type}, items:`, items);
-    console.log(`📋 selectElement:`, selectElement);
-    
-    if (!selectElement) {
-        console.warn(`❌ ${type} 드롭다운 요소를 찾을 수 없습니다.`);
-        return;
-    }
-    
-    // 드롭다운 초기화
-    selectElement.innerHTML = `<option value="">${type} 선택</option>`;
-    
-    // 아이템들 추가
-    if (items && items.length > 0) {
-        console.log(`✅ ${type} - ${items.length}개 아이템 추가 중`);
-        items.forEach((item, index) => {
-            const option = document.createElement('option');
-            option.value = item;
-            option.textContent = item;
-            option.dataset.deletable = 'true'; // 삭제 가능 표시
-            selectElement.appendChild(option);
-            console.log(`  - ${index + 1}: ${item}`);
-        });
-    } else {
-        console.log(`⚠️ ${type} - 추가할 아이템이 없습니다`);
-    }
-    
-    
-    // 직접입력 옵션 추가
-    const customOption = document.createElement('option');
-    customOption.value = '__custom__';
-    customOption.textContent = '── 직접입력 ──';
-    customOption.style.fontStyle = 'italic';
-    selectElement.appendChild(customOption);
-    
-    // 드롭다운 변경 이벤트 리스너 추가
-    selectElement.addEventListener('change', function() {
-        handleDropdownChange(this, type);
-    });
-    
-    console.log(`✅ ${type} 드롭다운 로드 완료 - 총 ${selectElement.options.length}개 옵션`);
-}
-
-// 드롭다운 변경 처리
-function handleDropdownChange(selectElement, type) {
-    const inputMap = {
-        '결제조건': 'newPaymentTerm',
-        '업종': 'newBusinessType',
-        '지역': 'newRegion',
-        '방문목적': 'newVisitPurpose'
-    };
-    
-    const inputId = inputMap[type];
-    const inputElement = document.getElementById(inputId);
-    
-    console.log(`🔄 드롭다운 변경: ${type}, 선택값: ${selectElement.value}`);
-    
-    if (selectElement.value === '__custom__') {
-        // 직접입력 선택 시 입력창 보이기
-        if (inputElement) {
-            inputElement.style.display = 'block';
-            inputElement.focus();
-            console.log(`✅ ${type} 입력창 표시됨`);
-        }
-        // 드롭다운은 초기값으로 되돌리기
-        selectElement.value = '';
-    } else {
-        // 다른 값 선택 시 입력창 숨기기
-        if (inputElement) {
-            inputElement.style.display = 'none';
-            inputElement.value = '';
-        }
-    }
-}
-
-// 색상 드롭다운 로드
-function loadColorDropdown(selectElement, colors) {
-    console.log('🎨 loadColorDropdown 호출됨, colors:', colors);
-    
-    if (!selectElement) {
-        console.warn('❌ 색상 드롭다운 요소를 찾을 수 없습니다.');
-        return;
-    }
-    
-    // 드롭다운 초기화
-    selectElement.innerHTML = '<option value="">색상 선택</option>';
-    
-    // 색상들 추가
-    if (colors && colors.length > 0) {
-        console.log(`✅ 색상 - ${colors.length}개 아이템 추가 중`);
-        colors.forEach((color, index) => {
-            const option = document.createElement('option');
-            option.value = color.key || color.name;
-            option.textContent = color.name;
-            option.dataset.deletable = 'true'; // 삭제 가능 표시
-            if (color.value) {
-                option.style.backgroundColor = color.value;
-                option.style.color = getContrastColor(color.value);
-            }
-            selectElement.appendChild(option);
-            console.log(`  - ${index + 1}: ${color.name} (${color.value})`);
-        });
-    } else {
-        console.log('⚠️ 색상 - 추가할 아이템이 없습니다');
-    }
-    
-    
-    // 직접입력 옵션 추가
-    const customOption = document.createElement('option');
-    customOption.value = '__custom__';
-    customOption.textContent = '── 직접입력 ──';
-    customOption.style.fontStyle = 'italic';
-    selectElement.appendChild(customOption);
-    
-    // 색상 드롭다운 변경 이벤트 리스너
-    selectElement.addEventListener('change', function() {
-        handleColorDropdownChange(this);
-    });
-    
-    console.log(`✅ 색상 드롭다운 로드 완료 - 총 ${selectElement.options.length}개 옵션`);
-}
-
-// 색상 드롭다운 변경 처리
-function handleColorDropdownChange(selectElement) {
-    const colorInputArea = document.getElementById('colorInputArea');
-    
-    console.log(`🎨 색상 드롭다운 변경: ${selectElement.value}`);
-    
-    if (selectElement.value === '__custom__') {
-        // 직접입력 선택 시 색상 입력 영역 보이기
-        if (colorInputArea) {
-            colorInputArea.style.display = 'block';
-            // 색상 이름 입력창에 포커스
-            const nameInput = document.getElementById('newColorName');
-            if (nameInput) {
-                setTimeout(() => nameInput.focus(), 100);
-            }
-            // 색상 미리보기 업데이트
-            updateColorPreview();
-        }
-        console.log('✅ 색상 입력 영역 표시됨');
-        
-        // 드롭다운은 초기값으로 되돌리기
-        selectElement.value = '';
-    } else {
-        // 다른 값 선택 시 색상 입력 영역 숨기기
-        if (colorInputArea) {
-            colorInputArea.style.display = 'none';
-        }
-    }
-}
 
 // 텍스트 대비 색상 계산
 function getContrastColor(hexcolor) {
@@ -436,15 +258,7 @@ async function addVisitPurpose() {
     await addItem('방문목적', 'newVisitPurpose');
 }
 
-// 색상 추가 버튼 클릭 (드롭다운에서 "직접입력" 선택하게 함)
-async function addColor() {
-    const colorsDropdown = document.getElementById('colorsDropdown');
-    if (colorsDropdown) {
-        // "직접입력" 옵션 선택
-        colorsDropdown.value = '__custom__';
-        handleColorDropdownChange(colorsDropdown);
-    }
-}
+// 색상 추가 함수 (이제 필요 없음 - confirmAddColor를 직접 사용)
 
 // 색상 추가 확인
 async function confirmAddColor() {
@@ -469,8 +283,10 @@ async function confirmAddColor() {
         // 색상을 데이터베이스에 저장
         await saveColorToDatabase(colorName, colorValue);
         
-        // 입력 영역 숨기기 및 초기화
-        cancelColorInput();
+        // 입력창 초기화
+        nameInput.value = '';
+        valueInput.value = '#ff69b4';
+        updateColorPreview();
         
         alert(`색상 "${colorName}"이(가) 추가되었습니다! 새로고침 후 확인하세요.`);
         
@@ -485,28 +301,6 @@ async function confirmAddColor() {
     }
 }
 
-// 색상 입력 취소
-function cancelColorInput() {
-    const colorInputArea = document.getElementById('colorInputArea');
-    const nameInput = document.getElementById('newColorName');
-    const valueInput = document.getElementById('newColorValue');
-    
-    // 입력 영역 숨기기
-    if (colorInputArea) {
-        colorInputArea.style.display = 'none';
-    }
-    
-    // 입력값 초기화
-    if (nameInput) {
-        nameInput.value = '';
-    }
-    if (valueInput) {
-        valueInput.value = '#ff69b4';
-    }
-    
-    // 미리보기 업데이트
-    updateColorPreview();
-}
 
 // 색상 미리보기 업데이트
 function updateColorPreview() {
@@ -517,11 +311,13 @@ function updateColorPreview() {
         const color = valueInput.value;
         colorPreview.style.backgroundColor = color;
         colorPreview.style.color = getContrastColor(color);
-        colorPreview.textContent = `${color.toUpperCase()}`;
+        colorPreview.textContent = `미리보기`;
         
-        // 색상 변경 이벤트 리스너 추가 (없으면)
-        valueInput.removeEventListener('input', updateColorPreview);
-        valueInput.addEventListener('input', updateColorPreview);
+        // 색상 변경 이벤트 리스너 추가 (한번만)
+        if (!valueInput.hasAttribute('data-listener-added')) {
+            valueInput.addEventListener('input', updateColorPreview);
+            valueInput.setAttribute('data-listener-added', 'true');
+        }
     }
 }
 
@@ -544,9 +340,8 @@ async function addItem(type, inputId) {
     try {
         await saveToDatabase(type, value);
         
-        // 입력창 초기화 및 숨기기
+        // 입력창 초기화
         inputElement.value = '';
-        inputElement.style.display = 'none';
         
         alert(`${type} "${value}"이(가) 추가되었습니다! 새로고침 후 드롭다운에서 확인하세요.`);
         
@@ -727,9 +522,7 @@ window.addPaymentTerm = addPaymentTerm;
 window.addBusinessType = addBusinessType;
 window.addRegion = addRegion;
 window.addVisitPurpose = addVisitPurpose;
-window.addColor = addColor;
 window.confirmAddColor = confirmAddColor;
-window.cancelColorInput = cancelColorInput;
 window.updateColorPreview = updateColorPreview;
 window.deleteItem = deleteItem;
 window.deleteColor = deleteColor;
