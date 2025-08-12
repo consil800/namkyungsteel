@@ -161,66 +161,45 @@ async function loadDropdownOptions() {
     }
 }
 
-// 기본 옵션 로드 (오류 시 백업)
+// 빈 옵션 로드 (오류 시 백업)
 function loadBasicOptions() {
-    console.log('기본 옵션 로드');
+    console.log('빈 옵션 로드 - 사용자가 설정 페이지에서 항목을 추가해야 합니다.');
     
-    // 기본 지역
-    const regions = ['서울','부산','대구','경주','김해','양산','함안','밀양','창원','창녕','울산','목포','광주','광양'];
+    // 각 드롭다운에 직접입력 옵션만 추가
     const regionSelect = document.getElementById('region');
     if (regionSelect) {
-        regions.forEach(region => {
-            const option = document.createElement('option');
-            option.value = region;
-            option.textContent = region;
-            regionSelect.appendChild(option);
-        });
+        const customOption = document.createElement('option');
+        customOption.value = '__custom__';
+        customOption.textContent = '── 직접입력 ──';
+        customOption.style.fontStyle = 'italic';
+        regionSelect.appendChild(customOption);
     }
 
-    // 기본 결제조건
-    const paymentTerms = ['현금', '월말결제', '30일', '45일', '60일', '90일', '어음', '기타'];
     const paymentTermsSelect = document.getElementById('paymentTerms');
     if (paymentTermsSelect) {
-        paymentTerms.forEach(term => {
-            const option = document.createElement('option');
-            option.value = term;
-            option.textContent = term;
-            paymentTermsSelect.appendChild(option);
-        });
+        const customOption = document.createElement('option');
+        customOption.value = '__custom__';
+        customOption.textContent = '── 직접입력 ──';
+        customOption.style.fontStyle = 'italic';
+        paymentTermsSelect.appendChild(customOption);
     }
 
-    // 기본 업종
-    const businessTypes = ['제조업', '건설업', '유통업', '기타'];
     const businessTypeSelect = document.getElementById('businessType');
     if (businessTypeSelect) {
-        businessTypes.forEach(type => {
-            const option = document.createElement('option');
-            option.value = type;
-            option.textContent = type;
-            businessTypeSelect.appendChild(option);
-        });
+        const customOption = document.createElement('option');
+        customOption.value = '__custom__';
+        customOption.textContent = '── 직접입력 ──';
+        customOption.style.fontStyle = 'italic';
+        businessTypeSelect.appendChild(customOption);
     }
 
-    // 기본 색상
-    const colors = [
-        { key: 'red', name: '빨강', value: '#e74c3c' },
-        { key: 'orange', name: '주황', value: '#f39c12' },
-        { key: 'yellow', name: '노랑', value: '#f1c40f' },
-        { key: 'green', name: '초록', value: '#27ae60' },
-        { key: 'blue', name: '파랑', value: '#3498db' },
-        { key: 'purple', name: '보라', value: '#9b59b6' },
-        { key: 'gray', name: '회색', value: '#95a5a6' }
-    ];
     const colorSelect = document.getElementById('companyColor');
     if (colorSelect) {
-        colors.forEach(color => {
-            const option = document.createElement('option');
-            option.value = color.key;
-            option.textContent = color.name;
-            option.style.backgroundColor = color.value;
-            option.style.color = getContrastColor(color.value);
-            colorSelect.appendChild(option);
-        });
+        const customOption = document.createElement('option');
+        customOption.value = '__custom__';
+        customOption.textContent = '── 직접입력 ──';
+        customOption.style.fontStyle = 'italic';
+        colorSelect.appendChild(customOption);
     }
 }
 

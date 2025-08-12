@@ -140,17 +140,16 @@ async function loadVisitPurposes() {
     }
 }
 
-// 기본 방문목적 로드 (오류 시 백업)
+// 빈 방문목적 로드 (오류 시 백업)
 function loadBasicVisitPurposes() {
-    const basicPurposes = ['신규영업', '기존고객관리', '견적제공', '계약협의', '수금협의', '클레임처리', '기타'];
+    console.log('빈 방문목적 로드 - 사용자가 설정 페이지에서 항목을 추가해야 합니다.');
     const visitPurposeSelect = document.getElementById('visitPurpose');
     if (visitPurposeSelect) {
-        basicPurposes.forEach(purpose => {
-            const option = document.createElement('option');
-            option.value = purpose;
-            option.textContent = purpose;
-            visitPurposeSelect.appendChild(option);
-        });
+        const customOption = document.createElement('option');
+        customOption.value = '__custom__';
+        customOption.textContent = '── 직접입력 ──';
+        customOption.style.fontStyle = 'italic';
+        visitPurposeSelect.appendChild(customOption);
     }
 }
 

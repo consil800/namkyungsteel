@@ -133,7 +133,7 @@ async function loadSettings() {
         displayColors(settings.colors || []);
         
         // 드롭다운 로드
-        loadDropdownOptions(settings);
+        await loadDropdownOptions(settings);
     } catch (error) {
         console.error('설정 로드 오류:', error);
         // 오류 발생 시 빈 배열로 표시
@@ -146,7 +146,7 @@ async function loadSettings() {
 }
 
 // 드롭다운 옵션 로드
-function loadDropdownOptions(settings) {
+async function loadDropdownOptions(settings) {
     // 결제조건 드롭다운
     const paymentTermsDropdown = document.getElementById('paymentTermsDropdown');
     loadDropdown(paymentTermsDropdown, settings.paymentTerms || [], '결제조건');
@@ -249,9 +249,9 @@ function handleDropdownChange(selectElement, type) {
     if (value === '__custom__') {
         // 직접입력 선택
         dropdown.style.display = 'none';
-        inputElement.style.display = 'flex';
+        inputElement.style.display = 'block';
         if (type === 'color') {
-            document.getElementById('newColorValue').style.display = 'flex';
+            document.getElementById('newColorValue').style.display = 'block';
         }
         inputElement.focus();
         dropdown.value = '';
@@ -259,12 +259,13 @@ function handleDropdownChange(selectElement, type) {
         // 기존 항목 선택
         if (type === 'color') {
             // 색상의 경우 선택된 색상으로 입력란 업데이트
-            const settings = DropdownSettings.get();
-            const selectedColor = settings.colors.find(c => c.key === value);
-            if (selectedColor) {
-                inputElement.value = selectedColor.name;
-                document.getElementById('newColorValue').value = selectedColor.value;
-            }
+            DropdownSettings.get().then(settings => {
+                const selectedColor = settings.colors.find(c => c.key === value);
+                if (selectedColor) {
+                    inputElement.value = selectedColor.name;
+                    document.getElementById('newColorValue').value = selectedColor.value;
+                }
+            });
         } else {
             inputElement.value = value;
         }
@@ -395,7 +396,7 @@ async function addPaymentTerm() {
         // 입력란 초기화
         input.value = '';
         dropdown.value = '';
-        dropdown.style.display = 'flex';
+        dropdown.style.display = 'block';
         input.style.display = 'none';
         
         alert('결제조건이 추가되었습니다.');
@@ -438,7 +439,7 @@ async function addBusinessType() {
         // 입력란 초기화
         input.value = '';
         dropdown.value = '';
-        dropdown.style.display = 'flex';
+        dropdown.style.display = 'block';
         input.style.display = 'none';
         
         alert('업종이 추가되었습니다.');
@@ -505,7 +506,7 @@ async function addRegion() {
         // 입력란 초기화
         input.value = '';
         dropdown.value = '';
-        dropdown.style.display = 'flex';
+        dropdown.style.display = 'block';
         input.style.display = 'none';
         
         alert('지역이 추가되었습니다.');
@@ -548,7 +549,7 @@ async function addVisitPurpose() {
         // 입력란 초기화
         input.value = '';
         dropdown.value = '';
-        dropdown.style.display = 'flex';
+        dropdown.style.display = 'block';
         input.style.display = 'none';
         
         alert('방문목적이 추가되었습니다.');
@@ -610,7 +611,7 @@ async function addColor() {
             nameInput.value = '';
             valueInput.value = '#ff69b4';
             dropdown.value = '';
-            dropdown.style.display = 'grid';
+            dropdown.style.display = 'block';
             nameInput.style.display = 'none';
             valueInput.style.display = 'none';
             
