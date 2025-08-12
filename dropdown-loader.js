@@ -512,6 +512,44 @@ const DropdownLoader = {
         }
     },
 
+    // 방문목적 드롭다운 로드 (직접입력 없음 - work-log-entry용)
+    loadVisitPurposesOnly: async function(selectElement) {
+        try {
+            // 현재 사용자 ID 가져오기
+            let userId = null;
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+            if (currentUser.id) {
+                userId = currentUser.id;
+            } else {
+                const user = AuthManager.getCurrentUser();
+                userId = user?.id;
+            }
+            if (!userId) return;
+
+            const db = new DatabaseManager();
+            await db.init();
+            const settings = await db.getUserSettings(userId);
+            
+            // 기존 옵션 제거 (첫 번째 옵션 제외)
+            while (selectElement.options.length > 1) {
+                selectElement.remove(1);
+            }
+            
+            // 데이터베이스의 방문목적 목록만 추가 (직접입력 옵션 없음)
+            if (settings.visitPurposes && settings.visitPurposes.length > 0) {
+                settings.visitPurposes.forEach(purpose => {
+                    const option = document.createElement('option');
+                    option.value = purpose;
+                    option.textContent = purpose;
+                    selectElement.appendChild(option);
+                });
+            }
+            
+        } catch (error) {
+            console.error('방문목적 로드 오류:', error);
+        }
+    },
+
     // 방문목적 드롭다운 로드 (업무일지용)
     loadVisitPurposes: async function(selectElement) {
         try {

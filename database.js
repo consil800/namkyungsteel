@@ -1020,11 +1020,12 @@ class DatabaseManager {
         try {
             console.log('🔍 사용자 설정 조회 시작 - userId:', userId);
             
-            // client_companies 테이블에서 해당 사용자의 모든 데이터 조회
+            // client_companies 테이블에서 해당 사용자의 모든 데이터 조회 (생성일 순으로)
             const { data: companies, error } = await this.client
                 .from('client_companies')
-                .select('region, payment_terms, business_type, color_code')
-                .eq('user_id', userId.toString());
+                .select('region, payment_terms, business_type, color_code, created_at')
+                .eq('user_id', userId.toString())
+                .order('created_at', { ascending: true });
             
             if (error) {
                 console.error('업체 데이터 조회 오류:', error);
@@ -1042,10 +1043,32 @@ class DatabaseManager {
                 companies: companies
             });
             
-            // 고유값들 추출
-            const uniqueRegions = [...new Set(companies.map(c => c.region).filter(Boolean))].sort();
-            const uniquePaymentTerms = [...new Set(companies.map(c => c.payment_terms).filter(Boolean))].sort();
-            const uniqueBusinessTypes = [...new Set(companies.map(c => c.business_type).filter(Boolean))].sort();
+            // 고유값들 추출 (생성 순서 유지)
+            const seenRegions = new Set();
+            const seenPaymentTerms = new Set();
+            const seenBusinessTypes = new Set();
+            
+            const uniqueRegions = [];
+            const uniquePaymentTerms = [];
+            const uniqueBusinessTypes = [];
+            
+            companies.forEach(company => {
+                if (company.region && !seenRegions.has(company.region)) {
+                    seenRegions.add(company.region);
+                    uniqueRegions.push(company.region);
+                }
+                if (company.payment_terms && !seenPaymentTerms.has(company.payment_terms)) {
+                    seenPaymentTerms.add(company.payment_terms);
+                    uniquePaymentTerms.push(company.payment_terms);
+                }
+                if (company.business_type && !seenBusinessTypes.has(company.business_type)) {
+                    seenBusinessTypes.add(company.business_type);
+                    uniqueBusinessTypes.push(company.business_type);
+                }
+            });
+            
+            // 지역만 가나다 순으로 정렬
+            uniqueRegions.sort((a, b) => a.localeCompare(b, 'ko'));
             
             console.log('📊 추출된 고유값들:', {
                 regions: uniqueRegions,
@@ -1064,24 +1087,43 @@ class DatabaseManager {
                 'gray': { key: 'gray', name: '회색', value: '#95a5a6' }
             };
             
-            const uniqueColorCodes = [...new Set(companies.map(c => c.color_code).filter(Boolean))];
-            const uniqueColors = uniqueColorCodes.map(code => colorMapping[code] || {
-                key: code,
-                name: code,
-                value: '#808080'
+            // 색상도 생성 순서 유지
+            const seenColors = new Set();
+            const uniqueColors = [];
+            
+            companies.forEach(company => {
+                if (company.color_code && !seenColors.has(company.color_code)) {
+                    seenColors.add(company.color_code);
+                    const colorData = colorMapping[company.color_code] || {
+                        key: company.color_code,
+                        name: company.color_code,
+                        value: '#808080'
+                    };
+                    uniqueColors.push(colorData);
+                }
             });
             
-            // work_logs에서 방문목적 가져오기
+            // work_logs에서 방문목적 가져오기 (생성일 순으로)
             const { data: workLogs, error: workLogsError } = await this.client
                 .from('work_logs')
-                .select('visit_purpose')
-                .eq('user_id', userId.toString());
+                .select('visit_purpose, created_at')
+                .eq('user_id', userId.toString())
+                .order('created_at', { ascending: true });
             
             if (workLogsError) {
                 console.log('work_logs 조회 오류 (테이블이 없을 수 있음):', workLogsError);
             }
             
-            const uniqueVisitPurposes = [...new Set((workLogs || []).map(w => w.visit_purpose).filter(Boolean))].sort();
+            // 방문목적도 생성 순서 유지
+            const seenVisitPurposes = new Set();
+            const uniqueVisitPurposes = [];
+            
+            (workLogs || []).forEach(log => {
+                if (log.visit_purpose && !seenVisitPurposes.has(log.visit_purpose)) {
+                    seenVisitPurposes.add(log.visit_purpose);
+                    uniqueVisitPurposes.push(log.visit_purpose);
+                }
+            });
             
             console.log('📊 work_logs 조회 결과:', {
                 workLogsCount: workLogs ? workLogs.length : 0,

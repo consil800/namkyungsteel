@@ -129,7 +129,7 @@ async function loadVisitPurposes() {
 
         const visitPurposeSelect = document.getElementById('visitPurpose');
         if (visitPurposeSelect) {
-            await DropdownLoader.loadVisitPurposes(visitPurposeSelect);
+            await DropdownLoader.loadVisitPurposesOnly(visitPurposeSelect);
         }
 
         console.log('방문목적 옵션 로드 완료');
