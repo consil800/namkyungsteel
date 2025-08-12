@@ -39,9 +39,29 @@ class DatabaseManager {
             if (typeof domainManager !== 'undefined') {
                 this.currentDomain = domainManager.getCurrentDomain();
             }
+            
+            // RLS를 위한 현재 사용자 ID 설정
+            await this.setCurrentUserForRLS();
         } catch (error) {
             console.error('Supabase 초기화 오류:', error);
             throw error;
+        }
+    }
+
+    // RLS를 위한 현재 사용자 ID 설정
+    async setCurrentUserForRLS() {
+        try {
+            // sessionStorage에서 현재 사용자 정보 가져오기
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+            if (currentUser && currentUser.id) {
+                console.log('🔧 RLS용 사용자 ID 설정:', currentUser.id);
+                // Supabase에서 RLS 정책이 참조할 수 있는 사용자 ID 설정
+                await this.client.rpc('set_current_user_id', { user_id: currentUser.id.toString() });
+                console.log('✅ RLS 사용자 ID 설정 완료');
+            }
+        } catch (error) {
+            console.error('❌ RLS 사용자 ID 설정 실패:', error);
+            throw error; // 이제 RLS가 필수이므로 에러를 던짐
         }
     }
 
@@ -1011,7 +1031,7 @@ class DatabaseManager {
         }
     }
 
-    // 사용자 설정 가져오기 (client_companies 테이블에서 고유값 추출)
+    // 사용자 설정 가져오기 (user_settings 테이블에서 조회)
     async getUserSettings(userId) {
         if (!this.client) {
             throw new Error('데이터베이스 연결이 필요합니다.');
@@ -1020,129 +1040,71 @@ class DatabaseManager {
         try {
             console.log('🔍 사용자 설정 조회 시작 - userId:', userId);
             
-            // client_companies 테이블에서 해당 사용자의 모든 데이터 조회 (생성일 순으로)
-            const { data: companies, error } = await this.client
-                .from('client_companies')
-                .select('region, payment_terms, business_type, color_code, visit_purpose, custom_color_name, custom_color_value, created_at')
+            // user_settings 테이블에서 해당 사용자의 모든 설정 조회
+            const { data: settings, error } = await this.client
+                .from('user_settings')
+                .select('*')
                 .eq('user_id', userId.toString())
                 .order('created_at', { ascending: true });
             
             if (error) {
-                console.error('업체 데이터 조회 오류:', error);
+                console.error('사용자 설정 조회 오류:', error);
                 return {
                     paymentTerms: [],
                     businessTypes: [],
-                    visitPurposes: [], // work_logs에서 가져와야 함
+                    visitPurposes: [],
                     regions: [],
                     colors: []
                 };
             }
-            
-            console.log('📊 client_companies 조회 결과:', {
-                companiesCount: companies.length,
-                companies: companies
+
+            console.log('📊 user_settings 조회 결과:', {
+                settingsCount: settings?.length || 0,
+                settings: settings
             });
-            
-            // 고유값들 추출 (생성 순서 유지)
-            const seenRegions = new Set();
-            const seenPaymentTerms = new Set();
-            const seenBusinessTypes = new Set();
-            const seenVisitPurposes = new Set();
-            
-            const uniqueRegions = [];
-            const uniquePaymentTerms = [];
-            const uniqueBusinessTypes = [];
-            const uniqueVisitPurposes = [];
-            
-            companies.forEach(company => {
-                if (company.region && !seenRegions.has(company.region)) {
-                    seenRegions.add(company.region);
-                    uniqueRegions.push(company.region);
-                }
-                if (company.payment_terms && !seenPaymentTerms.has(company.payment_terms)) {
-                    seenPaymentTerms.add(company.payment_terms);
-                    uniquePaymentTerms.push(company.payment_terms);
-                }
-                if (company.business_type && !seenBusinessTypes.has(company.business_type)) {
-                    seenBusinessTypes.add(company.business_type);
-                    uniqueBusinessTypes.push(company.business_type);
-                }
-                if (company.visit_purpose && !seenVisitPurposes.has(company.visit_purpose)) {
-                    seenVisitPurposes.add(company.visit_purpose);
-                    uniqueVisitPurposes.push(company.visit_purpose);
-                }
-            });
-            
-            // 지역만 가나다 순으로 정렬
-            uniqueRegions.sort((a, b) => a.localeCompare(b, 'ko'));
-            
-            console.log('📊 추출된 고유값들:', {
-                regions: uniqueRegions,
-                paymentTerms: uniquePaymentTerms,
-                businessTypes: uniqueBusinessTypes
-            });
-            
-            // 색상은 색상 코드에서 고유값 추출 (간단한 색상 매핑)
-            const colorMapping = {
-                'red': { key: 'red', name: '빨강', value: '#e74c3c' },
-                'orange': { key: 'orange', name: '주황', value: '#f39c12' },
-                'yellow': { key: 'yellow', name: '노랑', value: '#f1c40f' },
-                'green': { key: 'green', name: '초록', value: '#27ae60' },
-                'blue': { key: 'blue', name: '파랑', value: '#3498db' },
-                'purple': { key: 'purple', name: '보라', value: '#9b59b6' },
-                'gray': { key: 'gray', name: '회색', value: '#95a5a6' }
+
+            // 설정 타입별로 분류
+            const result = {
+                paymentTerms: [],
+                businessTypes: [],
+                visitPurposes: [],
+                regions: [],
+                colors: []
             };
-            
-            // 색상도 생성 순서 유지
-            const seenColors = new Set();
-            const uniqueColors = [];
-            
-            companies.forEach(company => {
-                // custom_color_name이 있으면 커스텀 색상으로 처리
-                if (company.custom_color_name && company.custom_color_value) {
-                    const colorKey = company.custom_color_name;
-                    if (!seenColors.has(colorKey)) {
-                        seenColors.add(colorKey);
-                        uniqueColors.push({
-                            key: colorKey,
-                            name: company.custom_color_name,
-                            value: company.custom_color_value.startsWith('#') ? company.custom_color_value : '#' + company.custom_color_value
-                        });
+
+            if (settings && settings.length > 0) {
+                settings.forEach(setting => {
+                    switch (setting.setting_type) {
+                        case 'payment_terms':
+                            result.paymentTerms.push(setting.setting_value);
+                            break;
+                        case 'business_type':
+                            result.businessTypes.push(setting.setting_value);
+                            break;
+                        case 'visit_purpose':
+                            result.visitPurposes.push(setting.setting_value);
+                            break;
+                        case 'region':
+                            result.regions.push(setting.setting_value);
+                            break;
+                        case 'color':
+                            result.colors.push({
+                                key: setting.setting_value,
+                                name: setting.display_name || setting.setting_value,
+                                value: setting.color_value || '#cccccc'
+                            });
+                            break;
                     }
-                }
-                // 기본 색상 처리
-                else if (company.color_code && !seenColors.has(company.color_code)) {
-                    seenColors.add(company.color_code);
-                    
-                    const colorData = colorMapping[company.color_code] || {
-                        key: company.color_code,
-                        name: company.color_code,
-                        value: '#' + company.color_code
-                    };
-                    
-                    uniqueColors.push(colorData);
-                }
-            });
+                });
+            }
+
+            // 지역만 가나다 순으로 정렬
+            result.regions.sort((a, b) => a.localeCompare(b, 'ko'));
             
-            console.log('📊 방문목적 추출 결과:', {
-                visitPurposesCount: uniqueVisitPurposes.length,
-                visitPurposes: uniqueVisitPurposes
-            });
-            
-            console.log('🎨 색상 추출 결과:', {
-                colorsCount: uniqueColors.length,
-                colors: uniqueColors
-            });
-            
+            console.log('📊 분류된 설정 데이터:', result);
             console.log('✅ 사용자 설정 조회 성공');
             
-            return {
-                paymentTerms: uniquePaymentTerms,
-                businessTypes: uniqueBusinessTypes,
-                visitPurposes: uniqueVisitPurposes,
-                regions: uniqueRegions,
-                colors: uniqueColors
-            };
+            return result;
         } catch (error) {
             console.error('사용자 설정 조회 오류:', error);
             // 오류 시 빈 배열 반환
@@ -1156,10 +1118,230 @@ class DatabaseManager {
         }
     }
 
-    // 사용자 설정 업데이트 (실제로는 아무것도 하지 않음 - 기존 데이터에서 추출하므로)
+    // 사용자 설정 업데이트 (user_settings 테이블에 저장)
     async updateUserSettings(userId, settings) {
-        console.log('📝 설정 업데이트 요청 - 기존 데이터에서 추출하므로 별도 저장하지 않음');
-        return { success: true, message: 'settings_from_existing_data' };
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            console.log('📝 사용자 설정 업데이트 시작 - userId:', userId);
+            console.log('📝 업데이트할 설정:', settings);
+
+            // 각 설정 타입별로 처리
+            const settingTypes = [
+                { key: 'paymentTerms', type: 'payment_terms' },
+                { key: 'businessTypes', type: 'business_type' },
+                { key: 'visitPurposes', type: 'visit_purpose' },
+                { key: 'regions', type: 'region' },
+                { key: 'colors', type: 'color' }
+            ];
+
+            for (const settingType of settingTypes) {
+                if (settings[settingType.key] && Array.isArray(settings[settingType.key])) {
+                    await this.updateUserSettingType(userId, settingType.type, settings[settingType.key]);
+                }
+            }
+
+            console.log('✅ 사용자 설정 업데이트 완료');
+            return { success: true, message: 'settings_updated' };
+        } catch (error) {
+            console.error('사용자 설정 업데이트 오류:', error);
+            throw error;
+        }
+    }
+
+    // 특정 설정 타입의 모든 값 업데이트
+    async updateUserSettingType(userId, settingType, values) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            // 기존 해당 타입의 설정 모두 삭제
+            await this.client
+                .from('user_settings')
+                .delete()
+                .eq('user_id', userId.toString())
+                .eq('setting_type', settingType);
+
+            // 새 설정들 추가
+            if (values && values.length > 0) {
+                const newSettings = values.map(value => ({
+                    user_id: userId.toString(),
+                    setting_type: settingType,
+                    setting_value: settingType === 'color' ? value.key : value,
+                    display_name: settingType === 'color' ? value.name : value,
+                    color_value: settingType === 'color' ? value.value : null,
+                    created_at: new Date().toISOString()
+                }));
+
+                const { error } = await this.client
+                    .from('user_settings')
+                    .insert(newSettings);
+
+                if (error) throw error;
+            }
+
+            console.log(`✅ ${settingType} 설정 업데이트 완료:`, values.length, '개');
+        } catch (error) {
+            console.error(`${settingType} 설정 업데이트 오류:`, error);
+            throw error;
+        }
+    }
+
+    // 단일 사용자 설정 추가
+    async addUserSetting(userId, settingType, settingValue, displayName = null, colorValue = null) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            console.log('📝 사용자 설정 추가:', { userId, settingType, settingValue, displayName, colorValue });
+
+            // 중복 확인
+            const { data: existing, error: checkError } = await this.client
+                .from('user_settings')
+                .select('*')
+                .eq('user_id', userId.toString())
+                .eq('setting_type', settingType)
+                .eq('setting_value', settingValue);
+
+            if (checkError) throw checkError;
+
+            if (existing && existing.length > 0) {
+                console.log('⚠️ 이미 존재하는 설정입니다.');
+                return { success: true, message: 'setting_already_exists' };
+            }
+
+            // 새 설정 추가
+            const newSetting = {
+                user_id: userId.toString(),
+                setting_type: settingType,
+                setting_value: settingValue,
+                display_name: displayName || settingValue,
+                color_value: colorValue,
+                created_at: new Date().toISOString()
+            };
+
+            const { data, error } = await this.client
+                .from('user_settings')
+                .insert([newSetting])
+                .select();
+
+            if (error) throw error;
+
+            console.log('✅ 사용자 설정 추가 완료:', data[0]);
+            return { success: true, data: data[0] };
+        } catch (error) {
+            console.error('사용자 설정 추가 오류:', error);
+            throw error;
+        }
+    }
+
+    // 단일 사용자 설정 삭제
+    async deleteUserSetting(userId, settingType, settingValue) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            console.log('🗑️ 사용자 설정 삭제:', { userId, settingType, settingValue });
+
+            const { error } = await this.client
+                .from('user_settings')
+                .delete()
+                .eq('user_id', userId.toString())
+                .eq('setting_type', settingType)
+                .eq('setting_value', settingValue);
+
+            if (error) throw error;
+
+            console.log('✅ 사용자 설정 삭제 완료');
+            return { success: true, message: 'setting_deleted' };
+        } catch (error) {
+            console.error('사용자 설정 삭제 오류:', error);
+            throw error;
+        }
+    }
+
+    // 특정 설정 타입의 모든 설정 삭제
+    async deleteUserSettingType(userId, settingType) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            console.log('🗑️ 사용자 설정 타입 전체 삭제:', { userId, settingType });
+
+            const { error } = await this.client
+                .from('user_settings')
+                .delete()
+                .eq('user_id', userId.toString())
+                .eq('setting_type', settingType);
+
+            if (error) throw error;
+
+            console.log('✅ 사용자 설정 타입 삭제 완료');
+            return { success: true, message: 'setting_type_deleted' };
+        } catch (error) {
+            console.error('사용자 설정 타입 삭제 오류:', error);
+            throw error;
+        }
+    }
+
+    // 사용자의 모든 설정 초기화
+    async clearUserSettings(userId) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            console.log('🗑️ 사용자 전체 설정 초기화:', userId);
+
+            const { error } = await this.client
+                .from('user_settings')
+                .delete()
+                .eq('user_id', userId.toString());
+
+            if (error) throw error;
+
+            console.log('✅ 사용자 전체 설정 초기화 완료');
+            return { success: true, message: 'all_settings_cleared' };
+        } catch (error) {
+            console.error('사용자 전체 설정 초기화 오류:', error);
+            throw error;
+        }
+    }
+
+    // 설정값 업데이트 (display_name이나 color_value 변경 시)
+    async updateUserSettingDetails(userId, settingType, settingValue, updateData) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            console.log('📝 사용자 설정 상세정보 업데이트:', { userId, settingType, settingValue, updateData });
+
+            const { data, error } = await this.client
+                .from('user_settings')
+                .update({
+                    ...updateData,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('user_id', userId.toString())
+                .eq('setting_type', settingType)
+                .eq('setting_value', settingValue)
+                .select();
+
+            if (error) throw error;
+
+            console.log('✅ 사용자 설정 상세정보 업데이트 완료:', data[0]);
+            return { success: true, data: data[0] };
+        } catch (error) {
+            console.error('사용자 설정 상세정보 업데이트 오류:', error);
+            throw error;
+        }
     }
 
     async searchClientCompanies(region = null, companyName = null, userId = null) {

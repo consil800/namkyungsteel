@@ -193,7 +193,7 @@ function displayColorList(listId, colors) {
     console.log(`✅ 색상 리스트 표시 완료 - ${colors.length}개 항목`);
 }
 
-// 직접입력 데이터 저장 함수
+// 직접입력 데이터 저장 함수 (user_settings 테이블 사용)
 async function saveToDatabase(type, value) {
     try {
         console.log(`💾 ${type} 값 "${value}" 저장 시작`);
@@ -203,36 +203,25 @@ async function saveToDatabase(type, value) {
             throw new Error('사용자 정보가 없습니다.');
         }
         
-        // 모든 항목을 client_companies 테이블에 저장 (방문목적도 포함)
-        const testCompany = {
-            user_id: userId,
-            company_name: `임시_${type}_${Date.now()}`,
-            address: '임시 주소',
-            contact_person: '임시 담당자',
-            phone: '000-0000-0000',
-            email: 'temp@temp.com',
-            business_type: type === '업종' ? value : '기타',
-            region: type === '지역' ? value : '기타',
-            payment_terms: type === '결제조건' ? value : '기타',
-            visit_purpose: type === '방문목적' ? value : null,
-            color_code: 'gray',
-            notes: `${type} 값 "${value}" 저장을 위한 임시 데이터`,
-            visit_count: 0,
-            last_visit_date: null,
-            created_at: new Date().toISOString()
+        // 타입 매핑
+        const typeMapping = {
+            '결제조건': 'payment_terms',
+            '업종': 'business_type',
+            '지역': 'region',
+            '방문목적': 'visit_purpose'
         };
         
-        const { data, error } = await window.db.client
-            .from('client_companies')
-            .insert([testCompany])
-            .select();
-        
-        if (error) {
-            console.error(`❌ ${type} 저장 오류:`, error);
-            throw error;
+        const settingType = typeMapping[type];
+        if (!settingType) {
+            throw new Error(`알 수 없는 설정 타입: ${type}`);
         }
         
-        console.log(`✅ ${type} 값 "${value}" client_companies에 저장 완료:`, data);
+        // user_settings 테이블에 저장
+        const db = new DatabaseManager();
+        await db.init();
+        await db.addUserSetting(userId, settingType, value);
+        
+        console.log(`✅ ${type} 값 "${value}" user_settings에 저장 완료`);
         
         return true;
         
@@ -357,48 +346,27 @@ async function addItem(type, inputId) {
     }
 }
 
-// 색상 저장 함수
+// 색상 저장 함수 (user_settings 테이블 사용)
 async function saveColorToDatabase(colorName, colorValue) {
     const userId = await DropdownSettings.getCurrentUserId();
     if (!userId) {
         throw new Error('사용자 정보가 없습니다.');
     }
     
-    const testCompany = {
-        user_id: userId,
-        company_name: `임시_색상_${colorName}_${Date.now()}`,
-        address: '임시 주소',
-        contact_person: '임시 담당자',
-        phone: '000-0000-0000',
-        email: 'temp@temp.com',
-        business_type: '기타',
-        region: '기타',
-        payment_terms: '기타',
-        color_code: 'gray', // 기본값
-        custom_color_name: colorName, // 커스텀 색상 이름
-        custom_color_value: colorValue, // 커스텀 색상 값 (#포함)
-        notes: `색상 "${colorName}" (${colorValue}) 저장을 위한 임시 데이터`,
-        visit_count: 0,
-        last_visit_date: null,
-        created_at: new Date().toISOString()
-    };
+    // user_settings 테이블에 색상 저장
+    const db = new DatabaseManager();
+    await db.init();
+    await db.addUserSetting(userId, 'color', colorName, colorName, colorValue);
     
-    const { data, error } = await window.db.client
-        .from('client_companies')
-        .insert([testCompany])
-        .select();
+    console.log(`✅ 색상 "${colorName}" (${colorValue}) user_settings에 저장 완료`);
     
-    if (error) {
-        throw error;
-    }
-    
-    return data;
+    return true;
 }
 
 // 항목 삭제 함수 (리스트에서 삭제 버튼 클릭 시)
 async function deleteItem(type, item) {
     try {
-        if (!confirm(`"${item}"을(를) 정말 삭제하시겠습니까?\n\n주의: 이 항목을 사용하는 모든 업체 데이터에서 해당 값이 기본값으로 변경됩니다.`)) {
+        if (!confirm(`"${item}"을(를) 정말 삭제하시겠습니까?`)) {
             return;
         }
         
@@ -408,7 +376,25 @@ async function deleteItem(type, item) {
             return;
         }
         
-        await deleteItemFromDatabase(type, item, userId);
+        // 타입 매핑
+        const typeMapping = {
+            '결제조건': 'payment_terms',
+            '업종': 'business_type',
+            '지역': 'region',
+            '방문목적': 'visit_purpose'
+        };
+        
+        const settingType = typeMapping[type];
+        if (!settingType) {
+            alert(`알 수 없는 설정 타입: ${type}`);
+            return;
+        }
+        
+        // user_settings 테이블에서 삭제
+        const db = new DatabaseManager();
+        await db.init();
+        await db.deleteUserSetting(userId, settingType, item);
+        
         alert(`${type} "${item}"이(가) 삭제되었습니다.`);
         
         // 설정 다시 로드
@@ -427,7 +413,7 @@ async function deleteColor(colorName) {
     try {
         console.log(`🗑️ 색상 삭제 시작: "${colorName}"`);
         
-        if (!confirm(`색상 "${colorName}"을(를) 정말 삭제하시겠습니까?\n\n주의: 이 색상을 사용하는 모든 업체의 색상이 기본값으로 변경됩니다.`)) {
+        if (!confirm(`색상 "${colorName}"을(를) 정말 삭제하시겠습니까?`)) {
             console.log('❌ 사용자가 삭제를 취소했습니다.');
             return;
         }
@@ -440,7 +426,11 @@ async function deleteColor(colorName) {
             return;
         }
         
-        await deleteColorFromDatabase(colorName, userId);
+        // user_settings 테이블에서 색상 삭제
+        const db = new DatabaseManager();
+        await db.init();
+        await db.deleteUserSetting(userId, 'color', colorName);
+        
         alert(`색상 "${colorName}"이(가) 삭제되었습니다.`);
         
         console.log(`✅ 색상 "${colorName}" 삭제 완료, 설정 다시 로드 중...`);
@@ -456,154 +446,6 @@ async function deleteColor(colorName) {
     }
 }
 
-// 데이터베이스에서 항목 삭제
-async function deleteItemFromDatabase(type, item, userId) {
-    try {
-        let updateField = '';
-        let defaultValue = '';
-        
-        switch(type) {
-            case '결제조건':
-                updateField = 'payment_terms';
-                defaultValue = '현금';
-                break;
-            case '업종':
-                updateField = 'business_type';
-                defaultValue = '기타';
-                break;
-            case '지역':
-                updateField = 'region';
-                defaultValue = '기타';
-                break;
-            case '방문목적':
-                // 방문목적은 visit_purpose 필드에서 삭제
-                const { error: visitPurposeError } = await window.db.client
-                    .from('client_companies')
-                    .delete()
-                    .eq('user_id', userId)
-                    .eq('visit_purpose', item);
-                
-                if (visitPurposeError) {
-                    throw visitPurposeError;
-                }
-                
-                console.log(`✅ 방문목적 "${item}" 삭제 완료`);
-                return;
-                break;
-        }
-        
-        if (updateField) {
-            // 해당 항목을 사용하는 모든 업체 데이터를 기본값으로 변경
-            const { error } = await window.db.client
-                .from('client_companies')
-                .update({ [updateField]: defaultValue })
-                .eq('user_id', userId)
-                .eq(updateField, item);
-            
-            if (error) {
-                throw error;
-            }
-            
-            console.log(`✅ ${type} "${item}" 삭제 완료 - 관련 데이터를 "${defaultValue}"로 변경`);
-        }
-        
-    } catch (error) {
-        console.error(`❌ ${type} 데이터베이스 삭제 오류:`, error);
-        throw error;
-    }
-}
-
-// 데이터베이스에서 색상 삭제
-async function deleteColorFromDatabase(colorName, userId) {
-    try {
-        console.log(`🔍 데이터베이스에서 색상 삭제 시작 - 사용자: ${userId}, 색상: "${colorName}"`);
-        
-        // 표준 색상 매핑 (getUserSettings와 동일한 매핑)
-        const standardColorMapping = {
-            '빨강': 'red',
-            '주황': 'orange', 
-            '노랑': 'yellow',
-            '초록': 'green',
-            '파랑': 'blue',
-            '보라': 'purple',
-            '회색': 'gray'
-        };
-        
-        let deletedData, deleteError;
-        
-        // 1. 먼저 custom_color_name으로 찾아서 삭제 시도
-        console.log('🔍 custom_color_name으로 삭제 시도...');
-        let result = await window.db.client
-            .from('client_companies')
-            .delete()
-            .eq('user_id', userId)
-            .eq('custom_color_name', colorName)
-            .select();
-        
-        deletedData = result.data;
-        deleteError = result.error;
-        
-        if (deleteError) {
-            console.error('❌ custom_color_name 삭제 오류:', deleteError);
-        }
-        
-        // 2. custom_color_name으로 삭제된 항목이 없으면 표준 색상으로 시도
-        if (!deletedData || deletedData.length === 0) {
-            console.log('⚠️ custom_color_name으로 삭제 실패, 표준 색상으로 시도...');
-            
-            // 색상 이름을 color_code로 변환
-            const colorCode = standardColorMapping[colorName] || colorName;
-            console.log(`🎨 변환된 color_code: "${colorCode}"`);
-            
-            // color_code로 삭제 시도
-            result = await window.db.client
-                .from('client_companies')
-                .delete()
-                .eq('user_id', userId)
-                .eq('color_code', colorCode)
-                .select();
-            
-            deletedData = result.data;
-            deleteError = result.error;
-            
-            if (deleteError) {
-                console.error('❌ color_code 삭제 오류:', deleteError);
-            }
-        }
-        
-        // 3. 여전히 삭제된 항목이 없으면 notes에서 검색해서 삭제
-        if (!deletedData || deletedData.length === 0) {
-            console.log('⚠️ 표준 색상으로도 삭제 실패, notes에서 검색 시도...');
-            
-            result = await window.db.client
-                .from('client_companies')
-                .delete()
-                .eq('user_id', userId)
-                .like('notes', `%색상 "${colorName}"%`)
-                .select();
-            
-            deletedData = result.data;
-            deleteError = result.error;
-            
-            if (deleteError) {
-                console.error('❌ notes 기반 삭제 오류:', deleteError);
-                throw deleteError;
-            }
-        }
-        
-        if (!deletedData || deletedData.length === 0) {
-            console.log('⚠️ 모든 방법으로 삭제 실패 - 색상을 찾을 수 없습니다');
-            throw new Error(`색상 "${colorName}" 레코드를 찾을 수 없습니다.`);
-        }
-        
-        console.log(`✅ 색상 "${colorName}" 삭제 완료, 삭제된 레코드 수: ${deletedData.length}`);
-        console.log('📊 삭제된 레코드:', deletedData);
-        
-    } catch (error) {
-        console.error(`❌ 색상 데이터베이스 삭제 오류:`, error);
-        throw error;
-    }
-}
 
 // 전역에서 접근 가능하도록 설정
 window.DropdownSettings = DropdownSettings;
