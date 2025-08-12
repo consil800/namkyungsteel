@@ -297,9 +297,9 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 searchState = JSON.parse(savedState);
                 
-                // 입력 필드에 값 복원
-                searchRegionInput.value = searchState.region || '';
-                searchCompanyInput.value = searchState.companyName || '';
+                // 입력 필드에 값 복원 (요소가 존재하는 경우에만)
+                if (searchRegionSelect) searchRegionSelect.value = searchState.region || '';
+                if (searchCompanyInput) searchCompanyInput.value = searchState.companyName || '';
                 
                 // 필터가 있는 경우 검색 수행
                 if (searchState.isFiltered) {
