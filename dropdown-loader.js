@@ -206,6 +206,82 @@ const DropdownLoader = {
         }
     },
 
+    // 지역 드롭다운 로드 (직접입력 없음 - company-register용)
+    loadRegionsOnly: async function(selectElement) {
+        try {
+            // 현재 사용자 ID 가져오기
+            let userId = null;
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+            if (currentUser.id) {
+                userId = currentUser.id;
+            } else {
+                const user = AuthManager.getCurrentUser();
+                userId = user?.id;
+            }
+            if (!userId) return;
+
+            const db = new DatabaseManager();
+            await db.init();
+            const settings = await db.getUserSettings(userId);
+            
+            // 기존 옵션 제거 (첫 번째 옵션 제외)
+            while (selectElement.options.length > 1) {
+                selectElement.remove(1);
+            }
+            
+            // 데이터베이스의 지역 목록만 추가 (직접입력 옵션 없음)
+            if (settings.regions && settings.regions.length > 0) {
+                settings.regions.forEach(region => {
+                    const option = document.createElement('option');
+                    option.value = region;
+                    option.textContent = region;
+                    selectElement.appendChild(option);
+                });
+            }
+            
+        } catch (error) {
+            console.error('지역 로드 오류:', error);
+        }
+    },
+
+    // 결제조건 드롭다운 로드 (직접입력 없음 - company-register용)
+    loadPaymentTermsOnly: async function(selectElement) {
+        try {
+            // 현재 사용자 ID 가져오기
+            let userId = null;
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+            if (currentUser.id) {
+                userId = currentUser.id;
+            } else {
+                const user = AuthManager.getCurrentUser();
+                userId = user?.id;
+            }
+            if (!userId) return;
+
+            const db = new DatabaseManager();
+            await db.init();
+            const settings = await db.getUserSettings(userId);
+            
+            // 기존 옵션 제거 (첫 번째 옵션 제외)
+            while (selectElement.options.length > 1) {
+                selectElement.remove(1);
+            }
+            
+            // 데이터베이스의 결제조건 목록만 추가 (직접입력 옵션 없음)
+            if (settings.paymentTerms && settings.paymentTerms.length > 0) {
+                settings.paymentTerms.forEach(term => {
+                    const option = document.createElement('option');
+                    option.value = term;
+                    option.textContent = term;
+                    selectElement.appendChild(option);
+                });
+            }
+            
+        } catch (error) {
+            console.error('결제조건 로드 오류:', error);
+        }
+    },
+
     // 결제조건 드롭다운 로드
     loadPaymentTerms: async function(selectElement) {
         try {
@@ -306,6 +382,44 @@ const DropdownLoader = {
         }
     },
 
+    // 업종 드롭다운 로드 (직접입력 없음 - company-register용)
+    loadBusinessTypesOnly: async function(selectElement) {
+        try {
+            // 현재 사용자 ID 가져오기
+            let userId = null;
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+            if (currentUser.id) {
+                userId = currentUser.id;
+            } else {
+                const user = AuthManager.getCurrentUser();
+                userId = user?.id;
+            }
+            if (!userId) return;
+
+            const db = new DatabaseManager();
+            await db.init();
+            const settings = await db.getUserSettings(userId);
+            
+            // 기존 옵션 제거 (첫 번째 옵션 제외)
+            while (selectElement.options.length > 1) {
+                selectElement.remove(1);
+            }
+            
+            // 데이터베이스의 업종 목록만 추가 (직접입력 옵션 없음)
+            if (settings.businessTypes && settings.businessTypes.length > 0) {
+                settings.businessTypes.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type;
+                    option.textContent = type;
+                    selectElement.appendChild(option);
+                });
+            }
+            
+        } catch (error) {
+            console.error('업종 로드 오류:', error);
+        }
+    },
+
     // 색상 드롭다운 로드
     loadColors: async function(selectElement) {
         try {
@@ -352,6 +466,46 @@ const DropdownLoader = {
             selectElement.removeEventListener('change', selectElement._customHandler);
             selectElement._customHandler = () => DropdownLoader.handleCustomColor(selectElement);
             selectElement.addEventListener('change', selectElement._customHandler);
+            
+        } catch (error) {
+            console.error('색상 로드 오류:', error);
+        }
+    },
+
+    // 색상 드롭다운 로드 (직접입력 없음 - company-register용)
+    loadColorsOnly: async function(selectElement) {
+        try {
+            // 현재 사용자 ID 가져오기
+            let userId = null;
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+            if (currentUser.id) {
+                userId = currentUser.id;
+            } else {
+                const user = AuthManager.getCurrentUser();
+                userId = user?.id;
+            }
+            if (!userId) return;
+
+            const db = new DatabaseManager();
+            await db.init();
+            const settings = await db.getUserSettings(userId);
+            
+            // 기존 옵션 제거 (첫 번째 옵션 제외)
+            while (selectElement.options.length > 1) {
+                selectElement.remove(1);
+            }
+            
+            // 데이터베이스의 색상 목록만 추가 (직접입력 옵션 없음)
+            if (settings.colors && settings.colors.length > 0) {
+                settings.colors.forEach(color => {
+                    const option = document.createElement('option');
+                    option.value = color.key;
+                    option.textContent = color.name;
+                    option.style.backgroundColor = color.value;
+                    option.style.color = DropdownLoader.getContrastColor(color.value);
+                    selectElement.appendChild(option);
+                });
+            }
             
         } catch (error) {
             console.error('색상 로드 오류:', error);

@@ -84,8 +84,8 @@ async function loadSettings() {
         await loadDropdownOptions(settings);
         console.log('✅ 드롭다운 옵션 로드 완료');
         
-        // 목록 표시는 드롭다운으로만 하고, 별도 리스트는 숨김
-        hideAllLists();
+        // 리스트 형태로 항목들을 표시 (삭제 버튼 포함)
+        displayItemLists(settings);
         
     } catch (error) {
         console.error('설정 로드 오류:', error);
@@ -149,15 +149,6 @@ function loadDropdown(selectElement, items, type) {
         console.log(`⚠️ ${type} - 추가할 아이템이 없습니다`);
     }
     
-    // 삭제 옵션 추가
-    if (items && items.length > 0) {
-        const deleteOption = document.createElement('option');
-        deleteOption.value = '__delete__';
-        deleteOption.textContent = '── 기존 항목 삭제 ──';
-        deleteOption.style.fontStyle = 'italic';
-        deleteOption.style.color = '#dc3545';
-        selectElement.appendChild(deleteOption);
-    }
     
     // 직접입력 옵션 추가
     const customOption = document.createElement('option');
@@ -195,11 +186,6 @@ function handleDropdownChange(selectElement, type) {
             inputElement.focus();
             console.log(`✅ ${type} 입력창 표시됨`);
         }
-        // 드롭다운은 초기값으로 되돌리기
-        selectElement.value = '';
-    } else if (selectElement.value === '__delete__') {
-        // 삭제 옵션 선택 시 삭제 프로세스 시작
-        handleDeleteOption(selectElement, type);
         // 드롭다운은 초기값으로 되돌리기
         selectElement.value = '';
     } else {
@@ -242,15 +228,6 @@ function loadColorDropdown(selectElement, colors) {
         console.log('⚠️ 색상 - 추가할 아이템이 없습니다');
     }
     
-    // 삭제 옵션 추가
-    if (colors && colors.length > 0) {
-        const deleteOption = document.createElement('option');
-        deleteOption.value = '__delete__';
-        deleteOption.textContent = '── 기존 색상 삭제 ──';
-        deleteOption.style.fontStyle = 'italic';
-        deleteOption.style.color = '#dc3545';
-        selectElement.appendChild(deleteOption);
-    }
     
     // 직접입력 옵션 추가
     const customOption = document.createElement('option');
@@ -289,11 +266,6 @@ function handleColorDropdownChange(selectElement) {
         
         // 드롭다운은 초기값으로 되돌리기
         selectElement.value = '';
-    } else if (selectElement.value === '__delete__') {
-        // 삭제 옵션 선택 시 색상 삭제 프로세스 시작
-        handleDeleteColor(selectElement);
-        // 드롭다운은 초기값으로 되돌리기
-        selectElement.value = '';
     } else {
         // 다른 값 선택 시 색상 입력 영역 숨기기
         if (colorInputArea) {
@@ -320,22 +292,83 @@ function getContrastColor(hexcolor) {
     return brightness > 155 ? '#000000' : '#ffffff';
 }
 
-// 리스트 숨기기 함수
-function hideAllLists() {
-    const listIds = [
-        'paymentTermsList',
-        'businessTypesList', 
-        'regionsList',
-        'visitPurposesList',
-        'colorsList'
-    ];
+// 항목 리스트 표시 함수 (삭제 버튼 포함)
+function displayItemLists(settings) {
+    console.log('📋 displayItemLists 호출됨, settings:', settings);
     
-    listIds.forEach(listId => {
-        const listElement = document.getElementById(listId);
-        if (listElement) {
-            listElement.innerHTML = '<li style="color: #666; font-style: italic;">드롭다운에서 선택하여 추가하세요</li>';
-        }
+    // 결제조건 리스트 표시
+    displayItemList('paymentTermsList', settings.paymentTerms || [], '결제조건');
+    
+    // 업종 리스트 표시
+    displayItemList('businessTypesList', settings.businessTypes || [], '업종');
+    
+    // 지역 리스트 표시
+    displayItemList('regionsList', settings.regions || [], '지역');
+    
+    // 방문목적 리스트 표시
+    displayItemList('visitPurposesList', settings.visitPurposes || [], '방문목적');
+    
+    // 색상 리스트 표시
+    displayColorList('colorsList', settings.colors || []);
+}
+
+// 일반 항목 리스트 표시 함수
+function displayItemList(listId, items, type) {
+    const listElement = document.getElementById(listId);
+    if (!listElement) return;
+    
+    console.log(`📝 ${type} 리스트 표시:`, items);
+    
+    if (items.length === 0) {
+        listElement.innerHTML = `<li style="color: #666; font-style: italic;">저장된 ${type}이 없습니다. 위에서 추가하세요.</li>`;
+        return;
+    }
+    
+    listElement.innerHTML = '';
+    items.forEach(item => {
+        const li = document.createElement('li');
+        li.className = 'option-item';
+        li.innerHTML = `
+            <span class="option-text">${item}</span>
+            <div class="option-actions">
+                <button class="btn btn-danger btn-small" onclick="deleteItem('${type}', '${item.replace(/'/g, "\\'")}')">삭제</button>
+            </div>
+        `;
+        listElement.appendChild(li);
     });
+    
+    console.log(`✅ ${type} 리스트 표시 완료 - ${items.length}개 항목`);
+}
+
+// 색상 리스트 표시 함수
+function displayColorList(listId, colors) {
+    const listElement = document.getElementById(listId);
+    if (!listElement) return;
+    
+    console.log('🎨 색상 리스트 표시:', colors);
+    
+    if (colors.length === 0) {
+        listElement.innerHTML = '<li style="color: #666; font-style: italic;">저장된 색상이 없습니다. 위에서 추가하세요.</li>';
+        return;
+    }
+    
+    listElement.innerHTML = '';
+    colors.forEach(color => {
+        const li = document.createElement('li');
+        li.className = 'option-item';
+        li.innerHTML = `
+            <span class="option-text">
+                <span class="color-preview" style="background-color: ${color.value}; display: inline-block; width: 20px; height: 20px; border-radius: 50%; margin-right: 10px; border: 1px solid #ddd; vertical-align: middle;"></span>
+                ${color.name}
+            </span>
+            <div class="option-actions">
+                <button class="btn btn-danger btn-small" onclick="deleteColor('${color.name.replace(/'/g, "\\'")}')">삭제</button>
+            </div>
+        `;
+        listElement.appendChild(li);
+    });
+    
+    console.log(`✅ 색상 리스트 표시 완료 - ${colors.length}개 항목`);
 }
 
 // 직접입력 데이터 저장 함수
@@ -441,7 +474,7 @@ async function confirmAddColor() {
         
         alert(`색상 "${colorName}"이(가) 추가되었습니다! 새로고침 후 확인하세요.`);
         
-        // 설정 다시 로드하여 드롭다운 업데이트
+        // 설정 다시 로드하여 드롭다운 및 리스트 업데이트
         setTimeout(async () => {
             await loadSettings();
         }, 1000);
@@ -517,7 +550,7 @@ async function addItem(type, inputId) {
         
         alert(`${type} "${value}"이(가) 추가되었습니다! 새로고침 후 드롭다운에서 확인하세요.`);
         
-        // 설정 다시 로드하여 드롭다운 업데이트
+        // 설정 다시 로드하여 드롭다운 및 리스트 업데이트
         setTimeout(async () => {
             await loadSettings();
         }, 1000);
@@ -564,62 +597,26 @@ async function saveColorToDatabase(colorName, colorValue) {
     return data;
 }
 
-// 삭제 옵션 처리 함수
-async function handleDeleteOption(selectElement, type) {
+// 항목 삭제 함수 (리스트에서 삭제 버튼 클릭 시)
+async function deleteItem(type, item) {
     try {
+        if (!confirm(`"${item}"을(를) 정말 삭제하시겠습니까?\n\n주의: 이 항목을 사용하는 모든 업체 데이터에서 해당 값이 기본값으로 변경됩니다.`)) {
+            return;
+        }
+        
         const userId = await DropdownSettings.getCurrentUserId();
         if (!userId) {
             alert('로그인이 필요합니다.');
             return;
         }
-
-        const db = new DatabaseManager();
-        await db.init();
-        const settings = await db.getUserSettings(userId);
         
-        let items = [];
-        switch(type) {
-            case '결제조건':
-                items = settings.paymentTerms || [];
-                break;
-            case '업종':
-                items = settings.businessTypes || [];
-                break;
-            case '지역':
-                items = settings.regions || [];
-                break;
-            case '방문목적':
-                items = settings.visitPurposes || [];
-                break;
-        }
+        await deleteItemFromDatabase(type, item, userId);
+        alert(`${type} "${item}"이(가) 삭제되었습니다.`);
         
-        if (items.length === 0) {
-            alert(`삭제할 ${type} 항목이 없습니다.`);
-            return;
-        }
-        
-        // 삭제할 항목 선택
-        const itemToDelete = prompt(`삭제할 ${type}을(를) 입력하세요:\n\n사용 가능한 항목:\n${items.join(', ')}`);
-        
-        if (!itemToDelete || !itemToDelete.trim()) {
-            return; // 취소됨
-        }
-        
-        const trimmedItem = itemToDelete.trim();
-        if (!items.includes(trimmedItem)) {
-            alert('존재하지 않는 항목입니다.');
-            return;
-        }
-        
-        if (confirm(`"${trimmedItem}"을(를) 정말 삭제하시겠습니까?\n\n주의: 이 항목을 사용하는 모든 업체 데이터에서 해당 값이 제거됩니다.`)) {
-            await deleteItemFromDatabase(type, trimmedItem, userId);
-            alert(`${type} "${trimmedItem}"이(가) 삭제되었습니다.`);
-            
-            // 설정 다시 로드
-            setTimeout(async () => {
-                await loadSettings();
-            }, 500);
-        }
+        // 설정 다시 로드
+        setTimeout(async () => {
+            await loadSettings();
+        }, 500);
         
     } catch (error) {
         console.error(`${type} 삭제 오류:`, error);
@@ -627,51 +624,26 @@ async function handleDeleteOption(selectElement, type) {
     }
 }
 
-// 색상 삭제 처리 함수
-async function handleDeleteColor(selectElement) {
+// 색상 삭제 함수 (리스트에서 삭제 버튼 클릭 시)
+async function deleteColor(colorName) {
     try {
+        if (!confirm(`색상 "${colorName}"을(를) 정말 삭제하시겠습니까?\n\n주의: 이 색상을 사용하는 모든 업체의 색상이 기본값으로 변경됩니다.`)) {
+            return;
+        }
+        
         const userId = await DropdownSettings.getCurrentUserId();
         if (!userId) {
             alert('로그인이 필요합니다.');
             return;
         }
-
-        const db = new DatabaseManager();
-        await db.init();
-        const settings = await db.getUserSettings(userId);
         
-        const colors = settings.colors || [];
+        await deleteColorFromDatabase(colorName, userId);
+        alert(`색상 "${colorName}"이(가) 삭제되었습니다.`);
         
-        if (colors.length === 0) {
-            alert('삭제할 색상이 없습니다.');
-            return;
-        }
-        
-        // 삭제할 색상 선택
-        const colorNames = colors.map(c => c.name).join(', ');
-        const colorToDelete = prompt(`삭제할 색상 이름을 입력하세요:\n\n사용 가능한 색상:\n${colorNames}`);
-        
-        if (!colorToDelete || !colorToDelete.trim()) {
-            return; // 취소됨
-        }
-        
-        const trimmedColor = colorToDelete.trim();
-        const colorExists = colors.some(c => c.name === trimmedColor);
-        
-        if (!colorExists) {
-            alert('존재하지 않는 색상입니다.');
-            return;
-        }
-        
-        if (confirm(`색상 "${trimmedColor}"을(를) 정말 삭제하시겠습니까?\n\n주의: 이 색상을 사용하는 모든 업체의 색상이 기본값으로 변경됩니다.`)) {
-            await deleteColorFromDatabase(trimmedColor, userId);
-            alert(`색상 "${trimmedColor}"이(가) 삭제되었습니다.`);
-            
-            // 설정 다시 로드
-            setTimeout(async () => {
-                await loadSettings();
-            }, 500);
-        }
+        // 설정 다시 로드
+        setTimeout(async () => {
+            await loadSettings();
+        }, 500);
         
     } catch (error) {
         console.error('색상 삭제 오류:', error);
@@ -759,5 +731,5 @@ window.addColor = addColor;
 window.confirmAddColor = confirmAddColor;
 window.cancelColorInput = cancelColorInput;
 window.updateColorPreview = updateColorPreview;
-window.handleDeleteOption = handleDeleteOption;
-window.handleDeleteColor = handleDeleteColor;
+window.deleteItem = deleteItem;
+window.deleteColor = deleteColor;
