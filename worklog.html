@@ -391,14 +391,43 @@
             
             console.log('데이터베이스 초기화 상태:', !!window.db, !!window.db?.client);
             
-            // 현재 로그인한 사용자 정보 가져오기 (데이터베이스에서 최신 정보)
-            let currentUser = await getCurrentUserFromDB();
-            console.log('🧪 getCurrentUserFromDB에서 가져온 사용자 정보:', currentUser);
+            // 현재 로그인한 사용자 정보 가져오기 (여러 방법으로 시도)
+            let currentUser = null;
+            let authAttempts = 0;
+            const maxAttempts = 3;
             
-            // 데이터베이스에서 사용자를 찾지 못한 경우 AuthManager 확인
-            if (!currentUser) {
-                currentUser = AuthManager.getCurrentUser();
-                console.log('🧪 AuthManager에서 가져온 사용자 정보:', currentUser);
+            while (!currentUser && authAttempts < maxAttempts) {
+                console.log(`🔄 인증 시도 ${authAttempts + 1}/${maxAttempts}`);
+                
+                // 1. sessionStorage에서 직접 확인
+                try {
+                    const sessionUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+                    if (sessionUser && sessionUser.id) {
+                        currentUser = sessionUser;
+                        console.log('✅ sessionStorage에서 사용자 확인:', currentUser);
+                        break;
+                    }
+                } catch (e) {
+                    console.warn('sessionStorage 읽기 실패:', e);
+                }
+                
+                // 2. 데이터베이스에서 확인
+                if (!currentUser) {
+                    currentUser = await getCurrentUserFromDB();
+                    console.log('🧪 getCurrentUserFromDB 결과:', currentUser);
+                }
+                
+                // 3. AuthManager에서 확인
+                if (!currentUser && typeof AuthManager !== 'undefined') {
+                    currentUser = AuthManager.getCurrentUser();
+                    console.log('🧪 AuthManager 결과:', currentUser);
+                }
+                
+                authAttempts++;
+                if (!currentUser && authAttempts < maxAttempts) {
+                    console.log('⏳ 1초 후 재시도...');
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
             }
             
             if (currentUser) {
