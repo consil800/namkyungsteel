@@ -341,8 +341,8 @@ async function populateEditForm(company) {
     // 색상 선택 드롭다운 로드 및 설정
     await loadColorOptions();
     const colorSelect = document.getElementById('editCompanyColor');
-    if (colorSelect && company.color) {
-        colorSelect.value = company.color;
+    if (colorSelect && company.color_code) {
+        colorSelect.value = company.color_code;
     }
 }
 
@@ -364,7 +364,7 @@ async function updateCompany() {
             products: formData.get('editProducts').trim(),
             usage_items: formData.get('editUsageItems').trim(),
             notes: formData.get('editNotes').trim(),
-            color: formData.get('editCompanyColor') || ''
+            color_code: formData.get('editCompanyColor') || 'gray'
         };
         
         if (!updateData.company_name) {
