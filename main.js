@@ -204,6 +204,13 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         });
 
+        // 색상 디버깅 로그
+        console.log('🎨 색상 디버깅:', companiesWithStats.slice(0, 3).map(c => ({
+            name: c.company_name,
+            color_code: c.color_code,
+            colorClass: c.color_code ? `color-${c.color_code}` : 'no-color'
+        })));
+
         const html = companiesWithStats.map(company => `
             <tr class="company-row ${company.color_code ? `color-${company.color_code}` : ''}" onclick="${isDeleteMode ? '' : `goToCompanyDetail('${company.id}')`}">
                 ${isDeleteMode ? `
