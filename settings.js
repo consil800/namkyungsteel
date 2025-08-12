@@ -203,36 +203,63 @@ async function saveToDatabase(type, value) {
             throw new Error('사용자 정보가 없습니다.');
         }
         
-        // 현재 업체 등록이나 업무일지 작성 시 저장되므로, 
-        // 여기서는 임시 데이터로 client_companies에 저장
-        const testCompany = {
-            user_id: userId,
-            company_name: `임시_${type}_${Date.now()}`,
-            address: '임시 주소',
-            contact_person: '임시 담당자',
-            phone: '000-0000-0000',
-            email: 'temp@temp.com',
-            business_type: type === '업종' ? value : '기타',
-            region: type === '지역' ? value : '기타',
-            payment_terms: type === '결제조건' ? value : '기타',
-            color_code: 'gray',
-            notes: `${type} 값 "${value}" 저장을 위한 임시 데이터`,
-            visit_count: 0,
-            last_visit_date: null,
-            created_at: new Date().toISOString()
-        };
-        
-        const { data, error } = await window.db.client
-            .from('client_companies')
-            .insert([testCompany])
-            .select();
-        
-        if (error) {
-            console.error(`❌ ${type} 저장 오류:`, error);
-            throw error;
+        if (type === '방문목적') {
+            // 방문목적은 work_logs 테이블에 임시 데이터 저장
+            const testWorkLog = {
+                user_id: userId,
+                company_id: null,
+                visit_date: new Date().toISOString().split('T')[0],
+                visit_purpose: value,
+                meeting_person: '임시',
+                discussion_content: `${type} 값 "${value}" 저장을 위한 임시 데이터`,
+                follow_up_actions: '',
+                next_visit_plan: '',
+                created_at: new Date().toISOString()
+            };
+            
+            const { data, error } = await window.db.client
+                .from('work_logs')
+                .insert([testWorkLog])
+                .select();
+            
+            if (error) {
+                console.error(`❌ ${type} 저장 오류:`, error);
+                throw error;
+            }
+            
+            console.log(`✅ ${type} 값 "${value}" work_logs에 저장 완료:`, data);
+        } else {
+            // 다른 항목들은 client_companies 테이블에 저장
+            const testCompany = {
+                user_id: userId,
+                company_name: `임시_${type}_${Date.now()}`,
+                address: '임시 주소',
+                contact_person: '임시 담당자',
+                phone: '000-0000-0000',
+                email: 'temp@temp.com',
+                business_type: type === '업종' ? value : '기타',
+                region: type === '지역' ? value : '기타',
+                payment_terms: type === '결제조건' ? value : '기타',
+                color_code: 'gray',
+                notes: `${type} 값 "${value}" 저장을 위한 임시 데이터`,
+                visit_count: 0,
+                last_visit_date: null,
+                created_at: new Date().toISOString()
+            };
+            
+            const { data, error } = await window.db.client
+                .from('client_companies')
+                .insert([testCompany])
+                .select();
+            
+            if (error) {
+                console.error(`❌ ${type} 저장 오류:`, error);
+                throw error;
+            }
+            
+            console.log(`✅ ${type} 값 "${value}" client_companies에 저장 완료:`, data);
         }
         
-        console.log(`✅ ${type} 값 "${value}" 저장 완료:`, data);
         return true;
         
     } catch (error) {
