@@ -1023,7 +1023,7 @@ class DatabaseManager {
             // client_companies 테이블에서 해당 사용자의 모든 데이터 조회 (생성일 순으로)
             const { data: companies, error } = await this.client
                 .from('client_companies')
-                .select('region, payment_terms, business_type, color_code, visit_purpose, created_at')
+                .select('region, payment_terms, business_type, color_code, visit_purpose, custom_color_name, custom_color_value, created_at')
                 .eq('user_id', userId.toString())
                 .order('created_at', { ascending: true });
             
@@ -1098,41 +1098,27 @@ class DatabaseManager {
             const uniqueColors = [];
             
             companies.forEach(company => {
-                if (company.color_code && !seenColors.has(company.color_code)) {
+                // custom_color_name이 있으면 커스텀 색상으로 처리
+                if (company.custom_color_name && company.custom_color_value) {
+                    const colorKey = company.custom_color_name;
+                    if (!seenColors.has(colorKey)) {
+                        seenColors.add(colorKey);
+                        uniqueColors.push({
+                            key: colorKey,
+                            name: company.custom_color_name,
+                            value: company.custom_color_value.startsWith('#') ? company.custom_color_value : '#' + company.custom_color_value
+                        });
+                    }
+                }
+                // 기본 색상 처리
+                else if (company.color_code && !seenColors.has(company.color_code)) {
                     seenColors.add(company.color_code);
                     
-                    let colorData;
-                    
-                    // 기본 색상 매핑에서 확인
-                    if (colorMapping[company.color_code]) {
-                        colorData = colorMapping[company.color_code];
-                    }
-                    // notes에서 커스텀 색상 정보 추출
-                    else if (company.notes && company.notes.includes('색상 "') && company.notes.includes('(#')) {
-                        // notes 형식: "색상 "핑크" (#ff69b4) 저장을 위한 임시 데이터"
-                        const match = company.notes.match(/색상 "([^"]+)" \(([^)]+)\)/);
-                        if (match && match[1] && match[2]) {
-                            colorData = {
-                                key: company.color_code,
-                                name: match[1], // 예: "핑크"
-                                value: match[2].startsWith('#') ? match[2] : '#' + match[2] // 예: "#ff69b4"
-                            };
-                        } else {
-                            colorData = {
-                                key: company.color_code,
-                                name: company.color_code,
-                                value: '#' + company.color_code
-                            };
-                        }
-                    }
-                    // 기본값
-                    else {
-                        colorData = {
-                            key: company.color_code,
-                            name: company.color_code,
-                            value: '#' + company.color_code
-                        };
-                    }
+                    const colorData = colorMapping[company.color_code] || {
+                        key: company.color_code,
+                        name: company.color_code,
+                        value: '#' + company.color_code
+                    };
                     
                     uniqueColors.push(colorData);
                 }

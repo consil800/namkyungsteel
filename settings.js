@@ -366,7 +366,7 @@ async function saveColorToDatabase(colorName, colorValue) {
     
     const testCompany = {
         user_id: userId,
-        company_name: `임시_색상_${Date.now()}`,
+        company_name: `임시_색상_${colorName}_${Date.now()}`,
         address: '임시 주소',
         contact_person: '임시 담당자',
         phone: '000-0000-0000',
@@ -374,7 +374,9 @@ async function saveColorToDatabase(colorName, colorValue) {
         business_type: '기타',
         region: '기타',
         payment_terms: '기타',
-        color_code: colorValue.replace('#', ''), // # 제거
+        color_code: 'gray', // 기본값
+        custom_color_name: colorName, // 커스텀 색상 이름
+        custom_color_value: colorValue, // 커스텀 색상 값 (#포함)
         notes: `색상 "${colorName}" (${colorValue}) 저장을 위한 임시 데이터`,
         visit_count: 0,
         last_visit_date: null,
@@ -507,18 +509,18 @@ async function deleteItemFromDatabase(type, item, userId) {
 // 데이터베이스에서 색상 삭제
 async function deleteColorFromDatabase(colorName, userId) {
     try {
-        // 해당 색상을 사용하는 모든 업체의 색상을 'gray'로 변경
+        // 커스텀 색상 레코드 삭제 (custom_color_name으로 찾기)
         const { error } = await window.db.client
             .from('client_companies')
-            .update({ color_code: 'gray' })
+            .delete()
             .eq('user_id', userId)
-            .or(`notes.ilike.%색상 "${colorName}"%`); // 임시 색상 데이터도 포함
+            .eq('custom_color_name', colorName);
         
         if (error) {
             throw error;
         }
         
-        console.log(`✅ 색상 "${colorName}" 삭제 완료 - 관련 데이터를 "gray"로 변경`);
+        console.log(`✅ 색상 "${colorName}" 삭제 완료`);
         
     } catch (error) {
         console.error(`❌ 색상 데이터베이스 삭제 오류:`, error);
