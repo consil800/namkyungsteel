@@ -130,25 +130,25 @@ async function loadDropdownOptions() {
             return;
         }
 
-        // 각 드롭다운 로드
+        // 각 드롭다운 로드 (직접입력 옵션 없이)
         const regionSelect = document.getElementById('region');
         if (regionSelect) {
-            await DropdownLoader.loadRegions(regionSelect);
+            await DropdownLoader.loadRegionsOnly(regionSelect);
         }
 
         const paymentTermsSelect = document.getElementById('paymentTerms');
         if (paymentTermsSelect) {
-            await DropdownLoader.loadPaymentTerms(paymentTermsSelect);
+            await DropdownLoader.loadPaymentTermsOnly(paymentTermsSelect);
         }
 
         const businessTypeSelect = document.getElementById('businessType');
         if (businessTypeSelect) {
-            await DropdownLoader.loadBusinessTypes(businessTypeSelect);
+            await DropdownLoader.loadBusinessTypesOnly(businessTypeSelect);
         }
 
         const colorSelect = document.getElementById('companyColor');
         if (colorSelect) {
-            await DropdownLoader.loadColors(colorSelect);
+            await DropdownLoader.loadColorsOnly(colorSelect);
         }
 
         console.log('드롭다운 옵션 로드 완료');
@@ -165,41 +165,25 @@ async function loadDropdownOptions() {
 function loadBasicOptions() {
     console.log('빈 옵션 로드 - 사용자가 설정 페이지에서 항목을 추가해야 합니다.');
     
-    // 각 드롭다운에 직접입력 옵션만 추가
+    // 드롭다운에는 기본 선택 옵션만 남겨두고 직접입력 옵션은 제거
     const regionSelect = document.getElementById('region');
-    if (regionSelect) {
-        const customOption = document.createElement('option');
-        customOption.value = '__custom__';
-        customOption.textContent = '── 직접입력 ──';
-        customOption.style.fontStyle = 'italic';
-        regionSelect.appendChild(customOption);
+    if (regionSelect && regionSelect.options.length <= 1) {
+        console.log('지역 드롭다운이 비어있습니다. 설정 페이지에서 항목을 추가하세요.');
     }
 
     const paymentTermsSelect = document.getElementById('paymentTerms');
-    if (paymentTermsSelect) {
-        const customOption = document.createElement('option');
-        customOption.value = '__custom__';
-        customOption.textContent = '── 직접입력 ──';
-        customOption.style.fontStyle = 'italic';
-        paymentTermsSelect.appendChild(customOption);
+    if (paymentTermsSelect && paymentTermsSelect.options.length <= 1) {
+        console.log('결제조건 드롭다운이 비어있습니다. 설정 페이지에서 항목을 추가하세요.');
     }
 
     const businessTypeSelect = document.getElementById('businessType');
-    if (businessTypeSelect) {
-        const customOption = document.createElement('option');
-        customOption.value = '__custom__';
-        customOption.textContent = '── 직접입력 ──';
-        customOption.style.fontStyle = 'italic';
-        businessTypeSelect.appendChild(customOption);
+    if (businessTypeSelect && businessTypeSelect.options.length <= 1) {
+        console.log('업종 드롭다운이 비어있습니다. 설정 페이지에서 항목을 추가하세요.');
     }
 
     const colorSelect = document.getElementById('companyColor');
-    if (colorSelect) {
-        const customOption = document.createElement('option');
-        customOption.value = '__custom__';
-        customOption.textContent = '── 직접입력 ──';
-        customOption.style.fontStyle = 'italic';
-        colorSelect.appendChild(customOption);
+    if (colorSelect && colorSelect.options.length <= 1) {
+        console.log('색상 드롭다운이 비어있습니다. 설정 페이지에서 항목을 추가하세요.');
     }
 }
 

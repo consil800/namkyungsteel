@@ -141,11 +141,22 @@ function loadDropdown(selectElement, items, type) {
             const option = document.createElement('option');
             option.value = item;
             option.textContent = item;
+            option.dataset.deletable = 'true'; // 삭제 가능 표시
             selectElement.appendChild(option);
             console.log(`  - ${index + 1}: ${item}`);
         });
     } else {
         console.log(`⚠️ ${type} - 추가할 아이템이 없습니다`);
+    }
+    
+    // 삭제 옵션 추가
+    if (items && items.length > 0) {
+        const deleteOption = document.createElement('option');
+        deleteOption.value = '__delete__';
+        deleteOption.textContent = '── 기존 항목 삭제 ──';
+        deleteOption.style.fontStyle = 'italic';
+        deleteOption.style.color = '#dc3545';
+        selectElement.appendChild(deleteOption);
     }
     
     // 직접입력 옵션 추가
@@ -186,6 +197,11 @@ function handleDropdownChange(selectElement, type) {
         }
         // 드롭다운은 초기값으로 되돌리기
         selectElement.value = '';
+    } else if (selectElement.value === '__delete__') {
+        // 삭제 옵션 선택 시 삭제 프로세스 시작
+        handleDeleteOption(selectElement, type);
+        // 드롭다운은 초기값으로 되돌리기
+        selectElement.value = '';
     } else {
         // 다른 값 선택 시 입력창 숨기기
         if (inputElement) {
@@ -214,6 +230,7 @@ function loadColorDropdown(selectElement, colors) {
             const option = document.createElement('option');
             option.value = color.key || color.name;
             option.textContent = color.name;
+            option.dataset.deletable = 'true'; // 삭제 가능 표시
             if (color.value) {
                 option.style.backgroundColor = color.value;
                 option.style.color = getContrastColor(color.value);
@@ -223,6 +240,16 @@ function loadColorDropdown(selectElement, colors) {
         });
     } else {
         console.log('⚠️ 색상 - 추가할 아이템이 없습니다');
+    }
+    
+    // 삭제 옵션 추가
+    if (colors && colors.length > 0) {
+        const deleteOption = document.createElement('option');
+        deleteOption.value = '__delete__';
+        deleteOption.textContent = '── 기존 색상 삭제 ──';
+        deleteOption.style.fontStyle = 'italic';
+        deleteOption.style.color = '#dc3545';
+        selectElement.appendChild(deleteOption);
     }
     
     // 직접입력 옵션 추가
@@ -260,6 +287,11 @@ function handleColorDropdownChange(selectElement) {
         }
         console.log('✅ 색상 입력 영역 표시됨');
         
+        // 드롭다운은 초기값으로 되돌리기
+        selectElement.value = '';
+    } else if (selectElement.value === '__delete__') {
+        // 삭제 옵션 선택 시 색상 삭제 프로세스 시작
+        handleDeleteColor(selectElement);
         // 드롭다운은 초기값으로 되돌리기
         selectElement.value = '';
     } else {
@@ -532,6 +564,190 @@ async function saveColorToDatabase(colorName, colorValue) {
     return data;
 }
 
+// 삭제 옵션 처리 함수
+async function handleDeleteOption(selectElement, type) {
+    try {
+        const userId = await DropdownSettings.getCurrentUserId();
+        if (!userId) {
+            alert('로그인이 필요합니다.');
+            return;
+        }
+
+        const db = new DatabaseManager();
+        await db.init();
+        const settings = await db.getUserSettings(userId);
+        
+        let items = [];
+        switch(type) {
+            case '결제조건':
+                items = settings.paymentTerms || [];
+                break;
+            case '업종':
+                items = settings.businessTypes || [];
+                break;
+            case '지역':
+                items = settings.regions || [];
+                break;
+            case '방문목적':
+                items = settings.visitPurposes || [];
+                break;
+        }
+        
+        if (items.length === 0) {
+            alert(`삭제할 ${type} 항목이 없습니다.`);
+            return;
+        }
+        
+        // 삭제할 항목 선택
+        const itemToDelete = prompt(`삭제할 ${type}을(를) 입력하세요:\n\n사용 가능한 항목:\n${items.join(', ')}`);
+        
+        if (!itemToDelete || !itemToDelete.trim()) {
+            return; // 취소됨
+        }
+        
+        const trimmedItem = itemToDelete.trim();
+        if (!items.includes(trimmedItem)) {
+            alert('존재하지 않는 항목입니다.');
+            return;
+        }
+        
+        if (confirm(`"${trimmedItem}"을(를) 정말 삭제하시겠습니까?\n\n주의: 이 항목을 사용하는 모든 업체 데이터에서 해당 값이 제거됩니다.`)) {
+            await deleteItemFromDatabase(type, trimmedItem, userId);
+            alert(`${type} "${trimmedItem}"이(가) 삭제되었습니다.`);
+            
+            // 설정 다시 로드
+            setTimeout(async () => {
+                await loadSettings();
+            }, 500);
+        }
+        
+    } catch (error) {
+        console.error(`${type} 삭제 오류:`, error);
+        alert(`${type} 삭제 중 오류가 발생했습니다.`);
+    }
+}
+
+// 색상 삭제 처리 함수
+async function handleDeleteColor(selectElement) {
+    try {
+        const userId = await DropdownSettings.getCurrentUserId();
+        if (!userId) {
+            alert('로그인이 필요합니다.');
+            return;
+        }
+
+        const db = new DatabaseManager();
+        await db.init();
+        const settings = await db.getUserSettings(userId);
+        
+        const colors = settings.colors || [];
+        
+        if (colors.length === 0) {
+            alert('삭제할 색상이 없습니다.');
+            return;
+        }
+        
+        // 삭제할 색상 선택
+        const colorNames = colors.map(c => c.name).join(', ');
+        const colorToDelete = prompt(`삭제할 색상 이름을 입력하세요:\n\n사용 가능한 색상:\n${colorNames}`);
+        
+        if (!colorToDelete || !colorToDelete.trim()) {
+            return; // 취소됨
+        }
+        
+        const trimmedColor = colorToDelete.trim();
+        const colorExists = colors.some(c => c.name === trimmedColor);
+        
+        if (!colorExists) {
+            alert('존재하지 않는 색상입니다.');
+            return;
+        }
+        
+        if (confirm(`색상 "${trimmedColor}"을(를) 정말 삭제하시겠습니까?\n\n주의: 이 색상을 사용하는 모든 업체의 색상이 기본값으로 변경됩니다.`)) {
+            await deleteColorFromDatabase(trimmedColor, userId);
+            alert(`색상 "${trimmedColor}"이(가) 삭제되었습니다.`);
+            
+            // 설정 다시 로드
+            setTimeout(async () => {
+                await loadSettings();
+            }, 500);
+        }
+        
+    } catch (error) {
+        console.error('색상 삭제 오류:', error);
+        alert('색상 삭제 중 오류가 발생했습니다.');
+    }
+}
+
+// 데이터베이스에서 항목 삭제
+async function deleteItemFromDatabase(type, item, userId) {
+    try {
+        let updateField = '';
+        let defaultValue = '';
+        
+        switch(type) {
+            case '결제조건':
+                updateField = 'payment_terms';
+                defaultValue = '현금';
+                break;
+            case '업종':
+                updateField = 'business_type';
+                defaultValue = '기타';
+                break;
+            case '지역':
+                updateField = 'region';
+                defaultValue = '기타';
+                break;
+            case '방문목적':
+                // 방문목적은 업무일지에서 사용되므로 별도 처리 필요
+                console.log(`방문목적 "${item}" 삭제 - 업무일지 데이터는 유지됨`);
+                return;
+                break;
+        }
+        
+        if (updateField) {
+            // 해당 항목을 사용하는 모든 업체 데이터를 기본값으로 변경
+            const { error } = await window.db.client
+                .from('client_companies')
+                .update({ [updateField]: defaultValue })
+                .eq('user_id', userId)
+                .eq(updateField, item);
+            
+            if (error) {
+                throw error;
+            }
+            
+            console.log(`✅ ${type} "${item}" 삭제 완료 - 관련 데이터를 "${defaultValue}"로 변경`);
+        }
+        
+    } catch (error) {
+        console.error(`❌ ${type} 데이터베이스 삭제 오류:`, error);
+        throw error;
+    }
+}
+
+// 데이터베이스에서 색상 삭제
+async function deleteColorFromDatabase(colorName, userId) {
+    try {
+        // 해당 색상을 사용하는 모든 업체의 색상을 'gray'로 변경
+        const { error } = await window.db.client
+            .from('client_companies')
+            .update({ color_code: 'gray' })
+            .eq('user_id', userId)
+            .or(`notes.ilike.%색상 "${colorName}"%`); // 임시 색상 데이터도 포함
+        
+        if (error) {
+            throw error;
+        }
+        
+        console.log(`✅ 색상 "${colorName}" 삭제 완료 - 관련 데이터를 "gray"로 변경`);
+        
+    } catch (error) {
+        console.error(`❌ 색상 데이터베이스 삭제 오류:`, error);
+        throw error;
+    }
+}
+
 // 전역에서 접근 가능하도록 설정
 window.DropdownSettings = DropdownSettings;
 window.saveToDatabase = saveToDatabase;
@@ -543,3 +759,5 @@ window.addColor = addColor;
 window.confirmAddColor = confirmAddColor;
 window.cancelColorInput = cancelColorInput;
 window.updateColorPreview = updateColorPreview;
+window.handleDeleteOption = handleDeleteOption;
+window.handleDeleteColor = handleDeleteColor;
