@@ -483,7 +483,7 @@ class DatabaseManager {
             // user_id가 숫자인 경우 문자열로 변환
             const userId = workLogData.user_id ? workLogData.user_id.toString() : workLogData.userId?.toString();
             
-            // RLS를 위해 현재 사용자 ID 설정
+            // RLS를 위해 현재 사용자 ID 설정 및 확인
             console.log('🔐 RLS를 위한 사용자 ID 설정:', userId);
             const { error: rpcError } = await this.client.rpc('set_current_user_id', { user_id: userId });
             
@@ -492,25 +492,65 @@ class DatabaseManager {
                 throw rpcError;
             }
             
-            // work_logs 테이블에 직접 저장
-            const { data, error } = await this.client
+            // RLS 설정 확인 (디버깅)
+            const { data: currentUserId, error: checkError } = await this.client.rpc('get_current_user_id');
+            console.log('🔍 RLS 현재 사용자 ID 확인:', currentUserId, 'checkError:', checkError);
+            
+            if (!currentUserId || currentUserId !== userId) {
+                console.error('❌ RLS 사용자 ID 불일치:', { expected: userId, actual: currentUserId });
+                // 한 번 더 시도
+                await this.client.rpc('set_current_user_id', { user_id: userId });
+                const { data: retryUserId } = await this.client.rpc('get_current_user_id');
+                console.log('🔄 RLS 재시도 결과:', retryUserId);
+            }
+            
+            // work_logs 테이블에 저장 (타입 변환 확인)
+            const insertData = {
+                company_id: parseInt(workLogData.company_id),
+                user_id: parseInt(userId), // 숫자로 변환
+                visit_date: workLogData.visit_date,
+                visit_purpose: workLogData.visit_purpose,
+                meeting_person: workLogData.meeting_person || '',
+                discussion_content: workLogData.discussion_content,
+                next_action: workLogData.next_action || '',
+                follow_up_date: workLogData.follow_up_date || null,
+                additional_notes: workLogData.additional_notes || ''
+            };
+            
+            console.log('🔍 삽입할 데이터:', insertData);
+            console.log('🔍 user_id 타입:', typeof insertData.user_id, '값:', insertData.user_id);
+            
+            let { data, error } = await this.client
                 .from('work_logs')
-                .insert({
-                    company_id: parseInt(workLogData.company_id),
-                    user_id: userId,
-                    visit_date: workLogData.visit_date,
-                    visit_purpose: workLogData.visit_purpose,
-                    meeting_person: workLogData.meeting_person || '',
-                    discussion_content: workLogData.discussion_content,
-                    next_action: workLogData.next_action || '',
-                    follow_up_date: workLogData.follow_up_date || null,
-                    additional_notes: workLogData.additional_notes || ''
-                })
+                .insert(insertData)
                 .select()
                 .single();
             
+            // RLS 오류 시 대안 방법 시도
+            if (error && error.code === '42501') {
+                console.log('🔄 RLS 오류로 인한 대안 방법 시도');
+                
+                // 사용자 ID를 문자열로 다시 시도
+                const altInsertData = {
+                    ...insertData,
+                    user_id: userId.toString() // 문자열로 시도
+                };
+                
+                console.log('🔄 대안 데이터:', altInsertData);
+                
+                const result2 = await this.client
+                    .from('work_logs')
+                    .insert(altInsertData)
+                    .select()
+                    .single();
+                    
+                data = result2.data;
+                error = result2.error;
+            }
+            
             if (error) {
-                console.error('❌ 업무일지 생성 오류:', error);
+                console.error('❌ 업무일지 생성 오류 (최종):', error);
+                console.log('💡 임시 해결: RLS 정책 업데이트가 필요합니다.');
                 throw error;
             }
             
