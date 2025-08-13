@@ -796,18 +796,10 @@
     <script src="../../shared-assets/js/auth.js"></script>
     <script>
         // 기본 아바타 생성 함수
-        function generateDefaultAvatar(name) {
-            const initial = name ? name.charAt(0).toUpperCase() : 'U';
-            // 한글이나 특수문자 처리를 위해 영문자만 사용
-            const safeInitial = /^[A-Za-z]/.test(initial) ? initial : 'U';
-            
-            // btoa 대신 직접 SVG URL 생성
-            const svgContent = `<svg width="50" height="50" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="25" cy="25" r="25" fill="#667eea"/>
-                <text x="25" y="32" font-family="Arial, sans-serif" font-size="20" fill="white" text-anchor="middle" dominant-baseline="central">${safeInitial}</text>
-            </svg>`;
-            
-            return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgContent)}`;
+        // 간단한 CSS 아바타 생성 함수
+        function createSimpleAvatar(user) {
+            const initials = (user.name || user.email || 'U').charAt(0).toUpperCase();
+            return `<div style="width: 50px; height: 50px; border-radius: 50%; background: #667eea; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; border: 2px solid #fff; cursor: pointer;">${initials}</div>`;
         }
         
         // 페이지 로드 시 사용자 정보 표시
@@ -906,11 +898,24 @@
             document.getElementById('userName').textContent = welcomeMessage;
             document.getElementById('userInfo').textContent = infoText;
             
-            // 프로필 이미지 설정
-            const profileImage = user.profileImage || user.profile_image || generateDefaultAvatar(user.name || 'User');
+            // 프로필 이미지 설정 (안전한 방식)
             const dashboardImage = document.getElementById('profileImageDashboard');
             if (dashboardImage) {
-                dashboardImage.src = profileImage;
+                if (user.profileImage || user.profile_image) {
+                    const imageUrl = user.profileImage || user.profile_image;
+                    dashboardImage.src = imageUrl;
+                    dashboardImage.onerror = function() {
+                        // 이미지 로드 실패 시 CSS 아바타로 대체
+                        const initials = (user.name || 'U').charAt(0).toUpperCase();
+                        this.style.display = 'none';
+                        this.parentNode.innerHTML = `<div style="width: 50px; height: 50px; border-radius: 50%; background: #667eea; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; border: 2px solid #fff; cursor: pointer;">${initials}</div>`;
+                    };
+                } else {
+                    // CSS 아바타 직접 생성
+                    const initials = (user.name || 'U').charAt(0).toUpperCase();
+                    dashboardImage.style.display = 'none';
+                    dashboardImage.parentNode.innerHTML = `<div style="width: 50px; height: 50px; border-radius: 50%; background: #667eea; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; border: 2px solid #fff; cursor: pointer;">${initials}</div>`;
+                }
             }
             
             // 회사명을 남경스틸(주)로 하드코딩
@@ -2272,7 +2277,8 @@
                 modalProfileImage.src = currentUser.profile_image || currentUser.profileImage;
             } else {
                 // 기본 아바타 생성
-                modalProfileImage.src = generateDefaultAvatar(currentUser.name || currentUser.email);
+                const initials = (currentUser.name || currentUser.email || 'U').charAt(0).toUpperCase();
+                modalProfileImage.parentNode.innerHTML = `<div style="width: 80px; height: 80px; border-radius: 50%; background: #667eea; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; border: 2px solid #fff; margin: 0 auto 1rem;">${initials}</div>`;
             }
             
             // 프로필 정보 채우기 (데이터베이스에서 가져온 최신 정보)
@@ -2453,11 +2459,17 @@
                 document.getElementById('userName').textContent = name;
                 document.getElementById('userInfo').textContent = `${position || '직급'} | 오늘도 좋은 하루 되세요.`;
                 
-                // 프로필 이미지도 업데이트
-                const profileImage = currentUser.profile_image || generateDefaultAvatar(name);
+                // 프로필 이미지도 업데이트 (안전한 방식)
                 const dashboardImage = document.getElementById('profileImageDashboard');
                 if (dashboardImage) {
-                    dashboardImage.src = profileImage;
+                    if (currentUser.profile_image) {
+                        dashboardImage.src = currentUser.profile_image;
+                        dashboardImage.style.display = 'block';
+                    } else {
+                        const initials = (name || 'U').charAt(0).toUpperCase();
+                        dashboardImage.style.display = 'none';
+                        dashboardImage.parentNode.innerHTML = `<div style="width: 50px; height: 50px; border-radius: 50%; background: #667eea; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; border: 2px solid #fff; cursor: pointer;">${initials}</div>`;
+                    }
                 }
                 
                 alert('프로필이 성공적으로 저장되었습니다.');
