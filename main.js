@@ -140,16 +140,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 companyList.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">검색 중...</td></tr>';
             }
             
-            // 현재 로그인한 사용자 확인 (최신 sessionStorage에서 직접 읽기)
-            let currentUser;
-            try {
-                const userJson = sessionStorage.getItem('currentUser');
-                currentUser = userJson ? JSON.parse(userJson) : null;
-            } catch (error) {
-                console.error('사용자 정보 파싱 오류:', error);
-                currentUser = null;
-            }
-            
+            // 간단한 사용자 확인
+            const currentUser = await window.dataLoader.getCurrentUser();
             if (!currentUser) {
                 if (companyList) {
                     companyList.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px; color: #f00;">로그인이 필요합니다.</td></tr>';
@@ -159,24 +151,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
             let companies = [];
             
-            // 데이터베이스에서 로그인한 사용자의 개인 업체 검색
-            if (window.db && window.db.client) {
-                console.log('🔍 사용자 정보 확인:', {
-                    id: currentUser.id,
-                    name: currentUser.name,
-                    email: currentUser.email,
-                    role: currentUser.role
-                });
-                
-                if (region || companyName) {
+            // 업체 검색 또는 목록 로드
+            if (region || companyName) {
+                if (window.db && window.db.client) {
+                    await window.db.client.rpc('set_current_user_id', { user_id: currentUser.id.toString() });
                     companies = await window.db.searchClientCompanies(region, companyName, currentUser.id);
-                } else {
-                    companies = await window.db.getClientCompanies(currentUser.id);
                 }
-                console.log(`${currentUser.name}님의 개인 검색 결과:`, companies.length, '개');
-                console.log('🏢 로드된 업체 목록:', companies);
+                console.log(`🔍 검색 결과: ${companies.length}개`);
             } else {
-                console.warn('데이터베이스 연결 없음');
+                companies = await window.dataLoader.loadCompanies(currentUser.id);
+                console.log(`📋 전체 목록: ${companies.length}개`);
             }
 
             displayCompanies(companies);
@@ -192,7 +176,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 현재 로그인한 사용자의 업체 목록 로드
     async function loadCompanies() {
         try {
-            console.log('🔄 main.js loadCompanies 함수 실행 시작');
+            console.log('🔄 업체 목록 로드 시작');
             
             // 색상 설정 먼저 로드
             await loadColorSettings();
@@ -202,16 +186,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 companyList.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">데이터를 불러오는 중...</td></tr>';
             }
 
-            // 현재 로그인한 사용자 확인 (최신 sessionStorage에서 직접 읽기)
-            let currentUser;
-            try {
-                const userJson = sessionStorage.getItem('currentUser');
-                currentUser = userJson ? JSON.parse(userJson) : null;
-            } catch (error) {
-                console.error('사용자 정보 파싱 오류:', error);
-                currentUser = null;
-            }
-            
+            // 간단한 사용자 확인
+            const currentUser = await window.dataLoader.getCurrentUser();
             if (!currentUser) {
                 if (companyList) {
                     companyList.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px; color: #f00;">로그인이 필요합니다.</td></tr>';
@@ -219,28 +195,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            let companies = [];
-            
-            // 데이터베이스에서 로그인한 사용자의 개인 업체 목록만 가져오기
-            if (window.db && window.db.client) {
-                console.log('🔍 loadCompanies - 사용자 정보 확인:', {
-                    id: currentUser.id,
-                    name: currentUser.name,
-                    email: currentUser.email,
-                    role: currentUser.role
-                });
-                
-                companies = await window.db.getClientCompanies(currentUser.id);
-                console.log(`${currentUser.name}님의 개인 업체 목록 로드됨:`, companies.length, '개');
-                console.log('🏢 loadCompanies - 로드된 업체 목록:', companies);
-            } else {
-                console.warn('데이터베이스 연결 없음');
-            }
+            // 업체 목록 로드
+            const companies = await window.dataLoader.loadCompanies(currentUser.id);
+            console.log(`✅ ${currentUser.name}님의 업체 ${companies.length}개 로드 완료`);
             
             displayCompanies(companies);
         } catch (error) {
-            console.error('데이터 로드 중 오류:', error);
-            // 오류 메시지를 표시하지 않고 빈 리스트로 처리
+            console.error('❌ 업체 목록 로드 오류:', error);
             displayCompanies([]);
         }
     }

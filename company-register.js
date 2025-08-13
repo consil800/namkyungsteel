@@ -3,20 +3,17 @@
 let currentUser = null;
 
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('업체 등록 페이지 로드 시작');
+    console.log('📄 업체 등록 페이지 로드 시작');
     
-    // 데이터베이스 초기화 대기
-    await waitForDatabase();
-    
-    // 로그인 확인
-    currentUser = AuthManager.getCurrentUser();
+    // 간단한 사용자 인증
+    currentUser = await window.dataLoader.getCurrentUser();
     if (!currentUser) {
         alert('로그인이 필요합니다.');
         window.location.href = 'login.html';
         return;
     }
 
-    console.log('현재 사용자:', currentUser);
+    console.log('✅ 현재 사용자:', currentUser.name);
 
     // 드롭다운 옵션 로드
     await loadDropdownOptions();
@@ -71,22 +68,16 @@ document.addEventListener('DOMContentLoaded', async function() {
             submitBtn.disabled = true;
             submitBtn.textContent = '등록 중...';
 
-            console.log('데이터베이스 저장 시작');
+            console.log('📝 업체 등록 시작');
             
-            // 데이터베이스에 저장 (개인 업체로)
-            if (window.db && window.db.client) {
-                const result = await window.db.createClientCompany(companyData);
-                console.log('저장 결과:', result);
-                
-                if (result.success) {
-                    alert('업체가 성공적으로 등록되었습니다.');
-                    // worklog.html로 돌아가기
-                    window.location.href = 'worklog.html';
-                } else {
-                    throw new Error('업체 등록에 실패했습니다.');
-                }
+            // 간단한 업체 등록
+            const result = await window.dataLoader.createCompany(companyData, currentUser.id);
+            
+            if (result.success) {
+                alert('업체가 성공적으로 등록되었습니다.');
+                window.location.href = 'worklog.html';
             } else {
-                throw new Error('데이터베이스 연결이 필요합니다.');
+                throw new Error('업체 등록에 실패했습니다.');
             }
 
         } catch (error) {
@@ -108,15 +99,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 });
 
-// 데이터베이스 초기화 대기
-async function waitForDatabase() {
-    let retryCount = 0;
-    while ((!window.db || !window.db.client) && retryCount < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        retryCount++;
-    }
-    console.log('데이터베이스 초기화 상태:', !!window.db, !!window.db?.client);
-}
+// 제거됨 - data-loader.js에서 처리
 
 // 드롭다운 옵션 로드
 async function loadDropdownOptions() {

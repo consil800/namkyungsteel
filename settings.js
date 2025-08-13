@@ -2,15 +2,17 @@
 console.log('settings.js 로드됨');
 
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('설정 페이지 DOM 로드 완료');
+    console.log('📄 설정 페이지 로드 시작');
     
-    // 데이터베이스 초기화 대기
-    let retryCount = 0;
-    while ((!window.db || !window.db.client) && retryCount < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        retryCount++;
+    // 간단한 사용자 인증
+    const currentUser = await window.dataLoader.getCurrentUser();
+    if (!currentUser) {
+        alert('로그인이 필요합니다.');
+        window.location.href = 'login.html';
+        return;
     }
     
+    console.log('✅ 현재 사용자:', currentUser.name);
     await loadSettings();
 });
 
@@ -72,25 +74,31 @@ const DropdownSettings = {
     }
 };
 
-// 설정 로드 및 화면 업데이트
+// 설정 로드 및 화면 업데이트 (단순화)
 async function loadSettings() {
     try {
-        console.log('🔄 settings.js loadSettings 시작');
-        const settings = await DropdownSettings.get();
-        console.log('📊 가져온 설정 데이터:', settings);
+        console.log('🔄 설정 로드 시작');
         
-        // 리스트 형태로 항목들을 표시 (삭제 버튼 포함)
-        displayItemLists(settings);
+        const currentUser = await window.dataLoader.getCurrentUser();
+        if (!currentUser) {
+            throw new Error('사용자 정보 없음');
+        }
         
-        // 색상 미리보기 초기화
+        const settings = await window.dataLoader.loadUserSettings(currentUser.id);
+        console.log('📊 가져온 설정:', settings);
+        
+        // 설정이 없으면 기본값 사용
+        const finalSettings = settings || { ...defaultSettings };
+        
+        // 화면에 표시
+        displayItemLists(finalSettings);
         updateColorPreview();
         
-    } catch (error) {
-        console.error('설정 로드 오류:', error);
+        console.log('✅ 설정 로드 완료');
         
-        // 오류 발생 시 빈 설정으로 리스트 표시
-        const emptySettings = { ...defaultSettings };
-        displayItemLists(emptySettings);
+    } catch (error) {
+        console.error('❌ 설정 로드 오류:', error);
+        displayItemLists({ ...defaultSettings });
     }
 }
 

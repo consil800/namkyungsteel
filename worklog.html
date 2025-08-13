@@ -294,6 +294,7 @@
     <!-- Database Scripts -->
     <script src="database.js?v=20250121002"></script>
     <script src="shared-assets/js/auth.js?v=20250107"></script>
+    <script src="data-loader.js"></script>
     <script src="main.js?v=20250121002"></script>
     <!-- 디버그 스크립트들 완전 제거 (새로고침 원인) -->
     <!--
@@ -400,164 +401,52 @@
             }
         });
         
-        // 페이지 로드 시 사용자 정보 표시 및 지역 드롭다운 로드
+        // 간단한 페이지 초기화
         window.addEventListener('DOMContentLoaded', async function() {
-            // 데이터베이스 초기화 대기
-            console.log('페이지 로드 완료, 데이터베이스 초기화 대기 중...');
-            
-            // 데이터베이스가 초기화될 때까지 최대 5초 대기
-            let retryCount = 0;
-            while ((!window.db || !window.db.client) && retryCount < 50) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                retryCount++;
-            }
-            
-            console.log('데이터베이스 초기화 상태:', !!window.db, !!window.db?.client);
+            console.log('📄 worklog.html 페이지 로드 시작');
             
             // 중복 실행 방지
             if (isPageInitialized) {
-                console.log('⚠️ 페이지가 이미 초기화됨, 중복 실행 방지');
+                console.log('⚠️ 페이지가 이미 초기화됨');
                 return;
             }
             
-            if (isAuthInProgress) {
-                console.log('⚠️ 인증이 이미 진행중, 중복 실행 방지');
-                return;
-            }
-            
-            isAuthInProgress = true;
-            console.log('🔐 인증 프로세스 시작 (뒤로가기:', isBackNavigation, ')');
-            
-            // 현재 로그인한 사용자 정보 가져오기 (여러 방법으로 시도)
-            let currentUser = null;
-            let authAttempts = 0;
-            const maxAttempts = 3; // 항상 3번 시도
-            
-            while (!currentUser && authAttempts < maxAttempts) {
-                console.log(`🔄 인증 시도 ${authAttempts + 1}/${maxAttempts}`);
-                
-                // 1. sessionStorage에서 직접 확인
-                try {
-                    const sessionUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
-                    if (sessionUser && sessionUser.id) {
-                        currentUser = sessionUser;
-                        console.log('✅ sessionStorage에서 사용자 확인:', currentUser);
-                        break;
-                    }
-                } catch (e) {
-                    console.warn('sessionStorage 읽기 실패:', e);
-                }
-                
-                // 2. 데이터베이스에서 확인
-                if (!currentUser) {
-                    currentUser = await getCurrentUserFromDB();
-                    console.log('🧪 getCurrentUserFromDB 결과:', currentUser);
-                }
-                
-                // 3. AuthManager에서 확인
-                if (!currentUser && typeof AuthManager !== 'undefined') {
-                    currentUser = AuthManager.getCurrentUser();
-                    console.log('🧪 AuthManager 결과:', currentUser);
-                }
-                
-                authAttempts++;
-                if (!currentUser && authAttempts < maxAttempts) {
-                    console.log('⏳ 1초 후 재시도...');
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                }
-            }
+            // 간단한 사용자 인증
+            const currentUser = await window.dataLoader.getCurrentUser();
             
             if (currentUser) {
-                // 사용자 이름 표시
-                document.getElementById('userName').textContent = currentUser.name || currentUser.email;
+                // 사용자 정보 표시
+                window.dataLoader.safeUpdateElement('#userName', currentUser.name || currentUser.email);
                 
-                // 프로필 이미지 표시
+                // 프로필 이미지
                 const profileContainer = document.getElementById('profileImageContainer');
                 if (profileContainer) {
-                    // 기본 아바타 생성 함수
-                    function generateDefaultAvatar(name) {
-                        // 한글 문자 처리를 위해 encodeURIComponent 사용
-                        const initials = name ? name.charAt(0).toUpperCase() : '?';
-                        const svgString = `
-                            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="20" cy="20" r="20" fill="#667eea"/>
-                                <text x="20" y="26" font-family="Arial" font-size="18" fill="white" text-anchor="middle">${initials}</text>
-                            </svg>
-                        `;
-                        return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`;
-                    }
-                    
-                    const profileImage = currentUser.profileImage || currentUser.profile_image || generateDefaultAvatar(currentUser.name || 'User');
-                    console.log('🖼️ 프로필 이미지 설정:', {
-                        profileImage: currentUser.profileImage,
-                        profile_image: currentUser.profile_image,
-                        finalImage: profileImage
-                    });
-                    
-                    profileContainer.innerHTML = `
-                        <img src="${profileImage}" alt="프로필" 
-                             style="width: 40px; height: 40px; border-radius: 50%; 
-                                    border: 2px solid #fff; object-fit: cover;">
-                    `;
+                    const initials = (currentUser.name || 'U').charAt(0).toUpperCase();
+                    const svgAvatar = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><circle cx="20" cy="20" r="20" fill="%23667eea"/><text x="20" y="26" font-size="18" fill="white" text-anchor="middle">${initials}</text></svg>`;
+                    profileContainer.innerHTML = `<img src="${svgAvatar}" alt="프로필" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #fff;">`;
                 }
                 
-                // 사용자 역할 표시
-                let roleText = '';
-                switch(currentUser.role) {
-                    case 'master':
-                        roleText = '마스터 관리자';
-                        break;
-                    case 'company_admin':
-                        roleText = '업체 관리자';
-                        break;
-                    case 'company_manager':
-                        roleText = '업체 매니저';
-                        break;
-                    case 'employee':
-                        roleText = '직원';
-                        break;
-                    default:
-                        roleText = currentUser.role || '-';
-                }
-                document.getElementById('userRole').textContent = roleText;
+                // 역할 표시
+                const roleMap = { master: '마스터', company_admin: '업체 관리자', company_manager: '매니저', employee: '직원' };
+                window.dataLoader.safeUpdateElement('#userRole', roleMap[currentUser.role] || '직원');
                 
-                // 개인 업체 목록 알림 표시
-                const alertShown = localStorage.getItem('personalCompanyListAlertShown');
-                if (!alertShown) {
-                    alert(`${currentUser.name || currentUser.email}님의 개인 업체 목록입니다.\n여기서 추가/수정/삭제한 업체 정보는 다른 사용자와 공유되지 않습니다.`);
-                    localStorage.setItem('personalCompanyListAlertShown', 'true');
+                // 지역 목록 로드
+                loadRegions();
+                
+                // 업체 목록 로드
+                if (window.loadCompanies) {
+                    setTimeout(() => window.loadCompanies(), 100);
                 }
+                
+                isPageInitialized = true;
+                console.log('✅ 페이지 초기화 완료');
             } else {
-                console.log('❌ 모든 인증 방법 실패');
-                isAuthInProgress = false;
-                
-                // 뒤로가기의 경우 리다이렉트하지 않고 경고만 표시
-                if (isBackNavigation) {
-                    console.warn('🔙 뒤로가기로 온 경우 리다이렉트 하지 않음');
-                    return;
+                console.log('❌ 로그인 필요');
+                if (!isBackNavigation) {
+                    alert('로그인이 필요합니다.');
+                    window.location.href = 'login.html';
                 }
-                
-                // 로그인되지 않은 경우 로그인 페이지로 이동
-                alert('로그인이 필요합니다.');
-                window.location.href = 'login.html';
-                return;
             }
-            
-            // 지역 목록 로드
-            loadRegions();
-            
-            // 사용자 정보 업데이트 후 업체 목록 다시 로드
-            if (currentUser && window.loadCompanies) {
-                console.log('🔄 사용자 정보 업데이트 후 업체 목록 재로드');
-                setTimeout(function() {
-                    window.loadCompanies();
-                }, 100);
-            }
-            
-            // 초기화 완료 표시
-            isAuthInProgress = false;
-            isPageInitialized = true;
-            console.log('✅ 페이지 초기화 완료');
         });
         
         // 대시보드로 이동 함수

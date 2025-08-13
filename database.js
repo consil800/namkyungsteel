@@ -483,6 +483,15 @@ class DatabaseManager {
             // user_id가 숫자인 경우 문자열로 변환
             const userId = workLogData.user_id ? workLogData.user_id.toString() : workLogData.userId?.toString();
             
+            // RLS를 위해 현재 사용자 ID 설정
+            console.log('🔐 RLS를 위한 사용자 ID 설정:', userId);
+            const { error: rpcError } = await this.client.rpc('set_current_user_id', { user_id: userId });
+            
+            if (rpcError) {
+                console.error('❌ RLS 사용자 ID 설정 오류:', rpcError);
+                throw rpcError;
+            }
+            
             // work_logs 테이블에 직접 저장
             const { data, error } = await this.client
                 .from('work_logs')
