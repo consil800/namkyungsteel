@@ -32,6 +32,55 @@ document.addEventListener('DOMContentLoaded', function() {
         return colorMapping[colorCode] || colorCode;
     };
 
+    // 색상별 hideVisitDate 설정을 저장할 객체
+    let colorHideVisitDateMap = {};
+
+    // 색상 설정 로드 함수
+    async function loadColorSettings() {
+        try {
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+            if (!currentUser.id) return;
+
+            const db = new DatabaseManager();
+            await db.init();
+            const settings = await db.getUserSettings(currentUser.id);
+            
+            // 색상 설정 파싱
+            if (settings.colors) {
+                colorHideVisitDateMap = {};
+                settings.colors.forEach(colorData => {
+                    try {
+                        // colorData.value가 JSON 문자열인 경우 파싱
+                        if (typeof colorData.value === 'string' && colorData.value.startsWith('{')) {
+                            const metadata = JSON.parse(colorData.value);
+                            colorHideVisitDateMap[colorData.name] = metadata.hideVisitDate || false;
+                        }
+                    } catch (e) {
+                        // 파싱 실패 시 기본값 false
+                        colorHideVisitDateMap[colorData.name] = false;
+                    }
+                });
+                // 회색은 항상 hideVisitDate true
+                colorHideVisitDateMap['회색'] = true;
+                colorHideVisitDateMap['gray'] = true;
+            }
+            console.log('색상별 방문일 숨김 설정:', colorHideVisitDateMap);
+        } catch (error) {
+            console.error('색상 설정 로드 오류:', error);
+        }
+    }
+
+    // 방문일을 숨겨야 하는지 확인하는 함수
+    function shouldHideVisitDate(colorCode) {
+        if (!colorCode) return false;
+        
+        // 회색은 항상 숨김
+        if (colorCode === 'gray' || colorCode === '회색') return true;
+        
+        // 색상별 hideVisitDate 설정 확인
+        return colorHideVisitDateMap[colorCode] === true;
+    }
+
     // 초기 데이터 로드 (사용자 정보가 업데이트될 때까지 대기)
     // worklog.html에서 getCurrentUserFromDB() 실행 후 loadCompanies()를 호출하므로 여기서는 주석 처리
     
@@ -145,6 +194,9 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             console.log('🔄 main.js loadCompanies 함수 실행 시작');
             
+            // 색상 설정 먼저 로드
+            await loadColorSettings();
+            
             // 로딩 표시
             if (companyList) {
                 companyList.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">데이터를 불러오는 중...</td></tr>';
@@ -248,7 +300,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td>${company.phone || '미입력'}</td>
                 <td>${company.business_type || '미입력'}</td>
                 <td class="visit-count">${company.visitCount || 0}</td>
-                <td class="last-visit">${company.color_code === 'gray' ? '-' : (company.lastVisitDate ? formatDate(company.lastVisitDate) + '일' : '방문기록 없음')}</td>
+                <td class="last-visit">${shouldHideVisitDate(company.color_code) ? '-' : (company.lastVisitDate ? formatDate(company.lastVisitDate) + '일' : '방문기록 없음')}</td>
             </tr>
         `).join('');
 
@@ -559,10 +611,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     bValue = b.visitCount || 0;
                     return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
                 case 6: // 최근방문일
-                    // 회색 업체는 정렬에서 제외하고 맨 뒤로
-                    if (a.color_code === 'gray' && b.color_code === 'gray') return 0;
-                    if (a.color_code === 'gray') return sortDirection === 'asc' ? 1 : -1;
-                    if (b.color_code === 'gray') return sortDirection === 'asc' ? -1 : 1;
+                    // 방문일이 숨겨진 업체는 정렬에서 제외하고 맨 뒤로
+                    const aHidden = shouldHideVisitDate(a.color_code);
+                    const bHidden = shouldHideVisitDate(b.color_code);
+                    
+                    if (aHidden && bHidden) return 0;
+                    if (aHidden) return sortDirection === 'asc' ? 1 : -1;
+                    if (bHidden) return sortDirection === 'asc' ? -1 : 1;
                     
                     aValue = a.lastVisitDate ? new Date(a.lastVisitDate) : new Date(0);
                     bValue = b.lastVisitDate ? new Date(b.lastVisitDate) : new Date(0);
@@ -603,7 +658,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td>${company.phone || '미입력'}</td>
                 <td>${company.business_type || '미입력'}</td>
                 <td class="visit-count">${company.visitCount || 0}</td>
-                <td class="last-visit">${company.color_code === 'gray' ? '-' : (company.lastVisitDate ? formatDate(company.lastVisitDate) + '일' : '방문기록 없음')}</td>
+                <td class="last-visit">${shouldHideVisitDate(company.color_code) ? '-' : (company.lastVisitDate ? formatDate(company.lastVisitDate) + '일' : '방문기록 없음')}</td>
             </tr>
         `).join('');
 

@@ -176,12 +176,32 @@ function displayColorList(listId, colors) {
     
     listElement.innerHTML = '';
     colors.forEach(color => {
+        // 색상 값과 방문일 숨김 설정 파싱
+        let colorValue = color.value;
+        let hideVisitDate = false;
+        
+        try {
+            if (typeof color.value === 'string' && color.value.startsWith('{')) {
+                const metadata = JSON.parse(color.value);
+                colorValue = metadata.color;
+                hideVisitDate = metadata.hideVisitDate || false;
+            }
+        } catch (e) {
+            // 파싱 실패 시 기본값 사용
+        }
+        
+        // 회색은 항상 방문일 숨김
+        if (color.name === '회색' || color.name === 'gray') {
+            hideVisitDate = true;
+        }
+        
         const li = document.createElement('li');
         li.className = 'option-item';
         li.innerHTML = `
             <span class="option-text">
-                <span class="color-preview" style="background-color: ${color.value}; display: inline-block; width: 20px; height: 20px; border-radius: 50%; margin-right: 10px; border: 1px solid #ddd; vertical-align: middle;"></span>
+                <span class="color-preview" style="background-color: ${colorValue}; display: inline-block; width: 20px; height: 20px; border-radius: 50%; margin-right: 10px; border: 1px solid #ddd; vertical-align: middle;"></span>
                 ${color.name}
+                ${hideVisitDate ? '<span style="margin-left: 10px; color: #666; font-size: 12px;">(방문일 숨김)</span>' : ''}
             </span>
             <div class="option-actions">
                 <button class="btn btn-danger btn-small" onclick="deleteColor('${color.name.replace(/'/g, "\\'")}')">삭제</button>
@@ -254,6 +274,7 @@ async function addVisitPurpose() {
 async function confirmAddColor() {
     const nameInput = document.getElementById('newColorName');
     const valueInput = document.getElementById('newColorValue');
+    const hideVisitDateInput = document.getElementById('newColorHideVisitDate');
     
     if (!nameInput || !valueInput) {
         alert('색상 입력 요소를 찾을 수 없습니다.');
@@ -262,6 +283,7 @@ async function confirmAddColor() {
     
     const colorName = nameInput.value.trim();
     const colorValue = valueInput.value;
+    const hideVisitDate = hideVisitDateInput ? hideVisitDateInput.checked : false;
     
     if (!colorName) {
         alert('색상 이름을 입력해주세요.');
@@ -270,12 +292,13 @@ async function confirmAddColor() {
     }
     
     try {
-        // 색상을 데이터베이스에 저장
-        await saveColorToDatabase(colorName, colorValue);
+        // 색상을 데이터베이스에 저장 (hideVisitDate 포함)
+        await saveColorToDatabase(colorName, colorValue, hideVisitDate);
         
         // 입력창 초기화
         nameInput.value = '';
         valueInput.value = '#ff69b4';
+        if (hideVisitDateInput) hideVisitDateInput.checked = false;
         updateColorPreview();
         
         alert(`색상 "${colorName}"이(가) 추가되었습니다! 새로고침 후 확인하세요.`);
@@ -347,16 +370,20 @@ async function addItem(type, inputId) {
 }
 
 // 색상 저장 함수 (user_settings 테이블 사용)
-async function saveColorToDatabase(colorName, colorValue) {
+async function saveColorToDatabase(colorName, colorValue, hideVisitDate = false) {
     const userId = await DropdownSettings.getCurrentUserId();
     if (!userId) {
         throw new Error('사용자 정보가 없습니다.');
     }
     
-    // user_settings 테이블에 색상 저장
+    // user_settings 테이블에 색상 저장 (hideVisitDate 정보 포함)
     const db = new DatabaseManager();
     await db.init();
-    await db.addUserSetting(userId, 'color', colorName, colorName, colorValue);
+    const metadata = {
+        color: colorValue,
+        hideVisitDate: hideVisitDate
+    };
+    await db.addUserSetting(userId, 'color', colorName, colorName, JSON.stringify(metadata));
     
     console.log(`✅ 색상 "${colorName}" (${colorValue}) user_settings에 저장 완료`);
     
