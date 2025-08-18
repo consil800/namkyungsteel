@@ -195,21 +195,39 @@ const AuthManager = {
                 
                 // 관리자들에게 알림 생성
                 try {
-                    const notificationTemplate = {
-                        type: 'user_registration',
-                        title: '신규 회원가입 승인 요청',
-                        message: `${enhancedUserData.name}님이 회원가입을 신청했습니다. 승인이 필요합니다.`,
-                        related_id: result.data.id,
-                        company_domain: enhancedUserData.company_domain || 'namkyungsteel.com'
-                    };
+                    // company_CEO와 company_admin 역할의 사용자들 조회
+                    const { data: admins, error: adminError } = await window.db.client
+                        .from('users')
+                        .select('id')
+                        .in('role', ['company_CEO', 'company_admin'])
+                        .eq('company_domain', enhancedUserData.company_domain || 'namkyungsteel.com')
+                        .eq('is_active', true);
                     
-                    // master, company_CEO, company_admin 역할에게 알림 발송
-                    await window.db.createNotificationForRoles(
-                        ['master', 'company_CEO', 'company_admin'],
-                        enhancedUserData.company_domain || 'namkyungsteel.com',
-                        notificationTemplate
-                    );
-                    console.log('✅ 관리자 알림 생성 완료');
+                    if (adminError) {
+                        console.error('관리자 조회 오류:', adminError);
+                    } else if (admins && admins.length > 0) {
+                        // 각 관리자에게 알림 생성
+                        const notifications = admins.map(admin => ({
+                            user_id: admin.id,
+                            type: 'user_registration',
+                            title: '신규 회원가입 승인 요청',
+                            message: `${enhancedUserData.name}님이 회원가입을 신청했습니다. 승인이 필요합니다.`,
+                            related_id: result.data.id,
+                            company_domain: enhancedUserData.company_domain || 'namkyungsteel.com',
+                            is_read: false,
+                            created_at: new Date().toISOString()
+                        }));
+                        
+                        const { error: notifError } = await window.db.client
+                            .from('notifications')
+                            .insert(notifications);
+                        
+                        if (notifError) {
+                            console.error('알림 생성 오류:', notifError);
+                        } else {
+                            console.log('✅ 관리자 알림 생성 완료:', notifications.length, '개');
+                        }
+                    }
                 } catch (notificationError) {
                     console.error('알림 생성 실패:', notificationError);
                     // 알림 실패해도 회원가입은 성공한 것으로 처리
