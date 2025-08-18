@@ -275,12 +275,16 @@ function initEventListeners() {
                 // 트리거가 자동으로 업체 방문 통계를 업데이트함
                 alert('업무일지가 성공적으로 저장되었습니다.');
                 
-                // 관련 캐시 클리어
-                window.clearCachedData(`company_list_${currentUser.id}`);
-                window.clearCachedData(`work_logs_${companyId}_${currentUser.id}`);
-                
-                // 업체 상세 페이지로 돌아가기
-                window.location.href = `company-detail.html?id=${companyId}`;
+                // 관련 캐시 클리어 (약간의 지연 후)
+                setTimeout(() => {
+                    window.clearCachedData(`company_list_${currentUser.id}`);
+                    window.clearCachedData(`work_logs_${companyId}_${currentUser.id}`);
+                    
+                    // 캐시 클리어 후 약간의 지연을 두고 페이지 이동
+                    setTimeout(() => {
+                        window.location.href = `company-detail.html?id=${companyId}`;
+                    }, 200);
+                }, 100);
             } else {
                 throw new Error('업무일지 저장에 실패했습니다.');
             }
