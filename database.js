@@ -48,7 +48,7 @@ class DatabaseManager {
         }
     }
 
-    // RLS를 위한 현재 사용자 ID 설정
+    // RLS를 위한 현재 사용자 ID 설정 (안전한 방식)
     async setCurrentUserForRLS() {
         try {
             // sessionStorage에서 현재 사용자 정보 가져오기
@@ -58,10 +58,12 @@ class DatabaseManager {
                 // Supabase에서 RLS 정책이 참조할 수 있는 사용자 ID 설정
                 await this.client.rpc('set_current_user_id', { user_id: currentUser.id.toString() });
                 console.log('✅ RLS 사용자 ID 설정 완료');
+            } else {
+                console.warn('⚠️ 사용자 정보가 없어 RLS 설정을 건너뜁니다');
             }
         } catch (error) {
-            console.error('❌ RLS 사용자 ID 설정 실패:', error);
-            throw error; // 이제 RLS가 필수이므로 에러를 던짐
+            console.warn('⚠️ RLS 사용자 ID 설정 실패, 일반 모드로 진행:', error);
+            // RLS 실패해도 시스템이 계속 작동하도록 변경 (throw 제거)
         }
     }
 

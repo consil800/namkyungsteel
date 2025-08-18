@@ -13,6 +13,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Database Scripts -->
     <script src="database.js"></script>
+    <!-- Data Stability Scripts -->
+    <script src="data-stability.js"></script>
     
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -298,26 +300,13 @@
                 }
             }
             
-            // 현재 사용자 확인 (sessionStorage에서 가져오기)
-            const userSession = sessionStorage.getItem('currentUser');
-            if (userSession) {
-                try {
-                    currentUser = JSON.parse(userSession);
-                } catch (error) {
-                    console.error('사용자 세션 파싱 오류:', error);
-                }
-            } else {
-                // sessionStorage에 없으면 localStorage에서 확인
-                const localUserSession = localStorage.getItem('currentUser');
-                if (localUserSession) {
-                    try {
-                        currentUser = JSON.parse(localUserSession);
-                        // sessionStorage에도 동기화
-                        sessionStorage.setItem('currentUser', localUserSession);
-                    } catch (error) {
-                        console.error('로컴 사용자 세션 파싱 오류:', error);
-                    }
-                }
+            // 안전한 사용자 정보 가져오기
+            currentUser = await window.getCurrentUserSafely();
+            if (!currentUser) {
+                console.error('❌ 사용자 인증 실패');
+                alert('사용자 인증에 실패했습니다. 다시 로그인해주세요.');
+                window.location.href = 'login.html';
+                return;
             }
             
             // 권한 확인 (디버그 정보 추가)
@@ -352,7 +341,7 @@
             return managerRoles.includes(user.role);
         }
 
-        // 승인 대기 회원 목록 로드
+        // 승인 대기 회원 목록 로드 (안전한 방식)
         async function loadPendingMembers() {
             console.log('📋 승인 대기 회원 목록 로드');
             
@@ -366,10 +355,9 @@
                 </div>
             `;
             
-            // 데이터베이스에서 승인 대기 중인 사용자 조회
-            let pendingMembers = [];
-            if (window.db && window.db.client) {
-                try {
+            // 안전한 데이터 로딩 사용
+            const pendingMembers = await window.safeLoadData(
+                async () => {
                     const { data, error } = await window.db.client
                         .from('users')
                         .select('*')
@@ -377,16 +365,12 @@
                         .eq('is_active', true)
                         .order('created_at', { ascending: false });
                         
-                    if (error) {
-                        console.error('❌ 승인 대기 회원 조회 오류:', error);
-                    } else {
-                        pendingMembers = data || [];
-                        console.log('✅ 승인 대기 회원 조회 완료:', pendingMembers.length, '명');
-                    }
-                } catch (error) {
-                    console.error('❌ 데이터베이스 조회 예외:', error);
-                }
-            }
+                    if (error) throw error;
+                    return data || [];
+                },
+                'pending_members',
+                [] // 기본값: 빈 배열
+            );
             
             // HTML 생성
             let html = '';

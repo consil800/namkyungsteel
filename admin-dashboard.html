@@ -13,6 +13,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Database Manager -->
     <script src="database.js"></script>
+    <!-- Data Stability Manager -->
+    <script src="data-stability.js"></script>
     <!-- Auth Manager -->
     <script src="shared-assets/js/auth.js"></script>
     
@@ -2009,15 +2011,13 @@
             roleSelect.innerHTML = options;
         }
 
-        // 직원 목록 렌더링
+        // 직원 목록 렌더링 (안전한 방식)
         async function renderEmployeeList() {
             console.log('🔄 직원 목록 렌더링 시작');
             
-            let employees = [];
-            
-            // 데이터베이스에서 직원 목록 로드
-            if (window.db && window.db.client) {
-                try {
+            // 안전한 데이터 로딩 사용
+            const employees = await window.safeLoadData(
+                async () => {
                     const { data, error } = await window.db.client
                         .from('users')
                         .select('*')
@@ -2026,23 +2026,12 @@
                         .neq('role', 'master')    // master는 제외
                         .order('name', { ascending: true });
                         
-                    if (error) {
-                        console.error('❌ 직원 목록 조회 오류:', error);
-                    } else {
-                        employees = data || [];
-                        console.log('✅ 데이터베이스에서 직원 목록 로드 완료:', employees.length, '명 (master 제외)');
-                    }
-                } catch (error) {
-                    console.error('❌ 데이터베이스 조회 예외:', error);
-                }
-            }
-            
-            // 백업으로 localStorage에서 가져오기 (master 제외)
-            if (employees.length === 0) {
-                const allEmployees = JSON.parse(localStorage.getItem('employees') || '[]');
-                employees = allEmployees.filter(emp => emp.role !== 'master');
-                console.log('📂 localStorage에서 직원 데이터 백업 로드:', employees.length, '명 (master 제외)');
-            }
+                    if (error) throw error;
+                    return data || [];
+                },
+                'employee_list',
+                [] // 기본값: 빈 배열
+            );
             
             const employeeList = document.getElementById('employeeList');
             const currentUser = AuthManager.getCurrentUser();
@@ -3969,6 +3958,13 @@
             window.location.href = 'corporate-card.html?admin=true';
         }
         window.openCorporateCardManagement = openCorporateCardManagement;
+        
+        // 가입 승인 페이지로 이동
+        function showPendingMembers() {
+            console.log('가입 승인 페이지로 이동');
+            window.location.href = 'pending-members.html';
+        }
+        window.showPendingMembers = showPendingMembers;
 
         // 승인 대기 회원 수 확인
         async function checkPendingMembers() {
@@ -4009,8 +4005,24 @@
                 // 현재 사용자의 읽지 않은 알림 개수도 확인
                 const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
                 if (currentUser.id) {
-                    const unreadCount = await window.db.getUnreadNotificationCount(currentUser.id);
-                    console.log('📬 읽지 않은 알림:', unreadCount);
+                    // 회원가입 승인 요청 알림 확인
+                    const { data: notifications, error: notifError } = await window.db.client
+                        .from('notifications')
+                        .select('*')
+                        .eq('user_id', currentUser.id)
+                        .eq('type', 'user_registration')
+                        .eq('is_read', false);
+                    
+                    if (!notifError && notifications) {
+                        console.log('📬 읽지 않은 회원가입 알림:', notifications.length);
+                        
+                        // 알림 아이콘이나 배지 업데이트
+                        const notifBadge = document.getElementById('notificationBadge');
+                        if (notifBadge && notifications.length > 0) {
+                            notifBadge.textContent = notifications.length;
+                            notifBadge.style.display = 'block';
+                        }
+                    }
                 }
                 
             } catch (error) {
