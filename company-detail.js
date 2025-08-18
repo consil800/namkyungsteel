@@ -78,39 +78,75 @@ function getCompanyNotes(notes) {
     }
 }
 
-// 업체 상세 정보 로드
+// 업체 상세 정보 로드 (안전한 방식)
 async function loadCompanyDetails(companyId) {
     try {
-        console.log('업체 정보 로드 시작, ID:', companyId);
+        console.log('📊 업체 정보 안전 로드 시작, ID:', companyId);
         
-        if (!window.db || !window.db.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
+        // DataStabilityManager 사용하여 안전한 데이터 로딩
+        const companies = await window.safeLoadData(
+            async () => {
+                if (!window.db || !window.db.client) {
+                    throw new Error('데이터베이스 연결이 필요합니다.');
+                }
+                
+                console.log('🔍 company-detail.js - getClientCompanies 호출 전 currentUser.id:', currentUser.id, 'typeof:', typeof currentUser.id);
+                const result = await window.db.getClientCompanies(currentUser.id);
+                console.log('🔍 company-detail.js - getClientCompanies 결과:', result.length, '개');
+                return result;
+            },
+            `company_list_${currentUser.id}`,
+            [] // 기본값: 빈 배열
+        );
         
-        // 업체 정보 가져오기
-        console.log('🔍 company-detail.js - getClientCompanies 호출 전 currentUser.id:', currentUser.id, 'typeof:', typeof currentUser.id);
-        const companies = await window.db.getClientCompanies(currentUser.id);
-        console.log('🔍 company-detail.js - getClientCompanies 결과:', companies.length, '개');
         currentCompany = companies.find(c => c.id == companyId);
         console.log('🔍 company-detail.js - 찾은 업체:', currentCompany);
         
         if (!currentCompany) {
-            throw new Error('업체를 찾을 수 없습니다.');
+            // 캐시 클리어 후 한 번 더 시도
+            console.warn('⚠️ 업체를 찾을 수 없어 캐시 클리어 후 재시도');
+            window.clearCachedData(`company_list_${currentUser.id}`);
+            
+            const companiesRetry = await window.safeLoadData(
+                async () => {
+                    const result = await window.db.getClientCompanies(currentUser.id);
+                    return result;
+                },
+                `company_list_${currentUser.id}`,
+                []
+            );
+            
+            currentCompany = companiesRetry.find(c => c.id == companyId);
+            
+            if (!currentCompany) {
+                throw new Error('업체를 찾을 수 없습니다.');
+            }
         }
         
-        console.log('업체 정보 로드됨:', currentCompany);
+        console.log('✅ 업체 정보 로드됨:', currentCompany);
         
         // 업체 정보 표시
         displayCompanyDetails(currentCompany);
         
-        // 업무일지 목록 로드 및 방문횟수 동기화
-        await loadWorkLogs(companyId);
-        await syncVisitCount(companyId);
+        // 업무일지 목록 로드 및 방문횟수 동기화 (안전한 방식)
+        await loadWorkLogsWithStability(companyId);
+        await syncVisitCountWithStability(companyId);
         
     } catch (error) {
-        console.error('업체 정보 로드 오류:', error);
-        alert('업체 정보를 불러오는데 실패했습니다: ' + error.message);
-        window.location.href = 'worklog.html';
+        console.error('❌ 업체 정보 로드 오류:', error);
+        
+        // 사용자 친화적 에러 처리
+        const errorContainer = document.getElementById('companyDetails');
+        if (errorContainer) {
+            errorContainer.innerHTML = `
+                <div style="text-align: center; padding: 2rem; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; color: #856404;">
+                    <h3>⚠️ 업체 정보를 불러올 수 없습니다</h3>
+                    <p>네트워크 연결을 확인하고 다시 시도해주세요.</p>
+                    <button onclick="window.location.reload()" class="btn btn-primary">새로고침</button>
+                    <button onclick="window.location.href='worklog.html'" class="btn btn-secondary">목록으로 돌아가기</button>
+                </div>
+            `;
+        }
     }
 }
 
@@ -379,7 +415,7 @@ async function populateEditForm(company) {
     }
 }
 
-// 업체 정보 수정
+// 업체 정보 수정 (안전한 방식)
 async function updateCompany() {
     try {
         const formData = new FormData(document.getElementById('editCompanyForm'));
@@ -405,7 +441,7 @@ async function updateCompany() {
             return;
         }
         
-        console.log('업체 정보 수정 시작:', updateData);
+        console.log('💾 업체 정보 안전 수정 시작:', updateData);
         console.log('🔍 updateData 키 목록:', Object.keys(updateData));
         console.log('🎨 color_code 값:', updateData.color_code);
         
@@ -432,22 +468,42 @@ async function updateCompany() {
             updateData.color_code = colorMapping[updateData.color_code];
         }
         
-        const result = await window.db.updateClientCompany(currentCompany.id, updateData);
+        // 안전한 업데이트 실행
+        const result = await window.safeLoadData(
+            async () => {
+                if (!window.db || !window.db.client) {
+                    throw new Error('데이터베이스 연결이 필요합니다.');
+                }
+                
+                const updateResult = await window.db.updateClientCompany(currentCompany.id, updateData);
+                
+                if (!updateResult.success) {
+                    throw new Error('업체 정보 수정에 실패했습니다.');
+                }
+                
+                return updateResult;
+            },
+            `update_company_${currentCompany.id}_${Date.now()}`, // 캐시하지 않도록 고유 키 사용
+            null
+        );
         
-        if (result.success) {
+        if (result && result.success) {
             alert('업체 정보가 성공적으로 수정되었습니다.');
             document.getElementById('editModal').style.display = 'none';
             
             console.log('✅ 수정 완료, 업체 정보 다시 로드 중...');
-            // 업체 정보 다시 로드
+            
+            // 캐시 클리어 후 업체 정보 다시 로드
+            window.clearCachedData(`company_list_${currentUser.id}`);
             await loadCompanyDetails(currentCompany.id);
+            
             console.log('✅ 업체 정보 재로드 완료, 새로운 색상:', currentCompany?.color_code);
         } else {
             throw new Error('업체 정보 수정에 실패했습니다.');
         }
         
     } catch (error) {
-        console.error('업체 정보 수정 오류:', error);
+        console.error('❌ 업체 정보 수정 오류:', error);
         alert('업체 정보 수정 중 오류가 발생했습니다: ' + error.message);
     }
 }
@@ -476,29 +532,48 @@ async function deleteCompany(companyId) {
     }
 }
 
-// 업무일지 목록 로드
-async function loadWorkLogs(companyId) {
+// 업무일지 목록 로드 (안전한 방식)
+async function loadWorkLogsWithStability(companyId) {
     try {
-        console.log('업무일지 목록 로드 시작:', companyId);
+        console.log('📋 업무일지 목록 안전 로드 시작:', companyId);
         
-        if (!window.db || !window.db.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-        
-        // 해당 업체의 업무일지 가져오기 (현재 사용자만)
-        const workLogs = await window.db.getWorkLogsByCompany(companyId, currentUser.id);
-        console.log('업무일지 목록:', workLogs);
+        // 안전한 데이터 로딩 사용
+        const workLogs = await window.safeLoadData(
+            async () => {
+                if (!window.db || !window.db.client) {
+                    throw new Error('데이터베이스 연결이 필요합니다.');
+                }
+                
+                const result = await window.db.getWorkLogsByCompany(companyId, currentUser.id);
+                console.log('업무일지 목록:', result);
+                return result;
+            },
+            `work_logs_${companyId}_${currentUser.id}`,
+            [] // 기본값: 빈 배열
+        );
         
         displayWorkLogs(workLogs);
         
     } catch (error) {
-        console.error('업무일지 목록 로드 오류:', error);
-        // 에러가 발생해도 페이지는 표시되도록 함
+        console.error('❌ 업무일지 목록 로드 오류:', error);
+        
+        // 사용자 친화적 에러 처리
         const workLogList = document.getElementById('workLogList');
         if (workLogList) {
-            workLogList.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">업무일지를 불러올 수 없습니다.</p>';
+            workLogList.innerHTML = `
+                <div style="text-align: center; padding: 2rem; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px;">
+                    <h4>⚠️ 업무일지를 불러올 수 없습니다</h4>
+                    <p style="color: #666; margin: 1rem 0;">네트워크 연결을 확인하고 다시 시도해주세요.</p>
+                    <button onclick="loadWorkLogsWithStability(${companyId})" class="btn btn-primary">다시 시도</button>
+                </div>
+            `;
         }
     }
+}
+
+// 기존 함수를 유지 (호환성을 위해)
+async function loadWorkLogs(companyId) {
+    await loadWorkLogsWithStability(companyId);
 }
 
 // 업무일지 목록 표시
@@ -590,17 +665,25 @@ async function deleteWorkLog(companyId, workLogId) {
 // 전역 함수로 등록
 window.deleteWorkLog = deleteWorkLog;
 
-// 방문횟수 동기화 (업무일지 개수와 일치시키기)
-async function syncVisitCount(companyId) {
+// 방문횟수 동기화 (안전한 방식)
+async function syncVisitCountWithStability(companyId) {
     try {
-        console.log('방문횟수 동기화 시작:', companyId);
+        console.log('🔄 방문횟수 안전 동기화 시작:', companyId);
         
-        if (!window.db || !window.db.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
+        // 안전한 데이터 로딩으로 업무일지 개수 가져오기
+        const workLogs = await window.safeLoadData(
+            async () => {
+                if (!window.db || !window.db.client) {
+                    throw new Error('데이터베이스 연결이 필요합니다.');
+                }
+                
+                const result = await window.db.getWorkLogsByCompany(companyId, currentUser.id);
+                return result;
+            },
+            `work_logs_${companyId}_${currentUser.id}`,
+            []
+        );
         
-        // 현재 업무일지 개수 가져오기
-        const workLogs = await window.db.getWorkLogsByCompany(companyId, currentUser.id);
         const actualVisitCount = workLogs.length;
         
         // 최근 방문일 계산
@@ -619,10 +702,21 @@ async function syncVisitCount(companyId) {
                 last_visit_date: lastVisitDate
             };
             
-            const result = await window.db.updateClientCompany(companyId, updateData);
+            // 안전한 업데이트 시도
+            const result = await window.safeLoadData(
+                async () => {
+                    const updateResult = await window.db.updateClientCompany(companyId, updateData);
+                    if (!updateResult.success) {
+                        throw new Error('업데이트 실패');
+                    }
+                    return updateResult;
+                },
+                `update_company_${companyId}_${Date.now()}`, // 캐시하지 않도록 고유 키 사용
+                null
+            );
             
-            if (result.success) {
-                console.log('방문횟수 동기화 완료');
+            if (result && result.success) {
+                console.log('✅ 방문횟수 동기화 완료');
                 // 현재 업체 정보 업데이트
                 currentCompany.visit_count = actualVisitCount;
                 currentCompany.last_visit_date = lastVisitDate;
@@ -632,7 +726,12 @@ async function syncVisitCount(companyId) {
         }
         
     } catch (error) {
-        console.error('방문횟수 동기화 오류:', error);
+        console.error('⚠️ 방문횟수 동기화 오류:', error);
         // 에러가 발생해도 페이지는 정상 표시
     }
+}
+
+// 기존 함수를 유지 (호환성을 위해)
+async function syncVisitCount(companyId) {
+    await syncVisitCountWithStability(companyId);
 }

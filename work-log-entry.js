@@ -67,24 +67,52 @@ async function waitForDatabase() {
     console.log('데이터베이스 초기화 상태:', !!window.db, !!window.db?.client);
 }
 
-// 업체 정보 로드
+// 업체 정보 로드 (안전한 방식)
 async function loadCompanyInfo() {
     try {
-        console.log('업체 정보 로드 시작, ID:', companyId);
+        console.log('📊 업체 정보 안전 로드 시작, ID:', companyId);
         
-        if (!window.db || !window.db.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
+        // DataStabilityManager 사용하여 안전한 데이터 로딩
+        const companies = await window.safeLoadData(
+            async () => {
+                if (!window.db || !window.db.client) {
+                    throw new Error('데이터베이스 연결이 필요합니다.');
+                }
+                
+                console.log('🔍 work-log-entry.js - getClientCompanies 호출 전 currentUser.id:', currentUser.id);
+                const result = await window.db.getClientCompanies(currentUser.id);
+                console.log('🔍 work-log-entry.js - getClientCompanies 결과:', result.length, '개');
+                return result;
+            },
+            `company_list_${currentUser.id}`,
+            [] // 기본값: 빈 배열
+        );
         
-        // 업체 정보 가져오기
-        const companies = await window.db.getClientCompanies(currentUser.id);
         currentCompany = companies.find(c => c.id == companyId);
+        console.log('🔍 work-log-entry.js - 찾은 업체:', currentCompany);
         
         if (!currentCompany) {
-            throw new Error('업체를 찾을 수 없습니다.');
+            // 캐시 클리어 후 한 번 더 시도
+            console.warn('⚠️ 업체를 찾을 수 없어 캐시 클리어 후 재시도');
+            window.clearCachedData(`company_list_${currentUser.id}`);
+            
+            const companiesRetry = await window.safeLoadData(
+                async () => {
+                    const result = await window.db.getClientCompanies(currentUser.id);
+                    return result;
+                },
+                `company_list_${currentUser.id}`,
+                []
+            );
+            
+            currentCompany = companiesRetry.find(c => c.id == companyId);
+            
+            if (!currentCompany) {
+                throw new Error('업체를 찾을 수 없습니다.');
+            }
         }
         
-        console.log('업체 정보 로드됨:', currentCompany);
+        console.log('✅ 업체 정보 로드됨:', currentCompany);
         
         // 업체 정보 표시
         displayCompanyInfo(currentCompany);
@@ -93,9 +121,26 @@ async function loadCompanyInfo() {
         document.getElementById('workLogTitle').textContent = `${currentCompany.company_name} - 업무일지 작성`;
         
     } catch (error) {
-        console.error('업체 정보 로드 오류:', error);
-        alert('업체 정보를 불러오는데 실패했습니다: ' + error.message);
-        window.location.href = 'worklog.html';
+        console.error('❌ 업체 정보 로드 오류:', error);
+        
+        // 사용자 친화적 에러 처리
+        const companyInfoSection = document.getElementById('companyInfo');
+        if (companyInfoSection) {
+            companyInfoSection.innerHTML = `
+                <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 1rem; margin-bottom: 20px; text-align: center; color: #856404;">
+                    <h3>⚠️ 업체 정보를 불러올 수 없습니다</h3>
+                    <p>네트워크 연결을 확인하고 다시 시도해주세요.</p>
+                    <button onclick="window.location.reload()" class="btn btn-primary">새로고침</button>
+                    <button onclick="window.location.href='worklog.html'" class="btn btn-secondary">목록으로 돌아가기</button>
+                </div>
+            `;
+        }
+        
+        // 페이지 제목도 업데이트
+        const titleElement = document.getElementById('workLogTitle');
+        if (titleElement) {
+            titleElement.textContent = '업무일지 작성 - 업체 정보 로드 실패';
+        }
     }
 }
 
@@ -206,21 +251,38 @@ function initEventListeners() {
 
             console.log('데이터베이스 저장 시작');
             
-            // 데이터베이스에 저장
-            if (window.db && window.db.client) {
-                const result = await window.db.createWorkLog(workLogData);
-                console.log('저장 결과:', result);
+            // 안전한 데이터베이스 저장
+            const result = await window.safeLoadData(
+                async () => {
+                    if (!window.db || !window.db.client) {
+                        throw new Error('데이터베이스 연결이 필요합니다.');
+                    }
+                    
+                    const saveResult = await window.db.createWorkLog(workLogData);
+                    console.log('저장 결과:', saveResult);
+                    
+                    if (!saveResult.success) {
+                        throw new Error('업무일지 저장에 실패했습니다.');
+                    }
+                    
+                    return saveResult;
+                },
+                `save_worklog_${companyId}_${Date.now()}`, // 캐시하지 않도록 고유 키 사용
+                null
+            );
+            
+            if (result && result.success) {
+                // 트리거가 자동으로 업체 방문 통계를 업데이트함
+                alert('업무일지가 성공적으로 저장되었습니다.');
                 
-                if (result.success) {
-                    // 트리거가 자동으로 업체 방문 통계를 업데이트함
-                    alert('업무일지가 성공적으로 저장되었습니다.');
-                    // 업체 상세 페이지로 돌아가기
-                    window.location.href = `company-detail.html?id=${companyId}`;
-                } else {
-                    throw new Error('업무일지 저장에 실패했습니다.');
-                }
+                // 관련 캐시 클리어
+                window.clearCachedData(`company_list_${currentUser.id}`);
+                window.clearCachedData(`work_logs_${companyId}_${currentUser.id}`);
+                
+                // 업체 상세 페이지로 돌아가기
+                window.location.href = `company-detail.html?id=${companyId}`;
             } else {
-                throw new Error('데이터베이스 연결이 필요합니다.');
+                throw new Error('업무일지 저장에 실패했습니다.');
             }
 
         } catch (error) {
