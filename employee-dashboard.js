@@ -4,16 +4,17 @@ let currentUser = null;
 let retryCount = 0;
 const MAX_RETRY_COUNT = 3;
 
-// 데이터베이스 연결 대기 및 재시도
-async function waitForDatabase(maxRetries = 50) {
+// 데이터베이스 연결 대기 및 재시도 (성능 최적화)
+async function waitForDatabase(maxRetries = 30) { // 재시도 횟수 감소
     let retries = 0;
     while (retries < maxRetries) {
         if (window.db && window.db.client) {
             console.log('✅ 데이터베이스 연결 확인됨');
             return true;
         }
-        console.log(`⏳ 데이터베이스 대기 중... (${retries + 1}/${maxRetries})`);
-        await new Promise(resolve => setTimeout(resolve, 200));
+        // 첫 10회는 짧은 간격, 이후 길어짐
+        const delay = retries < 10 ? 100 : 300;
+        await new Promise(resolve => setTimeout(resolve, delay));
         retries++;
     }
     console.error('❌ 데이터베이스 연결 실패');
@@ -619,7 +620,7 @@ function checkMenuPermissions() {
     }
 }
 
-// 6. 알림 확인 함수들
+// 6. 알림 확인 함수들 (성능 최적화 및 안전성 강화)
 async function checkNotifications() {
     if (!currentUser) return;
 
@@ -631,28 +632,37 @@ async function checkNotifications() {
             const pendingCount = await safeLoadData(async () => {
                 const { data, error } = await window.db.client
                     .from('users')
-                    .select('id')
+                    .select('id', { count: 'exact' }) // count만 필요한 경우 최적화
                     .is('role', null)
                     .eq('is_active', true);
                 
                 if (error) throw error;
                 return data ? data.length : 0;
-            }, 0);
+            }, 0, 1); // 재시도 1회로 제한
             
             totalCount += pendingCount;
         }
 
-        // 서류 승인 알림
+        // 서류 승인 알림 (document_requests 테이블 존재 여부 확인)
         if (currentUser.role !== 'employee') {
             const approvalCount = await safeLoadData(async () => {
+                // 테이블 존재 여부 먼저 확인
                 const { data, error } = await window.db.client
                     .from('document_requests')
-                    .select('id')
-                    .eq('status', 'pending');
+                    .select('id', { count: 'exact' })
+                    .eq('status', 'pending')
+                    .limit(1); // 개수만 필요하므로 제한
                 
-                if (error) throw error;
+                if (error) {
+                    // 404 오류인 경우 테이블이 없으므로 0 반환
+                    if (error.code === 'PGRST106' || error.message?.includes('404')) {
+                        console.warn('⚠️ document_requests 테이블이 없습니다. SQL 스크립트를 실행하세요.');
+                        return 0;
+                    }
+                    throw error;
+                }
                 return data ? data.length : 0;
-            }, 0);
+            }, 0, 1); // 재시도 1회로 제한
             
             totalCount += approvalCount;
         }
@@ -668,8 +678,15 @@ async function checkNotifications() {
             }
         }
 
+        console.log('🔔 알림 확인 완료:', { totalCount, userRole: currentUser.role });
+
     } catch (error) {
         console.error('알림 확인 오류:', error);
+        // 알림 확인 실패 시 배지 숨김
+        const badge = document.getElementById('approvalNotificationBadgeHeader');
+        if (badge) {
+            badge.style.display = 'none';
+        }
     }
 }
 
