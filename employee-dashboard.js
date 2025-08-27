@@ -419,7 +419,7 @@ function showError(message) {
     }, 5000);
 }
 
-// 메인 초기화 함수
+// 메인 초기화 함수 (성능 최적화된 버전)
 async function initializeDashboard() {
     console.log('🚀 대시보드 초기화 시작');
     showLoading();
@@ -431,7 +431,7 @@ async function initializeDashboard() {
             throw new Error('데이터베이스 연결에 실패했습니다.');
         }
 
-        // 2. 사용자 정보 로드
+        // 2. 사용자 정보 로드 (빠른 로드를 위해 우선 처리)
         currentUser = await loadUserSafely();
         if (!currentUser) {
             throw new Error('사용자 정보를 찾을 수 없습니다.');
@@ -439,32 +439,54 @@ async function initializeDashboard() {
 
         console.log('✅ 사용자 로드 완료:', currentUser.name);
 
-        // 3. 사용자 UI 업데이트
+        // 3. 사용자 UI 즉시 업데이트 (사용자 경험 개선)
         updateUserUI(currentUser);
+        
+        // 4. 중요하지 않은 데이터는 로딩 화면 해제 후 백그라운드에서 로드
+        hideLoading(); // 여기서 먼저 로딩 화면 제거
+        
+        // 5. 비동기로 통계 및 활동 데이터 로드 (사용자는 이미 페이지 사용 가능)
+        loadBackgroundData(currentUser);
 
-        // 4. 통계 데이터 로드 (병렬 처리)
-        const [stats, activities] = await Promise.all([
-            loadUserStatisticsSafely(currentUser),
-            loadRecentActivitiesSafely(currentUser)
-        ]);
-
-        // 5. UI 업데이트
-        updateStatisticsUI(stats);
-        updateActivitiesUI(activities);
-
-        console.log('✅ 대시보드 초기화 완료');
+        console.log('✅ 대시보드 초기화 완료 (빠른 모드)');
 
     } catch (error) {
         console.error('❌ 대시보드 초기화 실패:', error);
+        hideLoading();
         showError(error.message);
         
         // 로그인 페이지로 리디렉션
         setTimeout(() => {
             window.location.href = 'index.html';
         }, 3000);
+    }
+}
+
+// 백그라운드 데이터 로딩 (사용자 경험을 방해하지 않음)
+async function loadBackgroundData(user) {
+    try {
+        console.log('📊 백그라운드 데이터 로딩 시작');
         
-    } finally {
-        hideLoading();
+        // 통계 데이터부터 로드 (더 중요함)
+        const stats = await loadUserStatisticsSafely(user);
+        updateStatisticsUI(stats);
+        console.log('✅ 통계 데이터 로드 완료');
+        
+        // 잠시 대기 후 활동 데이터 로드 (부담 분산)
+        setTimeout(async () => {
+            try {
+                const activities = await loadRecentActivitiesSafely(user);
+                updateActivitiesUI(activities);
+                console.log('✅ 활동 데이터 로드 완료');
+            } catch (error) {
+                console.warn('활동 데이터 로드 실패:', error);
+                // 활동 데이터 실패해도 계속 진행
+            }
+        }, 500);
+        
+    } catch (error) {
+        console.warn('백그라운드 데이터 로드 실패:', error);
+        // 백그라운드 로딩 실패해도 계속 진행
     }
 }
 
@@ -475,13 +497,34 @@ function showProfileModal() {
     const modal = document.getElementById('profileModal');
     if (modal) {
         modal.style.display = 'flex';
+        
         // 현재 사용자 정보로 모달 폼 채우기
         if (currentUser) {
-            const nameInput = document.getElementById('profileName');
-            const emailInput = document.getElementById('profileEmail');
+            // 프로필 폼 필드들
+            const nameInput = document.getElementById('profileUserName');
+            const emailInput = document.getElementById('profileUserEmail');
+            const departmentInput = document.getElementById('profileUserDepartment');
+            const positionInput = document.getElementById('profileUserPosition');
+            const phoneInput = document.getElementById('profileUserPhone');
+            const modalImage = document.getElementById('modalProfileImage');
+            
             if (nameInput) nameInput.value = currentUser.name || '';
             if (emailInput) emailInput.value = currentUser.email || '';
+            if (departmentInput) departmentInput.value = currentUser.department || '';
+            if (positionInput) positionInput.value = currentUser.position || '';
+            if (phoneInput) phoneInput.value = currentUser.phone || '';
+            
+            // 프로필 이미지 설정
+            if (modalImage) {
+                const dashboardImage = document.getElementById('profileImageDashboard');
+                if (dashboardImage) {
+                    modalImage.src = dashboardImage.src;
+                }
+            }
         }
+        
+        // 프로필 폼 이벤트 리스너 등록
+        initializeProfileForm();
     }
 }
 
@@ -511,14 +554,202 @@ function handleProfileImageUpload(event) {
     // 미리보기 표시
     const reader = new FileReader();
     reader.onload = function(e) {
+        // 대시보드와 모달 둘 다 업데이트
         const profileImg = document.getElementById('profileImageDashboard');
+        const modalImg = document.getElementById('modalProfileImage');
+        
         if (profileImg) {
             profileImg.src = e.target.result;
+        }
+        if (modalImg) {
+            modalImg.src = e.target.result;
         }
     };
     reader.readAsDataURL(file);
 
     console.log('프로필 이미지 업로드:', file.name);
+}
+
+// 프로필 폼 초기화
+function initializeProfileForm() {
+    const profileForm = document.getElementById('profileForm');
+    const passwordForm = document.getElementById('passwordChangeForm');
+    
+    // 프로필 저장 폼 이벤트
+    if (profileForm) {
+        // 기존 이벤트 리스너 제거 후 새로 등록
+        profileForm.removeEventListener('submit', handleProfileSubmit);
+        profileForm.addEventListener('submit', handleProfileSubmit);
+    }
+    
+    // 비밀번호 변경 폼 이벤트
+    if (passwordForm) {
+        passwordForm.removeEventListener('submit', handlePasswordChange);
+        passwordForm.addEventListener('submit', handlePasswordChange);
+    }
+}
+
+// 프로필 저장 처리
+async function handleProfileSubmit(event) {
+    event.preventDefault();
+    
+    if (!currentUser) {
+        showError('사용자 정보가 없습니다.');
+        return;
+    }
+    
+    // 폼 데이터 수집
+    const formData = {
+        name: document.getElementById('profileUserName').value.trim(),
+        email: document.getElementById('profileUserEmail').value.trim(),
+        department: document.getElementById('profileUserDepartment').value.trim(),
+        position: document.getElementById('profileUserPosition').value.trim(),
+        phone: document.getElementById('profileUserPhone').value.trim()
+    };
+    
+    // 유효성 검사
+    if (!formData.name) {
+        showError('이름을 입력해주세요.');
+        return;
+    }
+    
+    if (!formData.email) {
+        showError('이메일을 입력해주세요.');
+        return;
+    }
+    
+    try {
+        // 저장 버튼 비활성화
+        const submitBtn = event.target.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.textContent = '저장 중...';
+        
+        console.log('프로필 업데이트 시작:', formData);
+        
+        // 데이터베이스 업데이트
+        const updateResult = await safeLoadData(async () => {
+            if (!window.db || !window.db.client) {
+                throw new Error('데이터베이스 연결이 필요합니다.');
+            }
+            
+            const { data, error } = await window.db.client
+                .from('users')
+                .update({
+                    name: formData.name,
+                    department: formData.department,
+                    position: formData.position,
+                    phone: formData.phone,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', currentUser.id);
+                
+            if (error) throw error;
+            return data;
+        }, null, 2);
+        
+        // 현재 사용자 정보 업데이트
+        currentUser = {
+            ...currentUser,
+            ...formData
+        };
+        
+        // 세션 스토리지 업데이트
+        sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+        
+        // UI 업데이트
+        updateUserUI(currentUser);
+        
+        console.log('✅ 프로필 업데이트 성공');
+        
+        // 성공 메시지 표시
+        showSuccessMessage('프로필이 성공적으로 저장되었습니다.');
+        
+        // 모달 닫기
+        setTimeout(() => {
+            hideProfileModal();
+        }, 1500);
+        
+    } catch (error) {
+        console.error('❌ 프로필 저장 오류:', error);
+        showError('프로필 저장 중 오류가 발생했습니다: ' + error.message);
+        
+    } finally {
+        // 저장 버튼 복구
+        const submitBtn = event.target.querySelector('button[type="submit"]');
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+    }
+}
+
+// 비밀번호 변경 처리
+async function handlePasswordChange(event) {
+    event.preventDefault();
+    
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    
+    // 유효성 검사
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        showError('모든 비밀번호 필드를 입력해주세요.');
+        return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+        showError('새 비밀번호와 확인 비밀번호가 일치하지 않습니다.');
+        return;
+    }
+    
+    if (newPassword.length < 6) {
+        showError('새 비밀번호는 6자 이상이어야 합니다.');
+        return;
+    }
+    
+    try {
+        // Supabase 인증을 통한 비밀번호 변경
+        const { error } = await window.db.client.auth.updateUser({
+            password: newPassword
+        });
+        
+        if (error) throw error;
+        
+        showSuccessMessage('비밀번호가 성공적으로 변경되었습니다.');
+        
+        // 폼 초기화
+        event.target.reset();
+        
+    } catch (error) {
+        console.error('비밀번호 변경 오류:', error);
+        showError('비밀번호 변경 중 오류가 발생했습니다.');
+    }
+}
+
+// 성공 메시지 표시
+function showSuccessMessage(message) {
+    const successDiv = document.createElement('div');
+    successDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #28a745;
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        z-index: 1000;
+        font-weight: 500;
+    `;
+    successDiv.innerHTML = `
+        <i class="fas fa-check-circle" style="margin-right: 0.5rem;"></i>
+        ${message}
+    `;
+    
+    document.body.appendChild(successDiv);
+    
+    setTimeout(() => {
+        successDiv.remove();
+    }, 3000);
 }
 
 // 2. 네비게이션 함수들
@@ -589,6 +820,7 @@ function checkMenuPermissions() {
     if (!currentUser) return;
 
     const menuCards = document.querySelectorAll('.menu-card');
+    const notificationBtn = document.getElementById('approvalNotificationBtn');
     
     // 역할별 메뉴 표시/숨김 처리
     switch (currentUser.role) {
@@ -607,6 +839,11 @@ function checkMenuPermissions() {
             if (approvalCard) {
                 approvalCard.style.display = 'none';
             }
+            
+            // 알림 버튼 숨김 (일반 직원은 승인 권한이 없음)
+            if (notificationBtn) {
+                notificationBtn.style.display = 'none';
+            }
             break;
             
         default:
@@ -617,7 +854,17 @@ function checkMenuPermissions() {
                     card.style.pointerEvents = 'none';
                 }
             });
+            
+            // 알림 버튼도 숨김
+            if (notificationBtn) {
+                notificationBtn.style.display = 'none';
+            }
     }
+    
+    console.log('✅ 권한별 UI 설정 완료:', {
+        role: currentUser.role,
+        notificationVisible: currentUser.role !== 'employee'
+    });
 }
 
 // 6. 알림 확인 함수들 (성능 최적화 및 안전성 강화)
