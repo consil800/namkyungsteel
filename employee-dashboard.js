@@ -53,26 +53,65 @@ async function safeLoadData(loadFunction, fallbackValue = null, retries = 3) {
     }
 }
 
-// 사용자 정보 안전 로딩
+// 사용자 정보 안전 로딩 (데이터베이스 우선)
 async function loadUserSafely() {
     return await safeLoadData(async () => {
-        // 먼저 세션 스토리지에서 확인
+        // 먼저 세션 스토리지에서 ID 확인
         const sessionUser = sessionStorage.getItem('currentUser');
+        let userEmail = null;
+        let userId = null;
+        
         if (sessionUser) {
             const user = JSON.parse(sessionUser);
-            console.log('📦 세션에서 사용자 정보 로드:', user.name);
-            return user;
+            userEmail = user.email;
+            userId = user.id;
+            console.log('📦 세션에서 사용자 식별정보 확인:', user.name);
         }
 
-        // 데이터베이스에서 확인
+        // 데이터베이스에서 최신 정보 확인 (우선순위)
+        if (userEmail && window.db && window.db.client) {
+            try {
+                const { data: dbUser, error } = await window.db.client
+                    .from('users')
+                    .select('*')
+                    .eq('email', userEmail)
+                    .single();
+                
+                if (!error && dbUser) {
+                    console.log('🗄️ 데이터베이스에서 최신 사용자 정보 로드:', {
+                        name: dbUser.name,
+                        profile_image: dbUser.profile_image ? 'YES' : 'NO',
+                        profileImage: dbUser.profileImage ? 'YES' : 'NO'
+                    });
+                    // 최신 정보를 세션에 저장
+                    sessionStorage.setItem('currentUser', JSON.stringify(dbUser));
+                    return dbUser;
+                }
+            } catch (dbError) {
+                console.warn('데이터베이스 조회 오류, 세션 정보 사용:', dbError);
+            }
+        }
+        
+        // 데이터베이스 조회 실패시 기존 함수 사용
         if (window.getCurrentUserFromDB) {
             const dbUser = await window.getCurrentUserFromDB();
             if (dbUser) {
-                console.log('🗄️ 데이터베이스에서 사용자 정보 로드:', dbUser.name);
+                console.log('🗄️ getCurrentUserFromDB에서 사용자 정보 로드:', {
+                    name: dbUser.name,
+                    profile_image: dbUser.profile_image ? 'YES' : 'NO',
+                    profileImage: dbUser.profileImage ? 'YES' : 'NO'
+                });
                 // 세션에 저장
                 sessionStorage.setItem('currentUser', JSON.stringify(dbUser));
                 return dbUser;
             }
+        }
+        
+        // 최후의 수단으로 세션 정보 사용
+        if (sessionUser) {
+            const user = JSON.parse(sessionUser);
+            console.log('📦 세션에서 사용자 정보 로드 (fallback):', user.name);
+            return user;
         }
 
         // AuthManager 확인
@@ -394,6 +433,28 @@ function updateUserUI(user) {
         infoElement.textContent = infoText;
     }
 
+    // 헤더 프로필 이미지 업데이트
+    const headerProfileImg = document.getElementById('profileImageDashboard');
+    if (headerProfileImg && window.dataLoader) {
+        console.log('📸 헤더 프로필 이미지 업데이트 시작:', {
+            profile_image: user.profile_image ? 'YES' : 'NO',
+            profileImage: user.profileImage ? 'YES' : 'NO'
+        });
+        
+        // 프로필 이미지가 있으면 src 업데이트, 없으면 기본 이미지
+        if (user.profile_image || user.profileImage) {
+            const imageUrl = user.profile_image || user.profileImage;
+            headerProfileImg.src = imageUrl;
+            console.log('✅ 헤더 프로필 이미지 URL 업데이트 완료');
+        } else {
+            // 기본 프로필 이미지로 복원
+            headerProfileImg.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjUiIGN5PSIyNSIgcj0iMjUiIGZpbGw9IiM2NjdlZWEiLz4KPHN2ZyB4PSIyNSIgeT0iMzAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyMCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPu2yqTwvc3ZnPgo8L3N2Zz4=";
+            console.log('📸 기본 프로필 이미지로 복원');
+        }
+    } else {
+        console.log('❌ 헤더 프로필 이미지 요소를 찾을 수 없음 (profileImageDashboard)');
+    }
+
     console.log('👤 사용자 UI 업데이트 완료:', user.name, user.role);
 }
 
@@ -664,9 +725,18 @@ async function handleProfileSubmit(event) {
             const { data, error } = await window.db.client
                 .from('users')
                 .update(updateData)
-                .eq('id', currentUser.id);
+                .eq('id', currentUser.id)
+                .select('*');
                 
             if (error) throw error;
+            
+            console.log('📊 데이터베이스 업데이트 결과:', data);
+            if (data && data[0] && data[0].profile_image) {
+                console.log('✅ 데이터베이스에 프로필 이미지 저장 확인됨:', data[0].profile_image.substring(0, 50) + '...');
+            } else {
+                console.log('❌ 데이터베이스에 프로필 이미지가 저장되지 않음');
+            }
+            
             return data;
         }, null, 2);
         
