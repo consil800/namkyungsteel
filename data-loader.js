@@ -169,9 +169,16 @@ class SimpleDataLoader {
     createProfileImage(user, size = 40) {
         const initials = (user.name || user.email || 'U').charAt(0).toUpperCase();
         
+        console.log('📸 createProfileImage 호출:', {
+            user: user.name,
+            profileImage: user.profileImage,
+            profile_image: user.profile_image,
+            hasImage: !!(user.profileImage || user.profile_image)
+        });
+        
         if (user.profileImage || user.profile_image) {
             const imageUrl = user.profileImage || user.profile_image;
-            return `<img src="${imageUrl}" alt="프로필" style="width: ${size}px; height: ${size}px; border-radius: 50%; border: 2px solid #fff; object-fit: cover;" onerror="this.style.display='none'; this.parentNode.innerHTML='<div style=\\'width:${size}px;height:${size}px;border-radius:50%;background:#667eea;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;border:2px solid #fff;\\'>${initials}</div>'">`;
+            return `<img src="${imageUrl}" alt="프로필" style="width: ${size}px; height: ${size}px; border-radius: 50%; border: 2px solid #fff; object-fit: cover;" onerror="console.error('프로필 이미지 로드 실패'); this.style.display='none'; this.parentNode.innerHTML='<div style=\\'width:${size}px;height:${size}px;border-radius:50%;background:#667eea;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;border:2px solid #fff;\\'>${initials}</div>'">`;
         } else {
             return `<div style="width: ${size}px; height: ${size}px; border-radius: 50%; background: #667eea; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; border: 2px solid #fff;">${initials}</div>`;
         }

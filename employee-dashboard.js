@@ -607,6 +607,14 @@ async function handleProfileSubmit(event) {
         phone: document.getElementById('profileUserPhone').value.trim()
     };
     
+    // 프로필 이미지 데이터 수집
+    let profileImageData = null;
+    const modalImg = document.getElementById('modalProfileImage');
+    if (modalImg && modalImg.src && modalImg.src.startsWith('data:')) {
+        profileImageData = modalImg.src;
+        console.log('📸 프로필 이미지 데이터 발견:', profileImageData.substring(0, 50) + '...');
+    }
+    
     // 유효성 검사
     if (!formData.name) {
         showError('이름을 입력해주세요.');
@@ -627,21 +635,29 @@ async function handleProfileSubmit(event) {
         
         console.log('프로필 업데이트 시작:', formData);
         
-        // 데이터베이스 업데이트
+        // 데이터베이스 업데이트 (프로필 이미지 포함)
         const updateResult = await safeLoadData(async () => {
             if (!window.db || !window.db.client) {
                 throw new Error('데이터베이스 연결이 필요합니다.');
             }
             
+            const updateData = {
+                name: formData.name,
+                department: formData.department,
+                position: formData.position,
+                phone: formData.phone,
+                updated_at: new Date().toISOString()
+            };
+            
+            // 프로필 이미지가 있으면 추가
+            if (profileImageData) {
+                updateData.profile_image = profileImageData;
+                console.log('📸 프로필 이미지 데이터베이스 저장 시도');
+            }
+            
             const { data, error } = await window.db.client
                 .from('users')
-                .update({
-                    name: formData.name,
-                    department: formData.department,
-                    position: formData.position,
-                    phone: formData.phone,
-                    updated_at: new Date().toISOString()
-                })
+                .update(updateData)
                 .eq('id', currentUser.id);
                 
             if (error) throw error;
@@ -653,6 +669,12 @@ async function handleProfileSubmit(event) {
             ...currentUser,
             ...formData
         };
+        
+        // 프로필 이미지도 currentUser에 추가
+        if (profileImageData) {
+            currentUser.profile_image = profileImageData;
+            console.log('📸 currentUser에 프로필 이미지 저장됨');
+        }
         
         // 세션 스토리지 업데이트
         sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
