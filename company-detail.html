@@ -151,9 +151,29 @@
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1 id="companyTitle">업체 상세</h1>
-            <nav>
+        <header style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); padding: 2rem; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); margin-bottom: 2rem;">
+            <div style="display: flex; align-items: center; width: 100%;">
+                <h1 id="companyTitle" style="margin: 0; color: #ffffff; font-size: 1.8rem; font-weight: 700; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); flex: 0 0 auto;">
+                    업체 상세
+                </h1>
+                <div style="flex: 1 1 auto;"></div>
+                <div style="display: flex; align-items: center; gap: 1rem; flex: 0 0 auto;">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div id="profileImageContainer" style="width: 40px; height: 40px;">
+                            <!-- 프로필 이미지가 여기에 동적으로 삽입됩니다 -->
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="color: #ffffff; font-weight: 600; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <span id="userName">로그인 필요</span>
+                            </div>
+                            <div style="color: rgba(255,255,255,0.7); font-size: 0.75rem; margin-top: 0.25rem;" id="userRole">
+                                -
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <nav style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
                 <button id="backToMainBtn" class="btn btn-cyan">메인으로</button>
                 <button id="backBtn" class="btn btn-secondary">뒤로가기</button>
                 <button id="editCompanyBtn" class="btn btn-warning">업체 정보 수정</button>

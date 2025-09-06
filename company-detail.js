@@ -30,6 +30,27 @@ document.addEventListener('DOMContentLoaded', async function() {
         role: currentUser.role
     });
     
+    // 프로필 이미지 및 사용자 정보 표시
+    if (window.dataLoader) {
+        // 사용자 이름 표시
+        window.dataLoader.safeUpdateElement('#userName', currentUser.name || currentUser.email);
+        
+        // 프로필 이미지 표시
+        const profileContainer = document.getElementById('profileImageContainer');
+        if (profileContainer) {
+            profileContainer.innerHTML = window.dataLoader.createProfileImage(currentUser, 40);
+        }
+        
+        // 역할 표시
+        const roleMap = { 
+            master: '마스터', 
+            company_admin: '업체 관리자', 
+            company_manager: '매니저', 
+            employee: '직원' 
+        };
+        window.dataLoader.safeUpdateElement('#userRole', roleMap[currentUser.role] || '직원');
+    }
+    
     // URL에서 업체 ID 추출
     const urlParams = new URLSearchParams(window.location.search);
     const companyId = urlParams.get('id');
@@ -186,7 +207,7 @@ function getColorName(colorCode) {
 // 업체 정보 표시
 function displayCompanyDetails(company) {
     // 제목 설정
-    document.getElementById('companyTitle').textContent = company.company_name + ' - 상세정보';
+    document.getElementById('companyTitle').textContent = company.company_name;
     
     // 업체 정보 HTML 생성
     const companyDetails = document.getElementById('companyDetails');
