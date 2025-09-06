@@ -155,7 +155,11 @@ async function loadUserStatisticsSafely(user) {
         return data ? data.length : 0;
     }, 0);
 
-    // 3. 법인카드 사용 카운트
+    // 3. 법인카드 사용 카운트 (테이블이 존재하지 않아 비활성화)
+    stats.cardUsageCount = 0; // 테이블 미생성으로 인한 임시 비활성화
+    
+    // 향후 corporate_card_usage 테이블 생성 시 활성화
+    /*
     stats.cardUsageCount = await safeLoadData(async () => {
         const { data, error } = await window.db.client
             .from('corporate_card_usage')
@@ -167,6 +171,7 @@ async function loadUserStatisticsSafely(user) {
         if (error) throw error;
         return data ? data.length : 0;
     }, 0);
+    */
 
     // 4. 거래처 카운트 (전체 기간)
     stats.clientCount = await safeLoadData(async () => {
