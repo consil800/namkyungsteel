@@ -118,8 +118,15 @@ class SimpleDataLoader {
             // RLS를 위한 사용자 ID 설정
             await window.db.client.rpc('set_current_user_id', { user_id: userId.toString() });
             
+            // 색상 값 디버깅
+            console.log('📌 업체 등록 데이터:', {
+                company_name: companyData.company_name,
+                color_code: companyData.color_code,
+                user_id: userId
+            });
+            
             const result = await window.db.createClientCompany(companyData);
-            console.log('✅ 업체 등록 완료');
+            console.log('✅ 업체 등록 완료:', result);
             return result;
         } catch (error) {
             console.error('❌ 업체 등록 오류:', error);
