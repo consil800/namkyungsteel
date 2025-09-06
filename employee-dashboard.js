@@ -441,24 +441,36 @@ function updateUserUI(user) {
 
     // 헤더 프로필 이미지 업데이트
     const headerProfileImg = document.getElementById('profileImageDashboard');
-    if (headerProfileImg && window.dataLoader) {
+    if (headerProfileImg) {
         console.log('📸 헤더 프로필 이미지 업데이트 시작:', {
             profile_image: user.profile_image ? 'YES' : 'NO',
-            profileImage: user.profileImage ? 'YES' : 'NO'
+            profileImage: user.profileImage ? 'YES' : 'NO',
+            elementFound: true
         });
         
         // 프로필 이미지가 있으면 src 업데이트, 없으면 기본 이미지
         if (user.profile_image || user.profileImage) {
             const imageUrl = user.profile_image || user.profileImage;
             headerProfileImg.src = imageUrl;
-            console.log('✅ 헤더 프로필 이미지 URL 업데이트 완료');
+            console.log('✅ 헤더 프로필 이미지 URL 업데이트 완료:', imageUrl.substring(0, 50) + '...');
         } else {
             // 기본 프로필 이미지로 복원
-            headerProfileImg.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjUiIGN5PSIyNSIgcj0iMjUiIGZpbGw9IiM2NjdlZWEiLz4KPHN2ZyB4PSIyNSIgeT0iMzAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyMCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPu2yqTwvc3ZnPgo8L3N2Zz4=";
+            headerProfileImg.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjUiIGN5PSIyNSIgcj0iMjUiIGZpbGw9IiM2NjdlZWEiLz4KPHN2ZyB4PSIyNSigeT0iMzAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyMCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPu2yqTwvc3ZnPgo8L3N2Zz4=";
             console.log('📸 기본 프로필 이미지로 복원');
         }
     } else {
         console.log('❌ 헤더 프로필 이미지 요소를 찾을 수 없음 (profileImageDashboard)');
+        
+        // 다시 한번 찾아보기 (다른 방법)
+        const profileContainer = document.querySelector('.user-profile-dashboard img');
+        if (profileContainer) {
+            console.log('✅ 대체 방법으로 프로필 이미지 요소 찾음');
+            if (user.profile_image || user.profileImage) {
+                const imageUrl = user.profile_image || user.profileImage;
+                profileContainer.src = imageUrl;
+                console.log('✅ 헤더 프로필 이미지 URL 업데이트 완료 (대체 방법)');
+            }
+        }
     }
 
     console.log('👤 사용자 UI 업데이트 완료:', user.name, user.role);
@@ -530,6 +542,18 @@ async function initializeDashboard() {
 
         // 3. 사용자 UI 즉시 업데이트 (사용자 경험 개선)
         updateUserUI(currentUser);
+        
+        // 프로필 이미지가 있는지 한번 더 확인하고 업데이트
+        setTimeout(() => {
+            console.log('🔄 프로필 이미지 재확인...');
+            if (currentUser.profile_image) {
+                const profileImg = document.getElementById('profileImageDashboard');
+                if (profileImg) {
+                    profileImg.src = currentUser.profile_image;
+                    console.log('✅ 프로필 이미지 재설정 완료');
+                }
+            }
+        }, 500);
         
         // 4. 중요하지 않은 데이터는 로딩 화면 해제 후 백그라운드에서 로드
         hideLoading(); // 여기서 먼저 로딩 화면 제거
@@ -965,6 +989,15 @@ async function handleProfileSubmit(event) {
         
         // UI 업데이트
         updateUserUI(currentUser);
+        
+        // 헤더 프로필 이미지 강제 업데이트
+        if (profileImageData) {
+            const headerImg = document.getElementById('profileImageDashboard');
+            if (headerImg) {
+                headerImg.src = profileImageData;
+                console.log('✅ 헤더 프로필 이미지 강제 업데이트');
+            }
+        }
         
         console.log('✅ 프로필 업데이트 성공');
         
