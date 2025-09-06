@@ -79,13 +79,19 @@ async function loadUserSafely() {
                 
                 if (!error && dbUser) {
                     console.log('🗄️ 데이터베이스에서 최신 사용자 정보 로드:', {
+                        id: dbUser.id,
                         name: dbUser.name,
+                        email: dbUser.email,
                         profile_image: dbUser.profile_image ? 'YES' : 'NO',
+                        profile_image_length: dbUser.profile_image ? dbUser.profile_image.length : 0,
+                        profile_image_preview: dbUser.profile_image ? dbUser.profile_image.substring(0, 30) : 'none',
                         profileImage: dbUser.profileImage ? 'YES' : 'NO'
                     });
                     // 최신 정보를 세션에 저장
                     sessionStorage.setItem('currentUser', JSON.stringify(dbUser));
                     return dbUser;
+                } else if (error) {
+                    console.error('❌ 데이터베이스 조회 오류:', error);
                 }
             } catch (dbError) {
                 console.warn('데이터베이스 조회 오류, 세션 정보 사용:', dbError);
@@ -601,13 +607,53 @@ function hideProfileModal() {
     }
 }
 
+// 이미지 리사이징 함수
+function resizeImage(file, maxWidth = 300, maxHeight = 300, quality = 0.8) {
+    return new Promise((resolve) => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        
+        img.onload = function() {
+            // 리사이징 계산
+            let { width, height } = img;
+            
+            if (width > height) {
+                if (width > maxWidth) {
+                    height = (height * maxWidth) / width;
+                    width = maxWidth;
+                }
+            } else {
+                if (height > maxHeight) {
+                    width = (width * maxHeight) / height;
+                    height = maxHeight;
+                }
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            // 이미지 그리기
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Base64로 변환
+            const resizedDataUrl = canvas.toDataURL('image/jpeg', quality);
+            resolve(resizedDataUrl);
+        };
+        
+        const reader = new FileReader();
+        reader.onload = (e) => img.src = e.target.result;
+        reader.readAsDataURL(file);
+    });
+}
+
 function handleProfileImageUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    // 파일 크기 체크 (5MB)
-    if (file.size > 5 * 1024 * 1024) {
-        showError('파일 크기는 5MB 이하여야 합니다.');
+    // 파일 크기 체크 (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+        showError('파일 크기는 10MB 이하여야 합니다.');
         return;
     }
 
@@ -617,23 +663,32 @@ function handleProfileImageUpload(event) {
         return;
     }
 
-    // 미리보기 표시
-    const reader = new FileReader();
-    reader.onload = function(e) {
+    console.log('📷 프로필 이미지 업로드 시작:', {
+        name: file.name,
+        size: (file.size / 1024).toFixed(2) + 'KB',
+        type: file.type
+    });
+
+    // 이미지 리사이징 및 미리보기 표시
+    resizeImage(file, 300, 300, 0.8).then((resizedDataUrl) => {
+        const resizedSizeKB = (resizedDataUrl.length * 3/4) / 1024;
+        console.log('🔧 이미지 리사이징 완료:', resizedSizeKB.toFixed(2) + 'KB');
+        
         // 대시보드와 모달 둘 다 업데이트
         const profileImg = document.getElementById('profileImageDashboard');
         const modalImg = document.getElementById('modalProfileImage');
         
         if (profileImg) {
-            profileImg.src = e.target.result;
+            profileImg.src = resizedDataUrl;
         }
         if (modalImg) {
-            modalImg.src = e.target.result;
+            modalImg.src = resizedDataUrl;
+            console.log('✅ 모달 프로필 이미지 업데이트 완료');
         }
-    };
-    reader.readAsDataURL(file);
-
-    console.log('프로필 이미지 업로드:', file.name);
+    }).catch((error) => {
+        console.error('❌ 이미지 리사이징 실패:', error);
+        showError('이미지 처리 중 오류가 발생했습니다.');
+    });
 }
 
 // 프로필 폼 초기화
@@ -708,6 +763,30 @@ async function handleProfileSubmit(event) {
                 throw new Error('데이터베이스 연결이 필요합니다.');
             }
             
+            // Supabase 인증 상태 확인
+            const { data: { user }, error: authError } = await window.db.client.auth.getUser();
+            console.log('🔐 현재 Supabase 인증 상태:', {
+                authenticated: !!user,
+                user_id: user?.id,
+                user_email: user?.email,
+                current_user_id: currentUser.id,
+                match: user?.email === currentUser.email
+            });
+            
+            if (!user) {
+                console.warn('⚠️ Supabase 인증되지 않은 상태입니다.');
+            }
+            
+            // RLS를 위한 사용자 ID 설정 (있다면)
+            try {
+                if (window.db.client.rpc && currentUser.id) {
+                    await window.db.client.rpc('set_current_user_id', { user_id: currentUser.id.toString() });
+                    console.log('🔐 RLS 사용자 ID 설정 완료:', currentUser.id);
+                }
+            } catch (rlsError) {
+                console.warn('⚠️ RLS 설정 실패 (무시하고 계속):', rlsError.message);
+            }
+            
             const updateData = {
                 name: formData.name,
                 department: formData.department,
@@ -718,9 +797,22 @@ async function handleProfileSubmit(event) {
             
             // 프로필 이미지가 있으면 추가
             if (profileImageData) {
+                // Base64 데이터 크기 확인
+                const imageSizeKB = (profileImageData.length * 3/4) / 1024;
+                console.log('📏 프로필 이미지 크기:', imageSizeKB.toFixed(2) + 'KB');
+                
+                if (imageSizeKB > 1024) { // 1MB 초과시 경고
+                    console.warn('⚠️ 프로필 이미지가 큽니다 (1MB 초과). 저장에 실패할 수 있습니다.');
+                }
+                
                 updateData.profile_image = profileImageData;
                 console.log('📸 프로필 이미지 데이터베이스 저장 시도');
             }
+            
+            console.log('🔧 업데이트 데이터:', {
+                ...updateData,
+                profile_image: updateData.profile_image ? '[IMAGE_DATA]' : 'none'
+            });
             
             const { data, error } = await window.db.client
                 .from('users')
@@ -728,13 +820,84 @@ async function handleProfileSubmit(event) {
                 .eq('id', currentUser.id)
                 .select('*');
                 
-            if (error) throw error;
+            if (error) {
+                console.error('❌ 데이터베이스 업데이트 상세 오류:', {
+                    message: error.message,
+                    code: error.code,
+                    details: error.details,
+                    hint: error.hint,
+                    update_data_keys: Object.keys(updateData)
+                });
+                
+                // profile_image 컬럼 관련 오류인지 확인
+                if (error.message && error.message.toLowerCase().includes('profile_image')) {
+                    console.error('💥 profile_image 컬럼 관련 오류 발생!');
+                    console.error('- users 테이블에 profile_image 컬럼이 존재하지 않을 가능성');
+                    
+                    // profile_image 없이 다시 시도
+                    console.log('🔄 profile_image 제외하고 다시 저장 시도...');
+                    const updateDataWithoutImage = { ...updateData };
+                    delete updateDataWithoutImage.profile_image;
+                    
+                    const { data: retryData, error: retryError } = await window.db.client
+                        .from('users')
+                        .update(updateDataWithoutImage)
+                        .eq('id', currentUser.id)
+                        .select('*');
+                        
+                    if (retryError) {
+                        console.error('❌ profile_image 제외 재시도도 실패:', retryError);
+                        throw retryError;
+                    } else {
+                        console.log('✅ profile_image 제외하고 다른 데이터 저장 성공');
+                        showError('프로필 정보는 저장되었으나, 프로필 이미지 저장에 실패했습니다. 관리자에게 문의하세요.');
+                        return retryData;
+                    }
+                }
+                
+                throw error;
+            }
             
             console.log('📊 데이터베이스 업데이트 결과:', data);
-            if (data && data[0] && data[0].profile_image) {
-                console.log('✅ 데이터베이스에 프로필 이미지 저장 확인됨:', data[0].profile_image.substring(0, 50) + '...');
+            if (data && data[0]) {
+                console.log('🔍 저장된 사용자 데이터 상세:', {
+                    id: data[0].id,
+                    name: data[0].name,
+                    email: data[0].email,
+                    profile_image_exists: !!data[0].profile_image,
+                    profile_image_length: data[0].profile_image ? data[0].profile_image.length : 0,
+                    profile_image_starts_with: data[0].profile_image ? data[0].profile_image.substring(0, 30) : 'none'
+                });
+                
+                if (data[0].profile_image) {
+                    console.log('✅ 데이터베이스에 프로필 이미지 저장 확인됨');
+                    
+                    // 즉시 데이터베이스에서 다시 읽어서 확인
+                    setTimeout(async () => {
+                        try {
+                            const { data: verifyData, error: verifyError } = await window.db.client
+                                .from('users')
+                                .select('profile_image')
+                                .eq('id', currentUser.id)
+                                .single();
+                                
+                            if (verifyError) {
+                                console.error('❌ 저장 확인 조회 실패:', verifyError);
+                            } else {
+                                console.log('🔍 저장 확인 결과:', {
+                                    profile_image_exists: !!verifyData.profile_image,
+                                    matches_saved: verifyData.profile_image === data[0].profile_image
+                                });
+                            }
+                        } catch (e) {
+                            console.error('❌ 저장 확인 오류:', e);
+                        }
+                    }, 1000);
+                } else {
+                    console.log('❌ 데이터베이스에 프로필 이미지가 저장되지 않음');
+                }
             } else {
-                console.log('❌ 데이터베이스에 프로필 이미지가 저장되지 않음');
+                console.log('❌ 데이터베이스 업데이트 결과가 없음');
             }
             
             return data;
