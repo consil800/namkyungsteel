@@ -278,8 +278,13 @@ function initEventListeners() {
     // 업체 정보 수정 버튼
     document.getElementById('editCompanyBtn').addEventListener('click', async function() {
         if (currentCompany) {
-            await populateEditForm(currentCompany);
+            // 먼저 모달을 표시
             document.getElementById('editModal').style.display = 'block';
+            
+            // 잠시 대기 후 폼 채우기 (DOM이 렌더링될 시간을 줌)
+            setTimeout(async () => {
+                await populateEditForm(currentCompany);
+            }, 100);
         }
     });
     
@@ -426,47 +431,61 @@ async function populateEditForm(company) {
         color_code: currentColorCode
     });
     
+    // 색상 요소 존재 확인
+    const colorSelect = document.getElementById('editCompanyColor');
+    if (!colorSelect) {
+        console.error('❌ editCompanyColor 요소를 찾을 수 없습니다');
+        return;
+    }
+    
+    console.log('✅ 색상 드롭다운 요소 찾음:', colorSelect);
+    
     // 색상 드롭다운 로드 및 현재 값 설정
     await loadColorOptions();
     
     // setTimeout을 사용해서 DOM이 완전히 업데이트된 후 색상 값 설정
     setTimeout(() => {
-        const colorSelect = document.getElementById('editCompanyColor');
-        if (colorSelect && currentColorCode) {
+        const colorSelectDelay = document.getElementById('editCompanyColor');
+        if (!colorSelectDelay) {
+            console.error('❌ setTimeout 내에서도 editCompanyColor 요소를 찾을 수 없습니다');
+            return;
+        }
+        
+        if (colorSelectDelay && currentColorCode) {
             console.log('🎨 색상 설정 시도:', {
                 현재색상코드: currentColorCode,
-                드롭다운옵션수: colorSelect.options.length,
-                사용가능옵션: Array.from(colorSelect.options).map(o => ({value: o.value, text: o.textContent}))
+                드롭다운옵션수: colorSelectDelay.options.length,
+                사용가능옵션: Array.from(colorSelectDelay.options).map(o => ({value: o.value, text: o.textContent}))
             });
             
-            colorSelect.value = currentColorCode;
+            colorSelectDelay.value = currentColorCode;
             
             // 설정 확인 및 대안 시도
-            if (colorSelect.value !== currentColorCode) {
+            if (colorSelectDelay.value !== currentColorCode) {
                 console.warn('⚠️ 직접 설정 실패, 옵션 순회 시도');
                 
                 // 모든 옵션을 순회하여 일치하는 것 찾기
-                for (let i = 0; i < colorSelect.options.length; i++) {
-                    const option = colorSelect.options[i];
+                for (let i = 0; i < colorSelectDelay.options.length; i++) {
+                    const option = colorSelectDelay.options[i];
                     if (option.value.toLowerCase() === currentColorCode.toLowerCase()) {
-                        colorSelect.selectedIndex = i;
+                        colorSelectDelay.selectedIndex = i;
                         console.log('✅ 옵션 순회로 색상 설정 성공:', option.value);
                         break;
                     }
                 }
                 
                 // 여전히 설정되지 않았다면 로그
-                if (colorSelect.value !== currentColorCode) {
+                if (colorSelectDelay.value !== currentColorCode) {
                     console.error('❌ 색상 설정 최종 실패:', {
                         원본값: currentColorCode,
-                        현재선택값: colorSelect.value
+                        현재선택값: colorSelectDelay.value
                     });
                 }
             } else {
-                console.log('✅ 색상 값 설정 성공:', colorSelect.value);
+                console.log('✅ 색상 값 설정 성공:', colorSelectDelay.value);
             }
         }
-    }, 100);
+    }, 200);
 }
 
 // 업체 정보 수정 (안전한 방식)
