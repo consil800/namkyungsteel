@@ -502,6 +502,23 @@ async function initializeDashboard() {
         if (!dbConnected) {
             throw new Error('데이터베이스 연결에 실패했습니다.');
         }
+        
+        // 테이블 구조 확인 (디버깅용)
+        try {
+            console.log('🔍 users 테이블 구조 확인 중...');
+            const { data: tableInfo, error: tableError } = await window.db.client
+                .from('users')
+                .select('*')
+                .limit(1);
+                
+            if (!tableError && tableInfo && tableInfo.length > 0) {
+                const columns = Object.keys(tableInfo[0]);
+                console.log('📋 users 테이블 컬럼 목록:', columns);
+                console.log('✅ profile_image 컬럼 존재:', columns.includes('profile_image'));
+            }
+        } catch (e) {
+            console.warn('⚠️ 테이블 구조 확인 실패:', e);
+        }
 
         // 2. 사용자 정보 로드 (빠른 로드를 위해 우선 처리)
         currentUser = await loadUserSafely();
@@ -588,9 +605,16 @@ function showProfileModal() {
             
             // 프로필 이미지 설정
             if (modalImage) {
-                const dashboardImage = document.getElementById('profileImageDashboard');
-                if (dashboardImage) {
-                    modalImage.src = dashboardImage.src;
+                // currentUser에 profile_image가 있으면 사용
+                if (currentUser.profile_image) {
+                    modalImage.src = currentUser.profile_image;
+                    console.log('✅ 모달에 저장된 프로필 이미지 표시');
+                } else {
+                    // 없으면 현재 헤더 이미지 사용
+                    const dashboardImage = document.getElementById('profileImageDashboard');
+                    if (dashboardImage) {
+                        modalImage.src = dashboardImage.src;
+                    }
                 }
             }
         }
@@ -731,9 +755,21 @@ async function handleProfileSubmit(event) {
     // 프로필 이미지 데이터 수집
     let profileImageData = null;
     const modalImg = document.getElementById('modalProfileImage');
+    console.log('🔍 모달 이미지 요소 확인:', {
+        exists: !!modalImg,
+        src: modalImg?.src?.substring(0, 100),
+        isDataUrl: modalImg?.src?.startsWith('data:')
+    });
+    
     if (modalImg && modalImg.src && modalImg.src.startsWith('data:')) {
         profileImageData = modalImg.src;
-        console.log('📸 프로필 이미지 데이터 발견:', profileImageData.substring(0, 50) + '...');
+        console.log('📸 프로필 이미지 데이터 발견:', {
+            length: profileImageData.length,
+            sizeKB: (profileImageData.length * 3/4 / 1024).toFixed(2),
+            preview: profileImageData.substring(0, 50) + '...'
+        });
+    } else {
+        console.log('⚠️ 프로필 이미지 데이터가 없거나 올바르지 않음');
     }
     
     // 유효성 검사
@@ -807,6 +843,9 @@ async function handleProfileSubmit(event) {
                 
                 updateData.profile_image = profileImageData;
                 console.log('📸 프로필 이미지 데이터베이스 저장 시도');
+                console.log('📸 이미지 데이터 시작 부분:', profileImageData.substring(0, 100));
+            } else {
+                console.log('⚠️ profileImageData가 없음');
             }
             
             console.log('🔧 업데이트 데이터:', {
@@ -903,16 +942,22 @@ async function handleProfileSubmit(event) {
             return data;
         }, null, 2);
         
-        // 현재 사용자 정보 업데이트
-        currentUser = {
-            ...currentUser,
-            ...formData
-        };
-        
-        // 프로필 이미지도 currentUser에 추가
-        if (profileImageData) {
-            currentUser.profile_image = profileImageData;
-            console.log('📸 currentUser에 프로필 이미지 저장됨');
+        // 현재 사용자 정보 업데이트 (반환된 데이터베이스 데이터 우선)
+        if (updateResult && updateResult[0]) {
+            currentUser = updateResult[0];
+            console.log('✅ 데이터베이스에서 반환된 최신 사용자 정보로 업데이트');
+        } else {
+            // 반환 데이터가 없으면 로컬 업데이트
+            currentUser = {
+                ...currentUser,
+                ...formData
+            };
+            
+            // 프로필 이미지도 currentUser에 추가
+            if (profileImageData) {
+                currentUser.profile_image = profileImageData;
+                console.log('📸 currentUser에 프로필 이미지 저장됨');
+            }
         }
         
         // 세션 스토리지 업데이트
@@ -1223,6 +1268,112 @@ window.dashboardUtils = {
     showError
 };
 
+// RLS 정책 확인 함수
+async function checkRLSPolicies() {
+    try {
+        console.log('🔍 RLS 정책 확인 중...');
+        
+        // 현재 사용자가 자신의 데이터를 읽을 수 있는지 확인
+        const { data: readTest, error: readError } = await window.db.client
+            .from('users')
+            .select('id, name')
+            .eq('id', currentUser.id)
+            .single();
+            
+        console.log('📖 읽기 권한:', readError ? '❌ 실패' : '✅ 성공');
+        if (readError) console.error('읽기 오류:', readError);
+        
+        // 업데이트 권한 확인 (name만 변경)
+        const { data: updateTest, error: updateError } = await window.db.client
+            .from('users')
+            .update({ updated_at: new Date().toISOString() })
+            .eq('id', currentUser.id)
+            .select('id');
+            
+        console.log('✏️ 업데이트 권한:', updateError ? '❌ 실패' : '✅ 성공');
+        if (updateError) console.error('업데이트 오류:', updateError);
+        
+    } catch (error) {
+        console.error('RLS 정책 확인 실패:', error);
+    }
+}
+
+// 프로필 이미지 테스트 함수 (디버깅용)
+async function testProfileImageSave() {
+    if (!currentUser) {
+        console.error('❌ 로그인된 사용자가 없습니다.');
+        return;
+    }
+    
+    console.log('🧪 프로필 이미지 저장 테스트 시작...');
+    console.log('👤 현재 사용자:', { id: currentUser.id, name: currentUser.name });
+    
+    // 먼저 RLS 정책 확인
+    await checkRLSPolicies();
+    
+    try {
+        // 1. 작은 테스트 이미지 생성 (1x1 빨간 픽셀)
+        const testImage = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+        
+        console.log('🔐 인증 상태 확인...');
+        const { data: { user: authUser } } = await window.db.client.auth.getUser();
+        console.log('🔐 인증된 사용자:', authUser?.email);
+        
+        // 2. 데이터베이스에 저장
+        console.log('💾 프로필 이미지 저장 시도...');
+        const { data: saveData, error: saveError } = await window.db.client
+            .from('users')
+            .update({ 
+                profile_image: testImage,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', currentUser.id)
+            .select('id, name, profile_image');
+            
+        if (saveError) {
+            console.error('❌ 저장 실패:', {
+                message: saveError.message,
+                details: saveError.details,
+                hint: saveError.hint,
+                code: saveError.code
+            });
+            return;
+        }
+        
+        console.log('✅ 저장 성공:', saveData);
+        
+        // 3. 데이터베이스에서 다시 읽기
+        console.log('📖 저장된 데이터 다시 읽기...');
+        const { data: readData, error: readError } = await window.db.client
+            .from('users')
+            .select('id, name, profile_image')
+            .eq('id', currentUser.id)
+            .single();
+            
+        if (readError) {
+            console.error('❌ 읽기 실패:', readError);
+            return;
+        }
+        
+        console.log('✅ 읽기 성공:', {
+            id: readData.id,
+            name: readData.name,
+            hasImage: !!readData.profile_image,
+            imageLength: readData.profile_image ? readData.profile_image.length : 0,
+            imageMatches: readData.profile_image === testImage
+        });
+        
+        // 4. 현재 사용자 객체 업데이트
+        currentUser.profile_image = testImage;
+        sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+        updateUserUI(currentUser);
+        console.log('✅ UI 업데이트 완료');
+        
+    } catch (error) {
+        console.error('❌ 테스트 실패:', error);
+    }
+}
+
 // 전역 함수들을 window에 등록 (HTML onclick에서 사용)
 window.showProfileModal = showProfileModal;
 window.hideProfileModal = hideProfileModal;
@@ -1235,3 +1386,5 @@ window.openCorporateCard = openCorporateCard;
 window.openDocuments = openDocuments;
 window.openDocumentApproval = openDocumentApproval;
 window.handleLogout = handleLogout;
+window.testProfileImageSave = testProfileImageSave;
+window.checkRLSPolicies = checkRLSPolicies;
