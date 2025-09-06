@@ -104,7 +104,22 @@
         .color-select option {
             padding: 8px;
             font-weight: bold;
+            color: #000000 !important;
+            background-color: #ffffff !important;
         }
+        
+        .color-select {
+            position: relative;
+        }
+        
+        /* 색상 미리보기를 위한 스타일 */
+        .color-select option[value="red"] { border-left: 4px solid #e74c3c; }
+        .color-select option[value="orange"] { border-left: 4px solid #f39c12; }
+        .color-select option[value="yellow"] { border-left: 4px solid #f1c40f; }
+        .color-select option[value="green"] { border-left: 4px solid #27ae60; }
+        .color-select option[value="blue"] { border-left: 4px solid #3498db; }
+        .color-select option[value="purple"] { border-left: 4px solid #9b59b6; }
+        .color-select option[value="gray"] { border-left: 4px solid #95a5a6; }
         
         @media (max-width: 768px) {
             .info-grid {
