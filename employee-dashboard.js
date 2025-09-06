@@ -545,13 +545,37 @@ async function initializeDashboard() {
         
         // 프로필 이미지가 있는지 한번 더 확인하고 업데이트
         setTimeout(() => {
-            console.log('🔄 프로필 이미지 재확인...');
-            if (currentUser.profile_image) {
+            console.log('🔄 프로필 이미지 재확인...', {
+                hasProfileImage: !!currentUser.profile_image,
+                hasProfileImageField: !!currentUser.profileImage,
+                userId: currentUser.id,
+                userName: currentUser.name
+            });
+            
+            // 모든 가능한 이미지 필드 확인
+            const imageUrl = currentUser.profile_image || currentUser.profileImage || null;
+            
+            if (imageUrl) {
                 const profileImg = document.getElementById('profileImageDashboard');
+                console.log('🔍 헤더 프로필 이미지 요소:', {
+                    found: !!profileImg,
+                    currentSrc: profileImg?.src?.substring(0, 50)
+                });
+                
                 if (profileImg) {
-                    profileImg.src = currentUser.profile_image;
+                    profileImg.src = imageUrl;
                     console.log('✅ 프로필 이미지 재설정 완료');
+                    
+                    // 이미지 로드 에러 핸들링
+                    profileImg.onerror = function() {
+                        console.error('❌ 프로필 이미지 로드 실패');
+                        this.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjUiIGN5PSIyNSIgcj0iMjUiIGZpbGw9IiM2NjdlZWEiLz4KPHN2ZyB4PSIyNSIgeT0iMzAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyMCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPu2yqTwvc3ZnPgo8L3N2Zz4=";
+                    };
+                } else {
+                    console.error('❌ profileImageDashboard 요소를 찾을 수 없음');
                 }
+            } else {
+                console.log('⚠️ 프로필 이미지 URL이 없음');
             }
         }, 500);
         
@@ -1418,6 +1442,82 @@ window.openWorkLog = openWorkLog;
 window.openCorporateCard = openCorporateCard;
 window.openDocuments = openDocuments;
 window.openDocumentApproval = openDocumentApproval;
+// 헤더 프로필 이미지 강제 업데이트 함수
+function forceUpdateHeaderProfileImage() {
+    console.log('🔧 헤더 프로필 이미지 강제 업데이트 시작...');
+    
+    if (!currentUser) {
+        console.error('❌ 현재 사용자 정보가 없습니다.');
+        return;
+    }
+    
+    const imageUrl = currentUser.profile_image || currentUser.profileImage;
+    if (!imageUrl) {
+        console.error('❌ 프로필 이미지 URL이 없습니다.');
+        return;
+    }
+    
+    const profileImg = document.getElementById('profileImageDashboard');
+    if (profileImg) {
+        profileImg.src = imageUrl;
+        console.log('✅ 헤더 프로필 이미지 강제 업데이트 완료');
+        console.log('📸 이미지 URL:', imageUrl.substring(0, 100) + '...');
+    } else {
+        console.error('❌ profileImageDashboard 요소를 찾을 수 없습니다.');
+    }
+}
+
+// 데이터베이스에서 최신 프로필 이미지 다시 로드
+async function reloadProfileImage() {
+    console.log('🔄 데이터베이스에서 최신 프로필 이미지 다시 로드...');
+    
+    if (!currentUser || !currentUser.id) {
+        console.error('❌ 사용자 정보가 없습니다.');
+        return;
+    }
+    
+    try {
+        const { data, error } = await window.db.client
+            .from('users')
+            .select('profile_image')
+            .eq('id', currentUser.id)
+            .single();
+            
+        if (error) {
+            console.error('❌ 프로필 이미지 로드 실패:', error);
+            return;
+        }
+        
+        if (data && data.profile_image) {
+            console.log('✅ 프로필 이미지 로드 성공');
+            
+            // currentUser 업데이트
+            currentUser.profile_image = data.profile_image;
+            sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
+            // 헤더 이미지 업데이트
+            const profileImg = document.getElementById('profileImageDashboard');
+            if (profileImg) {
+                profileImg.src = data.profile_image;
+                console.log('✅ 헤더 프로필 이미지 업데이트 완료');
+            }
+            
+            // 모달 이미지도 업데이트
+            const modalImg = document.getElementById('modalProfileImage');
+            if (modalImg) {
+                modalImg.src = data.profile_image;
+                console.log('✅ 모달 프로필 이미지 업데이트 완료');
+            }
+        } else {
+            console.log('⚠️ 프로필 이미지가 없습니다.');
+        }
+    } catch (error) {
+        console.error('❌ 프로필 이미지 로드 중 오류:', error);
+    }
+}
+
 window.handleLogout = handleLogout;
 window.testProfileImageSave = testProfileImageSave;
 window.checkRLSPolicies = checkRLSPolicies;
+window.forceUpdateHeaderProfileImage = forceUpdateHeaderProfileImage;
+window.reloadProfileImage = reloadProfileImage;
