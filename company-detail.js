@@ -452,34 +452,43 @@ async function populateEditForm(company) {
         }
         
         if (colorSelectDelay && currentColorCode) {
-            console.log('🎨 색상 설정 시도:', {
-                현재색상코드: currentColorCode,
-                드롭다운옵션수: colorSelectDelay.options.length,
-                사용가능옵션: Array.from(colorSelectDelay.options).map(o => ({value: o.value, text: o.textContent}))
-            });
+            const availableOptions = Array.from(colorSelectDelay.options).map(o => ({value: o.value, text: o.textContent}));
+            
+            console.log('🎨 색상 설정 시도:');
+            console.log('- 현재 색상 코드:', currentColorCode);
+            console.log('- 현재 색상 코드 타입:', typeof currentColorCode);
+            console.log('- 드롭다운 옵션 수:', colorSelectDelay.options.length);
+            console.log('- 사용 가능한 옵션들:', availableOptions);
             
             colorSelectDelay.value = currentColorCode;
+            console.log('- 설정 시도 후 선택된 값:', colorSelectDelay.value);
             
             // 설정 확인 및 대안 시도
             if (colorSelectDelay.value !== currentColorCode) {
                 console.warn('⚠️ 직접 설정 실패, 옵션 순회 시도');
+                console.log('- 찾고 있는 값:', currentColorCode);
+                console.log('- 찾고 있는 값 (소문자):', currentColorCode.toLowerCase());
                 
+                let found = false;
                 // 모든 옵션을 순회하여 일치하는 것 찾기
                 for (let i = 0; i < colorSelectDelay.options.length; i++) {
                     const option = colorSelectDelay.options[i];
+                    console.log(`- 옵션 ${i}: value="${option.value}", text="${option.textContent}"`);
+                    
                     if (option.value.toLowerCase() === currentColorCode.toLowerCase()) {
                         colorSelectDelay.selectedIndex = i;
                         console.log('✅ 옵션 순회로 색상 설정 성공:', option.value);
+                        found = true;
                         break;
                     }
                 }
                 
                 // 여전히 설정되지 않았다면 로그
-                if (colorSelectDelay.value !== currentColorCode) {
-                    console.error('❌ 색상 설정 최종 실패:', {
-                        원본값: currentColorCode,
-                        현재선택값: colorSelectDelay.value
-                    });
+                if (!found) {
+                    console.error('❌ 색상 설정 최종 실패:');
+                    console.log('- 원본값:', currentColorCode);
+                    console.log('- 현재 선택값:', colorSelectDelay.value);
+                    console.log('- 선택된 인덱스:', colorSelectDelay.selectedIndex);
                 }
             } else {
                 console.log('✅ 색상 값 설정 성공:', colorSelectDelay.value);
