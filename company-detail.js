@@ -313,13 +313,13 @@ function initEventListeners() {
     });
 }
 
-// 색상 옵션 로드 (현재 색상 값을 받아서 처리)
-async function loadColorOptions(currentColorValue = '') {
+// 색상 옵션 로드
+async function loadColorOptions() {
     try {
         // 글로벌 db 인스턴스 사용
         if (!window.db || !window.db.client) {
             console.error('데이터베이스 연결이 없습니다.');
-            loadDefaultColors(currentColorValue);
+            loadDefaultColors();
             return;
         }
         
@@ -335,7 +335,7 @@ async function loadColorOptions(currentColorValue = '') {
         const colors = settings.colors || [];
         if (colors.length === 0) {
             // 색상이 없으면 기본 색상 사용
-            loadDefaultColors(currentColorValue);
+            loadDefaultColors();
             return;
         }
         
@@ -348,26 +348,17 @@ async function loadColorOptions(currentColorValue = '') {
             colorSelect.appendChild(option);
         });
         
-        // 현재 색상 값 설정
-        if (currentColorValue) {
-            const normalizedValue = currentColorValue.toLowerCase().trim();
-            colorSelect.value = normalizedValue;
-            console.log('🎨 loadColorOptions - 색상 설정:', {
-                입력값: currentColorValue,
-                정규화값: normalizedValue,
-                설정결과: colorSelect.value
-            });
-        }
+        console.log('🎨 색상 옵션 로드 완료:', colors.length, '개');
         
     } catch (error) {
         console.error('색상 옵션 로드 오류:', error);
         // 기본 색상들로 대체
-        loadDefaultColors(currentColorValue);
+        loadDefaultColors();
     }
 }
 
-// 기본 색상 로드 (현재 색상 값을 받아서 처리)
-function loadDefaultColors(currentColorValue = '') {
+// 기본 색상 로드
+function loadDefaultColors() {
     const defaultColors = [
         { key: 'red', name: '빨강', value: '#e74c3c' },
         { key: 'orange', name: '주황', value: '#f39c12' },
@@ -392,16 +383,7 @@ function loadDefaultColors(currentColorValue = '') {
         colorSelect.appendChild(option);
     });
     
-    // 현재 색상 값 설정
-    if (currentColorValue) {
-        const normalizedValue = currentColorValue.toLowerCase().trim();
-        colorSelect.value = normalizedValue;
-        console.log('🎨 loadDefaultColors - 색상 설정:', {
-            입력값: currentColorValue,
-            정규화값: normalizedValue,
-            설정결과: colorSelect.value
-        });
-    }
+    console.log('🎨 기본 색상 로드 완료:', defaultColors.length, '개');
 }
 
 // 대비 색상 계산 (텍스트 가독성을 위해)
@@ -437,21 +419,32 @@ async function populateEditForm(company) {
     document.getElementById('editUsageItems').value = company.usage_items || '';
     document.getElementById('editNotes').value = getCompanyNotes(company.notes) || '';
     
-    // 현재 색상 값 설정
+    // 현재 색상 값 확인
     const currentColorCode = company.color_code || 'gray';
-    const currentColorName = getColorName(currentColorCode);
-    const currentColorValue = getColorValue(currentColorCode);
     
     console.log('🎨 색상 정보:', {
-        color_code: currentColorCode,
-        color_name: currentColorName,
-        color_value: currentColorValue
+        color_code: currentColorCode
     });
     
-    // 색상 표시
-    document.getElementById('editCompanyColorDisplay').value = currentColorName;
-    document.getElementById('editCompanyColor').value = currentColorCode;
-    document.getElementById('editColorPreview').style.backgroundColor = currentColorValue;
+    // 색상 드롭다운 로드 및 현재 값 설정
+    await loadColorOptions();
+    
+    // 색상 값 설정
+    const colorSelect = document.getElementById('editCompanyColor');
+    if (colorSelect && currentColorCode) {
+        colorSelect.value = currentColorCode;
+        
+        // 설정 확인
+        if (colorSelect.value !== currentColorCode) {
+            console.warn('⚠️ 색상 값 설정 실패:', {
+                원본값: currentColorCode,
+                설정값: colorSelect.value,
+                사용가능옵션: Array.from(colorSelect.options).map(o => ({value: o.value, text: o.textContent}))
+            });
+        } else {
+            console.log('✅ 색상 값 설정 성공:', colorSelect.value);
+        }
+    }
 }
 
 // 업체 정보 수정 (안전한 방식)
