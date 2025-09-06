@@ -31,14 +31,26 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
     
     // 프로필 이미지 및 사용자 정보 표시
+    console.log('📸 프로필 이미지 로딩 시작');
+    console.log('- window.dataLoader 존재:', !!window.dataLoader);
+    console.log('- currentUser 정보:', currentUser);
+    
     if (window.dataLoader) {
         // 사용자 이름 표시
         window.dataLoader.safeUpdateElement('#userName', currentUser.name || currentUser.email);
+        console.log('✅ 사용자 이름 설정 완료');
         
         // 프로필 이미지 표시
         const profileContainer = document.getElementById('profileImageContainer');
+        console.log('- profileContainer 찾음:', !!profileContainer);
+        
         if (profileContainer) {
-            profileContainer.innerHTML = window.dataLoader.createProfileImage(currentUser, 40);
+            const profileHTML = window.dataLoader.createProfileImage(currentUser, 40);
+            console.log('- 생성된 프로필 HTML:', profileHTML);
+            profileContainer.innerHTML = profileHTML;
+            console.log('✅ 프로필 이미지 설정 완료');
+        } else {
+            console.error('❌ profileImageContainer를 찾을 수 없음');
         }
         
         // 역할 표시
@@ -49,6 +61,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             employee: '직원' 
         };
         window.dataLoader.safeUpdateElement('#userRole', roleMap[currentUser.role] || '직원');
+        console.log('✅ 사용자 역할 설정 완료');
+    } else {
+        console.error('❌ window.dataLoader가 로드되지 않음');
     }
     
     // URL에서 업체 ID 추출
