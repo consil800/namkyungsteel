@@ -475,9 +475,23 @@ async function populateEditForm(company) {
                     const option = colorSelectDelay.options[i];
                     console.log(`- 옵션 ${i}: value="${option.value}", text="${option.textContent}"`);
                     
-                    if (option.value.toLowerCase() === currentColorCode.toLowerCase()) {
+                    // 여러 방법으로 매칭 시도
+                    const optionValue = option.value.toLowerCase().trim();
+                    const targetValue = currentColorCode.toLowerCase().trim();
+                    const optionText = option.textContent.toLowerCase().trim();
+                    
+                    if (optionValue === targetValue || 
+                        optionText.includes(targetValue) || 
+                        (targetValue === 'blue' && (optionText.includes('파랑') || optionValue === 'blue')) ||
+                        (targetValue === 'red' && (optionText.includes('빨강') || optionValue === 'red')) ||
+                        (targetValue === 'yellow' && (optionText.includes('노랑') || optionValue === 'yellow')) ||
+                        (targetValue === 'green' && (optionText.includes('초록') || optionValue === 'green')) ||
+                        (targetValue === 'purple' && (optionText.includes('보라') || optionValue === 'purple')) ||
+                        (targetValue === 'orange' && (optionText.includes('주황') || optionValue === 'orange')) ||
+                        (targetValue === 'gray' && (optionText.includes('회색') || optionValue === 'gray'))) {
+                        
                         colorSelectDelay.selectedIndex = i;
-                        console.log('✅ 옵션 순회로 색상 설정 성공:', option.value);
+                        console.log('✅ 옵션 순회로 색상 설정 성공:', option.value, '(', option.textContent, ')');
                         found = true;
                         break;
                     }
