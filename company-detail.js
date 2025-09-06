@@ -348,9 +348,6 @@ async function loadColorOptions() {
             const option = document.createElement('option');
             option.value = color.key;
             option.textContent = color.name;
-            // 드롭다운 옵션에는 배경색 적용하지 않고 검은색 텍스트 사용
-            option.style.color = '#000000';
-            option.style.fontWeight = 'bold';
             colorSelect.appendChild(option);
         });
         
@@ -384,9 +381,6 @@ function loadDefaultColors() {
         const option = document.createElement('option');
         option.value = color.key;
         option.textContent = color.name;
-        // 드롭다운 옵션에는 배경색 적용하지 않고 검은색 텍스트 사용
-        option.style.color = '#000000';
-        option.style.fontWeight = 'bold';
         colorSelect.appendChild(option);
     });
     
