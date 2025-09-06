@@ -631,10 +631,11 @@ async function handleProfileSubmit(event) {
         return;
     }
     
+    // 저장 버튼 비활성화 (try 블록 밖으로 이동)
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    
     try {
-        // 저장 버튼 비활성화
-        const submitBtn = event.target.querySelector('button[type="submit"]');
-        const originalText = submitBtn.textContent;
         submitBtn.disabled = true;
         submitBtn.textContent = '저장 중...';
         
@@ -703,9 +704,10 @@ async function handleProfileSubmit(event) {
         
     } finally {
         // 저장 버튼 복구
-        const submitBtn = event.target.querySelector('button[type="submit"]');
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        }
     }
 }
 
