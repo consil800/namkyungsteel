@@ -200,7 +200,7 @@ function displayColorList(listId, colors) {
     }
     
     listElement.innerHTML = '';
-    colors.forEach(color => {
+    colors.forEach((color, index) => {
         // 색상 값과 방문일 숨김 설정 파싱
         let colorValue = color.value;
         let hideVisitDate = false;
@@ -221,18 +221,16 @@ function displayColorList(listId, colors) {
         }
         
         const li = document.createElement('li');
-        li.className = 'option-item';
+        li.className = 'color-meaning-item';
         li.innerHTML = `
-            <span class="option-text">
-                <span class="color-preview" style="background-color: ${colorValue}; display: inline-block; width: 20px; height: 20px; border-radius: 50%; margin-right: 10px; border: 1px solid #ddd; vertical-align: middle;"></span>
-                ${color.name}
-                ${color.meaning ? `<span style="margin-left: 10px; color: #666; font-size: 12px;">(${color.meaning})</span>` : '<span style="margin-left: 10px; color: #999; font-size: 12px;">(의미 없음)</span>'}
-                ${hideVisitDate ? '<span style="margin-left: 10px; color: #666; font-size: 12px;">[방문일 숨김]</span>' : ''}
-            </span>
-            <div class="option-actions">
-                <button class="btn btn-success btn-small" onclick="editColorMeaning('${color.name.replace(/'/g, "\\'")}', '${(color.meaning || '').replace(/'/g, "\\'")}')">의미 수정</button>
-                <button class="btn btn-danger btn-small" onclick="deleteColor('${color.name.replace(/'/g, "\\'")}')">삭제</button>
+            <div style="display: flex; align-items: center; min-width: 120px;">
+                <span class="color-preview" style="background-color: ${colorValue}; display: inline-block; width: 24px; height: 24px; border-radius: 50%; margin-right: 10px; border: 2px solid #ddd; vertical-align: middle;"></span>
+                <span style="font-weight: 600; color: #2c3e50;">${color.name}</span>
+                ${hideVisitDate ? '<span style="margin-left: 8px; color: #666; font-size: 11px; background: #e9ecef; padding: 2px 6px; border-radius: 10px;">[방문일숨김]</span>' : ''}
             </div>
+            <input type="text" class="color-meaning-input" id="meaning-${index}" value="${color.meaning || ''}" placeholder="색상의 의미를 입력하세요 (예: 거래중, 재무상태불량, 철판 안씀)" style="flex: 1;">
+            <button class="btn-save-meaning" onclick="saveColorMeaningFromInput('${color.name.replace(/'/g, "\\'")}', 'meaning-${index}')">저장</button>
+            <button class="btn btn-danger btn-small" onclick="deleteColor('${color.name.replace(/'/g, "\\'")}')">삭제</button>
         `;
         listElement.appendChild(li);
     });
@@ -547,7 +545,58 @@ async function deleteColor(colorName) {
 }
 
 
-// 색상 의미 수정 함수
+// 입력창에서 색상 의미 저장 함수
+async function saveColorMeaningFromInput(colorName, inputId) {
+    const inputElement = document.getElementById(inputId);
+    if (!inputElement) {
+        alert('입력창을 찾을 수 없습니다.');
+        return;
+    }
+    
+    const newMeaning = inputElement.value.trim();
+    
+    try {
+        await saveColorMeaning(colorName, newMeaning);
+        
+        // 성공 메시지와 함께 입력창 스타일 변경
+        const originalStyle = inputElement.style.border;
+        inputElement.style.border = '2px solid #27ae60';
+        inputElement.style.backgroundColor = '#d4edda';
+        
+        // 성공 표시 후 원래 스타일로 되돌리기
+        setTimeout(() => {
+            inputElement.style.border = originalStyle;
+            inputElement.style.backgroundColor = '';
+        }, 1500);
+        
+        // 색상 의미 가이드만 업데이트 (전체 새로고침 없이)
+        const currentUser = await window.dataLoader.getCurrentUser();
+        if (currentUser) {
+            const settings = await window.dataLoader.loadUserSettings(currentUser.id);
+            if (settings && settings.colors) {
+                updateColorMeaningsDisplay(settings.colors);
+            }
+        }
+        
+        console.log(`✅ 색상 "${colorName}" 의미 저장 완료: "${newMeaning || '(의미 없음)'}"`);
+        
+    } catch (error) {
+        console.error('색상 의미 저장 오류:', error);
+        alert('색상 의미 저장 중 오류가 발생했습니다.');
+        
+        // 오류 표시
+        const originalStyle = inputElement.style.border;
+        inputElement.style.border = '2px solid #dc3545';
+        inputElement.style.backgroundColor = '#f8d7da';
+        
+        setTimeout(() => {
+            inputElement.style.border = originalStyle;
+            inputElement.style.backgroundColor = '';
+        }, 2000);
+    }
+}
+
+// 색상 의미 수정 함수 (기존 방식, 호환성 유지)
 async function editColorMeaning(colorName, currentMeaning) {
     const newMeaning = prompt(`"${colorName}" 색상의 의미를 입력하세요:`, currentMeaning || '');
     
@@ -627,3 +676,4 @@ window.deleteItem = deleteItem;
 window.deleteColor = deleteColor;
 window.editColorMeaning = editColorMeaning;
 window.saveColorMeaning = saveColorMeaning;
+window.saveColorMeaningFromInput = saveColorMeaningFromInput;
