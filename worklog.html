@@ -286,6 +286,18 @@
                     </table>
                 </div>
             </section>
+
+            <!-- 색상 의미 안내 -->
+            <div class="settings-section" id="colorMeaningsSection" style="background: #f8f9fa; border-left: 4px solid #3498db; margin: 20px 0; padding: 15px; border-radius: 8px;">
+                <h4 style="color: #2c3e50; font-size: 16px; margin-bottom: 15px; display: flex; align-items: center;">
+                    <span style="margin-right: 8px;">🎨</span> 색상 의미 가이드
+                </h4>
+                <div id="colorMeaningsList" style="font-size: 13px; color: #555; line-height: 1.6;">
+                    <!-- 색상 의미가 동적으로 표시됩니다 -->
+                    <p style="color: #999; font-style: italic;">색상을 추가하면 여기에 의미가 표시됩니다.</p>
+                </div>
+            </div>
+
         </main>
     </div>
 
@@ -432,6 +444,9 @@
                 // 지역 목록 로드
                 loadRegions();
                 
+                // 색상 의미 가이드 로드
+                loadColorMeanings();
+                
                 // 업체 목록 로드
                 if (window.loadCompanies) {
                     setTimeout(() => window.loadCompanies(), 100);
@@ -463,6 +478,61 @@
             window.location.href = 'settings.html';
         }
         
+        // 색상 의미 가이드 표시 함수 (settings.js에서 가져옴)
+        function updateColorMeaningsDisplay(colors) {
+            const meaningsList = document.getElementById('colorMeaningsList');
+            if (!meaningsList) return;
+            
+            if (!colors || colors.length === 0) {
+                meaningsList.innerHTML = '<p style="color: #999; font-style: italic;">색상을 추가하면 여기에 의미가 표시됩니다.</p>';
+                return;
+            }
+            
+            const meaningsWithColor = colors.filter(color => color.meaning && color.meaning.trim());
+            
+            if (meaningsWithColor.length === 0) {
+                meaningsList.innerHTML = '<p style="color: #999; font-style: italic;">색상 의미가 설정된 색상이 없습니다.</p>';
+                return;
+            }
+            
+            const meaningsHTML = meaningsWithColor.map(color => {
+                let colorValue = color.value;
+                try {
+                    if (typeof color.value === 'string' && color.value.startsWith('{')) {
+                        const metadata = JSON.parse(color.value);
+                        colorValue = metadata.color;
+                    }
+                } catch (e) {
+                    // 파싱 실패 시 기본값 사용
+                }
+                
+                return `
+                    <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                        <span style="display: inline-block; width: 16px; height: 16px; background-color: ${colorValue}; border-radius: 50%; margin-right: 8px; border: 1px solid #ddd;"></span>
+                        <span style="font-weight: 600; margin-right: 8px;">${color.name}:</span>
+                        <span style="color: #666;">${color.meaning}</span>
+                    </div>
+                `;
+            }).join('');
+            
+            meaningsList.innerHTML = meaningsHTML;
+        }
+
+        // 색상 의미 데이터 로드 함수
+        async function loadColorMeanings() {
+            try {
+                const currentUser = await window.dataLoader.getCurrentUser();
+                if (!currentUser) return;
+
+                const settings = await window.dataLoader.loadUserSettings(currentUser.id);
+                if (settings && settings.colors) {
+                    updateColorMeaningsDisplay(settings.colors);
+                }
+            } catch (error) {
+                console.error('색상 의미 로드 오류:', error);
+            }
+        }
+
         // 지역 목록 로드 함수 (설정 페이지와 DB 고유값 합집합)
         async function loadRegions() {
             const regionSelect = document.getElementById('searchRegion');

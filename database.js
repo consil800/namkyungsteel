@@ -888,6 +888,12 @@ class DatabaseManager {
         }
 
         try {
+            // RLS를 위한 사용자 ID 설정
+            if (userId) {
+                await this.client.rpc('set_current_user_id', { user_id: userId.toString() });
+                console.log('✅ RLS 사용자 ID 설정 완료:', userId);
+            }
+            
             let query = this.client.from('client_companies').select('*');
             
             if (userId) {

@@ -330,6 +330,20 @@ class DataStabilityManager {
             this.showError('데이터 새로고침에 실패했습니다.');
         }
     }
+
+    // 특정 키의 캐시 데이터 삭제
+    clearCachedData(key) {
+        if (this.cache.has(key)) {
+            this.cache.delete(key);
+            console.log(`🗑️ 캐시 삭제됨: ${key}`);
+        }
+    }
+
+    // 모든 캐시 삭제
+    clearAllCache() {
+        this.cache.clear();
+        console.log('🗑️ 모든 캐시 삭제됨');
+    }
 }
 
 // 전역 인스턴스 생성
@@ -340,5 +354,7 @@ window.refreshCurrentData = () => window.dataStability.refreshCurrentData();
 window.safeLoadData = (loadFunction, cacheKey, defaultValue) => 
     window.dataStability.safeLoadData(loadFunction, cacheKey, defaultValue);
 window.getCurrentUserSafely = () => window.dataStability.getCurrentUserSafely();
+window.clearCachedData = (key) => window.dataStability.clearCachedData(key);
+window.clearAllCache = () => window.dataStability.clearAllCache();
 
 console.log('✅ DataStabilityManager 초기화 완료');

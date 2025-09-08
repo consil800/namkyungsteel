@@ -261,7 +261,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </td>
                 <td>${company.address || '미입력'}</td>
                 <td>${company.contact_person || '미입력'}</td>
-                <td>${company.phone || '미입력'}</td>
+                <td>${company.phone ? `<a href="tel:${company.phone}" style="color: #007bff; text-decoration: none;" onclick="event.stopPropagation()">${company.phone}</a>` : '미입력'}</td>
                 <td>${company.business_type || '미입력'}</td>
                 <td class="visit-count">${company.visitCount || 0}</td>
                 <td class="last-visit">${shouldHideVisitDate(company.color_code) ? '-' : (company.lastVisitDate ? formatDate(company.lastVisitDate) + '일' : '방문기록 없음')}</td>
@@ -620,7 +620,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </td>
                 <td>${company.address || '미입력'}</td>
                 <td>${company.contact_person || '미입력'}</td>
-                <td>${company.phone || '미입력'}</td>
+                <td>${company.phone ? `<a href="tel:${company.phone}" style="color: #007bff; text-decoration: none;" onclick="event.stopPropagation()">${company.phone}</a>` : '미입력'}</td>
                 <td>${company.business_type || '미입력'}</td>
                 <td class="visit-count">${company.visitCount || 0}</td>
                 <td class="last-visit">${shouldHideVisitDate(company.color_code) ? '-' : (company.lastVisitDate ? formatDate(company.lastVisitDate) + '일' : '방문기록 없음')}</td>
