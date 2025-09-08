@@ -156,12 +156,18 @@ function initNetworkChart() {
     // 메인 그래프 그룹
     g = svg.append('g');
     
-    // 시뮬레이션 초기화
+    // 화면 크기에 따른 시뮬레이션 조정
+    const isMobile = width < 768;
+    const linkDistance = isMobile ? 150 : 250;  // 모바일에서는 좀 더 가깝게
+    const chargeStrength = isMobile ? -300 : -500;  // PC에서 더 강한 반발력
+    const collisionRadius = isMobile ? 60 : 90;  // PC에서 더 큰 충돌 반경
+    
+    // 시뮬레이션 초기화 (화면 크기에 따라 조정)
     simulation = d3.forceSimulation()
-        .force('link', d3.forceLink().id(d => d.id).distance(150))
-        .force('charge', d3.forceManyBody().strength(-300))
+        .force('link', d3.forceLink().id(d => d.id).distance(linkDistance))
+        .force('charge', d3.forceManyBody().strength(chargeStrength))
         .force('center', d3.forceCenter(width / 2, height / 2))
-        .force('collision', d3.forceCollide().radius(50));
+        .force('collision', d3.forceCollide().radius(collisionRadius))
     
     // 중심 업체 노드 추가
     addCenterCompany();
@@ -302,6 +308,9 @@ function updateChart() {
     
     simulation.alpha(0.3).restart();
     
+    // 드롭다운 업데이트
+    updateRelationshipDropdowns();
+    
     console.log('✅ 차트 업데이트 완료');
 }
 
@@ -370,23 +379,56 @@ function dragEnd(event, d) {
     d3.select(this).classed('dragging', false);
 }
 
-// 노드 클릭 핸들러
+// 드롭다운 업데이트 함수
+function updateRelationshipDropdowns() {
+    const fromSelect = document.getElementById('fromCompany');
+    const toSelect = document.getElementById('toCompany');
+    
+    // 기존 옵션 제거 (첫 번째 옵션 제외)
+    fromSelect.innerHTML = '<option value="">시작 업체 선택</option>';
+    toSelect.innerHTML = '<option value="">대상 업체 선택</option>';
+    
+    // 현재 노드들로 옵션 추가
+    networkData.nodes.forEach(node => {
+        const option1 = document.createElement('option');
+        option1.value = node.name;
+        option1.textContent = node.name;
+        fromSelect.appendChild(option1);
+        
+        const option2 = document.createElement('option');
+        option2.value = node.name;
+        option2.textContent = node.name;
+        toSelect.appendChild(option2);
+    });
+}
+
+// 노드 클릭 핸들러 (드롭다운 자동 설정)
 function nodeClick(event, d) {
     if (isDragging) return;
     
+    const fromSelect = document.getElementById('fromCompany');
+    const toSelect = document.getElementById('toCompany');
+    
     // 선택된 노드 표시
     if (selectedNode) {
-        document.getElementById('fromCompany').value = selectedNode.name;
-        document.getElementById('toCompany').value = d.name;
+        // 이미 선택된 노드가 있으면 관계 설정
+        fromSelect.value = selectedNode.name;
+        toSelect.value = d.name;
+        selectedNode = null; // 선택 해제
+        showToast(`${fromSelect.value} → ${toSelect.value} 관계를 설정하세요`, 'success');
     } else {
+        // 새로 선택
         selectedNode = d;
-        document.getElementById('fromCompany').value = d.name;
-        showToast(`${d.name} 선택됨 (관계를 추가할 대상 업체를 선택하세요)`, 'success');
+        fromSelect.value = d.name;
+        toSelect.value = '';
+        showToast(`${d.name} 선택됨 (대상 업체를 선택하세요)`, 'success');
     }
     
     // 노드 강조 효과
     g.selectAll('.company-node').classed('selected', false);
-    d3.select(this).classed('selected', true);
+    if (selectedNode) {
+        d3.select(this).classed('selected', true);
+    }
 }
 
 // 노드 더블클릭 핸들러 (중심으로 이동)
@@ -553,8 +595,8 @@ function getCompanyColor(colorCode) {
 
 // 관계 추가
 function addRelationship() {
-    const fromCompany = document.getElementById('fromCompany').value.trim();
-    const toCompany = document.getElementById('toCompany').value.trim();
+    const fromCompany = document.getElementById('fromCompany').value;
+    const toCompany = document.getElementById('toCompany').value;
     const relationshipType = document.getElementById('relationshipType').value;
     
     if (!fromCompany || !toCompany) {
@@ -604,10 +646,13 @@ function addRelationship() {
     updateChart();
     
     // 폼 초기화
-    document.getElementById('fromCompany').value = '';
-    document.getElementById('toCompany').value = '';
-    document.getElementById('relationshipType').value = '';
+    document.getElementById('fromCompany').selectedIndex = 0;
+    document.getElementById('toCompany').selectedIndex = 0;
+    document.getElementById('relationshipType').selectedIndex = 0;
     selectedNode = null;
+    
+    // 노드 선택 해제
+    g.selectAll('.company-node').classed('selected', false);
     
     showToast(`${relationshipType} 관계가 추가되었습니다.`, 'success');
 }
@@ -761,6 +806,20 @@ window.addEventListener('resize', () => {
     const height = container.clientHeight;
     
     svg.attr('width', width).attr('height', height);
-    simulation.force('center', d3.forceCenter(width / 2, height / 2));
-    simulation.alpha(0.1).restart();
+    
+    // 화면 크기에 따른 시뮬레이션 재조정
+    const isMobile = width < 768;
+    const linkDistance = isMobile ? 150 : 250;
+    const chargeStrength = isMobile ? -300 : -500;
+    const collisionRadius = isMobile ? 60 : 90;
+    
+    simulation
+        .force('center', d3.forceCenter(width / 2, height / 2))
+        .force('link', d3.forceLink().id(d => d.id).distance(linkDistance))
+        .force('charge', d3.forceManyBody().strength(chargeStrength))
+        .force('collision', d3.forceCollide().radius(collisionRadius))
+        .alpha(0.3)
+        .restart();
+        
+    console.log('📱 화면 크기 변경에 따른 차트 재조정:', { width, height, isMobile });
 });

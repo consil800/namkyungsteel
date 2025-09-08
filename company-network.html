@@ -40,12 +40,11 @@
         .company-node {
             cursor: pointer;
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-            transition: all 0.3s ease;
+            transition: filter 0.2s ease;
         }
         
         .company-node:hover {
             filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
-            transform: scale(1.1);
         }
         
         .company-node.center {
@@ -298,6 +297,22 @@
                 margin-top: 20px;
                 justify-content: center;
             }
+            
+            /* 모바일에서 노드 간격 조정 */
+            .company-node circle {
+                stroke-width: 3;
+            }
+        }
+        
+        /* 태블릿 크기에서 추가 조정 */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .control-panel {
+                min-width: 220px;
+            }
+            
+            .legend {
+                min-width: 180px;
+            }
         }
         
         /* 로딩 스타일 */
@@ -374,8 +389,12 @@
                 <div class="control-section">
                     <h4>🔗 관계 추가</h4>
                     <div class="relationship-form">
-                        <input type="text" id="fromCompany" placeholder="시작 업체" readonly>
-                        <input type="text" id="toCompany" placeholder="대상 업체" readonly>
+                        <select id="fromCompany" class="full-width">
+                            <option value="">시작 업체 선택</option>
+                        </select>
+                        <select id="toCompany" class="full-width">
+                            <option value="">대상 업체 선택</option>
+                        </select>
                         <select id="relationshipType" class="full-width">
                             <option value="">관계 선택</option>
                             <option value="납품">납품</option>
