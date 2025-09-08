@@ -382,26 +382,8 @@ async function uploadPdfFiles(files) {
     const uploadedFiles = [];
     let hasErrors = false;
     
-    // Storage 버킷 존재 확인
-    try {
-        const { data: buckets, error: listError } = await window.db.client.storage.listBuckets();
-        
-        if (listError) {
-            console.error('Storage 버킷 목록 조회 오류:', listError);
-            throw new Error('파일 저장소 연결에 문제가 있습니다.');
-        }
-        
-        const bucketExists = buckets && buckets.some(bucket => bucket.name === 'company-pdfs');
-        
-        if (!bucketExists) {
-            throw new Error('파일 저장소(company-pdfs)가 설정되지 않았습니다. 관리자에게 문의하세요.');
-        }
-        
-        console.log('✅ company-pdfs 버킷 확인 완료');
-    } catch (error) {
-        console.error('Storage 버킷 확인 오류:', error);
-        throw error;
-    }
+    // Storage 버킷 확인 (간단한 방식)
+    console.log('📁 company-pdfs 버킷 사용 준비');
     
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -452,6 +434,15 @@ async function uploadPdfFiles(files) {
             
         } catch (error) {
             console.error('PDF 파일 업로드 오류:', error);
+            console.error('오류 상세 정보:', {
+                message: error.message,
+                code: error.code,
+                details: error.details,
+                hint: error.hint,
+                fileName: file.name,
+                fileSize: file.size,
+                fileType: file.type
+            });
             alert(`${file.name} 업로드 중 오류가 발생했습니다: ${error.message}`);
             hasErrors = true;
         }
