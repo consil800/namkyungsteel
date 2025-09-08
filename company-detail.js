@@ -321,10 +321,130 @@ function displayCompanyDetails(company) {
             <span style="margin-left: 10px;">${getColorName(company.color_code) || '기본'}</span>
         </div>
         <div class="info-item">
+            <label>PDF 파일:</label>
+            <span id="pdfFilesDisplay">
+                ${displayPdfFiles(company.pdf_files)}
+            </span>
+        </div>
+        <div class="info-item">
             <label>등록일:</label>
             <span>${new Date(company.created_at).toLocaleDateString() || '-'}</span>
         </div>
     `;
+}
+
+// PDF 파일 표시 함수
+function displayPdfFiles(pdfFiles) {
+    if (!pdfFiles || pdfFiles.length === 0) {
+        return '<span style="color: #999;">등록된 PDF 파일이 없습니다.</span>';
+    }
+    
+    const filesHTML = pdfFiles.map(file => `
+        <div style="display: flex; align-items: center; margin-bottom: 5px;">
+            <span style="margin-right: 10px;">📄 ${file.filename}</span>
+            <button onclick="viewPdfFile('${file.url}')" class="btn btn-primary" style="padding: 3px 8px; font-size: 12px;">보기</button>
+        </div>
+    `).join('');
+    
+    return filesHTML;
+}
+
+// PDF 파일 보기 함수
+function viewPdfFile(url) {
+    window.open(url, '_blank');
+}
+
+// 현재 PDF 파일 목록 표시 (수정 모달용)
+function displayCurrentPdfFiles(pdfFiles) {
+    const container = document.getElementById('currentPdfFiles');
+    if (!container) return;
+    
+    if (!pdfFiles || pdfFiles.length === 0) {
+        container.innerHTML = '<p style="color: #999;">현재 등록된 PDF 파일이 없습니다.</p>';
+        return;
+    }
+    
+    const filesHTML = pdfFiles.map(file => `
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 5px; background: #f8f9fa; border-radius: 3px; margin-bottom: 5px;">
+            <span>📄 ${file.filename}</span>
+            <div>
+                <button onclick="viewPdfFile('${file.url}')" class="btn btn-primary" style="padding: 2px 6px; font-size: 11px; margin-right: 5px;">보기</button>
+                <button onclick="removePdfFile('${file.filename}')" class="btn btn-danger" style="padding: 2px 6px; font-size: 11px;">삭제</button>
+            </div>
+        </div>
+    `).join('');
+    
+    container.innerHTML = filesHTML;
+}
+
+// PDF 파일 업로드 함수
+async function uploadPdfFiles(files) {
+    const uploadedFiles = [];
+    
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        if (file.type !== 'application/pdf') {
+            alert(`${file.name}은 PDF 파일이 아닙니다.`);
+            continue;
+        }
+        
+        try {
+            // Supabase Storage에 파일 업로드
+            const fileName = `${Date.now()}_${file.name}`;
+            const { data, error } = await window.db.client.storage
+                .from('company-pdfs')
+                .upload(fileName, file);
+            
+            if (error) throw error;
+            
+            // 공개 URL 생성
+            const { data: urlData } = window.db.client.storage
+                .from('company-pdfs')
+                .getPublicUrl(fileName);
+            
+            uploadedFiles.push({
+                filename: file.name,
+                url: urlData.publicUrl,
+                uploadedAt: new Date().toISOString()
+            });
+            
+        } catch (error) {
+            console.error('PDF 파일 업로드 오류:', error);
+            alert(`${file.name} 업로드 중 오류가 발생했습니다.`);
+        }
+    }
+    
+    // 기존 PDF 파일과 새 파일 병합
+    const existingFiles = currentCompany.pdf_files || [];
+    return [...existingFiles, ...uploadedFiles];
+}
+
+// PDF 파일 삭제 함수
+async function removePdfFile(filename) {
+    if (!confirm(`${filename}을 삭제하시겠습니까?`)) {
+        return;
+    }
+    
+    try {
+        const updatedFiles = (currentCompany.pdf_files || []).filter(file => file.filename !== filename);
+        
+        const updateResult = await window.db.updateClientCompany(currentCompany.id, {
+            pdf_files: updatedFiles
+        });
+        
+        if (updateResult.success) {
+            currentCompany.pdf_files = updatedFiles;
+            displayCurrentPdfFiles(updatedFiles);
+            alert('PDF 파일이 삭제되었습니다.');
+        } else {
+            throw new Error('삭제 실패');
+        }
+        
+    } catch (error) {
+        console.error('PDF 파일 삭제 오류:', error);
+        alert('PDF 파일 삭제 중 오류가 발생했습니다.');
+    }
 }
 
 // 이벤트 리스너 초기화
@@ -484,6 +604,9 @@ async function populateEditForm(company) {
     document.getElementById('editUsageItems').value = company.usage_items || '';
     document.getElementById('editNotes').value = getCompanyNotes(company.notes) || '';
     
+    // 현재 PDF 파일 표시
+    displayCurrentPdfFiles(company.pdf_files);
+    
     // 현재 색상 값 확인
     const currentColorCode = company.color_code || 'gray';
     
@@ -591,6 +714,12 @@ async function updateCompany() {
             notes: formData.get('editNotes').trim(),
             color_code: formData.get('editCompanyColor') || 'gray'
         };
+        
+        // PDF 파일 처리
+        const pdfFiles = document.getElementById('editPdfFiles').files;
+        if (pdfFiles && pdfFiles.length > 0) {
+            updateData.pdf_files = await uploadPdfFiles(pdfFiles);
+        }
         
         if (!updateData.company_name) {
             alert('업체명을 입력해주세요.');
