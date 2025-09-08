@@ -380,6 +380,28 @@ function displayCurrentPdfFiles(pdfFiles) {
 // PDF 파일 업로드 함수
 async function uploadPdfFiles(files) {
     const uploadedFiles = [];
+    let hasErrors = false;
+    
+    // Storage 버킷 존재 확인
+    try {
+        const { data: buckets, error: listError } = await window.db.client.storage.listBuckets();
+        
+        if (listError) {
+            console.error('Storage 버킷 목록 조회 오류:', listError);
+            throw new Error('파일 저장소 연결에 문제가 있습니다.');
+        }
+        
+        const bucketExists = buckets && buckets.some(bucket => bucket.name === 'company-pdfs');
+        
+        if (!bucketExists) {
+            throw new Error('파일 저장소(company-pdfs)가 설정되지 않았습니다. 관리자에게 문의하세요.');
+        }
+        
+        console.log('✅ company-pdfs 버킷 확인 완료');
+    } catch (error) {
+        console.error('Storage 버킷 확인 오류:', error);
+        throw error;
+    }
     
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -390,18 +412,35 @@ async function uploadPdfFiles(files) {
         }
         
         try {
+            // 파일명 정리 (특수문자 제거)
+            const sanitizedName = file.name.replace(/[^a-zA-Z0-9가-힣.\-_]/g, '_');
+            const fileName = `${Date.now()}_${sanitizedName}`;
+            
+            console.log('📤 파일 업로드 시작:', fileName);
+            
             // Supabase Storage에 파일 업로드
-            const fileName = `${Date.now()}_${file.name}`;
             const { data, error } = await window.db.client.storage
                 .from('company-pdfs')
-                .upload(fileName, file);
+                .upload(fileName, file, {
+                    cacheControl: '3600',
+                    upsert: false
+                });
             
-            if (error) throw error;
+            if (error) {
+                console.error('파일 업로드 상세 오류:', error);
+                throw error;
+            }
+            
+            console.log('✅ 파일 업로드 성공:', data);
             
             // 공개 URL 생성
             const { data: urlData } = window.db.client.storage
                 .from('company-pdfs')
                 .getPublicUrl(fileName);
+            
+            if (!urlData || !urlData.publicUrl) {
+                throw new Error('파일 URL 생성 실패');
+            }
             
             uploadedFiles.push({
                 filename: file.name,
@@ -409,15 +448,24 @@ async function uploadPdfFiles(files) {
                 uploadedAt: new Date().toISOString()
             });
             
+            console.log('✅ 파일 정보 저장 완료:', file.name);
+            
         } catch (error) {
             console.error('PDF 파일 업로드 오류:', error);
-            alert(`${file.name} 업로드 중 오류가 발생했습니다.`);
+            alert(`${file.name} 업로드 중 오류가 발생했습니다: ${error.message}`);
+            hasErrors = true;
         }
     }
     
     // 기존 PDF 파일과 새 파일 병합
     const existingFiles = currentCompany.pdf_files || [];
-    return [...existingFiles, ...uploadedFiles];
+    const mergedFiles = [...existingFiles, ...uploadedFiles];
+    
+    if (hasErrors && uploadedFiles.length === 0) {
+        throw new Error('모든 파일 업로드가 실패했습니다.');
+    }
+    
+    return mergedFiles;
 }
 
 // PDF 파일 삭제 함수
@@ -718,7 +766,13 @@ async function updateCompany() {
         // PDF 파일 처리
         const pdfFiles = document.getElementById('editPdfFiles').files;
         if (pdfFiles && pdfFiles.length > 0) {
-            updateData.pdf_files = await uploadPdfFiles(pdfFiles);
+            try {
+                updateData.pdf_files = await uploadPdfFiles(pdfFiles);
+            } catch (error) {
+                console.error('PDF 파일 업로드 실패:', error);
+                alert('PDF 파일 업로드에 실패했습니다. 다른 정보만 저장됩니다.');
+                // PDF 업로드 실패해도 다른 정보는 저장하도록 처리
+            }
         }
         
         if (!updateData.company_name) {
