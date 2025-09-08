@@ -528,6 +528,13 @@ function initEventListeners() {
         }
     });
     
+    // 업체 관계도 버튼
+    document.getElementById('companyNetworkBtn').addEventListener('click', function() {
+        if (currentCompany) {
+            window.location.href = `company-network.html?id=${currentCompany.id}&name=${encodeURIComponent(currentCompany.company_name)}`;
+        }
+    });
+    
     // 모달 닫기
     document.getElementById('closeModal').addEventListener('click', function() {
         document.getElementById('editModal').style.display = 'none';

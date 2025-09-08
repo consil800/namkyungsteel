@@ -2427,6 +2427,158 @@ class DatabaseManager {
             throw error;
         }
     }
+
+    // ==================== 업체 네트워크 관리 ====================
+    
+    // 업체 네트워크 저장
+    async saveCompanyNetwork(userId, centerCompanyId, centerCompanyName, networkData) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            console.log('💾 업체 네트워크 저장 시작:', {
+                userId,
+                centerCompanyId,
+                centerCompanyName,
+                nodesCount: networkData.nodes?.length,
+                linksCount: networkData.links?.length
+            });
+
+            // 기존 네트워크가 있는지 확인
+            const { data: existingNetwork, error: selectError } = await this.client
+                .from('company_networks')
+                .select('id')
+                .eq('user_id', userId)
+                .eq('center_company_id', centerCompanyId)
+                .single();
+
+            if (selectError && selectError.code !== 'PGRST116') { // 'PGRST116'은 "no rows returned" 오류
+                throw selectError;
+            }
+
+            let result;
+            if (existingNetwork) {
+                // 기존 네트워크 업데이트
+                const { data, error } = await this.client
+                    .from('company_networks')
+                    .update({
+                        network_data: networkData,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', existingNetwork.id)
+                    .select();
+                
+                if (error) throw error;
+                result = { success: true, data: data[0], action: 'updated' };
+                
+                console.log('✅ 기존 네트워크 업데이트 완료');
+            } else {
+                // 새 네트워크 생성
+                const { data, error } = await this.client
+                    .from('company_networks')
+                    .insert({
+                        user_id: userId,
+                        center_company_id: centerCompanyId,
+                        center_company_name: centerCompanyName,
+                        network_data: networkData
+                    })
+                    .select();
+                
+                if (error) throw error;
+                result = { success: true, data: data[0], action: 'created' };
+                
+                console.log('✅ 새 네트워크 생성 완료');
+            }
+
+            return result;
+
+        } catch (error) {
+            console.error('❌ 업체 네트워크 저장 오류:', error);
+            throw error;
+        }
+    }
+
+    // 업체 네트워크 조회
+    async getCompanyNetwork(userId, centerCompanyId) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            console.log('📊 업체 네트워크 조회:', { userId, centerCompanyId });
+
+            const { data, error } = await this.client
+                .from('company_networks')
+                .select('*')
+                .eq('user_id', userId)
+                .eq('center_company_id', centerCompanyId)
+                .single();
+
+            if (error) {
+                if (error.code === 'PGRST116') {
+                    // 네트워크가 없는 경우
+                    console.log('📊 기존 네트워크 없음');
+                    return null;
+                }
+                throw error;
+            }
+
+            console.log('✅ 네트워크 조회 완료:', data ? '데이터 있음' : '데이터 없음');
+            return data;
+
+        } catch (error) {
+            console.error('❌ 업체 네트워크 조회 오류:', error);
+            throw error;
+        }
+    }
+
+    // 사용자의 모든 네트워크 목록 조회
+    async getUserNetworks(userId) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            const { data, error } = await this.client
+                .from('company_networks')
+                .select('id, center_company_id, center_company_name, created_at, updated_at')
+                .eq('user_id', userId)
+                .order('updated_at', { ascending: false });
+
+            if (error) throw error;
+            return data || [];
+
+        } catch (error) {
+            console.error('❌ 사용자 네트워크 목록 조회 오류:', error);
+            throw error;
+        }
+    }
+
+    // 네트워크 삭제
+    async deleteCompanyNetwork(userId, centerCompanyId) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            const { data, error } = await this.client
+                .from('company_networks')
+                .delete()
+                .eq('user_id', userId)
+                .eq('center_company_id', centerCompanyId)
+                .select();
+
+            if (error) throw error;
+            
+            console.log('✅ 네트워크 삭제 완료:', data.length, '개');
+            return { success: true, deletedCount: data.length };
+
+        } catch (error) {
+            console.error('❌ 네트워크 삭제 오류:', error);
+            throw error;
+        }
+    }
 }
 
 // 전역 데이터베이스 매니저 인스턴스
