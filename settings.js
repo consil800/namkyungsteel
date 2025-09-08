@@ -79,12 +79,29 @@ async function loadSettings() {
     try {
         console.log('🔄 설정 로드 시작');
         
+        // 데이터베이스 초기화 완료 대기
+        await window.dataLoader.ensureDatabase();
+        
         const currentUser = await window.dataLoader.getCurrentUser();
         if (!currentUser) {
             throw new Error('사용자 정보 없음');
         }
         
-        const settings = await window.dataLoader.loadUserSettings(currentUser.id);
+        // 최대 3번 재시도로 설정 로드
+        let settings = null;
+        let retryCount = 0;
+        const maxRetries = 3;
+        
+        while (retryCount < maxRetries && (!settings || Object.keys(settings).every(key => !settings[key] || settings[key].length === 0))) {
+            if (retryCount > 0) {
+                console.log(`🔄 설정 로드 재시도 ${retryCount}/${maxRetries}`);
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            settings = await window.dataLoader.loadUserSettings(currentUser.id);
+            retryCount++;
+        }
+        
         console.log('📊 가져온 설정:', settings);
         
         // 설정이 없으면 기본값 사용
@@ -219,6 +236,49 @@ function displayColorList(listId, colors) {
     });
     
     console.log(`✅ 색상 리스트 표시 완료 - ${colors.length}개 항목`);
+    
+    // 색상 의미 가이드 업데이트
+    updateColorMeaningsDisplay(colors);
+}
+
+// 색상 의미 가이드 표시 함수
+function updateColorMeaningsDisplay(colors) {
+    const meaningsList = document.getElementById('colorMeaningsList');
+    if (!meaningsList) return;
+    
+    if (!colors || colors.length === 0) {
+        meaningsList.innerHTML = '<p style="color: #999; font-style: italic;">색상을 추가하면 여기에 의미가 표시됩니다.</p>';
+        return;
+    }
+    
+    const meaningsWithColor = colors.filter(color => color.meaning && color.meaning.trim());
+    
+    if (meaningsWithColor.length === 0) {
+        meaningsList.innerHTML = '<p style="color: #999; font-style: italic;">색상 의미가 설정된 색상이 없습니다.</p>';
+        return;
+    }
+    
+    const meaningsHTML = meaningsWithColor.map(color => {
+        let colorValue = color.value;
+        try {
+            if (typeof color.value === 'string' && color.value.startsWith('{')) {
+                const metadata = JSON.parse(color.value);
+                colorValue = metadata.color;
+            }
+        } catch (e) {
+            // 파싱 실패 시 기본값 사용
+        }
+        
+        return `
+            <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                <span style="display: inline-block; width: 16px; height: 16px; background-color: ${colorValue}; border-radius: 50%; margin-right: 8px; border: 1px solid #ddd;"></span>
+                <span style="font-weight: 600; margin-right: 8px;">${color.name}:</span>
+                <span style="color: #666;">${color.meaning}</span>
+            </div>
+        `;
+    }).join('');
+    
+    meaningsList.innerHTML = meaningsHTML;
 }
 
 // 직접입력 데이터 저장 함수 (user_settings 테이블 사용)
@@ -282,6 +342,7 @@ async function addVisitPurpose() {
 async function confirmAddColor() {
     const nameInput = document.getElementById('newColorName');
     const valueInput = document.getElementById('newColorValue');
+    const meaningInput = document.getElementById('newColorMeaning');
     const hideVisitDateInput = document.getElementById('newColorHideVisitDate');
     
     if (!nameInput || !valueInput) {
@@ -291,6 +352,7 @@ async function confirmAddColor() {
     
     const colorName = nameInput.value.trim();
     const colorValue = valueInput.value;
+    const colorMeaning = meaningInput ? meaningInput.value.trim() : '';
     const hideVisitDate = hideVisitDateInput ? hideVisitDateInput.checked : false;
     
     if (!colorName) {
@@ -300,12 +362,13 @@ async function confirmAddColor() {
     }
     
     try {
-        // 색상을 데이터베이스에 저장 (hideVisitDate 포함)
-        await saveColorToDatabase(colorName, colorValue, hideVisitDate);
+        // 색상을 데이터베이스에 저장 (hideVisitDate와 의미 포함)
+        await saveColorToDatabase(colorName, colorValue, hideVisitDate, colorMeaning);
         
         // 입력창 초기화
         nameInput.value = '';
         valueInput.value = '#ff69b4';
+        if (meaningInput) meaningInput.value = '';
         if (hideVisitDateInput) hideVisitDateInput.checked = false;
         updateColorPreview();
         
@@ -378,22 +441,22 @@ async function addItem(type, inputId) {
 }
 
 // 색상 저장 함수 (user_settings 테이블 사용)
-async function saveColorToDatabase(colorName, colorValue, hideVisitDate = false) {
+async function saveColorToDatabase(colorName, colorValue, hideVisitDate = false, colorMeaning = '') {
     const userId = await DropdownSettings.getCurrentUserId();
     if (!userId) {
         throw new Error('사용자 정보가 없습니다.');
     }
     
-    // user_settings 테이블에 색상 저장 (hideVisitDate 정보 포함)
+    // user_settings 테이블에 색상 저장 (hideVisitDate 정보와 의미 포함)
     const db = new DatabaseManager();
     await db.init();
     const metadata = {
         color: colorValue,
         hideVisitDate: hideVisitDate
     };
-    await db.addUserSetting(userId, 'color', colorName, colorName, JSON.stringify(metadata));
+    await db.addUserSetting(userId, 'color', colorName, colorName, JSON.stringify(metadata), colorMeaning);
     
-    console.log(`✅ 색상 "${colorName}" (${colorValue}) user_settings에 저장 완료`);
+    console.log(`✅ 색상 "${colorName}" (${colorValue}) 의미: "${colorMeaning}" user_settings에 저장 완료`);
     
     return true;
 }

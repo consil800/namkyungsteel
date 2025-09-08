@@ -193,6 +193,20 @@ async function loadCompanyDetails(companyId) {
 
 // 색상 코드로 색상 값 가져오기
 function getColorValue(colorCode) {
+    // 한글 색상을 영어로 변환
+    const colorMapping = {
+        '빨강': 'red',
+        '주황': 'orange', 
+        '노랑': 'yellow',
+        '초록': 'green',
+        '파랑': 'blue',
+        '보라': 'purple',
+        '회색': 'gray'
+    };
+    
+    // 한글 색상인 경우 영어로 변환
+    const englishColorCode = colorMapping[colorCode] || colorCode;
+    
     const colorMap = {
         'red': '#e74c3c',
         'orange': '#f39c12',
@@ -202,11 +216,25 @@ function getColorValue(colorCode) {
         'purple': '#9b59b6',
         'gray': '#95a5a6'
     };
-    return colorMap[colorCode] || '#95a5a6'; // 기본값은 회색
+    
+    console.log('🎨 getColorValue 호출:', {
+        입력_색상: colorCode,
+        변환된_색상: englishColorCode,
+        최종_색상값: colorMap[englishColorCode]
+    });
+    
+    return colorMap[englishColorCode] || '#95a5a6'; // 기본값은 회색
 }
 
 // 색상 코드로 색상 이름 가져오기
 function getColorName(colorCode) {
+    // 이미 한글인 경우 그대로 반환
+    const koreanColors = ['빨강', '주황', '노랑', '초록', '파랑', '보라', '회색'];
+    if (koreanColors.includes(colorCode)) {
+        return colorCode;
+    }
+    
+    // 영어 색상을 한글로 변환
     const colorNameMap = {
         'red': '빨강',
         'orange': '주황',

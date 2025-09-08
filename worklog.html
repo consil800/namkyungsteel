@@ -463,19 +463,67 @@
             window.location.href = 'settings.html';
         }
         
-        // 지역 목록 로드 함수
-        function loadRegions() {
-            const defaultRegions = ['서울','부산','대구','경주','김해','양산','함안','밀양','창원','창녕','울산','목포','광주','광양'];
-            const savedRegions = localStorage.getItem('company_regions');
-            const regions = savedRegions ? JSON.parse(savedRegions) : defaultRegions.sort((a, b) => a.localeCompare(b));
-            
+        // 지역 목록 로드 함수 (설정 페이지와 DB 고유값 합집합)
+        async function loadRegions() {
             const regionSelect = document.getElementById('searchRegion');
-            if (regionSelect) {
+            if (!regionSelect) return;
+            
+            try {
+                // Set을 사용하여 중복 제거
+                const regionSet = new Set();
+                
+                // 1. 설정 페이지의 지역 목록 가져오기
+                const currentUser = await window.dataLoader.getCurrentUser();
+                if (currentUser) {
+                    const db = new DatabaseManager();
+                    await db.init();
+                    const settings = await db.getUserSettings(currentUser.id);
+                    
+                    if (settings.regions && Array.isArray(settings.regions)) {
+                        settings.regions.forEach(region => regionSet.add(region));
+                    }
+                }
+                
+                // 2. 데이터베이스의 고유 지역값 가져오기
+                if (window.db && window.db.client) {
+                    const { data: companies, error } = await window.db.client
+                        .from('client_companies')
+                        .select('region')
+                        .not('region', 'is', null)
+                        .not('region', 'eq', '');
+                    
+                    if (!error && companies) {
+                        companies.forEach(company => {
+                            if (company.region && company.region.trim()) {
+                                regionSet.add(company.region.trim());
+                            }
+                        });
+                    }
+                }
+                
+                // 3. Set을 배열로 변환하고 내림차순 정렬
+                const regions = Array.from(regionSet).sort((a, b) => b.localeCompare(a, 'ko-KR'));
+                
                 // 기존 옵션 초기화
                 regionSelect.innerHTML = '<option value="">전체 지역</option>';
                 
-                // 저장된 지역 추가
+                // 정렬된 지역 추가
                 regions.forEach(region => {
+                    const option = document.createElement('option');
+                    option.value = region;
+                    option.textContent = region;
+                    regionSelect.appendChild(option);
+                });
+                
+                console.log(`✅ 지역 목록 로드 완료: ${regions.length}개`);
+                
+            } catch (error) {
+                console.error('지역 목록 로드 오류:', error);
+                
+                // 오류 시 기본값 사용
+                const defaultRegions = ['서울','부산','대구','경주','김해','양산','함안','밀양','창원','창녕','울산','목포','광주','광양'];
+                regionSelect.innerHTML = '<option value="">전체 지역</option>';
+                defaultRegions.sort((a, b) => b.localeCompare(a, 'ko-KR')).forEach(region => {
                     const option = document.createElement('option');
                     option.value = region;
                     option.textContent = region;

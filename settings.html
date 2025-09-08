@@ -188,7 +188,8 @@
                 <!-- 색상 추가 영역 -->
                 <div class="add-option-form" style="align-items: flex-start; gap: 15px; flex-wrap: wrap;">
                     <div style="flex: 2; min-width: 200px;">
-                        <input type="text" id="newColorName" placeholder="새 색상 이름 입력 (예: 연한 파랑)" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <input type="text" id="newColorName" placeholder="새 색상 이름 입력 (예: 연한 파랑)" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px;">
+                        <input type="text" id="newColorMeaning" placeholder="색상의 의미 입력 (예: 긴급, 중요, 일반)" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; color: #666;">
                     </div>
                     <div style="flex: 0 0 auto; display: flex; align-items: center; gap: 10px;">
                         <input type="color" id="newColorValue" value="#ff69b4" style="width: 50px; height: 36px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;">
@@ -199,6 +200,17 @@
                         <label for="newColorHideVisitDate" style="font-size: 14px; cursor: pointer;">방문일 숨김</label>
                     </div>
                     <button class="btn btn-primary" onclick="confirmAddColor()">추가</button>
+                </div>
+            </div>
+
+            <!-- 색상 의미 안내 -->
+            <div class="settings-section" id="colorMeaningsSection" style="background: #f8f9fa; border-left: 4px solid #3498db;">
+                <h4 style="color: #2c3e50; font-size: 16px; margin-bottom: 15px; display: flex; align-items: center;">
+                    <span style="margin-right: 8px;">🎨</span> 색상 의미 가이드
+                </h4>
+                <div id="colorMeaningsList" style="font-size: 13px; color: #555; line-height: 1.6;">
+                    <!-- 색상 의미가 동적으로 표시됩니다 -->
+                    <p style="color: #999; font-style: italic;">색상을 추가하면 여기에 의미가 표시됩니다.</p>
                 </div>
             </div>
 

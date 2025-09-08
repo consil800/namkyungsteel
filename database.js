@@ -957,6 +957,19 @@ class DatabaseManager {
 
             let actualUserId = companyData.user_id;
             
+            // RLS를 위한 사용자 ID 설정 (createWorkLog와 동일한 패턴)
+            await this.client.rpc('set_current_user_id', { user_id: String(actualUserId) });
+            console.log('📌 RLS 사용자 ID 설정:', actualUserId);
+            
+            // 설정이 제대로 되었는지 확인
+            const { data: currentUserId, error: getUserError } = await this.client.rpc('get_current_user_id');
+            console.log('📌 현재 설정된 사용자 ID:', currentUserId);
+            
+            if (getUserError || currentUserId !== String(actualUserId)) {
+                console.warn('⚠️ RLS 사용자 ID 설정 실패, 재시도...');
+                await this.client.rpc('set_current_user_id', { user_id: String(actualUserId) });
+            }
+            
             // OAuth 사용자 ID(UUID 형태)인 경우 실제 데이터베이스 ID로 변환
             if (typeof companyData.user_id === 'string' && companyData.user_id.includes('-')) {
                 console.log('🔍 OAuth 사용자 ID 감지, 데이터베이스에서 실제 ID 조회:', companyData.user_id);
@@ -1009,6 +1022,21 @@ class DatabaseManager {
                         actualUserId = oauthUserData.id;
                         console.log('✅ OAuth ID로 실제 사용자 ID 조회 성공:', actualUserId, '(타입:', typeof actualUserId, ')');
                     }
+                }
+            }
+
+            // OAuth ID 변환 후 RLS 재설정 (actualUserId가 변경되었을 수 있으므로)
+            if (actualUserId !== companyData.user_id) {
+                console.log('🔄 RLS 사용자 ID 재설정 (OAuth 변환 후):', actualUserId);
+                await this.client.rpc('set_current_user_id', { user_id: String(actualUserId) });
+                
+                // 재설정 확인
+                const { data: updatedUserId, error: reCheckError } = await this.client.rpc('get_current_user_id');
+                console.log('📌 재설정된 사용자 ID 확인:', updatedUserId);
+                
+                if (reCheckError || updatedUserId !== String(actualUserId)) {
+                    console.error('❌ RLS 사용자 ID 재설정 실패');
+                    throw new Error('RLS 사용자 ID 설정에 실패했습니다.');
                 }
             }
 
@@ -1091,6 +1119,10 @@ class DatabaseManager {
         try {
             console.log('🔍 사용자 설정 조회 시작 - userId:', userId);
             
+            // RLS를 위한 사용자 ID 설정
+            await this.client.rpc('set_current_user_id', { user_id: userId.toString() });
+            console.log('✅ RLS 사용자 ID 설정 완료');
+            
             // user_settings 테이블에서 해당 사용자의 모든 설정 조회
             const { data: settings, error } = await this.client
                 .from('user_settings')
@@ -1142,7 +1174,8 @@ class DatabaseManager {
                             result.colors.push({
                                 key: setting.setting_value,
                                 name: setting.display_name || setting.setting_value,
-                                value: setting.color_value || '#cccccc'
+                                value: setting.color_value || '#cccccc',
+                                meaning: setting.color_meaning || ''
                             });
                             break;
                     }
@@ -1242,7 +1275,7 @@ class DatabaseManager {
     }
 
     // 단일 사용자 설정 추가
-    async addUserSetting(userId, settingType, settingValue, displayName = null, colorValue = null) {
+    async addUserSetting(userId, settingType, settingValue, displayName = null, colorValue = null, colorMeaning = null) {
         if (!this.client) {
             throw new Error('데이터베이스 연결이 필요합니다.');
         }
@@ -1272,6 +1305,7 @@ class DatabaseManager {
                 setting_value: settingValue,
                 display_name: displayName || settingValue,
                 color_value: colorValue,
+                color_meaning: colorMeaning,
                 created_at: new Date().toISOString()
             };
 

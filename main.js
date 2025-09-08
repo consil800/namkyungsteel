@@ -133,6 +133,9 @@ document.addEventListener('DOMContentLoaded', function() {
         searchState.region = region;
         searchState.companyName = companyName;
         searchState.isFiltered = !!(region || companyName);
+        
+        // 검색 상태를 sessionStorage에 저장 (뒤로가기 시 복원용)
+        sessionStorage.setItem('worklogSearchState', JSON.stringify(searchState));
 
         try {
             // 로딩 표시
@@ -300,12 +303,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 검색 상태 저장
     function saveSearchState() {
-        sessionStorage.setItem('searchState', JSON.stringify(searchState));
+        sessionStorage.setItem('worklogSearchState', JSON.stringify(searchState));
     }
     
     // 검색 상태 복원
     function restoreSearchState() {
-        const savedState = sessionStorage.getItem('searchState');
+        // 두 가지 키 모두 확인 (이전 버전 호환성)
+        const savedState = sessionStorage.getItem('worklogSearchState') || sessionStorage.getItem('searchState');
         if (savedState) {
             try {
                 searchState = JSON.parse(savedState);
@@ -319,8 +323,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     handleSearch();
                 }
                 
-                // 세션 스토리지 정리
-                sessionStorage.removeItem('searchState');
+                // 세션 스토리지 정리하지 않음 (뒤로가기 시 계속 사용)
+                // sessionStorage.removeItem('searchState');
             } catch (error) {
                 console.error('검색 상태 복원 실패:', error);
             }
