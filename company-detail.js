@@ -394,11 +394,21 @@ async function uploadPdfFiles(files) {
         }
         
         try {
-            // 파일명 정리 (특수문자 제거)
-            const sanitizedName = file.name.replace(/[^a-zA-Z0-9가-힣.\-_]/g, '_');
-            const fileName = `${Date.now()}_${sanitizedName}`;
+            // 파일명 정리 (영문/숫자만 허용)
+            const originalName = file.name;
+            const extension = originalName.split('.').pop();
+            const nameWithoutExt = originalName.replace('.' + extension, '');
+            
+            // 한글과 특수문자를 안전한 문자로 변환
+            const safeName = nameWithoutExt
+                .replace(/[^a-zA-Z0-9]/g, '_')
+                .replace(/_+/g, '_')  // 연속된 언더스코어를 하나로
+                .replace(/^_|_$/g, ''); // 앞뒤 언더스코어 제거
+            
+            const fileName = `${Date.now()}_${safeName || 'document'}.${extension}`;
             
             console.log('📤 파일 업로드 시작:', fileName);
+            console.log('📝 원본 파일명:', originalName);
             
             // Supabase Storage에 파일 업로드
             const { data, error } = await window.db.client.storage
