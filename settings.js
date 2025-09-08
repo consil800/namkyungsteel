@@ -226,9 +226,11 @@ function displayColorList(listId, colors) {
             <span class="option-text">
                 <span class="color-preview" style="background-color: ${colorValue}; display: inline-block; width: 20px; height: 20px; border-radius: 50%; margin-right: 10px; border: 1px solid #ddd; vertical-align: middle;"></span>
                 ${color.name}
-                ${hideVisitDate ? '<span style="margin-left: 10px; color: #666; font-size: 12px;">(방문일 숨김)</span>' : ''}
+                ${color.meaning ? `<span style="margin-left: 10px; color: #666; font-size: 12px;">(${color.meaning})</span>` : '<span style="margin-left: 10px; color: #999; font-size: 12px;">(의미 없음)</span>'}
+                ${hideVisitDate ? '<span style="margin-left: 10px; color: #666; font-size: 12px;">[방문일 숨김]</span>' : ''}
             </span>
             <div class="option-actions">
+                <button class="btn btn-success btn-small" onclick="editColorMeaning('${color.name.replace(/'/g, "\\'")}', '${(color.meaning || '').replace(/'/g, "\\'")}')">의미 수정</button>
                 <button class="btn btn-danger btn-small" onclick="deleteColor('${color.name.replace(/'/g, "\\'")}')">삭제</button>
             </div>
         `;
@@ -545,6 +547,73 @@ async function deleteColor(colorName) {
 }
 
 
+// 색상 의미 수정 함수
+async function editColorMeaning(colorName, currentMeaning) {
+    const newMeaning = prompt(`"${colorName}" 색상의 의미를 입력하세요:`, currentMeaning || '');
+    
+    if (newMeaning === null) {
+        return; // 사용자가 취소함
+    }
+    
+    try {
+        await saveColorMeaning(colorName, newMeaning.trim());
+        alert(`색상 "${colorName}"의 의미가 "${newMeaning.trim() || '(의미 없음)'}"로 수정되었습니다.`);
+        
+        // 설정 다시 로드
+        setTimeout(async () => {
+            await loadSettings();
+        }, 500);
+        
+    } catch (error) {
+        console.error('색상 의미 수정 오류:', error);
+        alert('색상 의미 수정 중 오류가 발생했습니다.');
+    }
+}
+
+// 색상 의미 저장 함수
+async function saveColorMeaning(colorName, meaning) {
+    const userId = await DropdownSettings.getCurrentUserId();
+    if (!userId) {
+        throw new Error('사용자 정보가 없습니다.');
+    }
+    
+    const db = new DatabaseManager();
+    await db.init();
+    
+    // 기존 색상 정보 가져오기
+    const settings = await db.getUserSettings(userId);
+    const existingColor = settings.colors?.find(c => c.name === colorName);
+    
+    if (!existingColor) {
+        throw new Error('색상을 찾을 수 없습니다.');
+    }
+    
+    // 색상 값과 방문일 숨김 설정 파싱
+    let colorValue = existingColor.value;
+    let hideVisitDate = false;
+    
+    try {
+        if (typeof existingColor.value === 'string' && existingColor.value.startsWith('{')) {
+            const metadata = JSON.parse(existingColor.value);
+            colorValue = metadata.color;
+            hideVisitDate = metadata.hideVisitDate || false;
+        }
+    } catch (e) {
+        // 파싱 실패 시 기본값 사용
+    }
+    
+    // 기존 색상 삭제 후 새 의미로 재추가
+    await db.deleteUserSetting(userId, 'color', colorName);
+    
+    const metadata = {
+        color: colorValue,
+        hideVisitDate: hideVisitDate
+    };
+    await db.addUserSetting(userId, 'color', colorName, colorName, JSON.stringify(metadata), meaning);
+    
+    console.log(`✅ 색상 "${colorName}" 의미를 "${meaning}"로 수정 완료`);
+}
+
 // 전역에서 접근 가능하도록 설정
 window.DropdownSettings = DropdownSettings;
 window.saveToDatabase = saveToDatabase;
@@ -556,3 +625,5 @@ window.confirmAddColor = confirmAddColor;
 window.updateColorPreview = updateColorPreview;
 window.deleteItem = deleteItem;
 window.deleteColor = deleteColor;
+window.editColorMeaning = editColorMeaning;
+window.saveColorMeaning = saveColorMeaning;
