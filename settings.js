@@ -50,7 +50,7 @@ const DropdownSettings = {
         return userInfo.id || null;
     },
 
-    // 설정 가져오기
+    // 설정 가져오기 (캐시 활용)
     get: async function() {
         try {
             const userId = await this.getCurrentUserId();
@@ -61,10 +61,9 @@ const DropdownSettings = {
                 return { ...defaultSettings };
             }
 
-            const db = new DatabaseManager();
-            await db.init();
-            const settings = await db.getUserSettings(userId);
-            console.log('📊 DropdownSettings.get - 가져온 설정:', settings);
+            // DataCache를 통해 설정 가져오기
+            const settings = await window.DataCache.getSettings(userId);
+            console.log('📊 DropdownSettings.get - 캐시에서 가져온 설정:', settings);
             
             return settings;
         } catch (error) {
@@ -98,11 +97,12 @@ async function loadSettings() {
                 await new Promise(resolve => setTimeout(resolve, 500));
             }
             
-            settings = await window.dataLoader.loadUserSettings(currentUser.id);
+            // DataCache 사용
+            settings = await window.DataCache.getSettings(currentUser.id);
             retryCount++;
         }
         
-        console.log('📊 가져온 설정:', settings);
+        console.log('📊 캐시에서 가져온 설정:', settings);
         
         // 설정이 없으면 기본값 사용
         const finalSettings = settings || { ...defaultSettings };
@@ -311,6 +311,9 @@ async function saveToDatabase(type, value) {
         
         console.log(`✅ ${type} 값 "${value}" user_settings에 저장 완료`);
         
+        // 캐시 무효화
+        window.DataCache.clearSettings(userId);
+        
         return true;
         
     } catch (error) {
@@ -458,6 +461,9 @@ async function saveColorToDatabase(colorName, colorValue, hideVisitDate = false,
     
     console.log(`✅ 색상 "${colorName}" (${colorValue}) 의미: "${colorMeaning}" user_settings에 저장 완료`);
     
+    // 캐시 무효화
+    window.DataCache.clearSettings(userId);
+    
     return true;
 }
 
@@ -492,6 +498,9 @@ async function deleteItem(type, item) {
         const db = new DatabaseManager();
         await db.init();
         await db.deleteUserSetting(userId, settingType, item);
+        
+        // 캐시 무효화
+        window.DataCache.clearSettings(userId);
         
         alert(`${type} "${item}"이(가) 삭제되었습니다.`);
         
@@ -528,6 +537,9 @@ async function deleteColor(colorName) {
         const db = new DatabaseManager();
         await db.init();
         await db.deleteUserSetting(userId, 'color', colorName);
+        
+        // 캐시 무효화
+        window.DataCache.clearSettings(userId);
         
         alert(`색상 "${colorName}"이(가) 삭제되었습니다.`);
         
@@ -572,7 +584,8 @@ async function saveColorMeaningFromInput(colorName, inputId) {
         // 색상 의미 가이드만 업데이트 (전체 새로고침 없이)
         const currentUser = await window.dataLoader.getCurrentUser();
         if (currentUser) {
-            const settings = await window.dataLoader.loadUserSettings(currentUser.id);
+            // 캐시에서 설정 가져오기
+            const settings = await window.DataCache.getSettings(currentUser.id);
             if (settings && settings.colors) {
                 updateColorMeaningsDisplay(settings.colors);
             }
@@ -629,8 +642,8 @@ async function saveColorMeaning(colorName, meaning) {
     const db = new DatabaseManager();
     await db.init();
     
-    // 기존 색상 정보 가져오기
-    const settings = await db.getUserSettings(userId);
+    // 캐시에서 기존 색상 정보 가져오기
+    const settings = await window.DataCache.getSettings(userId);
     const existingColor = settings.colors?.find(c => c.name === colorName);
     
     if (!existingColor) {
@@ -661,6 +674,9 @@ async function saveColorMeaning(colorName, meaning) {
     await db.addUserSetting(userId, 'color', colorName, colorName, JSON.stringify(metadata), meaning);
     
     console.log(`✅ 색상 "${colorName}" 의미를 "${meaning}"로 수정 완료`);
+    
+    // 캐시 무효화
+    window.DataCache.clearSettings(userId);
 }
 
 // 전역에서 접근 가능하도록 설정

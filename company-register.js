@@ -74,6 +74,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             const result = await window.dataLoader.createCompany(companyData, currentUser.id);
             
             if (result.success) {
+                // 업체 목록 캐시 무효화
+                window.DataCache.clearCompanies(currentUser.id);
+                
                 alert('업체가 성공적으로 등록되었습니다.');
                 window.location.href = 'worklog.html';
             } else {

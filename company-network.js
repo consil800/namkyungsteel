@@ -108,12 +108,12 @@ async function loadCompanyFromUrl() {
     console.log('✅ 중심 업체 설정:', centerCompany);
 }
 
-// 등록된 모든 업체 목록 로드
+// 등록된 모든 업체 목록 로드 (캐시 활용)
 async function loadAllCompanies() {
     try {
-        const companies = await window.db.getClientCompanies(currentUser.id);
-        allCompanies = companies || [];
-        console.log('✅ 업체 목록 로드 완료:', allCompanies.length, '개');
+        // DataCache를 통해 업체 목록 로드
+        allCompanies = await window.DataCache.getCompanies(currentUser.id);
+        console.log('✅ 업체 목록 캐시 로드 완료:', allCompanies.length, '개');
     } catch (error) {
         console.error('❌ 업체 목록 로드 실패:', error);
         allCompanies = [];
@@ -705,7 +705,7 @@ function exportToImage() {
     showToast('이미지 내보내기 기능은 준비 중입니다.', 'info');
 }
 
-// 네트워크 저장
+// 네트워크 저장 (캐시 무효화 포함)
 async function saveNetwork() {
     try {
         console.log('💾 네트워크 저장 시작');
@@ -742,6 +742,9 @@ async function saveNetwork() {
         );
         
         if (result.success) {
+            // 네트워크 캐시 무효화
+            window.DataCache.clearNetworks(currentUser.id);
+            
             showToast('네트워크가 성공적으로 저장되었습니다.', 'success');
         } else {
             throw new Error('저장 실패');
@@ -753,18 +756,21 @@ async function saveNetwork() {
     }
 }
 
-// 기존 네트워크 로드
+// 기존 네트워크 로드 (캐시 활용)
 async function loadExistingNetwork() {
     try {
-        console.log('📊 기존 네트워크 로드 시도');
+        console.log('📊 기존 네트워크 캐시 로드 시도');
         
-        const existingNetwork = await window.db.getCompanyNetwork(
-            currentUser.id,
-            centerCompany.id
+        // DataCache를 통해 네트워크 로드
+        const existingNetwork = await window.DataCache.getNetworks(currentUser.id);
+        
+        // 현재 중심 업체의 네트워크 찾기
+        const networkForCenter = existingNetwork.find(net => 
+            net.center_company_id === centerCompany.id
         );
         
-        if (existingNetwork && existingNetwork.network_data) {
-            const networkInfo = existingNetwork.network_data;
+        if (networkForCenter && networkForCenter.network_data) {
+            const networkInfo = networkForCenter.network_data;
             
             // 기존 노드와 링크 로드
             if (networkInfo.nodes && networkInfo.nodes.length > 0) {
@@ -779,7 +785,7 @@ async function loadExistingNetwork() {
             
             updateChart();
             showToast('기존 관계도가 로드되었습니다.', 'success');
-            console.log('✅ 기존 네트워크 로드 완료');
+            console.log('✅ 기존 네트워크 캐시 로드 완료');
         }
         
     } catch (error) {

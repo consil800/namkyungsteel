@@ -41,9 +41,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
             if (!currentUser.id) return;
 
-            const db = new DatabaseManager();
-            await db.init();
-            const settings = await db.getUserSettings(currentUser.id);
+            // 캐시된 설정 사용
+            const settings = await window.cachedDataLoader.loadUserSettings(currentUser.id);
             
             // 색상 설정 파싱
             if (settings.colors) {
@@ -84,8 +83,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // 초기 데이터 로드 (사용자 정보가 업데이트될 때까지 대기)
     // worklog.html에서 getCurrentUserFromDB() 실행 후 loadCompanies()를 호출하므로 여기서는 주석 처리
     
-    // 검색 상태 복원
-    restoreSearchState();
+    // 페이지 로드 시 즉시 검색 상태 복원
+    setTimeout(() => {
+        restoreSearchState();
+    }, 100);
 
     // 이벤트 리스너 등록
     searchBtn.addEventListener('click', handleSearch);
@@ -154,15 +155,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
             let companies = [];
             
-            // 업체 검색 또는 목록 로드
+            // 캐시된 업체 검색 또는 목록 로드
             if (region || companyName) {
-                if (window.db && window.db.client) {
-                    await window.db.client.rpc('set_current_user_id', { user_id: currentUser.id.toString() });
-                    companies = await window.db.searchClientCompanies(region, companyName, currentUser.id);
-                }
+                companies = await window.cachedDataLoader.searchCompanies(region, companyName, currentUser.id);
                 console.log(`🔍 검색 결과: ${companies.length}개`);
             } else {
-                companies = await window.dataLoader.loadCompanies(currentUser.id);
+                companies = await window.cachedDataLoader.loadCompanies(currentUser.id);
                 console.log(`📋 전체 목록: ${companies.length}개`);
             }
 
@@ -198,8 +196,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            // 업체 목록 로드
-            const companies = await window.dataLoader.loadCompanies(currentUser.id);
+            // 캐시된 업체 목록 로드
+            const companies = await window.cachedDataLoader.loadCompanies(currentUser.id);
             console.log(`✅ ${currentUser.name}님의 업체 ${companies.length}개 로드 완료`);
             
             displayCompanies(companies);
@@ -306,25 +304,36 @@ document.addEventListener('DOMContentLoaded', function() {
         sessionStorage.setItem('worklogSearchState', JSON.stringify(searchState));
     }
     
-    // 검색 상태 복원
+    // 검색 상태 복원 (강화된 버전)
     function restoreSearchState() {
         // 두 가지 키 모두 확인 (이전 버전 호환성)
         const savedState = sessionStorage.getItem('worklogSearchState') || sessionStorage.getItem('searchState');
         if (savedState) {
             try {
-                searchState = JSON.parse(savedState);
+                const state = JSON.parse(savedState);
+                searchState = state;
+                
+                console.log('🔄 검색 상태 복원:', state);
                 
                 // 입력 필드에 값 복원 (요소가 존재하는 경우에만)
-                if (searchRegionSelect) searchRegionSelect.value = searchState.region || '';
-                if (searchCompanyInput) searchCompanyInput.value = searchState.companyName || '';
+                if (searchRegionSelect) {
+                    searchRegionSelect.value = state.region || '';
+                    console.log('지역 복원:', state.region);
+                }
+                if (searchCompanyInput) {
+                    searchCompanyInput.value = state.companyName || '';
+                    console.log('업체명 복원:', state.companyName);
+                }
                 
-                // 필터가 있는 경우 검색 수행
-                if (searchState.isFiltered) {
-                    handleSearch();
+                // 필터가 있는 경우 자동 검색 수행
+                if (state.isFiltered && (state.region || state.companyName)) {
+                    console.log('필터된 상태 - 자동 검색 수행');
+                    setTimeout(() => {
+                        handleSearch();
+                    }, 200);
                 }
                 
                 // 세션 스토리지 정리하지 않음 (뒤로가기 시 계속 사용)
-                // sessionStorage.removeItem('searchState');
             } catch (error) {
                 console.error('검색 상태 복원 실패:', error);
             }
@@ -462,6 +471,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         await window.db.deleteClientCompany(companyId);
                         successCount++;
                         console.log(`업체 ${companyId} 삭제 성공`);
+                        
+                        // 캐시 무효화
+                        window.cachedDataLoader.invalidateCompanyCache(currentUser.id);
                     } else {
                         console.warn('데이터베이스 연결 없음');
                         errorCount++;
@@ -856,6 +868,9 @@ document.addEventListener('DOMContentLoaded', function() {
                             if (!result.success) {
                                 throw new Error('데이터베이스 저장 실패: ' + JSON.stringify(result));
                             }
+                            
+                            // 캐시 무효화
+                            window.cachedDataLoader.invalidateCompanyCache(currentUser.id);
                         } else {
                             console.error('데이터베이스 연결 없음');
                             throw new Error('데이터베이스 연결이 필요합니다.');
