@@ -761,11 +761,16 @@ async function saveNetwork() {
 // 기존 네트워크 로드 (캐시 활용)
 async function loadExistingNetwork() {
     try {
-        console.log('📊 기존 네트워크 캐시 로드 시도');
+        console.log('📊 기존 네트워크 로드 시도 (현재 비활성화)');
         
-        // 기존 네트워크 로드는 일단 비활성화 (DataCache.getNetworks 미구현)
-        // const existingNetwork = await window.DataCache.getNetworks(currentUser.id);
-        const existingNetwork = null; // 임시로 null 설정
+        // 기존 네트워크 로드 기능은 현재 비활성화됨
+        // TODO: 향후 네트워크 저장/로드 기능 구현 시 활성화
+        console.log('ℹ️ 기존 네트워크 로드 기능 비활성화 - 새로운 네트워크로 시작');
+        return;
+        
+        // 아래 코드는 향후 구현을 위해 보관
+        /*
+        const existingNetwork = await window.DataCache.getNetworks(currentUser.id);
         
         // 현재 중심 업체의 네트워크 찾기
         const networkForCenter = existingNetwork.find(net => 
@@ -790,6 +795,7 @@ async function loadExistingNetwork() {
             showToast('기존 관계도가 로드되었습니다.', 'success');
             console.log('✅ 기존 네트워크 캐시 로드 완료');
         }
+        */
         
     } catch (error) {
         console.error('❌ 기존 네트워크 로드 오류:', error);
