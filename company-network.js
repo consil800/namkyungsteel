@@ -657,6 +657,9 @@ function setupEventListeners() {
     // 관계 추가 버튼
     document.getElementById('addRelationshipBtn').addEventListener('click', addRelationship);
     
+    // 관계 유형 선택 시 사용자 정의 입력 필드 토글
+    document.getElementById('relationshipType').addEventListener('change', toggleCustomRelationshipInput);
+    
     // 컨트롤 버튼들
     document.getElementById('resetZoomBtn').addEventListener('click', resetZoom);
     document.getElementById('toggleGridBtn').addEventListener('click', () => {
@@ -682,6 +685,23 @@ function setupEventListeners() {
             document.getElementById('searchResults').style.display = 'none';
         }
     });
+}
+
+// 사용자 정의 관계 입력 필드 토글
+function toggleCustomRelationshipInput() {
+    const relationshipType = document.getElementById('relationshipType').value;
+    const customDiv = document.getElementById('customRelationshipDiv');
+    const customInput = document.getElementById('customRelationshipInput');
+    
+    if (relationshipType === '기타') {
+        customDiv.style.display = 'block';
+        customInput.focus();
+        console.log('✏️ 사용자 정의 관계 입력 활성화');
+    } else {
+        customDiv.style.display = 'none';
+        customInput.value = '';
+        console.log('📋 기본 관계 선택됨:', relationshipType);
+    }
 }
 
 // 업체 검색 핸들러
@@ -848,6 +868,23 @@ function addRelationship() {
         return;
     }
     
+    // 관계 타입이 "기타"인 경우 사용자 정의 관계 텍스트 사용
+    let actualRelationshipType = relationshipType;
+    let relationshipLabel = relationshipType;
+    
+    if (relationshipType === '기타') {
+        const customRelationshipInput = document.getElementById('customRelationshipInput');
+        const customRelationship = customRelationshipInput ? customRelationshipInput.value.trim() : '';
+        
+        if (!customRelationship) {
+            showToast('사용자 정의 관계를 입력해주세요.', 'error');
+            return;
+        }
+        
+        actualRelationshipType = customRelationship;
+        relationshipLabel = customRelationship;
+    }
+    
     // 시작, 대상 노드 찾기
     const fromNode = networkData.nodes.find(node => node.name === fromCompany);
     const toNode = networkData.nodes.find(node => node.name === toCompany);
@@ -872,8 +909,8 @@ function addRelationship() {
     const newLink = {
         source: fromNode.id,
         target: toNode.id,
-        type: relationshipType,
-        label: relationshipType
+        type: actualRelationshipType,
+        label: relationshipLabel
     };
     
     networkData.links.push(newLink);
@@ -883,12 +920,19 @@ function addRelationship() {
     document.getElementById('fromCompany').selectedIndex = 0;
     document.getElementById('toCompany').selectedIndex = 0;
     document.getElementById('relationshipType').selectedIndex = 0;
+    
+    // 사용자 정의 관계 입력 필드 초기화 및 숨기기
+    const customRelationshipDiv = document.getElementById('customRelationshipDiv');
+    const customRelationshipInput = document.getElementById('customRelationshipInput');
+    if (customRelationshipDiv) customRelationshipDiv.style.display = 'none';
+    if (customRelationshipInput) customRelationshipInput.value = '';
+    
     selectedNode = null;
     
     // 노드 선택 해제
     g.selectAll('.company-node').classed('selected', false);
     
-    showToast(`${relationshipType} 관계가 추가되었습니다.`, 'success');
+    showToast(`${relationshipLabel} 관계가 추가되었습니다.`, 'success');
 }
 
 // 줌 리셋
