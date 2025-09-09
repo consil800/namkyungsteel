@@ -74,11 +74,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             const result = await window.dataLoader.createCompany(companyData, currentUser.id);
             
             if (result.success) {
-                // 업체 목록 캐시 무효화
-                window.DataCache.clearCompanies(currentUser.id);
-                
                 alert('업체가 성공적으로 등록되었습니다.');
-                window.location.href = 'worklog.html';
+                
+                // 데이터 변경 알림 (자동 캐시 무효화 및 새로고침 포함)
+                if (currentUser.id && window.dataChangeManager) {
+                    window.dataChangeManager.notifyChange(currentUser.id, 'create');
+                }
+                
+                // worklog.html로 이동하여 새로 등록된 업체 확인
+                setTimeout(() => {
+                    window.location.href = 'worklog.html';
+                }, 200);
             } else {
                 throw new Error('업체 등록에 실패했습니다.');
             }

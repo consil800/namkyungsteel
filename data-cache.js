@@ -237,10 +237,36 @@ class CachedDataLoader {
         }
     }
 
-    // 업체 생성/수정/삭제 시 캐시 무효화
-    invalidateCompanyCache(userId) {
+    // 업체 생성/수정/삭제 시 캐시 무효화 (강제 새로고침 포함)
+    invalidateCompanyCache(userId, forceReload = false) {
+        console.log('🗑️ 업체 캐시 무효화 시작:', userId);
         this.cache.clearPattern(`companies_${userId}`);
         this.cache.clearPattern(`search_${userId}`);
+        
+        // 로컬스토리지에서도 완전 삭제
+        try {
+            const stored = localStorage.getItem(this.storageKey);
+            if (stored) {
+                const data = JSON.parse(stored);
+                Object.keys(data).forEach(key => {
+                    if (key.includes(`companies_${userId}`) || key.includes(`search_${userId}`)) {
+                        delete data[key];
+                    }
+                });
+                localStorage.setItem(this.storageKey, JSON.stringify(data));
+            }
+        } catch (error) {
+            console.error('로컬스토리지 캐시 삭제 오류:', error);
+        }
+        
+        // 강제 새로고침 옵션
+        if (forceReload) {
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
+        }
+        
+        console.log('✅ 업체 캐시 무효화 완료');
     }
 
     // 설정 변경 시 캐시 무효화
@@ -251,3 +277,50 @@ class CachedDataLoader {
 
 // 전역 캐시된 데이터 로더
 window.cachedDataLoader = new CachedDataLoader();
+
+// 전역 데이터 변경 감지 및 자동 갱신
+class DataChangeManager {
+    constructor() {
+        this.listeners = new Map(); // userId -> callback 함수들
+    }
+
+    // 데이터 변경 리스너 등록
+    addListener(userId, callback) {
+        if (!this.listeners.has(userId)) {
+            this.listeners.set(userId, []);
+        }
+        this.listeners.get(userId).push(callback);
+    }
+
+    // 데이터 변경 알림
+    notifyChange(userId, changeType = 'update') {
+        console.log(`📢 데이터 변경 알림: userId=${userId}, type=${changeType}`);
+        
+        // 캐시 무효화
+        window.cachedDataLoader.invalidateCompanyCache(userId);
+        
+        // 등록된 리스너들 실행
+        if (this.listeners.has(userId)) {
+            this.listeners.get(userId).forEach(callback => {
+                try {
+                    callback(changeType);
+                } catch (error) {
+                    console.error('데이터 변경 리스너 오류:', error);
+                }
+            });
+        }
+
+        // 현재 페이지가 worklog.html인 경우 자동 새로고침
+        if (window.location.pathname.includes('worklog.html')) {
+            setTimeout(() => {
+                console.log('🔄 worklog.html 자동 새로고침');
+                if (window.loadCompanies) {
+                    window.loadCompanies();
+                }
+            }, 500);
+        }
+    }
+}
+
+// 전역 데이터 변경 매니저
+window.dataChangeManager = new DataChangeManager();

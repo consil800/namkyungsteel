@@ -472,8 +472,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         successCount++;
                         console.log(`업체 ${companyId} 삭제 성공`);
                         
-                        // 캐시 무효화
-                        window.cachedDataLoader.invalidateCompanyCache(currentUser.id);
+                        // 캐시 무효화 (개별 삭제에서도 적용)
+                        if (window.cachedDataLoader && currentUser.id) {
+                            window.cachedDataLoader.invalidateCompanyCache(currentUser.id);
+                            console.log('🗑️ 개별 업체 등록/수정 후 캐시 무효화 완료');
+                        }
                     } else {
                         console.warn('데이터베이스 연결 없음');
                         errorCount++;
@@ -489,15 +492,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (errorCount > 0) {
                     alert(`${errorCount}개 업체 삭제에 실패했습니다.`);
                 }
+                
+                // 데이터 변경 알림 (자동 캐시 무효화 및 새로고침 포함)
+                if (currentUser && currentUser.id && window.dataChangeManager) {
+                    window.dataChangeManager.notifyChange(currentUser.id, 'delete');
+                }
             } else {
                 alert('모든 업체 삭제에 실패했습니다.');
             }
             
             // 삭제 모드 종료
             exitDeleteMode();
-            
-            // 목록 새로고침
-            loadCompanies();
             
         } catch (error) {
             alert('업체 삭제 중 오류가 발생했습니다: ' + error.message);
@@ -893,10 +898,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert(`${errorCount}개 업체 불러오기에 실패했습니다.`);
                 }
                 
-                console.log('업체 목록 새로고침 시작...');
-                // 목록 새로고침
-                await loadCompanies();
-                console.log('업체 목록 새로고침 완료');
+                // 데이터 변경 알림 (자동 캐시 무효화 및 새로고침 포함)
+                let importUser;
+                try {
+                    const userJson = sessionStorage.getItem('currentUser');
+                    importUser = userJson ? JSON.parse(userJson) : null;
+                } catch (error) {
+                    console.error('사용자 정보 파싱 오류:', error);
+                    importUser = null;
+                }
+                
+                if (importUser && importUser.id && window.dataChangeManager) {
+                    window.dataChangeManager.notifyChange(importUser.id, 'import');
+                }
             } else {
                 console.error('모든 업체 불러오기 실패');
                 alert('업체를 불러오는데 실패했습니다.');
