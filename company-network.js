@@ -18,6 +18,13 @@ let g = null; // 메인 그래프 그룹
 let selectedNode = null;
 let isDragging = false;
 
+// 그리드 시스템 설정
+const GRID_SIZE = 21; // 21x21 그리드
+const GRID_SPACING = 80; // 80픽셀 간격 (보기 편한 거리)
+let gridData = [];
+let showGrid = false; // 그리드 표시 여부
+let gridGroup = null; // 그리드 SVG 그룹
+
 // 페이지 로드 시 초기화
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('📊 업체 관계도 페이지 로드 시작');
@@ -175,11 +182,22 @@ function initNetworkChart() {
     // 로딩 메시지 숨기기
     document.getElementById('loadingMessage').style.display = 'none';
     
+    // 그리드 시스템 초기화
+    initializeGrid();
+    
     console.log('✅ 네트워크 차트 초기화 완료');
 }
 
 // 중심 업체 노드 추가
 function addCenterCompany() {
+    const width = svg.attr('width');
+    const height = svg.attr('height');
+    
+    // 화면 중심을 가장 가까운 그리드 포인트에 스냅
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const centerGridPoint = findClosestGrid(centerX, centerY);
+    
     const centerNode = {
         id: `company_${centerCompany.id}`,
         name: centerCompany.name,
@@ -188,16 +206,209 @@ function addCenterCompany() {
         size: 'large',
         isRegistered: true,
         companyId: centerCompany.id,
-        x: svg.attr('width') / 2,
-        y: svg.attr('height') / 2,
-        fx: svg.attr('width') / 2, // 중심 고정
-        fy: svg.attr('height') / 2  // 중심 고정
+        x: centerGridPoint.x,
+        y: centerGridPoint.y,
+        fx: centerGridPoint.x, // 중심 고정
+        fy: centerGridPoint.y  // 중심 고정
     };
     
     networkData.nodes.push(centerNode);
     updateChart();
     
-    console.log('✅ 중심 업체 노드 추가:', centerNode.name);
+    // 그리드 점유 상태 업데이트
+    updateGridOccupancy();
+    
+    console.log('✅ 중심 업체 노드 추가:', centerNode.name, `그리드 위치: (${centerGridPoint.x}, ${centerGridPoint.y})`);
+}
+
+// 그리드 시스템 초기화
+function initializeGrid() {
+    const width = svg.attr('width');
+    const height = svg.attr('height');
+    
+    // 그리드 중심점 계산
+    const centerX = width / 2;
+    const centerY = height / 2;
+    
+    // 그리드 시작점 계산 (21x21이므로 중심에서 10칸씩)
+    const startX = centerX - (GRID_SIZE - 1) / 2 * GRID_SPACING;
+    const startY = centerY - (GRID_SIZE - 1) / 2 * GRID_SPACING;
+    
+    // 그리드 데이터 생성
+    gridData = [];
+    for (let i = 0; i < GRID_SIZE; i++) {
+        for (let j = 0; j < GRID_SIZE; j++) {
+            gridData.push({
+                x: startX + i * GRID_SPACING,
+                y: startY + j * GRID_SPACING,
+                occupied: false
+            });
+        }
+    }
+    
+    // 중심점 그리드 점유
+    const centerGridIndex = Math.floor(GRID_SIZE / 2) * GRID_SIZE + Math.floor(GRID_SIZE / 2);
+    if (gridData[centerGridIndex]) {
+        gridData[centerGridIndex].occupied = true;
+    }
+    
+    // 그리드 그룹 생성 (디버깅용 - 나중에 숨김 처리)
+    gridGroup = g.append('g').attr('class', 'grid-group');
+    
+    console.log('✅ 그리드 시스템 초기화 완료:', GRID_SIZE + 'x' + GRID_SIZE, '간격:', GRID_SPACING + 'px');
+}
+
+// 가장 가까운 그리드 포인트 찾기
+function snapToGrid(x, y) {
+    let minDistance = Infinity;
+    let closestPoint = { x: x, y: y };
+    
+    for (const point of gridData) {
+        if (!point.occupied) {
+            const distance = Math.sqrt((x - point.x) ** 2 + (y - point.y) ** 2);
+            if (distance < minDistance) {
+                minDistance = distance;
+                closestPoint = { x: point.x, y: point.y };
+            }
+        }
+    }
+    
+    return closestPoint;
+}
+
+// 그리드 점유 상태 업데이트
+function updateGridOccupancy() {
+    // 모든 그리드 점을 비점유로 초기화 (중심점 제외)
+    const centerGridIndex = Math.floor(GRID_SIZE / 2) * GRID_SIZE + Math.floor(GRID_SIZE / 2);
+    gridData.forEach((point, index) => {
+        point.occupied = (index === centerGridIndex); // 중심점만 점유
+    });
+    
+    // 현재 노드들이 점유하는 그리드 점 표시
+    networkData.nodes.forEach(node => {
+        const closestGrid = findClosestGrid(node.x, node.y);
+        if (closestGrid) {
+            closestGrid.occupied = true;
+        }
+    });
+}
+
+// 가장 가까운 그리드 포인트 찾기 (점유 상관없이)
+function findClosestGrid(x, y) {
+    let minDistance = Infinity;
+    let closestGrid = null;
+    
+    for (const point of gridData) {
+        const distance = Math.sqrt((x - point.x) ** 2 + (y - point.y) ** 2);
+        if (distance < minDistance) {
+            minDistance = distance;
+            closestGrid = point;
+        }
+    }
+    
+    return closestGrid;
+}
+
+// 그리드 표시 토글 (디버깅용)
+function toggleGrid() {
+    showGrid = !showGrid;
+    if (showGrid) {
+        showGridPoints();
+    } else {
+        hideGridPoints();
+    }
+}
+
+// 그리드 포인트 표시 (디버깅용)
+function showGridPoints() {
+    gridGroup.selectAll('.grid-point').remove();
+    
+    gridGroup.selectAll('.grid-point')
+        .data(gridData)
+        .enter()
+        .append('circle')
+        .attr('class', 'grid-point')
+        .attr('cx', d => d.x)
+        .attr('cy', d => d.y)
+        .attr('r', 2)
+        .attr('fill', d => d.occupied ? '#ff4444' : '#cccccc')
+        .attr('opacity', 0.3);
+}
+
+// 그리드 포인트 숨기기
+function hideGridPoints() {
+    gridGroup.selectAll('.grid-point').remove();
+}
+
+// 드래그 시작
+function dragStart(event, d) {
+    isDragging = true;
+    if (!event.active) simulation.alphaTarget(0.3).restart();
+    d.fx = d.x;
+    d.fy = d.y;
+    
+    // 그리드 점유 상태 업데이트
+    updateGridOccupancy();
+}
+
+// 드래그 중
+function dragging(event, d) {
+    d.fx = event.x;
+    d.fy = event.y;
+}
+
+// 드래그 종료 (그리드에 스냅)
+function dragEnd(event, d) {
+    isDragging = false;
+    if (!event.active) simulation.alphaTarget(0);
+    
+    // 그리드에 스냅
+    const snapPoint = snapToGrid(d.x, d.y);
+    d.fx = snapPoint.x;
+    d.fy = snapPoint.y;
+    
+    // 그리드 점유 상태 업데이트
+    updateGridOccupancy();
+    
+    console.log(`📍 ${d.name} 노드가 그리드 포인트 (${snapPoint.x}, ${snapPoint.y})에 스냅됨`);
+}
+
+// 노드 클릭 핸들러
+function nodeClick(event, d) {
+    if (isDragging) return; // 드래그 중이면 클릭 무시
+    
+    event.stopPropagation();
+    selectedNode = d;
+    
+    // 모든 노드 선택 해제 후 현재 노드만 선택
+    g.selectAll('.company-node').classed('selected', false);
+    d3.select(this).classed('selected', true);
+    
+    // 관계 추가 폼 업데이트
+    updateRelationshipForm();
+    
+    console.log('노드 선택됨:', d.name);
+}
+
+// 노드 더블클릭 핸들러
+function nodeDoubleClick(event, d) {
+    if (d.type === 'center') return; // 중심 업체는 삭제 불가
+    
+    if (confirm(`"${d.name}" 노드를 삭제하시겠습니까?`)) {
+        // 관련 링크들 제거
+        networkData.links = networkData.links.filter(
+            link => link.source.id !== d.id && link.target.id !== d.id
+        );
+        
+        // 노드 제거
+        networkData.nodes = networkData.nodes.filter(node => node.id !== d.id);
+        
+        updateChart();
+        showToast(`"${d.name}" 노드가 삭제되었습니다.`, 'success');
+        
+        // 그리드 점유 상태 업데이트
+        updateGridOccupancy();
+    }
 }
 
 // 줌 핸들러
@@ -348,36 +559,7 @@ function getTextColor(backgroundColor) {
     return brightness > 128 ? '#000000' : '#ffffff';
 }
 
-// 드래그 이벤트 핸들러
-function dragStart(event, d) {
-    if (!event.active) simulation.alphaTarget(0.3).restart();
-    d.fx = d.x;
-    d.fy = d.y;
-    isDragging = true;
-    
-    d3.select(this).classed('dragging', true);
-}
-
-function dragging(event, d) {
-    // 중심 업체는 드래그하지 않음
-    if (d.type === 'center') return;
-    
-    d.fx = event.x;
-    d.fy = event.y;
-}
-
-function dragEnd(event, d) {
-    if (!event.active) simulation.alphaTarget(0);
-    
-    // 중심 업체가 아닌 경우만 고정 해제
-    if (d.type !== 'center') {
-        d.fx = null;
-        d.fy = null;
-    }
-    
-    isDragging = false;
-    d3.select(this).classed('dragging', false);
-}
+// 드래그 이벤트 핸들러는 위에서 이미 정의됨 (그리드 스냅 기능 포함)
 
 // 드롭다운 업데이트 함수
 function updateRelationshipDropdowns() {
@@ -462,10 +644,22 @@ function setupEventListeners() {
     
     // 컨트롤 버튼들
     document.getElementById('resetZoomBtn').addEventListener('click', resetZoom);
+    document.getElementById('toggleGridBtn').addEventListener('click', () => {
+        toggleGrid();
+        const btn = document.getElementById('toggleGridBtn');
+        btn.textContent = showGrid ? '그리드 숨김' : '그리드 표시';
+    });
     document.getElementById('clearAllBtn').addEventListener('click', clearAll);
-    document.getElementById('addCompanyBtn').addEventListener('click', addCompanyPrompt);
-    document.getElementById('autoLayoutBtn').addEventListener('click', autoLayout);
-    document.getElementById('exportBtn').addEventListener('click', exportToImage);
+    
+    // 존재하는 경우에만 이벤트 리스너 추가
+    const addCompanyBtn = document.getElementById('addCompanyBtn');
+    if (addCompanyBtn) addCompanyBtn.addEventListener('click', addCompanyPrompt);
+    
+    const autoLayoutBtn = document.getElementById('autoLayoutBtn');
+    if (autoLayoutBtn) autoLayoutBtn.addEventListener('click', autoLayout);
+    
+    const exportBtn = document.getElementById('exportBtn');
+    if (exportBtn) exportBtn.addEventListener('click', exportToImage);
     
     // 검색 결과 클릭 외부 영역 클릭 시 닫기
     document.addEventListener('click', (e) => {
@@ -552,6 +746,28 @@ function addCompanyFromSearch(companyName, isRegistered, companyId = null, color
         color = getCompanyColor(colorCode) || '#3498db';
     }
     
+    // 사용 가능한 그리드 포인트 찾기
+    updateGridOccupancy();
+    const availableGridPoints = gridData.filter(point => !point.occupied);
+    let gridPosition;
+    
+    if (availableGridPoints.length > 0) {
+        // 중심에서 가까운 순서로 정렬해서 첫 번째 사용
+        const centerX = svg.attr('width') / 2;
+        const centerY = svg.attr('height') / 2;
+        
+        availableGridPoints.sort((a, b) => {
+            const distA = Math.sqrt((a.x - centerX) ** 2 + (a.y - centerY) ** 2);
+            const distB = Math.sqrt((b.x - centerX) ** 2 + (b.y - centerY) ** 2);
+            return distA - distB;
+        });
+        
+        gridPosition = availableGridPoints[0];
+    } else {
+        // 모든 그리드가 점유된 경우 중심 근처 임의 위치
+        gridPosition = { x: svg.attr('width') / 2 + Math.random() * 200 - 100, y: svg.attr('height') / 2 + Math.random() * 200 - 100 };
+    }
+    
     // 새 노드 생성
     const newNode = {
         id: companyId ? `company_${companyId}` : `temp_${Date.now()}`,
@@ -561,12 +777,15 @@ function addCompanyFromSearch(companyName, isRegistered, companyId = null, color
         size: 'medium',
         isRegistered: isRegistered,
         companyId: companyId,
-        x: Math.random() * 400 + 200,
-        y: Math.random() * 300 + 150
+        x: gridPosition.x,
+        y: gridPosition.y
     };
     
     networkData.nodes.push(newNode);
     updateChart();
+    
+    // 그리드 점유 상태 업데이트
+    updateGridOccupancy();
     
     showToast(`${companyName} 업체가 추가되었습니다.`, 'success');
 }
