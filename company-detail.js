@@ -849,7 +849,8 @@ async function loadWorkLogs(companyId) {
         console.log('📋 업무일지 목록 캐시 로드 시작:', companyId);
         
         // 데이터베이스에서 업무일지 로드 (캐시 사용 안함)
-        const workLogs = await window.dataLoader.loadWorkLogs(companyId, currentUser.id);
+        await window.db.init();
+        const workLogs = await window.db.getWorkLogsByCompany(companyId, currentUser.id);
         
         displayWorkLogs(workLogs);
         
@@ -972,7 +973,8 @@ async function syncVisitCount(companyId) {
         console.log('🔄 방문횟수 동기화 시작:', companyId);
         
         // 데이터베이스에서 업무일지 가져오기
-        const workLogs = await window.dataLoader.loadWorkLogs(companyId, currentUser.id);
+        await window.db.init();
+        const workLogs = await window.db.getWorkLogsByCompany(companyId, currentUser.id);
         
         const actualVisitCount = workLogs.length;
         
