@@ -176,14 +176,14 @@ function initNetworkChart() {
         .force('center', d3.forceCenter(width / 2, height / 2))
         .force('collision', d3.forceCollide().radius(collisionRadius))
     
+    // 그리드 시스템 먼저 초기화
+    initializeGrid();
+    
     // 중심 업체 노드 추가
     addCenterCompany();
     
     // 로딩 메시지 숨기기
     document.getElementById('loadingMessage').style.display = 'none';
-    
-    // 그리드 시스템 초기화
-    initializeGrid();
     
     console.log('✅ 네트워크 차트 초기화 완료');
 }
@@ -198,6 +198,9 @@ function addCenterCompany() {
     const centerY = height / 2;
     const centerGridPoint = findClosestGrid(centerX, centerY);
     
+    // 그리드 포인트가 없는 경우 기본 중심점 사용
+    const finalPosition = centerGridPoint ? centerGridPoint : { x: centerX, y: centerY };
+    
     const centerNode = {
         id: `company_${centerCompany.id}`,
         name: centerCompany.name,
@@ -206,10 +209,10 @@ function addCenterCompany() {
         size: 'large',
         isRegistered: true,
         companyId: centerCompany.id,
-        x: centerGridPoint.x,
-        y: centerGridPoint.y,
-        fx: centerGridPoint.x, // 중심 고정
-        fy: centerGridPoint.y  // 중심 고정
+        x: finalPosition.x,
+        y: finalPosition.y,
+        fx: finalPosition.x, // 중심 고정
+        fy: finalPosition.y  // 중심 고정
     };
     
     networkData.nodes.push(centerNode);
@@ -260,6 +263,12 @@ function initializeGrid() {
 
 // 가장 가까운 그리드 포인트 찾기
 function snapToGrid(x, y) {
+    // 그리드 데이터가 없으면 원래 위치 반환
+    if (!gridData || gridData.length === 0) {
+        console.warn('⚠️ 그리드 데이터가 없어 스냅 불가');
+        return { x: x, y: y };
+    }
+    
     let minDistance = Infinity;
     let closestPoint = { x: x, y: y };
     
@@ -295,6 +304,12 @@ function updateGridOccupancy() {
 
 // 가장 가까운 그리드 포인트 찾기 (점유 상관없이)
 function findClosestGrid(x, y) {
+    // 그리드 데이터가 없으면 null 반환
+    if (!gridData || gridData.length === 0) {
+        console.warn('⚠️ 그리드 데이터가 없습니다.');
+        return null;
+    }
+    
     let minDistance = Infinity;
     let closestGrid = null;
     
