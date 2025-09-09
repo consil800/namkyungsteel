@@ -540,8 +540,8 @@ function initEventListeners() {
 // 색상 옵션 로드 (캐시 활용)
 async function loadColorOptions() {
     try {
-        // DataCache를 통해 사용자 설정 가져오기
-        const settings = await window.DataCache.getSettings(currentUser.id);
+        // cachedDataLoader를 통해 사용자 설정 가져오기
+        const settings = await window.cachedDataLoader.loadUserSettings(currentUser.id);
         
         const colorSelect = document.getElementById('editCompanyColor');
         if (!colorSelect) return;
@@ -802,7 +802,7 @@ async function updateCompany() {
             console.log('✅ 수정 완료, 캐시 무효화 중...');
             
             // 캐시 무효화 후 업체 정보 다시 로드
-            window.DataCache.clearCompanies(currentUser.id);
+            window.cachedDataLoader.invalidateCompanyCache(currentUser.id);
             await loadCompanyDetails(currentCompany.id);
             
             console.log('✅ 업체 정보 재로드 완료, 새로운 색상:', currentCompany?.color_code);
@@ -829,7 +829,7 @@ async function deleteCompany(companyId) {
         
         if (result.success) {
             // 캐시 무효화
-            window.DataCache.clearCompanies(currentUser.id);
+            window.cachedDataLoader.invalidateCompanyCache(currentUser.id);
             
             alert('업체가 성공적으로 삭제되었습니다.');
             window.location.href = 'worklog.html';
@@ -848,13 +848,16 @@ async function loadWorkLogs(companyId) {
     try {
         console.log('📋 업무일지 목록 캐시 로드 시작:', companyId);
         
-        // DataCache를 통해 업무일지 로드
-        const workLogs = await window.DataCache.getWorkLogs(companyId, currentUser.id);
+        // 데이터베이스에서 업무일지 로드 (캐시 사용 안함)
+        const workLogs = await window.dataLoader.loadWorkLogs(companyId, currentUser.id);
         
         displayWorkLogs(workLogs);
         
     } catch (error) {
         console.error('❌ 업무일지 목록 로드 오류:', error);
+        
+        // 업무일지가 없는 경우 빈 목록 표시
+        displayWorkLogs([]);
         
         // 사용자 친화적 에러 처리
         const workLogList = document.getElementById('workLogList');
@@ -944,7 +947,8 @@ async function deleteWorkLog(companyId, workLogId) {
         
         if (result.success) {
             // 캐시 무효화
-            window.DataCache.clearWorkLogs(companyId, currentUser.id);
+            // 업무일지 캐시 무효화 (미구현)
+            console.log('업무일지 삭제 완료');
             
             alert('업무일지가 삭제되었습니다.');
             // 업무일지 목록 다시 로드
@@ -967,8 +971,8 @@ async function syncVisitCount(companyId) {
     try {
         console.log('🔄 방문횟수 동기화 시작:', companyId);
         
-        // DataCache를 통해 업무일지 가져오기
-        const workLogs = await window.DataCache.getWorkLogs(companyId, currentUser.id);
+        // 데이터베이스에서 업무일지 가져오기
+        const workLogs = await window.dataLoader.loadWorkLogs(companyId, currentUser.id);
         
         const actualVisitCount = workLogs.length;
         
@@ -995,7 +999,7 @@ async function syncVisitCount(companyId) {
                 console.log('✅ 방문횟수 동기화 완료');
                 
                 // 캐시 무효화
-                window.DataCache.clearCompanies(currentUser.id);
+                window.cachedDataLoader.invalidateCompanyCache(currentUser.id);
                 
                 // 현재 업체 정보 업데이트
                 currentCompany.visit_count = actualVisitCount;
