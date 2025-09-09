@@ -111,8 +111,8 @@ async function loadCompanyFromUrl() {
 // 등록된 모든 업체 목록 로드 (캐시 활용)
 async function loadAllCompanies() {
     try {
-        // DataCache를 통해 업체 목록 로드
-        allCompanies = await window.DataCache.getCompanies(currentUser.id);
+        // cachedDataLoader를 통해 업체 목록 로드
+        allCompanies = await window.cachedDataLoader.loadCompanies(currentUser.id);
         console.log('✅ 업체 목록 캐시 로드 완료:', allCompanies.length, '개');
     } catch (error) {
         console.error('❌ 업체 목록 로드 실패:', error);
@@ -743,7 +743,9 @@ async function saveNetwork() {
         
         if (result.success) {
             // 네트워크 캐시 무효화
-            window.DataCache.clearNetworks(currentUser.id);
+            if (window.dataChangeManager) {
+                window.dataChangeManager.notifyChange(currentUser.id, 'network_save');
+            }
             
             showToast('네트워크가 성공적으로 저장되었습니다.', 'success');
         } else {
@@ -761,8 +763,9 @@ async function loadExistingNetwork() {
     try {
         console.log('📊 기존 네트워크 캐시 로드 시도');
         
-        // DataCache를 통해 네트워크 로드
-        const existingNetwork = await window.DataCache.getNetworks(currentUser.id);
+        // 기존 네트워크 로드는 일단 비활성화 (DataCache.getNetworks 미구현)
+        // const existingNetwork = await window.DataCache.getNetworks(currentUser.id);
+        const existingNetwork = null; // 임시로 null 설정
         
         // 현재 중심 업체의 네트워크 찾기
         const networkForCenter = existingNetwork.find(net => 

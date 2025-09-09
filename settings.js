@@ -61,8 +61,8 @@ const DropdownSettings = {
                 return { ...defaultSettings };
             }
 
-            // DataCache를 통해 설정 가져오기
-            const settings = await window.DataCache.getSettings(userId);
+            // cachedDataLoader를 통해 설정 가져오기
+            const settings = await window.cachedDataLoader.loadUserSettings(userId);
             console.log('📊 DropdownSettings.get - 캐시에서 가져온 설정:', settings);
             
             return settings;
@@ -97,8 +97,8 @@ async function loadSettings() {
                 await new Promise(resolve => setTimeout(resolve, 500));
             }
             
-            // DataCache 사용
-            settings = await window.DataCache.getSettings(currentUser.id);
+            // cachedDataLoader 사용
+            settings = await window.cachedDataLoader.loadUserSettings(currentUser.id);
             retryCount++;
         }
         
@@ -312,7 +312,7 @@ async function saveToDatabase(type, value) {
         console.log(`✅ ${type} 값 "${value}" user_settings에 저장 완료`);
         
         // 캐시 무효화
-        window.DataCache.clearSettings(userId);
+        window.cachedDataLoader.invalidateSettingsCache(userId);
         
         return true;
         
@@ -462,7 +462,7 @@ async function saveColorToDatabase(colorName, colorValue, hideVisitDate = false,
     console.log(`✅ 색상 "${colorName}" (${colorValue}) 의미: "${colorMeaning}" user_settings에 저장 완료`);
     
     // 캐시 무효화
-    window.DataCache.clearSettings(userId);
+    window.cachedDataLoader.invalidateSettingsCache(userId);
     
     return true;
 }
@@ -500,7 +500,7 @@ async function deleteItem(type, item) {
         await db.deleteUserSetting(userId, settingType, item);
         
         // 캐시 무효화
-        window.DataCache.clearSettings(userId);
+        window.cachedDataLoader.invalidateSettingsCache(userId);
         
         alert(`${type} "${item}"이(가) 삭제되었습니다.`);
         
@@ -539,7 +539,7 @@ async function deleteColor(colorName) {
         await db.deleteUserSetting(userId, 'color', colorName);
         
         // 캐시 무효화
-        window.DataCache.clearSettings(userId);
+        window.cachedDataLoader.invalidateSettingsCache(userId);
         
         alert(`색상 "${colorName}"이(가) 삭제되었습니다.`);
         
@@ -585,7 +585,7 @@ async function saveColorMeaningFromInput(colorName, inputId) {
         const currentUser = await window.dataLoader.getCurrentUser();
         if (currentUser) {
             // 캐시에서 설정 가져오기
-            const settings = await window.DataCache.getSettings(currentUser.id);
+            const settings = await window.cachedDataLoader.loadUserSettings(currentUser.id);
             if (settings && settings.colors) {
                 updateColorMeaningsDisplay(settings.colors);
             }
@@ -643,7 +643,7 @@ async function saveColorMeaning(colorName, meaning) {
     await db.init();
     
     // 캐시에서 기존 색상 정보 가져오기
-    const settings = await window.DataCache.getSettings(userId);
+    const settings = await window.cachedDataLoader.loadUserSettings(userId);
     const existingColor = settings.colors?.find(c => c.name === colorName);
     
     if (!existingColor) {
@@ -676,7 +676,7 @@ async function saveColorMeaning(colorName, meaning) {
     console.log(`✅ 색상 "${colorName}" 의미를 "${meaning}"로 수정 완료`);
     
     // 캐시 무효화
-    window.DataCache.clearSettings(userId);
+    window.cachedDataLoader.invalidateSettingsCache(userId);
 }
 
 // 전역에서 접근 가능하도록 설정

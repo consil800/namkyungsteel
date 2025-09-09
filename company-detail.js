@@ -119,8 +119,8 @@ async function loadCompanyDetails(companyId) {
     try {
         console.log('📊 업체 정보 캐시 로드 시작, ID:', companyId);
         
-        // DataCache 사용하여 캐시된 데이터 로딩
-        const companies = await window.DataCache.getCompanies(currentUser.id);
+        // cachedDataLoader 사용하여 캐시된 데이터 로딩
+        const companies = await window.cachedDataLoader.loadCompanies(currentUser.id);
         
         currentCompany = companies.find(c => c.id == companyId);
         console.log('🔍 company-detail.js - 찾은 업체:', currentCompany);
@@ -128,9 +128,9 @@ async function loadCompanyDetails(companyId) {
         if (!currentCompany) {
             // 캐시 클리어 후 한 번 더 시도
             console.warn('⚠️ 업체를 찾을 수 없어 캐시 클리어 후 재시도');
-            window.DataCache.clearCompanies(currentUser.id);
+            window.cachedDataLoader.invalidateCompanyCache(currentUser.id);
             
-            const companiesRetry = await window.DataCache.getCompanies(currentUser.id);
+            const companiesRetry = await window.cachedDataLoader.loadCompanies(currentUser.id, true); // forceRefresh = true
             currentCompany = companiesRetry.find(c => c.id == companyId);
             
             if (!currentCompany) {
