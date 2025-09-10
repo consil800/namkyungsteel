@@ -54,9 +54,10 @@ class DatabaseManager {
             // sessionStorage에서 현재 사용자 정보 가져오기
             const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
             if (currentUser && currentUser.id) {
-                console.log('🔧 RLS용 사용자 ID 설정:', currentUser.id);
+                const userId = String(currentUser.id);  // 명시적으로 문자열로 변환
+                console.log('🔧 RLS용 사용자 ID 설정:', userId);
                 // Supabase에서 RLS 정책이 참조할 수 있는 사용자 ID 설정
-                await this.client.rpc('set_current_user_id', { user_id: currentUser.id.toString() });
+                await this.client.rpc('set_current_user_id', { user_id: userId });
                 console.log('✅ RLS 사용자 ID 설정 완료');
             } else {
                 console.warn('⚠️ 사용자 정보가 없어 RLS 설정을 건너뜁니다');
@@ -1289,11 +1290,11 @@ class DatabaseManager {
         try {
             console.log('📝 사용자 설정 추가:', { userId, settingType, settingValue, displayName, colorValue });
 
-            // 중복 확인
+            // 중복 확인 (user_id를 숫자로 사용)
             const { data: existing, error: checkError } = await this.client
                 .from('user_settings')
                 .select('*')
-                .eq('user_id', userId.toString())
+                .eq('user_id', parseInt(userId))
                 .eq('setting_type', settingType)
                 .eq('setting_value', settingValue);
 
@@ -1304,9 +1305,9 @@ class DatabaseManager {
                 return { success: true, message: 'setting_already_exists' };
             }
 
-            // 새 설정 추가
+            // 새 설정 추가 (user_id를 BIGINT에 맞게 숫자로 변환)
             const newSetting = {
-                user_id: userId.toString(),
+                user_id: parseInt(userId),  // BIGINT에 맞게 숫자로 변환
                 setting_type: settingType,
                 setting_value: settingValue,
                 display_name: displayName || settingValue,
@@ -2445,11 +2446,11 @@ class DatabaseManager {
                 linksCount: networkData.links?.length
             });
 
-            // 기존 네트워크가 있는지 확인
+            // 기존 네트워크가 있는지 확인 (user_id를 문자열로 변환)
             const { data: existingNetwork, error: selectError } = await this.client
                 .from('company_networks')
                 .select('id')
-                .eq('user_id', userId)
+                .eq('user_id', String(userId))
                 .eq('center_company_id', centerCompanyId)
                 .single();
 
@@ -2474,11 +2475,11 @@ class DatabaseManager {
                 
                 console.log('✅ 기존 네트워크 업데이트 완료');
             } else {
-                // 새 네트워크 생성
+                // 새 네트워크 생성 (user_id를 문자열로 변환)
                 const { data, error } = await this.client
                     .from('company_networks')
                     .insert({
-                        user_id: userId,
+                        user_id: String(userId),
                         center_company_id: centerCompanyId,
                         center_company_name: centerCompanyName,
                         network_data: networkData
@@ -2511,7 +2512,7 @@ class DatabaseManager {
             const { data, error } = await this.client
                 .from('company_networks')
                 .select('*')
-                .eq('user_id', userId)
+                .eq('user_id', String(userId))
                 .eq('center_company_id', centerCompanyId)
                 .single();
 
@@ -2543,7 +2544,7 @@ class DatabaseManager {
             const { data, error } = await this.client
                 .from('company_networks')
                 .select('id, center_company_id, center_company_name, created_at, updated_at')
-                .eq('user_id', userId)
+                .eq('user_id', String(userId))
                 .order('updated_at', { ascending: false });
 
             if (error) throw error;
@@ -2565,7 +2566,7 @@ class DatabaseManager {
             const { data, error } = await this.client
                 .from('company_networks')
                 .delete()
-                .eq('user_id', userId)
+                .eq('user_id', String(userId))
                 .eq('center_company_id', centerCompanyId)
                 .select();
 
