@@ -1178,10 +1178,26 @@ class DatabaseManager {
                             result.regions.push(setting.setting_value);
                             break;
                         case 'color':
+                            // color_value가 JSON 문자열인 경우 파싱
+                            let colorValue = setting.color_value || '#cccccc';
+                            let parsedColorData = null;
+                            
+                            try {
+                                if (typeof colorValue === 'string' && colorValue.startsWith('{')) {
+                                    parsedColorData = JSON.parse(colorValue);
+                                    colorValue = parsedColorData.color || colorValue;
+                                }
+                            } catch (e) {
+                                console.warn('색상 JSON 파싱 실패:', setting.setting_value, colorValue);
+                            }
+                            
                             result.colors.push({
                                 key: setting.setting_value,
                                 name: setting.display_name || setting.setting_value,
-                                value: setting.color_value || '#cccccc',
+                                value: colorValue,
+                                rawValue: setting.color_value, // 원본 JSON 문자열 보존
+                                metadata: parsedColorData,
+                                hideVisitDate: parsedColorData?.hideVisitDate || false,
                                 meaning: setting.color_meaning || ''
                             });
                             break;

@@ -51,20 +51,10 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // 색상 값이 JSON 문자열인 경우 파싱
-        let actualColorValue = colorValue;
-        try {
-            if (typeof colorValue === 'string' && colorValue.startsWith('{')) {
-                const metadata = JSON.parse(colorValue);
-                actualColorValue = metadata.color;
-            }
-        } catch (e) {
-            // 파싱 실패 시 기본값 사용
-            console.warn('색상 메타데이터 파싱 실패:', colorCode, colorValue);
-        }
+        // colorValue가 이미 database.js에서 파싱된 HEX 색상값이므로 바로 사용
+        const actualColorValue = colorValue;
         
-        // 유효한 색상 값이 있는 경우에만 동적 CSS 생성
-        if (actualColorValue && actualColorValue !== colorValue) {
+        if (actualColorValue && actualColorValue.startsWith && actualColorValue.startsWith('#')) {
             // 동적 CSS 스타일 생성
             const style = document.createElement('style');
             const lightColor = lightenColor(actualColorValue, 0.9); // 90% 밝게
@@ -81,8 +71,8 @@ document.addEventListener('DOMContentLoaded', function() {
             document.head.appendChild(style);
             console.log(`🎨 동적 CSS 생성: ${className} = ${actualColorValue}`);
             customColorStyles.add(className);
-        } else if (actualColorValue) {
-            console.log(`🎨 기본 색상 사용: ${className} = ${actualColorValue}`);
+        } else {
+            console.log(`🎨 색상 값 확인: ${className} = ${actualColorValue} (타입: ${typeof actualColorValue})`);
         }
     }
     

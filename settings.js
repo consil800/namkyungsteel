@@ -292,19 +292,9 @@ function displayColorList(listId, colors) {
     
     listElement.innerHTML = '';
     colors.forEach((color, index) => {
-        // 색상 값과 방문일 숨김 설정 파싱
-        let colorValue = color.value;
-        let hideVisitDate = false;
-        
-        try {
-            if (typeof color.value === 'string' && color.value.startsWith('{')) {
-                const metadata = JSON.parse(color.value);
-                colorValue = metadata.color;
-                hideVisitDate = metadata.hideVisitDate || false;
-            }
-        } catch (e) {
-            // 파싱 실패 시 기본값 사용
-        }
+        // database.js에서 이미 파싱된 색상 값과 설정 사용
+        const colorValue = color.value; // 이미 파싱된 HEX 색상값
+        let hideVisitDate = color.hideVisitDate || false;
         
         // 회색은 항상 방문일 숨김
         if (color.name === '회색' || color.name === 'gray') {

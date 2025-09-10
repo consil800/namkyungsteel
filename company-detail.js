@@ -618,34 +618,19 @@ async function loadColorOptions() {
             option.value = color.key;
             option.textContent = color.name;
             
-            // 실제 색상 값이 있으면 style로 배경색 적용
+            // color.value가 이미 database.js에서 파싱된 HEX 색상값이므로 바로 사용
             if (color.value) {
-                let actualColorValue = color.value;
-                
-                // JSON 형태의 메타데이터인 경우 파싱
-                try {
-                    if (typeof color.value === 'string' && color.value.startsWith('{')) {
-                        const metadata = JSON.parse(color.value);
-                        actualColorValue = metadata.color;
-                    }
-                } catch (e) {
-                    // 파싱 실패 시 원본 값 사용
-                    console.warn('색상 메타데이터 파싱 실패:', color.key, color.value);
-                }
+                const actualColorValue = color.value;
                 
                 // 색상 값 디버깅
                 console.log(`🔍 색상 처리: ${color.name}`, {
-                    원본값: color.value,
-                    파싱된값: actualColorValue,
-                    타입: typeof actualColorValue
+                    색상값: actualColorValue,
+                    타입: typeof actualColorValue,
+                    hideVisitDate: color.hideVisitDate
                 });
                 
                 // 유효한 색상 값인 경우에만 스타일 적용
-                if (actualColorValue && (actualColorValue.startsWith('#') || actualColorValue.match(/^[a-fA-F0-9]{6}$/))) {
-                    // # 없으면 추가
-                    if (!actualColorValue.startsWith('#')) {
-                        actualColorValue = '#' + actualColorValue;
-                    }
+                if (actualColorValue && actualColorValue.startsWith('#')) {
                     option.style.backgroundColor = actualColorValue;
                     option.style.color = getContrastColor(actualColorValue);
                     console.log(`🎨 색상 옵션 설정: ${color.name} = ${actualColorValue}`);
