@@ -273,17 +273,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     </td>
                 ` : ''}
                 <td>
-                    <span class="pdf-indicator" style="
-                        display: inline-block;
-                        margin-right: 8px;
-                        font-size: 18px;
-                        vertical-align: middle;
-                        color: ${company.hasPdf ? '#FFD700' : '#333333'};
-                        ${!company.hasPdf ? 'opacity: 0.3;' : ''}
-                    ">
-                        <i class="fas fa-file-pdf"></i>
-                    </span>
-                    ${company.color_code ? `<span class="color-indicator"></span>` : ''}
+                    ${company.hasPdf ? `
+                        <span class="pdf-indicator" style="
+                            display: inline-block;
+                            margin-right: 8px;
+                            font-size: 18px;
+                            vertical-align: middle;
+                            color: #FFD700;
+                        ">
+                            <i class="fas fa-file-pdf"></i>
+                        </span>
+                    ` : ''}
                     <span class="company-name">
                         ${company.company_name || '미입력'}
                     </span>

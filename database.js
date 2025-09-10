@@ -2590,10 +2590,10 @@ class DatabaseManager {
         }
 
         try {
-            // client_companies 테이블에서 pdf_file_url 확인
+            // client_companies 테이블에서 pdf_files 확인
             const { data, error } = await this.client
                 .from('client_companies')
-                .select('pdf_file_url')
+                .select('pdf_files')
                 .eq('id', companyId)
                 .single();
 
@@ -2605,8 +2605,8 @@ class DatabaseManager {
                 throw error;
             }
 
-            // PDF URL이 있으면 true, 없으면 false
-            return !!(data && data.pdf_file_url && data.pdf_file_url.trim() !== '');
+            // PDF 파일 배열이 있고 비어있지 않으면 true
+            return !!(data && data.pdf_files && Array.isArray(data.pdf_files) && data.pdf_files.length > 0);
         } catch (error) {
             console.error('PDF 파일 확인 오류:', error);
             return false;
@@ -2620,29 +2620,50 @@ class DatabaseManager {
         }
 
         try {
-            const { data, error } = await this.client
-                .from('client_companies')
-                .select('id, pdf_file_url')
-                .in('id', companyIds);
-
-            if (error) throw error;
-
-            // ID를 키로, PDF 존재 여부를 값으로 하는 객체 생성
+            // ID 개수가 많으면 분할해서 처리 (URL 길이 제한 때문)
+            const chunkSize = 100; // 한 번에 최대 100개씩 처리
             const pdfStatusMap = {};
+            
+            // 기본값 false로 초기화
             companyIds.forEach(id => {
-                pdfStatusMap[id] = false; // 기본값 false
+                pdfStatusMap[id] = false;
             });
 
-            if (data) {
-                data.forEach(company => {
-                    pdfStatusMap[company.id] = !!(company.pdf_file_url && company.pdf_file_url.trim() !== '');
-                });
+            for (let i = 0; i < companyIds.length; i += chunkSize) {
+                const chunk = companyIds.slice(i, i + chunkSize);
+                
+                try {
+                    const { data, error } = await this.client
+                        .from('client_companies')
+                        .select('id, pdf_files')
+                        .in('id', chunk);
+
+                    if (error) {
+                        console.warn(`PDF 확인 청크 ${i}~${i + chunk.length} 오류:`, error);
+                        continue; // 이 청크는 건너뛰고 다음 청크 처리
+                    }
+
+                    if (data) {
+                        data.forEach(company => {
+                            // PDF 파일 배열이 있고 비어있지 않으면 true
+                            pdfStatusMap[company.id] = !!(company.pdf_files && Array.isArray(company.pdf_files) && company.pdf_files.length > 0);
+                        });
+                    }
+                } catch (chunkError) {
+                    console.warn(`PDF 확인 청크 ${i} 처리 오류:`, chunkError);
+                    continue;
+                }
             }
 
             return pdfStatusMap;
         } catch (error) {
             console.error('PDF 파일 일괄 확인 오류:', error);
-            return {};
+            // 오류 발생 시 기본값 false로 채운 객체 반환
+            const fallbackMap = {};
+            companyIds.forEach(id => {
+                fallbackMap[id] = false;
+            });
+            return fallbackMap;
         }
     }
 }
