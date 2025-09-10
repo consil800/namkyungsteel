@@ -92,8 +92,13 @@ async function loadSettings() {
         // 설정 페이지에서는 항상 캐시 무효화 (최신 데이터 보장)
         console.log('🔄 설정 페이지 캐시 강제 무효화');
         if (window.cachedDataLoader && window.cachedDataLoader.invalidateSettingsCache) {
-            // 일단 현재 사용자 ID를 알아야 하므로 임시로 userId 3 사용
-            window.cachedDataLoader.invalidateSettingsCache(3);
+            window.cachedDataLoader.invalidateSettingsCache(currentUser.id);
+        }
+        
+        // 전체 캐시 초기화 (RLS 정책 변경 후)
+        if (window.cachedDataLoader && window.cachedDataLoader.clearAllCache) {
+            console.log('🧹 전체 캐시 초기화 (RLS 정책 변경으로 인한)');
+            window.cachedDataLoader.clearAllCache();
         }
         
         const currentUser = await window.dataLoader.getCurrentUser();
