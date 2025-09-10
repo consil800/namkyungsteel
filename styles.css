@@ -158,77 +158,21 @@ nav {
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
-/* 업체 색상별 스타일 - 더 진한 색상 적용 */
-.company-card.color-red {
-    border-left: 5px solid #e74c3c;
-    background-color: #fde8e8;
-}
+/* 
+   업체 색상별 스타일 - 데이터베이스 기반 동적 생성으로 대체됨
+   기존 하드코딩된 색상들(.company-card.color-red 등)은 
+   main.js에서 user_settings의 실제 색상값을 기반으로 동적 생성됩니다.
+*/
 
-.company-card.color-orange {
-    border-left: 5px solid #f39c12;
-    background-color: #fdefe1;
-}
-
-.company-card.color-yellow {
-    border-left: 5px solid #f1c40f;
-    background-color: #fffce0;
-}
-
-.company-card.color-green {
-    border-left: 5px solid #27ae60;
-    background-color: #e8f5e8;
-}
-
-.company-card.color-blue {
-    border-left: 5px solid #3498db;
-    background-color: #e3f2fd;
-}
-
-.company-card.color-purple {
-    border-left: 5px solid #9b59b6;
-    background-color: #f3e5f5;
-}
-
-.company-card.color-gray {
-    border-left: 5px solid #95a5a6;
-    background-color: #ecf0f1;
-}
-
-/* 테이블 행용 색상별 스타일 (worklog.html용) - 더 진한 색상 적용 */
-tr.company-row.color-red {
-    background-color: #fde8e8 !important;
-    border-left: 4px solid #e74c3c !important;
-}
-
-tr.company-row.color-orange {
-    background-color: #fdefe1 !important;
-    border-left: 4px solid #f39c12 !important;
-}
-
-tr.company-row.color-yellow {
-    background-color: #fffce0 !important;
-    border-left: 4px solid #f1c40f !important;
-}
-
-tr.company-row.color-green {
-    background-color: #e8f5e8 !important;
-    border-left: 4px solid #27ae60 !important;
-}
-
-tr.company-row.color-blue {
-    background-color: #e3f2fd !important;
-    border-left: 4px solid #3498db !important;
-}
-
-tr.company-row.color-purple {
-    background-color: #f3e5f5 !important;
-    border-left: 4px solid #9b59b6 !important;
-}
-
-tr.company-row.color-gray {
-    background-color: #ecf0f1 !important;
-    border-left: 4px solid #95a5a6 !important;
-}
+/* 
+   기본 색상 스타일 - 데이터베이스 기반 동적 생성으로 대체됨
+   하드코딩된 색상 대신 user_settings 테이블의 실제 색상값 + 70% 밝기 사용
+   
+   아래 스타일들은 이제 main.js에서 동적으로 생성됩니다:
+   - tr.company-row.color-빨강, .color-파랑 등
+   - 실제 데이터베이스 색상: {"color":"#ff0000","hideVisitDate":false}
+   - 적용: lightenColor(#ff0000, 0.7) → 70% 밝기의 배경색
+*/
 
 .company-card h3 {
     color: #2c3e50;

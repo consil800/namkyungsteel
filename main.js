@@ -18,36 +18,21 @@ document.addEventListener('DOMContentLoaded', function() {
         isFiltered: false
     };
 
-    // 색상 변환 함수 - 커스텀 색상도 지원
+    // 색상 변환 함수 - 모든 색상을 데이터베이스 기반으로 동적 생성
     const convertColorCode = (colorCode) => {
         if (!colorCode) return 'gray';
         
-        const colorMapping = {
-            '빨강': 'red',
-            '주황': 'orange', 
-            '노랑': 'yellow',
-            '초록': 'green',
-            '파랑': 'blue',
-            '보라': 'purple',
-            '회색': 'gray'
-        };
-        
-        // 기본 색상 매핑이 있으면 사용
-        if (colorMapping[colorCode]) {
-            return colorMapping[colorCode];
-        }
-        
-        // 커스텀 색상인 경우 그대로 반환 (CSS 클래스에서 처리)
+        // 모든 색상(기본 + 커스텀)을 동일하게 처리하여 데이터베이스 색상값 사용
         return colorCode.replace(/\s+/g, '').toLowerCase(); // 공백 제거 후 소문자화
     };
 
-    // 커스텀 색상을 위한 동적 CSS 생성
-    let customColorStyles = new Set();
-    async function ensureCustomColorStyles(colorCode, colorValue) {
+    // 모든 색상을 위한 동적 CSS 생성 (데이터베이스 기반)
+    let dynamicColorStyles = new Set();
+    async function ensureDynamicColorStyles(colorCode, colorValue) {
         const className = `color-${convertColorCode(colorCode)}`;
         
         // 이미 생성된 스타일인지 확인
-        if (customColorStyles.has(className)) {
+        if (dynamicColorStyles.has(className)) {
             return;
         }
         
@@ -55,9 +40,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const actualColorValue = colorValue;
         
         if (actualColorValue && actualColorValue.startsWith && actualColorValue.startsWith('#')) {
-            // 동적 CSS 스타일 생성
+            // 동적 CSS 스타일 생성 (데이터베이스 색상의 70% 밝기 적용)
             const style = document.createElement('style');
-            const lightColor = lightenColor(actualColorValue, 0.7); // 70% 밝게 (더 진하게)
+            const lightColor = lightenColor(actualColorValue, 0.7); // 70% 밝게
             style.textContent = `
                 tr.company-row.${className} {
                     background-color: ${lightColor} !important;
@@ -69,8 +54,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             `;
             document.head.appendChild(style);
-            console.log(`🎨 동적 CSS 생성: ${className} = ${actualColorValue}`);
-            customColorStyles.add(className);
+            console.log(`🎨 데이터베이스 기반 동적 CSS 생성: ${className} = ${actualColorValue} (70% 밝기)`);
+            dynamicColorStyles.add(className);
         } else {
             console.log(`🎨 색상 값 확인: ${className} = ${actualColorValue} (타입: ${typeof actualColorValue})`);
         }
@@ -326,24 +311,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 한글 색상을 영어로 변환 (전역 함수 사용)
 
-        // 커스텀 색상 스타일 생성 (사용자 설정에서 색상 정보 가져오기)
+        // 데이터베이스 기반 동적 색상 스타일 생성 (모든 사용자 색상)
         const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
         if (currentUser.id && window.cachedDataLoader) {
             try {
                 const settings = await window.cachedDataLoader.loadUserSettings(currentUser.id);
                 if (settings.colors) {
-                    // 각 업체의 커스텀 색상 스타일 생성
+                    // 모든 사용자 색상에 대해 동적 CSS 미리 생성 (기본 색상 포함)
+                    console.log('🎨 데이터베이스 색상 설정:', settings.colors);
+                    for (const colorData of settings.colors) {
+                        if (colorData.value && colorData.value.startsWith('#')) {
+                            await ensureDynamicColorStyles(colorData.name, colorData.value);
+                            console.log(`🎨 색상 스타일 생성: ${colorData.name} → ${colorData.value}`);
+                        }
+                    }
+                    
+                    // 각 업체의 색상 스타일 확인 (이미 생성된 것이므로 빠르게 처리)
                     for (const company of companiesWithStats) {
                         if (company.color_code) {
                             const colorData = settings.colors.find(c => c.key === company.color_code || c.name === company.color_code);
                             if (colorData) {
-                                await ensureCustomColorStyles(company.color_code, colorData.value);
+                                await ensureDynamicColorStyles(company.color_code, colorData.value);
                             }
                         }
                     }
                 }
             } catch (error) {
-                console.error('커스텀 색상 스타일 생성 오류:', error);
+                console.error('동적 색상 스타일 생성 오류:', error);
             }
         }
 
@@ -753,7 +747,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (company.color_code) {
                             const colorData = settings.colors.find(c => c.key === company.color_code || c.name === company.color_code);
                             if (colorData) {
-                                await ensureCustomColorStyles(company.color_code, colorData.value);
+                                await ensureDynamicColorStyles(company.color_code, colorData.value);
                             }
                         }
                     }
