@@ -146,7 +146,7 @@ async function loadCompanyDetails(companyId) {
         });
         
         // 업체 정보 표시
-        displayCompanyDetails(currentCompany);
+        await displayCompanyDetails(currentCompany);
         
         // 업무일지 목록 로드 및 방문횟수 동기화 (캐시 활용)
         await loadWorkLogs(companyId);
@@ -171,8 +171,27 @@ async function loadCompanyDetails(companyId) {
 }
 
 // 색상 코드로 색상 값 가져오기
-function getColorValue(colorCode) {
-    // 한글 색상을 영어로 변환
+async function getColorValue(colorCode) {
+    if (!colorCode) return '#95a5a6'; // 기본 회색
+    
+    try {
+        // 캐시된 사용자 설정에서 색상 찾기
+        if (currentUser && window.cachedDataLoader) {
+            const settings = await window.cachedDataLoader.loadUserSettings(currentUser.id);
+            const colors = settings.colors || [];
+            
+            // 색상 key로 찾기
+            const foundColor = colors.find(color => color.key === colorCode);
+            if (foundColor && foundColor.value) {
+                console.log('🎨 커스텀 색상 값 찾음:', colorCode, '->', foundColor.value);
+                return foundColor.value;
+            }
+        }
+    } catch (error) {
+        console.error('색상 값 가져오기 오류:', error);
+    }
+    
+    // 기본 색상 매핑
     const colorMapping = {
         '빨강': 'red',
         '주황': 'orange', 
@@ -196,40 +215,65 @@ function getColorValue(colorCode) {
         'gray': '#95a5a6'
     };
     
+    const finalColor = colorMap[englishColorCode] || '#95a5a6';
+    
     console.log('🎨 getColorValue 호출:', {
         입력_색상: colorCode,
         변환된_색상: englishColorCode,
-        최종_색상값: colorMap[englishColorCode]
+        최종_색상값: finalColor
     });
     
-    return colorMap[englishColorCode] || '#95a5a6'; // 기본값은 회색
+    return finalColor;
 }
 
 // 색상 코드로 색상 이름 가져오기
-function getColorName(colorCode) {
-    // 이미 한글인 경우 그대로 반환
-    const koreanColors = ['빨강', '주황', '노랑', '초록', '파랑', '보라', '회색'];
-    if (koreanColors.includes(colorCode)) {
-        return colorCode;
+async function getColorName(colorCode) {
+    if (!colorCode) return '회색';
+    
+    try {
+        // 캐시된 사용자 설정에서 색상 찾기
+        if (currentUser && window.cachedDataLoader) {
+            const settings = await window.cachedDataLoader.loadUserSettings(currentUser.id);
+            const colors = settings.colors || [];
+            
+            // 색상 key로 찾기
+            const foundColor = colors.find(color => color.key === colorCode);
+            if (foundColor) {
+                return foundColor.name;
+            }
+        }
+    } catch (error) {
+        console.error('색상 이름 가져오기 오류:', error);
     }
     
-    // 영어 색상을 한글로 변환
+    // 기본 영어 색상을 한글로 변환
     const colorNameMap = {
         'red': '빨강',
-        'orange': '주황',
+        'orange': '주황', 
         'yellow': '노랑',
         'green': '초록',
         'blue': '파랑',
         'purple': '보라',
         'gray': '회색'
     };
-    return colorNameMap[colorCode] || '회색';
+    
+    // 이미 한글인 경우 그대로 반환
+    const koreanColors = Object.values(colorNameMap);
+    if (koreanColors.includes(colorCode)) {
+        return colorCode;
+    }
+    
+    return colorNameMap[colorCode] || colorCode; // 커스텀 색상은 그대로 반환
 }
 
 // 업체 정보 표시
-function displayCompanyDetails(company) {
+async function displayCompanyDetails(company) {
     // 제목 설정
     document.getElementById('companyTitle').textContent = company.company_name;
+    
+    // 색상 이름과 값 가져오기
+    const colorName = await getColorName(company.color_code);
+    const colorValue = await getColorValue(company.color_code);
     
     // 업체 정보 HTML 생성
     const companyDetails = document.getElementById('companyDetails');
@@ -296,8 +340,8 @@ function displayCompanyDetails(company) {
         </div>
         <div class="info-item">
             <label>업체 색상:</label>
-            <span style="display: inline-block; width: 20px; height: 20px; background-color: ${getColorValue(company.color_code)}; border: 1px solid #ddd; border-radius: 3px; vertical-align: middle;"></span>
-            <span style="margin-left: 10px;">${getColorName(company.color_code) || '기본'}</span>
+            <span style="display: inline-block; width: 20px; height: 20px; background-color: ${colorValue}; border: 1px solid #ddd; border-radius: 3px; vertical-align: middle;"></span>
+            <span style="margin-left: 10px;">${colorName || '기본'}</span>
         </div>
         <div class="info-item">
             <label>PDF 파일:</label>
@@ -561,6 +605,13 @@ async function loadColorOptions() {
             const option = document.createElement('option');
             option.value = color.key;
             option.textContent = color.name;
+            
+            // 실제 색상 값이 있으면 style로 배경색 적용
+            if (color.value) {
+                option.style.backgroundColor = color.value;
+                option.style.color = getContrastColor(color.value);
+            }
+            
             colorSelect.appendChild(option);
         });
         
@@ -1007,7 +1058,7 @@ async function syncVisitCount(companyId) {
                 currentCompany.visit_count = actualVisitCount;
                 currentCompany.last_visit_date = lastVisitDate;
                 // 화면 갱신
-                displayCompanyDetails(currentCompany);
+                await displayCompanyDetails(currentCompany);
             }
         }
         

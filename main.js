@@ -18,8 +18,10 @@ document.addEventListener('DOMContentLoaded', function() {
         isFiltered: false
     };
 
-    // 한글 색상을 영어로 변환하는 함수 (전역 함수로 정의)
+    // 색상 변환 함수 - 커스텀 색상도 지원
     const convertColorCode = (colorCode) => {
+        if (!colorCode) return 'gray';
+        
         const colorMapping = {
             '빨강': 'red',
             '주황': 'orange', 
@@ -29,7 +31,14 @@ document.addEventListener('DOMContentLoaded', function() {
             '보라': 'purple',
             '회색': 'gray'
         };
-        return colorMapping[colorCode] || colorCode;
+        
+        // 기본 색상 매핑이 있으면 사용
+        if (colorMapping[colorCode]) {
+            return colorMapping[colorCode];
+        }
+        
+        // 커스텀 색상인 경우 그대로 반환 (CSS 클래스에서 처리)
+        return colorCode.replace(/\s+/g, '').toLowerCase(); // 공백 제거 후 소문자화
     };
 
     // 색상별 hideVisitDate 설정을 저장할 객체
