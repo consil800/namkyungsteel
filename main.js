@@ -22,8 +22,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const convertColorCode = (colorCode) => {
         if (!colorCode) return 'gray';
         
-        // 모든 색상(기본 + 커스텀)을 동일하게 처리하여 데이터베이스 색상값 사용
-        return colorCode.replace(/\s+/g, '').toLowerCase(); // 공백 제거 후 소문자화
+        // 한글을 영어로 변환하는 매핑 (CSS 클래스명용)
+        const colorMapping = {
+            '빨강': 'red',
+            '주황': 'orange', 
+            '노랑': 'yellow',
+            '초록': 'green',
+            '파랑': 'blue',
+            '보라': 'purple',
+            '회색': 'gray'
+        };
+        
+        // 기본 색상은 영어로 변환
+        if (colorMapping[colorCode]) {
+            return colorMapping[colorCode];
+        }
+        
+        // 커스텀 색상은 공백 제거 후 소문자화
+        return colorCode.replace(/\s+/g, '').toLowerCase();
     };
 
     // 모든 색상을 위한 동적 CSS 생성 (데이터베이스 기반)
@@ -112,10 +128,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // 최신 설정 로드
-            const settings = await window.cachedDataLoader.loadUserSettings(currentUser.id);
+            let settings = await window.cachedDataLoader.loadUserSettings(currentUser.id);
             
-            // 디버깅: 직접 데이터베이스에서 색상 설정 확인 및 파싱
-            if (!settings.colors || settings.colors.length === 0) {
+            // 색상 설정은 항상 직접 데이터베이스에서 가져오기 (캐시 문제 해결을 위해)
+            console.log('🔄 색상 설정을 위해 직접 데이터베이스 조회 시작');
+            //if (!settings.colors || settings.colors.length === 0) {
                 console.log('⚠️ 캐시된 색상 설정이 비어있음, 직접 데이터베이스 조회');
                 try {
                     const db = new DatabaseManager();
@@ -158,7 +175,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 } catch (dbError) {
                     console.error('❌ 데이터베이스 직접 조회 오류:', dbError);
                 }
-            }
+            //}
             
             // 색상 설정 파싱 (database.js에서 이미 파싱된 데이터 사용)
             if (settings.colors) {
@@ -189,6 +206,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 색상별 hideVisitDate 설정 확인 (데이터베이스 기반)
         const shouldHide = colorHideVisitDateMap[colorCode] === true;
         console.log(`🔍 shouldHideVisitDate: ${colorCode} → ${shouldHide} (맵에서 찾은 값: ${colorHideVisitDateMap[colorCode]})`);
+        console.log('🔍 현재 colorHideVisitDateMap:', colorHideVisitDateMap);
         
         return shouldHide;
     }
@@ -442,7 +460,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td>${company.phone ? `<a href="tel:${company.phone}" style="color: #007bff; text-decoration: none;" onclick="event.stopPropagation()">${company.phone}</a>` : '미입력'}</td>
                 <td>${company.business_type || '미입력'}</td>
                 <td class="visit-count">${company.visitCount || 0}</td>
-                <td class="last-visit">${shouldHideVisitDate(company.color_code) ? '-' : (company.lastVisitDate ? formatDate(company.lastVisitDate) + '일' : '방문기록 없음')}</td>
+                <td class="last-visit">${(() => {
+                    const hide = shouldHideVisitDate(company.color_code);
+                    if (company.color_code === '회색' || company.color_code === '보라') {
+                        console.log(`🎯 업체: ${company.company_name}, 색상: ${company.color_code}, 숨김여부: ${hide}, colorHideVisitDateMap:`, colorHideVisitDateMap);
+                    }
+                    return hide ? '-' : (company.lastVisitDate ? formatDate(company.lastVisitDate) + '일' : '방문기록 없음');
+                })()}</td>
             </tr>
         `).join('');
 
@@ -850,7 +874,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td>${company.phone ? `<a href="tel:${company.phone}" style="color: #007bff; text-decoration: none;" onclick="event.stopPropagation()">${company.phone}</a>` : '미입력'}</td>
                 <td>${company.business_type || '미입력'}</td>
                 <td class="visit-count">${company.visitCount || 0}</td>
-                <td class="last-visit">${shouldHideVisitDate(company.color_code) ? '-' : (company.lastVisitDate ? formatDate(company.lastVisitDate) + '일' : '방문기록 없음')}</td>
+                <td class="last-visit">${(() => {
+                    const hide = shouldHideVisitDate(company.color_code);
+                    if (company.color_code === '회색' || company.color_code === '보라') {
+                        console.log(`🎯 업체: ${company.company_name}, 색상: ${company.color_code}, 숨김여부: ${hide}, colorHideVisitDateMap:`, colorHideVisitDateMap);
+                    }
+                    return hide ? '-' : (company.lastVisitDate ? formatDate(company.lastVisitDate) + '일' : '방문기록 없음');
+                })()}</td>
             </tr>
         `).join('');
 
