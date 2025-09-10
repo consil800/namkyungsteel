@@ -18,11 +18,19 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 // 빈 설정값 (사용자가 직접 추가해야 함)
 const defaultSettings = {
-    paymentTerms: [],
-    businessTypes: [],
-    visitPurposes: [],
-    regions: [],
-    colors: []
+    paymentTerms: ['현금', '어음', '카드', '계좌이체', '분할결제', '현금+어음', '기타'],
+    businessTypes: ['제조업', '건설업', '도매업', '소매업', '운수업', '통신업', '금융업', '부동산업', '서비스업', '기타'],
+    visitPurposes: ['영업상담', '계약체결', '납품', '수금', 'A/S', '클레임처리', '정기방문', '기타'],
+    regions: ['서울', '경기', '인천', '부산', '대구', '광주', '대전', '울산', '세종', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'],
+    colors: [
+        { key: 'red', name: '빨강', value: '#e74c3c' },
+        { key: 'orange', name: '주황', value: '#f39c12' },
+        { key: 'yellow', name: '노랑', value: '#f1c40f' },
+        { key: 'green', name: '초록', value: '#27ae60' },
+        { key: 'blue', name: '파랑', value: '#3498db' },
+        { key: 'purple', name: '보라', value: '#9b59b6' },
+        { key: 'gray', name: '회색', value: '#95a5a6' }
+    ]
 };
 
 // 설정 데이터 관리 (Supabase 사용)
@@ -104,6 +112,16 @@ async function loadSettings() {
         
         console.log('📊 캐시에서 가져온 설정:', settings);
         
+        // 설정이 비어있으면 기본값을 데이터베이스에 저장
+        if (!settings || Object.keys(settings).every(key => !settings[key] || settings[key].length === 0)) {
+            console.log('📝 빈 설정 감지됨. 기본 설정을 데이터베이스에 저장 중...');
+            await saveDefaultSettingsToDatabase(currentUser.id);
+            
+            // 설정 다시 로드
+            await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 대기
+            settings = await window.cachedDataLoader.loadUserSettings(currentUser.id);
+        }
+        
         // 설정이 없으면 기본값 사용
         const finalSettings = settings || { ...defaultSettings };
         
@@ -119,7 +137,80 @@ async function loadSettings() {
     }
 }
 
-
+// 기본 설정을 데이터베이스에 저장
+async function saveDefaultSettingsToDatabase(userId) {
+    console.log('🔧 기본 설정을 데이터베이스에 저장 시작');
+    
+    try {
+        const db = new DatabaseManager();
+        await db.init();
+        
+        // 기본 지역 저장
+        for (const region of defaultSettings.regions) {
+            try {
+                await db.addUserSetting(userId, 'region', region, region);
+            } catch (error) {
+                if (!error.message?.includes('setting_already_exists')) {
+                    console.error(`지역 "${region}" 저장 오류:`, error);
+                }
+            }
+        }
+        
+        // 기본 업종 저장  
+        for (const type of defaultSettings.businessTypes) {
+            try {
+                await db.addUserSetting(userId, 'business_type', type, type);
+            } catch (error) {
+                if (!error.message?.includes('setting_already_exists')) {
+                    console.error(`업종 "${type}" 저장 오류:`, error);
+                }
+            }
+        }
+        
+        // 기본 결제조건 저장
+        for (const term of defaultSettings.paymentTerms) {
+            try {
+                await db.addUserSetting(userId, 'payment_terms', term, term);
+            } catch (error) {
+                if (!error.message?.includes('setting_already_exists')) {
+                    console.error(`결제조건 "${term}" 저장 오류:`, error);
+                }
+            }
+        }
+        
+        // 기본 방문목적 저장
+        for (const purpose of defaultSettings.visitPurposes) {
+            try {
+                await db.addUserSetting(userId, 'visit_purpose', purpose, purpose);
+            } catch (error) {
+                if (!error.message?.includes('setting_already_exists')) {
+                    console.error(`방문목적 "${purpose}" 저장 오류:`, error);
+                }
+            }
+        }
+        
+        // 기본 색상 저장
+        for (const color of defaultSettings.colors) {
+            try {
+                const metadata = JSON.stringify({ color: color.value, hideVisitDate: false });
+                await db.addUserSetting(userId, 'color', color.key, color.name, metadata, '');
+            } catch (error) {
+                if (!error.message?.includes('setting_already_exists')) {
+                    console.error(`색상 "${color.name}" 저장 오류:`, error);
+                }
+            }
+        }
+        
+        // 캐시 무효화
+        if (window.cachedDataLoader) {
+            window.cachedDataLoader.invalidateSettingsCache(userId);
+        }
+        
+        console.log('✅ 기본 설정 데이터베이스 저장 완료');
+    } catch (error) {
+        console.error('❌ 기본 설정 저장 오류:', error);
+    }
+}
 
 // 텍스트 대비 색상 계산
 function getContrastColor(hexcolor) {
