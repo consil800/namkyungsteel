@@ -198,17 +198,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 방문일을 숨겨야 하는지 확인하는 함수
     function shouldHideVisitDate(colorCode) {
-        if (!colorCode) {
-            console.log(`🔍 shouldHideVisitDate: colorCode 없음`);
-            return false;
-        }
+        if (!colorCode) return false;
         
-        // 색상별 hideVisitDate 설정 확인 (데이터베이스 기반)
-        const shouldHide = colorHideVisitDateMap[colorCode] === true;
-        console.log(`🔍 shouldHideVisitDate: ${colorCode} → ${shouldHide} (맵에서 찾은 값: ${colorHideVisitDateMap[colorCode]})`);
-        console.log('🔍 현재 colorHideVisitDateMap:', colorHideVisitDateMap);
+        // 회색은 항상 숨김
+        if (colorCode === 'gray' || colorCode === '회색') return true;
         
-        return shouldHide;
+        // 색상별 hideVisitDate 설정 확인
+        return colorHideVisitDateMap[colorCode] === true;
     }
 
     // 초기 데이터 로드 (사용자 정보가 업데이트될 때까지 대기)
