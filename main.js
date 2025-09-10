@@ -105,8 +105,37 @@ document.addEventListener('DOMContentLoaded', function() {
             const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
             if (!currentUser.id) return;
 
-            // 캐시된 설정 사용
+            // 사용자 설정 캐시 무효화 (최신 색상 설정 보장)
+            if (window.cachedDataLoader && window.cachedDataLoader.invalidateSettingsCache) {
+                window.cachedDataLoader.invalidateSettingsCache(currentUser.id);
+                console.log('🔄 사용자 설정 캐시 무효화 완료');
+            }
+
+            // 최신 설정 로드
             const settings = await window.cachedDataLoader.loadUserSettings(currentUser.id);
+            
+            // 디버깅: 직접 데이터베이스에서 색상 설정 확인
+            if (!settings.colors || settings.colors.length === 0) {
+                console.log('⚠️ 캐시된 색상 설정이 비어있음, 직접 데이터베이스 조회');
+                try {
+                    const db = new DatabaseManager();
+                    await db.init();
+                    
+                    const { data: colorData, error } = await db.client
+                        .from('user_settings')
+                        .select('*')
+                        .eq('user_id', currentUser.id)
+                        .eq('setting_type', 'color');
+                    
+                    if (error) {
+                        console.error('❌ 직접 색상 조회 오류:', error);
+                    } else {
+                        console.log('📊 직접 조회한 색상 데이터:', colorData);
+                    }
+                } catch (dbError) {
+                    console.error('❌ 데이터베이스 직접 조회 오류:', dbError);
+                }
+            }
             
             // 색상 설정 파싱 (database.js에서 이미 파싱된 데이터 사용)
             if (settings.colors) {
@@ -132,13 +161,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 방문일을 숨겨야 하는지 확인하는 함수
     function shouldHideVisitDate(colorCode) {
-        if (!colorCode) return false;
+        if (!colorCode) {
+            console.log(`🔍 shouldHideVisitDate: colorCode 없음`);
+            return false;
+        }
         
         // 회색은 항상 숨김
-        if (colorCode === 'gray' || colorCode === '회색') return true;
+        if (colorCode === 'gray' || colorCode === '회색') {
+            console.log(`🔍 shouldHideVisitDate: ${colorCode} - 회색이므로 숨김`);
+            return true;
+        }
         
         // 색상별 hideVisitDate 설정 확인
-        return colorHideVisitDateMap[colorCode] === true;
+        const shouldHide = colorHideVisitDateMap[colorCode] === true;
+        console.log(`🔍 shouldHideVisitDate: ${colorCode} → ${shouldHide} (맵에서 찾은 값: ${colorHideVisitDateMap[colorCode]})`);
+        console.log('🔍 현재 colorHideVisitDateMap:', colorHideVisitDateMap);
+        
+        return shouldHide;
     }
 
     // 초기 데이터 로드 (사용자 정보가 업데이트될 때까지 대기)
