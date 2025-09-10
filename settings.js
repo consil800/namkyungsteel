@@ -89,6 +89,12 @@ async function loadSettings() {
         // 데이터베이스 초기화 완료 대기
         await window.dataLoader.ensureDatabase();
         
+        const currentUser = await window.dataLoader.getCurrentUser();
+        if (!currentUser || !currentUser.id) {
+            console.error('❌ 사용자 정보 없음 또는 ID 누락');
+            throw new Error('사용자 정보 없음');
+        }
+        
         // 설정 페이지에서는 항상 캐시 무효화 (최신 데이터 보장)
         console.log('🔄 설정 페이지 캐시 강제 무효화');
         if (window.cachedDataLoader && window.cachedDataLoader.invalidateSettingsCache) {
@@ -99,12 +105,6 @@ async function loadSettings() {
         if (window.cachedDataLoader && window.cachedDataLoader.clearAllCache) {
             console.log('🧹 전체 캐시 초기화 (RLS 정책 변경으로 인한)');
             window.cachedDataLoader.clearAllCache();
-        }
-        
-        const currentUser = await window.dataLoader.getCurrentUser();
-        if (!currentUser || !currentUser.id) {
-            console.error('❌ 사용자 정보 없음 또는 ID 누락');
-            throw new Error('사용자 정보 없음');
         }
         
         console.log('🔒 보안 확인 - 현재 사용자:', {
