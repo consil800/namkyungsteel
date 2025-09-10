@@ -56,9 +56,23 @@ class DatabaseManager {
             if (currentUser && currentUser.id) {
                 const userId = String(currentUser.id);  // 명시적으로 문자열로 변환
                 console.log('🔧 RLS용 사용자 ID 설정:', userId);
+                
                 // Supabase에서 RLS 정책이 참조할 수 있는 사용자 ID 설정
-                await this.client.rpc('set_current_user_id', { user_id: userId });
-                console.log('✅ RLS 사용자 ID 설정 완료');
+                const { data, error } = await this.client.rpc('set_current_user_id', { user_id: userId });
+                
+                if (error) {
+                    console.error('❌ RLS 사용자 ID 설정 오류:', error);
+                    throw error;
+                } else {
+                    console.log('✅ RLS 사용자 ID 설정 완료', data);
+                }
+                
+                // 설정 확인
+                const { data: checkData, error: checkError } = await this.client.rpc('get_current_user_id');
+                if (!checkError && checkData) {
+                    console.log('🔍 RLS 설정 확인:', checkData);
+                }
+                
             } else {
                 console.warn('⚠️ 사용자 정보가 없어 RLS 설정을 건너뜁니다');
             }
