@@ -669,7 +669,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let companiesData = [];
 
     // 테이블 정렬 함수
-    window.sortTable = function(columnIndex) {
+    window.sortTable = async function(columnIndex) {
         // 삭제 모드에서는 정렬 비활성화
         if (isDeleteMode) return;
         
