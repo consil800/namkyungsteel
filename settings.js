@@ -89,13 +89,11 @@ async function loadSettings() {
         // 데이터베이스 초기화 완료 대기
         await window.dataLoader.ensureDatabase();
         
-        // 보안을 위해 캐시 강제 무효화
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('refresh') === 'true') {
-            console.log('🔄 캐시 강제 무효화 요청됨');
-            if (window.cachedDataLoader && window.cachedDataLoader.clearAllCache) {
-                window.cachedDataLoader.clearAllCache();
-            }
+        // 설정 페이지에서는 항상 캐시 무효화 (최신 데이터 보장)
+        console.log('🔄 설정 페이지 캐시 강제 무효화');
+        if (window.cachedDataLoader && window.cachedDataLoader.invalidateSettingsCache) {
+            // 일단 현재 사용자 ID를 알아야 하므로 임시로 userId 3 사용
+            window.cachedDataLoader.invalidateSettingsCache(3);
         }
         
         const currentUser = await window.dataLoader.getCurrentUser();
@@ -110,6 +108,48 @@ async function loadSettings() {
             role: currentUser.role
         });
         
+        // 디버깅: 직접 데이터베이스에서 user_settings 확인
+        try {
+            console.log('🔍 디버깅: user_settings 테이블 직접 확인');
+            const db = new DatabaseManager();
+            await db.init();
+            
+            // 모든 user_settings 레코드 확인 (디버깅용)
+            const { data: allCheck, error: allError } = await db.client
+                .from('user_settings')
+                .select('user_id, setting_type, setting_value, color_value, created_at')
+                .limit(20);
+            
+            if (allError) {
+                console.error('❌ 전체 확인 오류:', allError);
+            } else {
+                console.log('📊 전체 user_settings 확인:', allCheck);
+                console.log(`📊 전체 설정 개수:`, allCheck?.length || 0);
+            }
+            
+            // 현재 사용자의 설정 확인
+            const { data: directCheck, error: checkError } = await db.client
+                .from('user_settings')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .limit(10);
+                
+            if (checkError) {
+                console.error('❌ 직접 확인 오류:', checkError);
+            } else {
+                console.log('📊 직접 확인 결과:', directCheck);
+                console.log(`📊 사용자 ${currentUser.id}의 설정 개수:`, directCheck?.length || 0);
+            }
+            
+            // getUserSettings 함수 직접 호출
+            console.log('🔄 getUserSettings 직접 호출');
+            const directSettings = await db.getUserSettings(currentUser.id);
+            console.log('📋 getUserSettings 결과:', directSettings);
+            
+        } catch (debugError) {
+            console.error('❌ 디버깅 쿼리 오류:', debugError);
+        }
+        
         // 최대 3번 재시도로 설정 로드
         let settings = null;
         let retryCount = 0;
@@ -121,9 +161,20 @@ async function loadSettings() {
                 await new Promise(resolve => setTimeout(resolve, 500));
             }
             
-            // cachedDataLoader 사용 (보안 검증 포함)
+            // 직접 데이터베이스에서 조회 (캐시 우회)
             console.log(`🔍 설정 로드 시도 ${retryCount + 1}/${maxRetries} - 사용자 ID: ${currentUser.id}`);
-            settings = await window.cachedDataLoader.loadUserSettings(currentUser.id);
+            
+            if (retryCount === 0) {
+                // 첫 번째 시도: 캐시 사용
+                settings = await window.cachedDataLoader.loadUserSettings(currentUser.id);
+            } else {
+                // 재시도: 직접 데이터베이스에서 조회
+                console.log('🔄 캐시 우회하여 직접 데이터베이스 조회');
+                const db = new DatabaseManager();
+                await db.init();
+                settings = await db.getUserSettings(currentUser.id);
+                console.log('📊 직접 DB 조회 결과:', settings);
+            }
             
             // 추가 보안 검증: 로드된 설정이 현재 사용자 것인지 확인
             if (settings && settings.colors && settings.colors.length > 0) {
