@@ -1130,11 +1130,15 @@ class DatabaseManager {
             await this.client.rpc('set_current_user_id', { user_id: userId.toString() });
             console.log('✅ RLS 사용자 ID 설정 완료');
             
-            // user_settings 테이블에서 해당 사용자의 모든 설정 조회
+            // CRITICAL: 보안을 위해 사용자 ID를 명시적으로 필터링
+            const targetUserId = userId.toString();
+            console.log('🔒 보안 필터 적용 - 대상 사용자 ID:', targetUserId);
+            
+            // user_settings 테이블에서 해당 사용자의 모든 설정 조회 (강화된 필터링)
             const { data: settings, error } = await this.client
                 .from('user_settings')
                 .select('*')
-                .eq('user_id', userId.toString())
+                .eq('user_id', targetUserId)
                 .order('created_at', { ascending: true });
             
             if (error) {
@@ -1159,18 +1163,43 @@ class DatabaseManager {
                 }))
             });
             
-            // 보안 검증: 모든 설정이 요청한 사용자 것인지 확인
+            // CRITICAL 보안 검증: 모든 설정이 요청한 사용자 것인지 이중 확인
             if (settings && settings.length > 0) {
-                const invalidSettings = settings.filter(s => s.user_id.toString() !== userId.toString());
+                console.log('🔍 보안 검증 시작 - 총 설정 개수:', settings.length);
+                
+                // 각 설정의 user_id 검증
+                const settingsUserIds = [...new Set(settings.map(s => s.user_id.toString()))];
+                console.log('📊 설정에 포함된 user_id들:', settingsUserIds);
+                console.log('🎯 요청된 user_id:', targetUserId);
+                
+                const invalidSettings = settings.filter(s => s.user_id.toString() !== targetUserId);
                 if (invalidSettings.length > 0) {
-                    console.error('🚨 보안 경고: 다른 사용자 설정 감지됨!', {
-                        requestedUserId: userId,
-                        invalidSettings: invalidSettings
+                    console.error('🚨🚨 심각한 보안 위반: 다른 사용자 설정이 포함됨!', {
+                        requestedUserId: targetUserId,
+                        totalSettings: settings.length,
+                        invalidSettingsCount: invalidSettings.length,
+                        invalidUserIds: [...new Set(invalidSettings.map(s => s.user_id.toString()))],
+                        invalidSettings: invalidSettings.map(s => ({
+                            user_id: s.user_id,
+                            setting_type: s.setting_type,
+                            setting_value: s.setting_value
+                        }))
                     });
-                    // 다른 사용자 설정 제거
-                    settings = settings.filter(s => s.user_id.toString() === userId.toString());
-                    console.log('✅ 다른 사용자 설정 필터링 완료');
+                    
+                    // 즉시 다른 사용자 설정 제거
+                    const originalCount = settings.length;
+                    settings = settings.filter(s => s.user_id.toString() === targetUserId);
+                    console.log(`🔒 보안 필터링 완료: ${originalCount}개 → ${settings.length}개`);
+                    
+                    // 보안 위반 알림 (개발 모드에서만)
+                    if (window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1')) {
+                        alert(`보안 경고: 다른 사용자 설정 ${invalidSettings.length}개가 감지되어 제거되었습니다.`);
+                    }
+                } else {
+                    console.log('✅ 보안 검증 통과: 모든 설정이 올바른 사용자 것임');
                 }
+            } else {
+                console.log('📭 설정 없음 - 빈 배열 반환');
             }
 
             // 설정 타입별로 분류

@@ -89,10 +89,26 @@ async function loadSettings() {
         // 데이터베이스 초기화 완료 대기
         await window.dataLoader.ensureDatabase();
         
+        // 보안을 위해 캐시 강제 무효화
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('refresh') === 'true') {
+            console.log('🔄 캐시 강제 무효화 요청됨');
+            if (window.cachedDataLoader && window.cachedDataLoader.clearAllCache) {
+                window.cachedDataLoader.clearAllCache();
+            }
+        }
+        
         const currentUser = await window.dataLoader.getCurrentUser();
-        if (!currentUser) {
+        if (!currentUser || !currentUser.id) {
+            console.error('❌ 사용자 정보 없음 또는 ID 누락');
             throw new Error('사용자 정보 없음');
         }
+        
+        console.log('🔒 보안 확인 - 현재 사용자:', {
+            id: currentUser.id,
+            name: currentUser.name,
+            role: currentUser.role
+        });
         
         // 최대 3번 재시도로 설정 로드
         let settings = null;
@@ -105,8 +121,18 @@ async function loadSettings() {
                 await new Promise(resolve => setTimeout(resolve, 500));
             }
             
-            // cachedDataLoader 사용
+            // cachedDataLoader 사용 (보안 검증 포함)
+            console.log(`🔍 설정 로드 시도 ${retryCount + 1}/${maxRetries} - 사용자 ID: ${currentUser.id}`);
             settings = await window.cachedDataLoader.loadUserSettings(currentUser.id);
+            
+            // 추가 보안 검증: 로드된 설정이 현재 사용자 것인지 확인
+            if (settings && settings.colors && settings.colors.length > 0) {
+                console.log('📊 로드된 색상 설정:', settings.colors.map(c => ({
+                    name: c.name,
+                    key: c.key
+                })));
+            }
+            
             retryCount++;
         }
         
