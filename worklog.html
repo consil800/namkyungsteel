@@ -309,7 +309,7 @@
     <script src="shared-assets/js/auth.js?v=20250107"></script>
     <script src="data-loader.js"></script>
     <script src="data-cache.js"></script>
-    <script src="main.js?v=20250121003"></script>
+    <script src="main.js?v=20250121004"></script>
     <!-- 디버그 스크립트들 완전 제거 (새로고침 원인) -->
     <!--
     <script src="debug_worklog.js"></script>
@@ -450,7 +450,13 @@
                 
                 // 업체 목록 로드
                 if (window.loadCompanies) {
-                    setTimeout(() => window.loadCompanies(), 100);
+                    console.log('📋 loadCompanies 함수 발견, 100ms 후 호출 예정');
+                    setTimeout(() => {
+                        console.log('⏰ setTimeout 콜백 실행, loadCompanies 호출 중...');
+                        window.loadCompanies();
+                    }, 100);
+                } else {
+                    console.error('❌ window.loadCompanies 함수를 찾을 수 없음');
                 }
                 
                 isPageInitialized = true;

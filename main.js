@@ -266,6 +266,7 @@ document.addEventListener('DOMContentLoaded', function() {
     async function loadCompanies() {
         try {
             console.log('🔄 업체 목록 로드 시작');
+            console.log('📊 loadCompanies 함수 호출됨');
             
             // 색상 설정 먼저 로드
             await loadColorSettings();
