@@ -108,20 +108,17 @@ document.addEventListener('DOMContentLoaded', function() {
             // 캐시된 설정 사용
             const settings = await window.cachedDataLoader.loadUserSettings(currentUser.id);
             
-            // 색상 설정 파싱
+            // 색상 설정 파싱 (database.js에서 이미 파싱된 데이터 사용)
             if (settings.colors) {
                 colorHideVisitDateMap = {};
                 settings.colors.forEach(colorData => {
-                    try {
-                        // colorData.value가 JSON 문자열인 경우 파싱
-                        if (typeof colorData.value === 'string' && colorData.value.startsWith('{')) {
-                            const metadata = JSON.parse(colorData.value);
-                            colorHideVisitDateMap[colorData.name] = metadata.hideVisitDate || false;
-                        }
-                    } catch (e) {
-                        // 파싱 실패 시 기본값 false
-                        colorHideVisitDateMap[colorData.name] = false;
+                    // database.js에서 이미 파싱된 hideVisitDate 속성 사용
+                    colorHideVisitDateMap[colorData.name] = colorData.hideVisitDate || false;
+                    // key(영문명)로도 매핑 추가
+                    if (colorData.key && colorData.key !== colorData.name) {
+                        colorHideVisitDateMap[colorData.key] = colorData.hideVisitDate || false;
                     }
+                    console.log(`🔍 색상 방문일 설정: ${colorData.name} → hideVisitDate: ${colorData.hideVisitDate}`);
                 });
                 // 회색은 항상 hideVisitDate true
                 colorHideVisitDateMap['회색'] = true;
