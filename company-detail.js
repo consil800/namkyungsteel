@@ -633,11 +633,24 @@ async function loadColorOptions() {
                     console.warn('색상 메타데이터 파싱 실패:', color.key, color.value);
                 }
                 
+                // 색상 값 디버깅
+                console.log(`🔍 색상 처리: ${color.name}`, {
+                    원본값: color.value,
+                    파싱된값: actualColorValue,
+                    타입: typeof actualColorValue
+                });
+                
                 // 유효한 색상 값인 경우에만 스타일 적용
-                if (actualColorValue && actualColorValue.startsWith('#')) {
+                if (actualColorValue && (actualColorValue.startsWith('#') || actualColorValue.match(/^[a-fA-F0-9]{6}$/))) {
+                    // # 없으면 추가
+                    if (!actualColorValue.startsWith('#')) {
+                        actualColorValue = '#' + actualColorValue;
+                    }
                     option.style.backgroundColor = actualColorValue;
                     option.style.color = getContrastColor(actualColorValue);
                     console.log(`🎨 색상 옵션 설정: ${color.name} = ${actualColorValue}`);
+                } else {
+                    console.warn(`⚠️ 유효하지 않은 색상 값: ${color.name} = ${actualColorValue}`);
                 }
             }
             

@@ -196,38 +196,38 @@ nav {
 
 /* 테이블 행용 색상별 스타일 (worklog.html용) */
 tr.company-row.color-red {
-    background-color: #fdf2f2;
-    border-left: 4px solid #e74c3c;
+    background-color: #fdf2f2 !important;
+    border-left: 4px solid #e74c3c !important;
 }
 
 tr.company-row.color-orange {
-    background-color: #fef9f3;
-    border-left: 4px solid #f39c12;
+    background-color: #fef9f3 !important;
+    border-left: 4px solid #f39c12 !important;
 }
 
 tr.company-row.color-yellow {
-    background-color: #fffef3;
-    border-left: 4px solid #f1c40f;
+    background-color: #fffef3 !important;
+    border-left: 4px solid #f1c40f !important;
 }
 
 tr.company-row.color-green {
-    background-color: #f2f8f4;
-    border-left: 4px solid #27ae60;
+    background-color: #f2f8f4 !important;
+    border-left: 4px solid #27ae60 !important;
 }
 
 tr.company-row.color-blue {
-    background-color: #f2f7fb;
-    border-left: 4px solid #3498db;
+    background-color: #f2f7fb !important;
+    border-left: 4px solid #3498db !important;
 }
 
 tr.company-row.color-purple {
-    background-color: #f7f4f9;
-    border-left: 4px solid #9b59b6;
+    background-color: #f7f4f9 !important;
+    border-left: 4px solid #9b59b6 !important;
 }
 
 tr.company-row.color-gray {
-    background-color: #f6f7f7;
-    border-left: 4px solid #95a5a6;
+    background-color: #f6f7f7 !important;
+    border-left: 4px solid #95a5a6 !important;
 }
 
 .company-card h3 {

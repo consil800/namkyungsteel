@@ -51,37 +51,38 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // 기본 색상이 아닌 경우에만 동적 CSS 생성
-        const basicColors = ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'gray'];
-        const convertedCode = convertColorCode(colorCode);
-        
-        if (!basicColors.includes(convertedCode)) {
-            // 색상 값이 JSON 문자열인 경우 파싱
-            let actualColorValue = colorValue;
-            try {
-                if (typeof colorValue === 'string' && colorValue.startsWith('{')) {
-                    const metadata = JSON.parse(colorValue);
-                    actualColorValue = metadata.color;
-                }
-            } catch (e) {
-                // 파싱 실패 시 기본값 사용
+        // 색상 값이 JSON 문자열인 경우 파싱
+        let actualColorValue = colorValue;
+        try {
+            if (typeof colorValue === 'string' && colorValue.startsWith('{')) {
+                const metadata = JSON.parse(colorValue);
+                actualColorValue = metadata.color;
             }
-            
+        } catch (e) {
+            // 파싱 실패 시 기본값 사용
+            console.warn('색상 메타데이터 파싱 실패:', colorCode, colorValue);
+        }
+        
+        // 유효한 색상 값이 있는 경우에만 동적 CSS 생성
+        if (actualColorValue && actualColorValue !== colorValue) {
             // 동적 CSS 스타일 생성
             const style = document.createElement('style');
             const lightColor = lightenColor(actualColorValue, 0.9); // 90% 밝게
             style.textContent = `
                 tr.company-row.${className} {
-                    background-color: ${lightColor};
-                    border-left: 4px solid ${actualColorValue};
+                    background-color: ${lightColor} !important;
+                    border-left: 4px solid ${actualColorValue} !important;
                 }
                 .company-card.${className} {
-                    border-left: 5px solid ${actualColorValue};
-                    background-color: ${lightColor};
+                    border-left: 5px solid ${actualColorValue} !important;
+                    background-color: ${lightColor} !important;
                 }
             `;
             document.head.appendChild(style);
+            console.log(`🎨 동적 CSS 생성: ${className} = ${actualColorValue}`);
             customColorStyles.add(className);
+        } else if (actualColorValue) {
+            console.log(`🎨 기본 색상 사용: ${className} = ${actualColorValue}`);
         }
     }
     
