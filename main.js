@@ -258,9 +258,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            // 캐시된 업체 목록 로드
+            // 필요시 캐시 무효화 (강제 새로고침 또는 데이터 불일치 감지 시)
+            const forceRefresh = window.forceDataRefresh || false;
+            if (forceRefresh) {
+                console.log('🔄 강제 새로고침으로 인한 업체 목록 캐시 무효화');
+                if (window.cachedDataLoader && window.cachedDataLoader.invalidateCompaniesCache) {
+                    window.cachedDataLoader.invalidateCompaniesCache(currentUser.id);
+                }
+                window.forceDataRefresh = false; // 플래그 초기화
+            }
+
+            // 최신 업체 목록 로드
             const companies = await window.cachedDataLoader.loadCompanies(currentUser.id);
             console.log(`✅ ${currentUser.name}님의 업체 ${companies.length}개 로드 완료`);
+            console.log('🔍 실제 로드된 업체 배열:', companies ? companies.length : 'null');
             
             displayCompanies(companies);
         } catch (error) {
@@ -274,10 +285,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 회사 목록 표시
     async function displayCompanies(companies) {
+        console.log('🏢 displayCompanies 호출됨 - 업체 개수:', companies ? companies.length : 'null');
+        
         // 업체 개수 업데이트
         const companyCountElement = document.getElementById('companyCount');
         if (companyCountElement) {
-            companyCountElement.textContent = `(${companies ? companies.length : 0}개)`;
+            const count = companies ? companies.length : 0;
+            companyCountElement.textContent = `(${count}개)`;
+            console.log(`📊 화면 업체 개수 업데이트: ${count}개`);
         }
 
         if (!companies || companies.length === 0) {

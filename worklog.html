@@ -260,6 +260,7 @@
                     <button id="exportBtn" class="btn btn-primary">업체 목록 내보내기 (XLSX)</button>
                     <button id="importBtn" class="btn btn-secondary">업체 목록 불러오기 (XLSX)</button>
                     <button id="deleteBtn" class="btn btn-warning">삭제</button>
+                    <button id="refreshBtn" class="btn btn-info" onclick="refreshCompanyList()">새로고침</button>
                     <button onclick="goToSettings()" class="btn btn-purple">설정</button>
                 </div>
                 <input type="file" id="xlsxFileInput" accept=".xlsx,.xls" style="display: none;">
@@ -407,8 +408,9 @@
                 isBackNavigation = true;
                 // 뒤로가기 시 데이터 강제 새로고침
                 setTimeout(() => {
-                    if (window.loadCompanies && !isPageInitialized) {
+                    if (window.loadCompanies && isPageInitialized) {
                         console.log('🔄 뒤로가기 감지로 인한 데이터 새로고침');
+                        // 뒤로가기 시에만 캐시 무효화 및 재로드
                         window.loadCompanies();
                     }
                 }, 500);
@@ -475,6 +477,21 @@
             window.location.href = 'employee-dashboard.html';
         }
         
+        // 업체 목록 강제 새로고침 함수
+        function refreshCompanyList() {
+            console.log('🔄 사용자가 새로고침 버튼 클릭');
+            
+            // 강제 새로고침 플래그 설정
+            window.forceDataRefresh = true;
+            
+            // 업체 목록 다시 로드
+            if (window.loadCompanies) {
+                window.loadCompanies();
+            } else {
+                console.error('loadCompanies 함수를 찾을 수 없습니다.');
+            }
+        }
+
         // 설정으로 이동 함수
         function goToSettings() {
             const currentUser = AuthManager.getCurrentUser();
