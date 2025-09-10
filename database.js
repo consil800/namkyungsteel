@@ -2580,6 +2580,71 @@ class DatabaseManager {
             throw error;
         }
     }
+
+    // ==================== PDF 파일 관리 ====================
+    
+    // 업체의 PDF 파일 존재 여부 확인
+    async checkCompanyPdfExists(companyId) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            // client_companies 테이블에서 pdf_file_url 확인
+            const { data, error } = await this.client
+                .from('client_companies')
+                .select('pdf_file_url')
+                .eq('id', companyId)
+                .single();
+
+            if (error) {
+                if (error.code === 'PGRST116') {
+                    // 업체가 없는 경우
+                    return false;
+                }
+                throw error;
+            }
+
+            // PDF URL이 있으면 true, 없으면 false
+            return !!(data && data.pdf_file_url && data.pdf_file_url.trim() !== '');
+        } catch (error) {
+            console.error('PDF 파일 확인 오류:', error);
+            return false;
+        }
+    }
+
+    // 여러 업체의 PDF 파일 존재 여부를 한번에 확인
+    async checkCompaniesPdfExists(companyIds) {
+        if (!this.client || !companyIds || companyIds.length === 0) {
+            return {};
+        }
+
+        try {
+            const { data, error } = await this.client
+                .from('client_companies')
+                .select('id, pdf_file_url')
+                .in('id', companyIds);
+
+            if (error) throw error;
+
+            // ID를 키로, PDF 존재 여부를 값으로 하는 객체 생성
+            const pdfStatusMap = {};
+            companyIds.forEach(id => {
+                pdfStatusMap[id] = false; // 기본값 false
+            });
+
+            if (data) {
+                data.forEach(company => {
+                    pdfStatusMap[company.id] = !!(company.pdf_file_url && company.pdf_file_url.trim() !== '');
+                });
+            }
+
+            return pdfStatusMap;
+        } catch (error) {
+            console.error('PDF 파일 일괄 확인 오류:', error);
+            return {};
+        }
+    }
 }
 
 // 전역 데이터베이스 매니저 인스턴스

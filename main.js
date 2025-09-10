@@ -223,12 +223,24 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        // 업체 ID 배열 생성
+        const companyIds = companies.map(c => c.id);
+        
+        // PDF 파일 존재 여부 일괄 확인
+        let pdfStatusMap = {};
+        try {
+            pdfStatusMap = await window.db.checkCompaniesPdfExists(companyIds);
+        } catch (error) {
+            console.error('PDF 상태 확인 오류:', error);
+        }
+
         // 업체별 통계는 이미 데이터베이스에 저장되어 있으므로 그대로 사용
         const companiesWithStats = companies.map(company => {
             return {
                 ...company,
                 visitCount: company.visit_count || 0,
-                lastVisitDate: company.last_visit_date || null
+                lastVisitDate: company.last_visit_date || null,
+                hasPdf: pdfStatusMap[company.id] || false
             };
         });
 
@@ -252,6 +264,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     </td>
                 ` : ''}
                 <td>
+                    <span class="pdf-indicator" style="
+                        display: inline-block;
+                        margin-right: 8px;
+                        font-size: 18px;
+                        vertical-align: middle;
+                        color: ${company.hasPdf ? '#FFD700' : '#333333'};
+                        ${!company.hasPdf ? 'opacity: 0.3;' : ''}
+                    ">
+                        <i class="fas fa-file-pdf"></i>
+                    </span>
                     ${company.color_code ? `<span class="color-indicator"></span>` : ''}
                     <span class="company-name">
                         ${company.company_name || '미입력'}
