@@ -138,14 +138,11 @@ async function loadSettings() {
         
         console.log('📊 캐시에서 가져온 설정:', settings);
         
-        // 설정이 비어있으면 기본값을 데이터베이스에 저장
+        // 설정이 비어있으면 기본값 사용 (RLS 문제로 인해 저장 비활성화)
         if (!settings || Object.keys(settings).every(key => !settings[key] || settings[key].length === 0)) {
-            console.log('📝 빈 설정 감지됨. 기본 설정을 데이터베이스에 저장 중...');
-            await saveDefaultSettingsToDatabase(currentUser.id);
-            
-            // 설정 다시 로드
-            await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 대기
-            settings = await window.cachedDataLoader.loadUserSettings(currentUser.id);
+            console.log('📝 빈 설정 감지됨. RLS 문제로 인해 기본값 사용...');
+            // RLS 정책 문제로 인해 기본 설정 저장을 임시 비활성화
+            // await saveDefaultSettingsToDatabase(currentUser.id);
         }
         
         // 설정이 없으면 기본값 사용
@@ -174,58 +171,26 @@ async function saveDefaultSettingsToDatabase(userId) {
         // 기본 지역 저장
         for (const region of defaultSettings.regions) {
             try {
-                await db.addUserSetting(userId, 'region', region, region);
+                const result = await db.addUserSetting(userId, 'region', region, region);
+                if (result.error === 'rls_policy_violation') {
+                    console.log(`지역 "${region}" RLS 정책으로 건너뜀`);
+                    continue;
+                }
             } catch (error) {
-                if (!error.message?.includes('setting_already_exists')) {
+                if (!error.message?.includes('setting_already_exists') && error.code !== '42501') {
                     console.error(`지역 "${region}" 저장 오류:`, error);
                 }
             }
         }
         
-        // 기본 업종 저장  
-        for (const type of defaultSettings.businessTypes) {
-            try {
-                await db.addUserSetting(userId, 'business_type', type, type);
-            } catch (error) {
-                if (!error.message?.includes('setting_already_exists')) {
-                    console.error(`업종 "${type}" 저장 오류:`, error);
-                }
-            }
-        }
+        // RLS 정책 문제로 인해 기본 설정 저장을 건너뜀
+        console.log('⚠️ RLS 정책 문제로 인해 기본 설정 저장을 건너뜀');
+        return;
         
-        // 기본 결제조건 저장
-        for (const term of defaultSettings.paymentTerms) {
-            try {
-                await db.addUserSetting(userId, 'payment_terms', term, term);
-            } catch (error) {
-                if (!error.message?.includes('setting_already_exists')) {
-                    console.error(`결제조건 "${term}" 저장 오류:`, error);
-                }
-            }
-        }
-        
-        // 기본 방문목적 저장
-        for (const purpose of defaultSettings.visitPurposes) {
-            try {
-                await db.addUserSetting(userId, 'visit_purpose', purpose, purpose);
-            } catch (error) {
-                if (!error.message?.includes('setting_already_exists')) {
-                    console.error(`방문목적 "${purpose}" 저장 오류:`, error);
-                }
-            }
-        }
-        
-        // 기본 색상 저장
-        for (const color of defaultSettings.colors) {
-            try {
-                const metadata = JSON.stringify({ color: color.value, hideVisitDate: false });
-                await db.addUserSetting(userId, 'color', color.key, color.name, metadata, '');
-            } catch (error) {
-                if (!error.message?.includes('setting_already_exists')) {
-                    console.error(`색상 "${color.name}" 저장 오류:`, error);
-                }
-            }
-        }
+        // 기본 업종 저장 (비활성화)
+        // 기본 결제조건 저장 (비활성화)  
+        // 기본 방문목적 저장 (비활성화)
+        // 기본 색상 저장 (비활성화)
         
         // 캐시 무효화
         if (window.cachedDataLoader) {

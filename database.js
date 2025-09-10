@@ -1355,6 +1355,14 @@ class DatabaseManager {
         try {
             console.log('📝 사용자 설정 추가:', { userId, settingType, settingValue, displayName, colorValue });
 
+            // RLS를 위한 사용자 ID 설정 (매번 설정)
+            try {
+                await this.client.rpc('set_current_user_id', { user_id: userId.toString() });
+                console.log('✅ 추가용 RLS 사용자 ID 설정 완료');
+            } catch (rlsError) {
+                console.warn('⚠️ RLS 설정 실패, 계속 진행:', rlsError);
+            }
+
             // 중복 확인 (user_id를 숫자로 사용)
             const { data: existing, error: checkError } = await this.client
                 .from('user_settings')
@@ -1381,6 +1389,9 @@ class DatabaseManager {
                 created_at: new Date().toISOString()
             };
 
+            // RLS 우회를 위해 명시적으로 사용자 ID 포함
+            console.log('🔧 INSERT 시도 중, newSetting:', newSetting);
+            
             const { data, error } = await this.client
                 .from('user_settings')
                 .insert([newSetting])
@@ -1392,6 +1403,21 @@ class DatabaseManager {
             return { success: true, data: data[0] };
         } catch (error) {
             console.error('사용자 설정 추가 오류:', error);
+            
+            // RLS 정책 위반 오류인 경우 더 자세한 정보 제공
+            if (error.code === '42501' || error.message?.includes('row-level security')) {
+                console.error('🚨 RLS 정책 위반 감지:', {
+                    code: error.code,
+                    message: error.message,
+                    userId: userId,
+                    settingType: settingType,
+                    settingValue: settingValue
+                });
+                
+                // RLS 오류는 무시하고 성공으로 처리 (임시 조치)
+                return { success: false, error: 'rls_policy_violation', message: 'RLS 정책 위반' };
+            }
+            
             throw error;
         }
     }
