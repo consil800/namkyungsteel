@@ -1150,8 +1150,28 @@ class DatabaseManager {
 
             console.log('📊 user_settings 조회 결과:', {
                 settingsCount: settings?.length || 0,
-                settings: settings
+                requestedUserId: userId,
+                settings: settings?.map(s => ({
+                    user_id: s.user_id,
+                    setting_type: s.setting_type,
+                    setting_value: s.setting_value,
+                    display_name: s.display_name
+                }))
             });
+            
+            // 보안 검증: 모든 설정이 요청한 사용자 것인지 확인
+            if (settings && settings.length > 0) {
+                const invalidSettings = settings.filter(s => s.user_id.toString() !== userId.toString());
+                if (invalidSettings.length > 0) {
+                    console.error('🚨 보안 경고: 다른 사용자 설정 감지됨!', {
+                        requestedUserId: userId,
+                        invalidSettings: invalidSettings
+                    });
+                    // 다른 사용자 설정 제거
+                    settings = settings.filter(s => s.user_id.toString() === userId.toString());
+                    console.log('✅ 다른 사용자 설정 필터링 완료');
+                }
+            }
 
             // 설정 타입별로 분류
             const result = {
@@ -1355,6 +1375,10 @@ class DatabaseManager {
 
         try {
             console.log('🗑️ 사용자 설정 삭제:', { userId, settingType, settingValue });
+            
+            // RLS를 위한 사용자 ID 설정
+            await this.client.rpc('set_current_user_id', { user_id: userId.toString() });
+            console.log('✅ 삭제용 RLS 사용자 ID 설정 완료');
 
             const { error } = await this.client
                 .from('user_settings')

@@ -617,7 +617,25 @@ async function deleteColor(colorName) {
         // user_settings 테이블에서 색상 삭제
         const db = new DatabaseManager();
         await db.init();
-        await db.deleteUserSetting(userId, 'color', colorName);
+        
+        // 먼저 현재 사용자의 설정을 확인
+        console.log('🔍 색상 삭제 전 사용자 설정 확인');
+        const currentSettings = await window.cachedDataLoader.loadUserSettings(userId);
+        console.log('📊 현재 사용자 색상 설정:', currentSettings.colors);
+        
+        // 삭제할 색상 찾기 (name 또는 key로)
+        const colorToDelete = currentSettings.colors?.find(c => c.name === colorName || c.key === colorName);
+        console.log('🎯 삭제할 색상 정보:', colorToDelete);
+        
+        if (colorToDelete) {
+            // key 값으로 삭제 시도
+            await db.deleteUserSetting(userId, 'color', colorToDelete.key);
+            console.log(`✅ 색상 삭제 완료: key=${colorToDelete.key}, name=${colorToDelete.name}`);
+        } else {
+            // fallback: 직접 name으로 삭제 시도  
+            await db.deleteUserSetting(userId, 'color', colorName);
+            console.log(`⚠️ fallback 삭제 시도: ${colorName}`);
+        }
         
         // 캐시 무효화
         window.cachedDataLoader.invalidateSettingsCache(userId);
