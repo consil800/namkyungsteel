@@ -402,6 +402,38 @@ nav {
     flex-wrap: wrap;
 }
 
+/* 업체 목록 테이블 스타일 - 글자 크기 조정 */
+.company-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    font-size: 13px; /* 기본 14px에서 1px 줄임 */
+}
+
+.company-table th,
+.company-table td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    font-size: 13px; /* 기본 14px에서 1px 줄임 */
+}
+
+.company-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 13px; /* 헤더도 동일하게 적용 */
+}
+
+.company-table tbody tr:hover {
+    background-color: #f5f5f5;
+}
+
+.table-container {
+    overflow-x: auto;
+    margin: 20px 0;
+}
+
 @media (max-width: 768px) {
     .container {
         padding: 10px;
