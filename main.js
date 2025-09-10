@@ -87,8 +87,26 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 색상을 밝게 만드는 함수
     function lightenColor(color, percent) {
-        // HEX 색상을 RGB로 변환
-        const hex = color.replace('#', '');
+        if (!color) return '#f8f9fa';
+        
+        // HEX 색상 정규화
+        let hex = color.toString();
+        if (!hex.startsWith('#')) {
+            hex = '#' + hex;
+        }
+        hex = hex.replace('#', '');
+        
+        // 3자리 HEX를 6자리로 변환
+        if (hex.length === 3) {
+            hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+        }
+        
+        // 유효하지 않은 HEX인 경우 기본 색상 반환
+        if (hex.length !== 6 || !/^[0-9A-Fa-f]{6}$/.test(hex)) {
+            console.warn('유효하지 않은 색상 값:', color);
+            return '#f8f9fa';
+        }
+        
         const r = parseInt(hex.substr(0, 2), 16);
         const g = parseInt(hex.substr(2, 2), 16);
         const b = parseInt(hex.substr(4, 2), 16);
@@ -727,11 +745,32 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // 정렬된 데이터로 테이블 다시 렌더링
-        renderSortedCompanies(sortedCompanies);
+        await renderSortedCompanies(sortedCompanies);
     };
 
     // 정렬된 업체 목록 렌더링
-    function renderSortedCompanies(companies) {
+    async function renderSortedCompanies(companies) {
+        // 커스텀 색상 스타일 생성 (사용자 설정에서 색상 정보 가져오기)
+        const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+        if (currentUser.id && window.cachedDataLoader) {
+            try {
+                const settings = await window.cachedDataLoader.loadUserSettings(currentUser.id);
+                if (settings.colors) {
+                    // 각 업체의 커스텀 색상 스타일 생성
+                    for (const company of companies) {
+                        if (company.color_code) {
+                            const colorData = settings.colors.find(c => c.key === company.color_code || c.name === company.color_code);
+                            if (colorData) {
+                                await ensureCustomColorStyles(company.color_code, colorData.value);
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('정렬 렌더링 중 커스텀 색상 스타일 생성 오류:', error);
+            }
+        }
+
         const html = companies.map(company => `
             <tr class="company-row ${company.color_code ? `color-${convertColorCode(company.color_code)}` : ''}" onclick="${isDeleteMode ? '' : `goToCompanyDetail('${company.id}')`}">
                 ${isDeleteMode ? `
@@ -742,7 +781,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     </td>
                 ` : ''}
                 <td>
-                    ${company.color_code ? `<span class="color-indicator"></span>` : ''}
+                    <span class="pdf-indicator" style="
+                        display: inline-block;
+                        width: 26px;
+                        text-align: center;
+                        font-size: 18px;
+                        vertical-align: middle;
+                        ${company.hasPdf ? 'color: #27ae60;' : 'color: transparent;'}
+                    ">
+                        <i class="fas fa-file-pdf"></i>
+                    </span>
                     <span class="company-name">
                         ${company.company_name || '미입력'}
                     </span>

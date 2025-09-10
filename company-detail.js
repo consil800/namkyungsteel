@@ -620,8 +620,25 @@ async function loadColorOptions() {
             
             // 실제 색상 값이 있으면 style로 배경색 적용
             if (color.value) {
-                option.style.backgroundColor = color.value;
-                option.style.color = getContrastColor(color.value);
+                let actualColorValue = color.value;
+                
+                // JSON 형태의 메타데이터인 경우 파싱
+                try {
+                    if (typeof color.value === 'string' && color.value.startsWith('{')) {
+                        const metadata = JSON.parse(color.value);
+                        actualColorValue = metadata.color;
+                    }
+                } catch (e) {
+                    // 파싱 실패 시 원본 값 사용
+                    console.warn('색상 메타데이터 파싱 실패:', color.key, color.value);
+                }
+                
+                // 유효한 색상 값인 경우에만 스타일 적용
+                if (actualColorValue && actualColorValue.startsWith('#')) {
+                    option.style.backgroundColor = actualColorValue;
+                    option.style.color = getContrastColor(actualColorValue);
+                    console.log(`🎨 색상 옵션 설정: ${color.name} = ${actualColorValue}`);
+                }
             }
             
             colorSelect.appendChild(option);
@@ -665,10 +682,31 @@ function loadDefaultColors() {
 
 // 대비 색상 계산 (텍스트 가독성을 위해)
 function getContrastColor(hexColor) {
+    if (!hexColor || typeof hexColor !== 'string') {
+        return '#000000'; // 기본값 검은색
+    }
+    
+    // # 없으면 추가
+    let cleanHex = hexColor;
+    if (!cleanHex.startsWith('#')) {
+        cleanHex = '#' + cleanHex;
+    }
+    
+    // 유효한 hex 색상인지 확인
+    if (!/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(cleanHex)) {
+        console.warn('유효하지 않은 색상 값:', hexColor);
+        return '#000000';
+    }
+    
+    // 3자리 hex를 6자리로 확장
+    if (cleanHex.length === 4) {
+        cleanHex = '#' + cleanHex[1] + cleanHex[1] + cleanHex[2] + cleanHex[2] + cleanHex[3] + cleanHex[3];
+    }
+    
     // hex 색상을 RGB로 변환
-    const r = parseInt(hexColor.slice(1, 3), 16);
-    const g = parseInt(hexColor.slice(3, 5), 16);
-    const b = parseInt(hexColor.slice(5, 7), 16);
+    const r = parseInt(cleanHex.slice(1, 3), 16);
+    const g = parseInt(cleanHex.slice(3, 5), 16);
+    const b = parseInt(cleanHex.slice(5, 7), 16);
     
     // 밝기 계산 (0-255)
     const brightness = (r * 299 + g * 587 + b * 114) / 1000;
