@@ -183,8 +183,20 @@ async function getColorValue(colorCode) {
             // 색상 key로 찾기
             const foundColor = colors.find(color => color.key === colorCode);
             if (foundColor && foundColor.value) {
-                console.log('🎨 커스텀 색상 값 찾음:', colorCode, '->', foundColor.value);
-                return foundColor.value;
+                let actualColorValue = foundColor.value;
+                
+                // JSON 형태의 메타데이터인 경우 파싱
+                try {
+                    if (typeof foundColor.value === 'string' && foundColor.value.startsWith('{')) {
+                        const metadata = JSON.parse(foundColor.value);
+                        actualColorValue = metadata.color;
+                    }
+                } catch (e) {
+                    // 파싱 실패 시 원본 값 사용
+                }
+                
+                console.log('🎨 커스텀 색상 값 찾음:', colorCode, '->', actualColorValue);
+                return actualColorValue;
             }
         }
     } catch (error) {

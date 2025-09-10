@@ -41,6 +41,67 @@ document.addEventListener('DOMContentLoaded', function() {
         return colorCode.replace(/\s+/g, '').toLowerCase(); // 공백 제거 후 소문자화
     };
 
+    // 커스텀 색상을 위한 동적 CSS 생성
+    let customColorStyles = new Set();
+    async function ensureCustomColorStyles(colorCode, colorValue) {
+        const className = `color-${convertColorCode(colorCode)}`;
+        
+        // 이미 생성된 스타일인지 확인
+        if (customColorStyles.has(className)) {
+            return;
+        }
+        
+        // 기본 색상이 아닌 경우에만 동적 CSS 생성
+        const basicColors = ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'gray'];
+        const convertedCode = convertColorCode(colorCode);
+        
+        if (!basicColors.includes(convertedCode)) {
+            // 색상 값이 JSON 문자열인 경우 파싱
+            let actualColorValue = colorValue;
+            try {
+                if (typeof colorValue === 'string' && colorValue.startsWith('{')) {
+                    const metadata = JSON.parse(colorValue);
+                    actualColorValue = metadata.color;
+                }
+            } catch (e) {
+                // 파싱 실패 시 기본값 사용
+            }
+            
+            // 동적 CSS 스타일 생성
+            const style = document.createElement('style');
+            const lightColor = lightenColor(actualColorValue, 0.9); // 90% 밝게
+            style.textContent = `
+                tr.company-row.${className} {
+                    background-color: ${lightColor};
+                    border-left: 4px solid ${actualColorValue};
+                }
+                .company-card.${className} {
+                    border-left: 5px solid ${actualColorValue};
+                    background-color: ${lightColor};
+                }
+            `;
+            document.head.appendChild(style);
+            customColorStyles.add(className);
+        }
+    }
+    
+    // 색상을 밝게 만드는 함수
+    function lightenColor(color, percent) {
+        // HEX 색상을 RGB로 변환
+        const hex = color.replace('#', '');
+        const r = parseInt(hex.substr(0, 2), 16);
+        const g = parseInt(hex.substr(2, 2), 16);
+        const b = parseInt(hex.substr(4, 2), 16);
+        
+        // 밝게 조정
+        const newR = Math.min(255, Math.round(r + (255 - r) * percent));
+        const newG = Math.min(255, Math.round(g + (255 - g) * percent));
+        const newB = Math.min(255, Math.round(b + (255 - b) * percent));
+        
+        // 다시 HEX로 변환
+        return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
+    }
+
     // 색상별 hideVisitDate 설정을 저장할 객체
     let colorHideVisitDateMap = {};
 
@@ -255,6 +316,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 한글 색상을 영어로 변환 (전역 함수 사용)
 
+        // 커스텀 색상 스타일 생성 (사용자 설정에서 색상 정보 가져오기)
+        const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+        if (currentUser.id && window.cachedDataLoader) {
+            try {
+                const settings = await window.cachedDataLoader.loadUserSettings(currentUser.id);
+                if (settings.colors) {
+                    // 각 업체의 커스텀 색상 스타일 생성
+                    for (const company of companiesWithStats) {
+                        if (company.color_code) {
+                            const colorData = settings.colors.find(c => c.key === company.color_code || c.name === company.color_code);
+                            if (colorData) {
+                                await ensureCustomColorStyles(company.color_code, colorData.value);
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('커스텀 색상 스타일 생성 오류:', error);
+            }
+        }
+
         // 색상 디버깅 로그
         console.log('🎨 색상 디버깅:', companiesWithStats.slice(0, 3).map(c => ({
             name: c.company_name,
@@ -273,17 +355,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     </td>
                 ` : ''}
                 <td>
-                    ${company.hasPdf ? `
-                        <span class="pdf-indicator" style="
-                            display: inline-block;
-                            margin-right: 8px;
-                            font-size: 18px;
-                            vertical-align: middle;
-                            color: #FFD700;
-                        ">
-                            <i class="fas fa-file-pdf"></i>
-                        </span>
-                    ` : ''}
+                    <span class="pdf-indicator" style="
+                        display: inline-block;
+                        width: 26px;
+                        text-align: center;
+                        font-size: 18px;
+                        vertical-align: middle;
+                        ${company.hasPdf ? 'color: #27ae60;' : 'color: transparent;'}
+                    ">
+                        <i class="fas fa-file-pdf"></i>
+                    </span>
                     <span class="company-name">
                         ${company.company_name || '미입력'}
                     </span>

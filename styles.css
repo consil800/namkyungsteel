@@ -194,6 +194,42 @@ nav {
     background-color: #f6f7f7;
 }
 
+/* 테이블 행용 색상별 스타일 (worklog.html용) */
+tr.company-row.color-red {
+    background-color: #fdf2f2;
+    border-left: 4px solid #e74c3c;
+}
+
+tr.company-row.color-orange {
+    background-color: #fef9f3;
+    border-left: 4px solid #f39c12;
+}
+
+tr.company-row.color-yellow {
+    background-color: #fffef3;
+    border-left: 4px solid #f1c40f;
+}
+
+tr.company-row.color-green {
+    background-color: #f2f8f4;
+    border-left: 4px solid #27ae60;
+}
+
+tr.company-row.color-blue {
+    background-color: #f2f7fb;
+    border-left: 4px solid #3498db;
+}
+
+tr.company-row.color-purple {
+    background-color: #f7f4f9;
+    border-left: 4px solid #9b59b6;
+}
+
+tr.company-row.color-gray {
+    background-color: #f6f7f7;
+    border-left: 4px solid #95a5a6;
+}
+
 .company-card h3 {
     color: #2c3e50;
     margin-bottom: 10px;
