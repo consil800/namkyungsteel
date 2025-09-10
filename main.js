@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (actualColorValue && actualColorValue.startsWith && actualColorValue.startsWith('#')) {
             // 동적 CSS 스타일 생성
             const style = document.createElement('style');
-            const lightColor = lightenColor(actualColorValue, 0.9); // 90% 밝게
+            const lightColor = lightenColor(actualColorValue, 0.7); // 70% 밝게 (더 진하게)
             style.textContent = `
                 tr.company-row.${className} {
                     background-color: ${lightColor} !important;

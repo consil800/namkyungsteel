@@ -503,12 +503,15 @@ async function confirmAddColor() {
         if (hideVisitDateInput) hideVisitDateInput.checked = false;
         updateColorPreview();
         
-        alert(`색상 "${colorName}"이(가) 추가되었습니다! 새로고침 후 확인하세요.`);
+        // 캐시 무효화 및 즉시 설정 다시 로드
+        const userId = await DropdownSettings.getCurrentUserId();
+        if (userId && window.cachedDataLoader) {
+            window.cachedDataLoader.invalidateSettingsCache(userId);
+        }
         
-        // 설정 다시 로드하여 드롭다운 및 리스트 업데이트
-        setTimeout(async () => {
-            await loadSettings();
-        }, 1000);
+        await loadSettings();
+        
+        alert(`색상 "${colorName}"이(가) 추가되었습니다.`);
         
     } catch (error) {
         console.error('색상 추가 오류:', error);
@@ -558,12 +561,15 @@ async function addItem(type, inputId) {
         // 입력창 초기화
         inputElement.value = '';
         
-        alert(`${type} "${value}"이(가) 추가되었습니다! 새로고침 후 드롭다운에서 확인하세요.`);
+        // 캐시 무효화 및 즉시 설정 다시 로드
+        const userId = await DropdownSettings.getCurrentUserId();
+        if (userId && window.cachedDataLoader) {
+            window.cachedDataLoader.invalidateSettingsCache(userId);
+        }
         
-        // 설정 다시 로드하여 드롭다운 및 리스트 업데이트
-        setTimeout(async () => {
-            await loadSettings();
-        }, 1000);
+        await loadSettings();
+        
+        alert(`${type} "${value}"이(가) 추가되었습니다.`);
         
     } catch (error) {
         console.error(`${type} 추가 오류:`, error);
@@ -627,15 +633,11 @@ async function deleteItem(type, item) {
         await db.init();
         await db.deleteUserSetting(userId, settingType, item);
         
-        // 캐시 무효화
+        // 캐시 무효화 및 즉시 설정 다시 로드
         window.cachedDataLoader.invalidateSettingsCache(userId);
+        await loadSettings();
         
         alert(`${type} "${item}"이(가) 삭제되었습니다.`);
-        
-        // 설정 다시 로드
-        setTimeout(async () => {
-            await loadSettings();
-        }, 500);
         
     } catch (error) {
         console.error(`${type} 삭제 오류:`, error);
@@ -684,17 +686,13 @@ async function deleteColor(colorName) {
             console.log(`⚠️ fallback 삭제 시도: ${colorName}`);
         }
         
-        // 캐시 무효화
+        // 캐시 무효화 및 즉시 설정 다시 로드
         window.cachedDataLoader.invalidateSettingsCache(userId);
+        await loadSettings();
         
         alert(`색상 "${colorName}"이(가) 삭제되었습니다.`);
         
-        console.log(`✅ 색상 "${colorName}" 삭제 완료, 설정 다시 로드 중...`);
-        
-        // 설정 다시 로드
-        setTimeout(async () => {
-            await loadSettings();
-        }, 500);
+        console.log(`✅ 색상 "${colorName}" 삭제 완료`);
         
     } catch (error) {
         console.error('❌ 색상 삭제 오류:', error);
@@ -727,10 +725,11 @@ async function saveColorMeaningFromInput(colorName, inputId) {
             inputElement.style.backgroundColor = '';
         }, 1500);
         
-        // 색상 의미 가이드만 업데이트 (전체 새로고침 없이)
+        // 캐시 무효화 및 즉시 설정 다시 로드
         const currentUser = await window.dataLoader.getCurrentUser();
-        if (currentUser) {
-            // 캐시에서 설정 가져오기
+        if (currentUser && window.cachedDataLoader) {
+            window.cachedDataLoader.invalidateSettingsCache(currentUser.id);
+            // 전체 설정을 다시 로드하여 모든 색상 정보 업데이트
             const settings = await window.cachedDataLoader.loadUserSettings(currentUser.id);
             if (settings && settings.colors) {
                 updateColorMeaningsDisplay(settings.colors);
@@ -765,12 +764,15 @@ async function editColorMeaning(colorName, currentMeaning) {
     
     try {
         await saveColorMeaning(colorName, newMeaning.trim());
-        alert(`색상 "${colorName}"의 의미가 "${newMeaning.trim() || '(의미 없음)'}"로 수정되었습니다.`);
         
-        // 설정 다시 로드
-        setTimeout(async () => {
-            await loadSettings();
-        }, 500);
+        // 캐시 무효화 및 즉시 설정 다시 로드
+        const userId = await DropdownSettings.getCurrentUserId();
+        if (userId && window.cachedDataLoader) {
+            window.cachedDataLoader.invalidateSettingsCache(userId);
+        }
+        await loadSettings();
+        
+        alert(`색상 "${colorName}"의 의미가 "${newMeaning.trim() || '(의미 없음)'}"로 수정되었습니다.`);
         
     } catch (error) {
         console.error('색상 의미 수정 오류:', error);

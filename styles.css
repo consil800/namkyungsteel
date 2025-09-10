@@ -158,75 +158,75 @@ nav {
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
-/* 업체 색상별 스타일 */
+/* 업체 색상별 스타일 - 더 진한 색상 적용 */
 .company-card.color-red {
     border-left: 5px solid #e74c3c;
-    background-color: #fdf2f2;
+    background-color: #fde8e8;
 }
 
 .company-card.color-orange {
     border-left: 5px solid #f39c12;
-    background-color: #fef9f3;
+    background-color: #fdefe1;
 }
 
 .company-card.color-yellow {
     border-left: 5px solid #f1c40f;
-    background-color: #fffef3;
+    background-color: #fffce0;
 }
 
 .company-card.color-green {
     border-left: 5px solid #27ae60;
-    background-color: #f2f8f4;
+    background-color: #e8f5e8;
 }
 
 .company-card.color-blue {
     border-left: 5px solid #3498db;
-    background-color: #f2f7fb;
+    background-color: #e3f2fd;
 }
 
 .company-card.color-purple {
     border-left: 5px solid #9b59b6;
-    background-color: #f7f4f9;
+    background-color: #f3e5f5;
 }
 
 .company-card.color-gray {
     border-left: 5px solid #95a5a6;
-    background-color: #f6f7f7;
+    background-color: #ecf0f1;
 }
 
-/* 테이블 행용 색상별 스타일 (worklog.html용) */
+/* 테이블 행용 색상별 스타일 (worklog.html용) - 더 진한 색상 적용 */
 tr.company-row.color-red {
-    background-color: #fdf2f2 !important;
+    background-color: #fde8e8 !important;
     border-left: 4px solid #e74c3c !important;
 }
 
 tr.company-row.color-orange {
-    background-color: #fef9f3 !important;
+    background-color: #fdefe1 !important;
     border-left: 4px solid #f39c12 !important;
 }
 
 tr.company-row.color-yellow {
-    background-color: #fffef3 !important;
+    background-color: #fffce0 !important;
     border-left: 4px solid #f1c40f !important;
 }
 
 tr.company-row.color-green {
-    background-color: #f2f8f4 !important;
+    background-color: #e8f5e8 !important;
     border-left: 4px solid #27ae60 !important;
 }
 
 tr.company-row.color-blue {
-    background-color: #f2f7fb !important;
+    background-color: #e3f2fd !important;
     border-left: 4px solid #3498db !important;
 }
 
 tr.company-row.color-purple {
-    background-color: #f7f4f9 !important;
+    background-color: #f3e5f5 !important;
     border-left: 4px solid #9b59b6 !important;
 }
 
 tr.company-row.color-gray {
-    background-color: #f6f7f7 !important;
+    background-color: #ecf0f1 !important;
     border-left: 4px solid #95a5a6 !important;
 }
 
