@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // 최신 설정 로드
             const settings = await window.cachedDataLoader.loadUserSettings(currentUser.id);
             
-            // 디버깅: 직접 데이터베이스에서 색상 설정 확인
+            // 디버깅: 직접 데이터베이스에서 색상 설정 확인 및 파싱
             if (!settings.colors || settings.colors.length === 0) {
                 console.log('⚠️ 캐시된 색상 설정이 비어있음, 직접 데이터베이스 조회');
                 try {
@@ -131,6 +131,29 @@ document.addEventListener('DOMContentLoaded', function() {
                         console.error('❌ 직접 색상 조회 오류:', error);
                     } else {
                         console.log('📊 직접 조회한 색상 데이터:', colorData);
+                        
+                        // 직접 조회한 데이터를 파싱하여 사용
+                        if (colorData && colorData.length > 0) {
+                            settings.colors = [];
+                            colorData.forEach(item => {
+                                try {
+                                    let parsedColorData = null;
+                                    if (item.color_value && typeof item.color_value === 'string' && item.color_value.startsWith('{')) {
+                                        parsedColorData = JSON.parse(item.color_value);
+                                    }
+                                    settings.colors.push({
+                                        key: item.setting_value,
+                                        name: item.display_name || item.setting_value,
+                                        value: parsedColorData?.color || '#cccccc',
+                                        hideVisitDate: parsedColorData?.hideVisitDate || false,
+                                        meaning: item.color_meaning || ''
+                                    });
+                                } catch (e) {
+                                    console.error('색상 파싱 오류:', e, item);
+                                }
+                            });
+                            console.log('📊 파싱된 색상 설정:', settings.colors);
+                        }
                     }
                 } catch (dbError) {
                     console.error('❌ 데이터베이스 직접 조회 오류:', dbError);
@@ -149,9 +172,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     console.log(`🔍 색상 방문일 설정: ${colorData.name} → hideVisitDate: ${colorData.hideVisitDate}`);
                 });
-                // 회색은 항상 hideVisitDate true
-                colorHideVisitDateMap['회색'] = true;
-                colorHideVisitDateMap['gray'] = true;
             }
             console.log('색상별 방문일 숨김 설정:', colorHideVisitDateMap);
         } catch (error) {
@@ -166,16 +186,9 @@ document.addEventListener('DOMContentLoaded', function() {
             return false;
         }
         
-        // 회색은 항상 숨김
-        if (colorCode === 'gray' || colorCode === '회색') {
-            console.log(`🔍 shouldHideVisitDate: ${colorCode} - 회색이므로 숨김`);
-            return true;
-        }
-        
-        // 색상별 hideVisitDate 설정 확인
+        // 색상별 hideVisitDate 설정 확인 (데이터베이스 기반)
         const shouldHide = colorHideVisitDateMap[colorCode] === true;
         console.log(`🔍 shouldHideVisitDate: ${colorCode} → ${shouldHide} (맵에서 찾은 값: ${colorHideVisitDateMap[colorCode]})`);
-        console.log('🔍 현재 colorHideVisitDateMap:', colorHideVisitDateMap);
         
         return shouldHide;
     }
