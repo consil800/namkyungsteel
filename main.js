@@ -397,8 +397,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
         if (currentUser.id && window.cachedDataLoader) {
             try {
+                // 색상 설정 로드 함수 호출 (이미 직접 DB 조회 포함)
+                await loadColorSettings();
+                
                 const settings = await window.cachedDataLoader.loadUserSettings(currentUser.id);
-                if (settings.colors) {
+                if (settings.colors && settings.colors.length > 0) {
                     // 모든 사용자 색상에 대해 동적 CSS 미리 생성 (기본 색상 포함)
                     console.log('🎨 데이터베이스 색상 설정:', settings.colors);
                     for (const colorData of settings.colors) {
