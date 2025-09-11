@@ -27,11 +27,24 @@ const defaultSettings = {
         { key: 'orange', name: '주황', value: '#f39c12' },
         { key: 'yellow', name: '노랑', value: '#f1c40f' },
         { key: 'green', name: '초록', value: '#27ae60' },
+        { key: 'sky', name: '하늘', value: '#87ceeb' },
         { key: 'blue', name: '파랑', value: '#3498db' },
         { key: 'purple', name: '보라', value: '#9b59b6' },
         { key: 'gray', name: '회색', value: '#95a5a6' }
     ]
 };
+
+// 하드코딩된 고정 색상 (삭제 불가)
+const FIXED_COLORS = [
+    { key: 'red', name: '빨강', value: '#e74c3c' },
+    { key: 'orange', name: '주황', value: '#f39c12' },
+    { key: 'yellow', name: '노랑', value: '#f1c40f' },
+    { key: 'green', name: '초록', value: '#27ae60' },
+    { key: 'sky', name: '하늘', value: '#87ceeb' },
+    { key: 'blue', name: '파랑', value: '#3498db' },
+    { key: 'purple', name: '보라', value: '#9b59b6' },
+    { key: 'gray', name: '회색', value: '#95a5a6' }
+];
 
 // 설정 데이터 관리 (Supabase 사용)
 const DropdownSettings = {
@@ -204,6 +217,13 @@ async function loadSettings() {
         // 설정이 없으면 기본값 사용
         const finalSettings = settings || { ...defaultSettings };
         
+        // 색상은 항상 고정된 8가지 색상을 사용하고, 사용자별 의미만 불러오기
+        const colorMeanings = await loadColorMeanings(currentUser.id);
+        finalSettings.colors = FIXED_COLORS.map(color => ({
+            ...color,
+            meaning: colorMeanings[color.name] || ''
+        }));
+        
         // 화면에 표시
         displayItemLists(finalSettings);
         updateColorPreview();
@@ -213,6 +233,34 @@ async function loadSettings() {
     } catch (error) {
         console.error('❌ 설정 로드 오류:', error);
         displayItemLists({ ...defaultSettings });
+    }
+}
+
+// 색상 의미만 불러오기
+async function loadColorMeanings(userId) {
+    try {
+        const db = new DatabaseManager();
+        await db.init();
+        
+        const { data, error } = await db.client
+            .from('user_settings')
+            .select('setting_value, color_meaning')
+            .eq('user_id', userId)
+            .eq('setting_type', 'color_meaning');
+        
+        if (error) throw error;
+        
+        const meanings = {};
+        if (data && data.length > 0) {
+            data.forEach(item => {
+                meanings[item.setting_value] = item.color_meaning || '';
+            });
+        }
+        
+        return meanings;
+    } catch (error) {
+        console.error('색상 의미 불러오기 오류:', error);
+        return {};
     }
 }
 
@@ -325,40 +373,28 @@ function displayItemList(listId, items, type) {
     console.log(`✅ ${type} 리스트 표시 완료 - ${items.length}개 항목`);
 }
 
-// 색상 리스트 표시 함수
+// 색상 리스트 표시 함수 (고정 색상, 의미만 수정 가능)
 function displayColorList(listId, colors) {
     const listElement = document.getElementById(listId);
     if (!listElement) return;
     
     console.log('🎨 색상 리스트 표시:', colors);
     
-    if (colors.length === 0) {
-        listElement.innerHTML = '<li style="color: #666; font-style: italic;">저장된 색상이 없습니다. 위에서 추가하세요.</li>';
-        return;
-    }
-    
     listElement.innerHTML = '';
     colors.forEach((color, index) => {
-        // database.js에서 이미 파싱된 색상 값과 설정 사용
-        const colorValue = color.value; // 이미 파싱된 HEX 색상값
-        let hideVisitDate = color.hideVisitDate || false;
-        
         // 회색은 항상 방문일 숨김
-        if (color.name === '회색' || color.name === 'gray') {
-            hideVisitDate = true;
-        }
+        const hideVisitDate = (color.name === '회색' || color.name === 'gray');
         
         const li = document.createElement('li');
         li.className = 'color-meaning-item';
         li.innerHTML = `
             <div style="display: flex; align-items: center; min-width: 120px;">
-                <span class="color-preview" style="background-color: ${colorValue}; display: inline-block; width: 24px; height: 24px; border-radius: 50%; margin-right: 10px; border: 2px solid #ddd; vertical-align: middle;"></span>
+                <span class="color-preview" style="background-color: ${color.value}; display: inline-block; width: 24px; height: 24px; border-radius: 50%; margin-right: 10px; border: 2px solid #ddd; vertical-align: middle;"></span>
                 <span style="font-weight: 600; color: #2c3e50;">${color.name}</span>
                 ${hideVisitDate ? '<span style="margin-left: 8px; color: #666; font-size: 11px; background: #e9ecef; padding: 2px 6px; border-radius: 10px;">[방문일숨김]</span>' : ''}
             </div>
-            <input type="text" class="color-meaning-input" id="meaning-${index}" value="${color.meaning || ''}" placeholder="색상의 의미를 입력하세요 (예: 거래중, 재무상태불량, 철판 안씀)" style="flex: 1;">
-            <button class="btn-save-meaning" onclick="saveColorMeaningFromInput('${color.name.replace(/'/g, "\\'")}', 'meaning-${index}')">저장</button>
-            <button class="btn btn-danger btn-small" onclick="deleteColor('${color.name.replace(/'/g, "\\'")}')">삭제</button>
+            <input type="text" class="color-meaning-input" id="meaning-${color.key}" value="${color.meaning || ''}" placeholder="색상의 의미를 입력하세요 (예: 거래중, 재무상태불량, 철판 안씀)" style="flex: 1;">
+            <button class="btn-save-meaning" onclick="saveColorMeaningFromInput('${color.name.replace(/'/g, "\\'")}', 'meaning-${color.key}')">저장</button>
         `;
         listElement.appendChild(li);
     });
@@ -467,77 +503,7 @@ async function addVisitPurpose() {
     await addItem('방문목적', 'newVisitPurpose');
 }
 
-// 색상 추가 함수 (이제 필요 없음 - confirmAddColor를 직접 사용)
-
-// 색상 추가 확인
-async function confirmAddColor() {
-    const nameInput = document.getElementById('newColorName');
-    const valueInput = document.getElementById('newColorValue');
-    const meaningInput = document.getElementById('newColorMeaning');
-    const hideVisitDateInput = document.getElementById('newColorHideVisitDate');
-    
-    if (!nameInput || !valueInput) {
-        alert('색상 입력 요소를 찾을 수 없습니다.');
-        return;
-    }
-    
-    const colorName = nameInput.value.trim();
-    const colorValue = valueInput.value;
-    const colorMeaning = meaningInput ? meaningInput.value.trim() : '';
-    const hideVisitDate = hideVisitDateInput ? hideVisitDateInput.checked : false;
-    
-    if (!colorName) {
-        alert('색상 이름을 입력해주세요.');
-        nameInput.focus();
-        return;
-    }
-    
-    try {
-        // 색상을 데이터베이스에 저장 (hideVisitDate와 의미 포함)
-        await saveColorToDatabase(colorName, colorValue, hideVisitDate, colorMeaning);
-        
-        // 입력창 초기화
-        nameInput.value = '';
-        valueInput.value = '#ff69b4';
-        if (meaningInput) meaningInput.value = '';
-        if (hideVisitDateInput) hideVisitDateInput.checked = false;
-        updateColorPreview();
-        
-        // 캐시 무효화 및 즉시 설정 다시 로드
-        const userId = await DropdownSettings.getCurrentUserId();
-        if (userId && window.cachedDataLoader) {
-            window.cachedDataLoader.invalidateSettingsCache(userId);
-        }
-        
-        await loadSettings();
-        
-        alert(`색상 "${colorName}"이(가) 추가되었습니다.`);
-        
-    } catch (error) {
-        console.error('색상 추가 오류:', error);
-        alert('색상 추가 중 오류가 발생했습니다.');
-    }
-}
-
-
-// 색상 미리보기 업데이트
-function updateColorPreview() {
-    const valueInput = document.getElementById('newColorValue');
-    const colorPreview = document.getElementById('colorPreview');
-    
-    if (valueInput && colorPreview) {
-        const color = valueInput.value;
-        colorPreview.style.backgroundColor = color;
-        colorPreview.style.color = getContrastColor(color);
-        colorPreview.textContent = `미리보기`;
-        
-        // 색상 변경 이벤트 리스너 추가 (한번만)
-        if (!valueInput.hasAttribute('data-listener-added')) {
-            valueInput.addEventListener('input', updateColorPreview);
-            valueInput.setAttribute('data-listener-added', 'true');
-        }
-    }
-}
+// 색상 추가 기능 제거 (고정 색상만 사용)
 
 // 일반 아이템 추가 공통 함수
 async function addItem(type, inputId) {
@@ -577,29 +543,6 @@ async function addItem(type, inputId) {
     }
 }
 
-// 색상 저장 함수 (user_settings 테이블 사용)
-async function saveColorToDatabase(colorName, colorValue, hideVisitDate = false, colorMeaning = '') {
-    const userId = await DropdownSettings.getCurrentUserId();
-    if (!userId) {
-        throw new Error('사용자 정보가 없습니다.');
-    }
-    
-    // user_settings 테이블에 색상 저장 (hideVisitDate 정보와 의미 포함)
-    const db = new DatabaseManager();
-    await db.init();
-    const metadata = {
-        color: colorValue,
-        hideVisitDate: hideVisitDate
-    };
-    await db.addUserSetting(userId, 'color', colorName, colorName, JSON.stringify(metadata), colorMeaning);
-    
-    console.log(`✅ 색상 "${colorName}" (${colorValue}) 의미: "${colorMeaning}" user_settings에 저장 완료`);
-    
-    // 캐시 무효화
-    window.cachedDataLoader.invalidateSettingsCache(userId);
-    
-    return true;
-}
 
 // 항목 삭제 함수 (리스트에서 삭제 버튼 클릭 시)
 async function deleteItem(type, item) {
@@ -645,60 +588,7 @@ async function deleteItem(type, item) {
     }
 }
 
-// 색상 삭제 함수 (리스트에서 삭제 버튼 클릭 시)
-async function deleteColor(colorName) {
-    try {
-        console.log(`🗑️ 색상 삭제 시작: "${colorName}"`);
-        
-        if (!confirm(`색상 "${colorName}"을(를) 정말 삭제하시겠습니까?`)) {
-            console.log('❌ 사용자가 삭제를 취소했습니다.');
-            return;
-        }
-        
-        const userId = await DropdownSettings.getCurrentUserId();
-        console.log(`👤 사용자 ID: ${userId}`);
-        
-        if (!userId) {
-            alert('로그인이 필요합니다.');
-            return;
-        }
-        
-        // user_settings 테이블에서 색상 삭제
-        const db = new DatabaseManager();
-        await db.init();
-        
-        // 먼저 현재 사용자의 설정을 확인
-        console.log('🔍 색상 삭제 전 사용자 설정 확인');
-        const currentSettings = await window.cachedDataLoader.loadUserSettings(userId);
-        console.log('📊 현재 사용자 색상 설정:', currentSettings.colors);
-        
-        // 삭제할 색상 찾기 (name 또는 key로)
-        const colorToDelete = currentSettings.colors?.find(c => c.name === colorName || c.key === colorName);
-        console.log('🎯 삭제할 색상 정보:', colorToDelete);
-        
-        if (colorToDelete) {
-            // key 값으로 삭제 시도
-            await db.deleteUserSetting(userId, 'color', colorToDelete.key);
-            console.log(`✅ 색상 삭제 완료: key=${colorToDelete.key}, name=${colorToDelete.name}`);
-        } else {
-            // fallback: 직접 name으로 삭제 시도  
-            await db.deleteUserSetting(userId, 'color', colorName);
-            console.log(`⚠️ fallback 삭제 시도: ${colorName}`);
-        }
-        
-        // 캐시 무효화 및 즉시 설정 다시 로드
-        window.cachedDataLoader.invalidateSettingsCache(userId);
-        await loadSettings();
-        
-        alert(`색상 "${colorName}"이(가) 삭제되었습니다.`);
-        
-        console.log(`✅ 색상 "${colorName}" 삭제 완료`);
-        
-    } catch (error) {
-        console.error('❌ 색상 삭제 오류:', error);
-        alert('색상 삭제 중 오류가 발생했습니다: ' + error.message);
-    }
-}
+// 색상 삭제 기능 제거 (고정 색상만 사용)
 
 
 // 입력창에서 색상 의미 저장 함수
@@ -780,7 +670,7 @@ async function editColorMeaning(colorName, currentMeaning) {
     }
 }
 
-// 색상 의미 저장 함수
+// 색상 의미 저장 함수 (고정 색상에 대한 의미만 저장)
 async function saveColorMeaning(colorName, meaning) {
     const userId = await DropdownSettings.getCurrentUserId();
     if (!userId) {
@@ -790,36 +680,13 @@ async function saveColorMeaning(colorName, meaning) {
     const db = new DatabaseManager();
     await db.init();
     
-    // 캐시에서 기존 색상 정보 가져오기
-    const settings = await window.cachedDataLoader.loadUserSettings(userId);
-    const existingColor = settings.colors?.find(c => c.name === colorName);
+    // 기존 색상 의미 삭제
+    await db.deleteUserSetting(userId, 'color_meaning', colorName);
     
-    if (!existingColor) {
-        throw new Error('색상을 찾을 수 없습니다.');
+    // 새 의미 저장 (값이 있을 때만)
+    if (meaning && meaning.trim()) {
+        await db.addUserSetting(userId, 'color_meaning', colorName, colorName, null, meaning);
     }
-    
-    // 색상 값과 방문일 숨김 설정 파싱
-    let colorValue = existingColor.value;
-    let hideVisitDate = false;
-    
-    try {
-        if (typeof existingColor.value === 'string' && existingColor.value.startsWith('{')) {
-            const metadata = JSON.parse(existingColor.value);
-            colorValue = metadata.color;
-            hideVisitDate = metadata.hideVisitDate || false;
-        }
-    } catch (e) {
-        // 파싱 실패 시 기본값 사용
-    }
-    
-    // 기존 색상 삭제 후 새 의미로 재추가
-    await db.deleteUserSetting(userId, 'color', colorName);
-    
-    const metadata = {
-        color: colorValue,
-        hideVisitDate: hideVisitDate
-    };
-    await db.addUserSetting(userId, 'color', colorName, colorName, JSON.stringify(metadata), meaning);
     
     console.log(`✅ 색상 "${colorName}" 의미를 "${meaning}"로 수정 완료`);
     
@@ -834,10 +701,7 @@ window.addPaymentTerm = addPaymentTerm;
 window.addBusinessType = addBusinessType;
 window.addRegion = addRegion;
 window.addVisitPurpose = addVisitPurpose;
-window.confirmAddColor = confirmAddColor;
-window.updateColorPreview = updateColorPreview;
 window.deleteItem = deleteItem;
-window.deleteColor = deleteColor;
 window.editColorMeaning = editColorMeaning;
 window.saveColorMeaning = saveColorMeaning;
 window.saveColorMeaningFromInput = saveColorMeaningFromInput;

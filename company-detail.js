@@ -546,7 +546,19 @@ function initEventListeners() {
     // 업체 정보 수정 버튼
     document.getElementById('editCompanyBtn').addEventListener('click', async function() {
         if (currentCompany) {
-            // 먼저 모달을 표시
+            // 캐시 무효화 및 최신 데이터 로드
+            console.log('🔄 수정 버튼 클릭 - 캐시 무효화 및 최신 데이터 로드');
+            window.cachedDataLoader.invalidateCompanyCache(currentUser.id);
+            
+            // 전체 캐시 무효화 (확실한 방법)
+            if (window.cachedDataLoader && window.cachedDataLoader.clearAllCache) {
+                window.cachedDataLoader.clearAllCache();
+            }
+            
+            // 최신 데이터로 다시 로드
+            await loadCompanyDetails(currentCompany.id);
+            
+            // 모달 표시
             document.getElementById('editModal').style.display = 'block';
             
             // 잠시 대기 후 폼 채우기 (DOM이 렌더링될 시간을 줌)
@@ -900,11 +912,20 @@ async function updateCompany() {
             
             console.log('✅ 수정 완료, 캐시 무효화 중...');
             
-            // 캐시 무효화 후 업체 정보 다시 로드
+            // 캐시 무효화
             window.cachedDataLoader.invalidateCompanyCache(currentUser.id);
-            await loadCompanyDetails(currentCompany.id);
             
-            console.log('✅ 업체 정보 재로드 완료, 새로운 색상:', currentCompany?.color_code);
+            // 전체 캐시 초기화 (더 확실한 방법)
+            if (window.cachedDataLoader && window.cachedDataLoader.clearAllCache) {
+                window.cachedDataLoader.clearAllCache();
+            }
+            
+            // 강제 새로고침 (캐시 무시)
+            setTimeout(() => {
+                window.location.reload(true);
+            }, 100);
+            
+            console.log('✅ 페이지 새로고침 예정');
         } else {
             throw new Error('업체 정보 수정에 실패했습니다.');
         }
