@@ -391,8 +391,8 @@ function displayColorList(listId, colors) {
     
     listElement.innerHTML = '';
     colors.forEach((color, index) => {
-        // 회색은 항상 방문일 숨김
-        const hideVisitDate = (color.name === '회색' || color.name === 'gray');
+        // 회색과 보라색은 항상 방문일 숨김
+        const hideVisitDate = (color.name === '회색' || color.name === 'gray' || color.name === '보라' || color.name === 'purple');
         
         const li = document.createElement('li');
         li.className = 'color-meaning-item';
@@ -424,14 +424,8 @@ function updateColorMeaningsDisplay(colors) {
         return;
     }
     
-    const meaningsWithColor = colors.filter(color => color.meaning && color.meaning.trim());
-    
-    if (meaningsWithColor.length === 0) {
-        meaningsList.innerHTML = '<p style="color: #999; font-style: italic;">색상 의미가 설정된 색상이 없습니다.</p>';
-        return;
-    }
-    
-    const meaningsHTML = meaningsWithColor.map(color => {
+    // 모든 색상을 표시 (의미가 없어도 표시)
+    const meaningsHTML = colors.map(color => {
         let colorValue = color.value;
         try {
             if (typeof color.value === 'string' && color.value.startsWith('{')) {
@@ -446,7 +440,7 @@ function updateColorMeaningsDisplay(colors) {
             <div style="display: flex; align-items: center; margin-bottom: 8px;">
                 <span style="display: inline-block; width: 16px; height: 16px; background-color: ${colorValue}; border-radius: 50%; margin-right: 8px; border: 1px solid #ddd;"></span>
                 <span style="font-weight: 600; margin-right: 8px;">${color.name}:</span>
-                <span style="color: #666;">${color.meaning}</span>
+                <span style="color: #666;">${color.meaning || '의미 미설정'}</span>
             </div>
         `;
     }).join('');

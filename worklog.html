@@ -273,7 +273,7 @@
                 </h4>
                 <div id="colorMeaningsList" style="font-size: 13px; color: #555; line-height: 1.6;">
                     <!-- 색상 의미가 동적으로 표시됩니다 -->
-                    <p style="color: #999; font-style: italic;">색상을 추가하면 여기에 의미가 표시됩니다.</p>
+                    <p style="color: #999; font-style: italic;">색상 의미를 설정하면 여기에 표시됩니다.</p>
                 </div>
             </div>
 
@@ -508,38 +508,62 @@
             if (!meaningsList) return;
             
             if (!colors || colors.length === 0) {
-                meaningsList.innerHTML = '<p style="color: #999; font-style: italic;">색상을 추가하면 여기에 의미가 표시됩니다.</p>';
+                meaningsList.innerHTML = '<p style="color: #999; font-style: italic;">색상 의미를 설정하면 여기에 표시됩니다.</p>';
                 return;
             }
             
-            const meaningsWithColor = colors.filter(color => color.meaning && color.meaning.trim());
-            
-            if (meaningsWithColor.length === 0) {
-                meaningsList.innerHTML = '<p style="color: #999; font-style: italic;">색상 의미가 설정된 색상이 없습니다.</p>';
-                return;
-            }
-            
-            const meaningsHTML = meaningsWithColor.map(color => {
-                let colorValue = color.value;
-                try {
-                    if (typeof color.value === 'string' && color.value.startsWith('{')) {
-                        const metadata = JSON.parse(color.value);
-                        colorValue = metadata.color;
-                    }
-                } catch (e) {
-                    // 파싱 실패 시 기본값 사용
-                }
-                
+            // 모든 색상을 표시 (의미가 없어도 표시)
+            const meaningsHTML = colors.map(color => {
                 return `
                     <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                        <span style="display: inline-block; width: 16px; height: 16px; background-color: ${colorValue}; border-radius: 50%; margin-right: 8px; border: 1px solid #ddd;"></span>
+                        <span style="display: inline-block; width: 16px; height: 16px; background-color: ${color.value}; border-radius: 50%; margin-right: 8px; border: 1px solid #ddd;"></span>
                         <span style="font-weight: 600; margin-right: 8px;">${color.name}:</span>
-                        <span style="color: #666;">${color.meaning}</span>
+                        <span style="color: #666;">${color.meaning || '의미 미설정'}</span>
                     </div>
                 `;
             }).join('');
             
             meaningsList.innerHTML = meaningsHTML;
+        }
+
+        // 고정된 색상 정의
+        const FIXED_COLORS = [
+            { key: 'red', name: '빨강', value: '#e74c3c' },
+            { key: 'orange', name: '주황', value: '#f39c12' },
+            { key: 'yellow', name: '노랑', value: '#f1c40f' },
+            { key: 'green', name: '초록', value: '#27ae60' },
+            { key: 'sky', name: '하늘', value: '#87ceeb' },
+            { key: 'blue', name: '파랑', value: '#3498db' },
+            { key: 'purple', name: '보라', value: '#9b59b6' },
+            { key: 'gray', name: '회색', value: '#95a5a6' }
+        ];
+
+        // 색상 의미만 불러오기
+        async function loadUserColorMeanings(userId) {
+            try {
+                const db = new DatabaseManager();
+                await db.init();
+                
+                const { data, error } = await db.client
+                    .from('user_settings')
+                    .select('setting_value, color_meaning')
+                    .eq('user_id', userId)
+                    .eq('setting_type', 'color_meaning');
+                
+                if (error) throw error;
+                
+                const meanings = {};
+                if (data && data.length > 0) {
+                    data.forEach(item => {
+                        meanings[item.setting_value] = item.color_meaning || '';
+                    });
+                }
+                
+                return meanings;
+            } catch (error) {
+                console.error('색상 의미 불러오기 오류:', error);
+                return {};
+            }
         }
 
         // 색상 의미 데이터 로드 함수
@@ -548,10 +572,16 @@
                 const currentUser = await window.dataLoader.getCurrentUser();
                 if (!currentUser) return;
 
-                const settings = await window.dataLoader.loadUserSettings(currentUser.id);
-                if (settings && settings.colors) {
-                    updateColorMeaningsDisplay(settings.colors);
-                }
+                // 사용자별 색상 의미 로드
+                const colorMeanings = await loadUserColorMeanings(currentUser.id);
+                
+                // 고정된 색상에 사용자 의미 매핑
+                const colorsWithMeanings = FIXED_COLORS.map(color => ({
+                    ...color,
+                    meaning: colorMeanings[color.name] || ''
+                }));
+                
+                updateColorMeaningsDisplay(colorsWithMeanings);
             } catch (error) {
                 console.error('색상 의미 로드 오류:', error);
             }
