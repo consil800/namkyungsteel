@@ -391,17 +391,19 @@ async function displayCompanyDetails(company) {
     `;
     
     // 색상 강제 적용 (새로고침 후에도 확실히 적용되도록)
-    setTimeout(() => {
+    setTimeout(async () => {
         const colorPreview = document.getElementById('companyColorPreview');
-        const colorName = document.getElementById('companyColorName');
+        const colorNameElement = document.getElementById('companyColorName');
         
         if (colorPreview) {
             colorPreview.style.backgroundColor = colorValue;
             console.log('🎨 업체 색상 강제 적용:', colorValue);
         }
         
-        if (colorName) {
-            colorName.textContent = colorName || '기본';
+        if (colorNameElement) {
+            const correctColorName = await getColorName(company.color_code);
+            colorNameElement.textContent = correctColorName || '기본';
+            console.log('🏷️ 업체 색상 이름 강제 적용:', correctColorName);
         }
     }, 100);
 }
