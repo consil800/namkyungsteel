@@ -1,7 +1,7 @@
 /* 공통 스타일 */
 body { 
     font-family: 'Noto Sans KR', sans-serif !important; 
-    background-color: #ffffff !important;
+    background-color: #fafbfc !important;
 }
 
 /* 헤더 스타일 */
@@ -489,16 +489,7 @@ body {
     transition: color 0.3s;
     border: none;
     background: none;
-    padding: 12px;
-    min-width: 48px;
-    min-height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
-    user-select: none;
-    -webkit-user-select: none;
+    padding: 5px;
 }
 
 .mobile-nav-toggle:hover {
@@ -511,9 +502,7 @@ body {
     }
     
     .mobile-nav-toggle {
-        display: flex !important;
-        position: relative;
-        z-index: 1000;
+        display: block !important;
     }
 }
 
