@@ -631,6 +631,11 @@ async function saveColorMeaningFromInput(colorName, inputId) {
         
         console.log(`✅ 색상 "${colorName}" 의미 저장 완료: "${newMeaning || '(의미 없음)'}"`);
         
+        // 성공 후 자동 새로고침 (캐시 무시)
+        setTimeout(() => {
+            window.location.reload(true);
+        }, 1600);
+        
     } catch (error) {
         console.error('색상 의미 저장 오류:', error);
         alert('색상 의미 저장 중 오류가 발생했습니다.');

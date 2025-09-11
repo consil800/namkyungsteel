@@ -162,6 +162,49 @@
             border: 1px solid #ddd;
             border-radius: 3px;
         }
+
+        /* 모바일 반응형 스타일 */
+        @media (max-width: 768px) {
+            .color-meaning-item {
+                grid-template-columns: 1fr;
+                gap: 10px;
+                padding: 12px;
+            }
+            
+            .color-meaning-input {
+                min-width: 100%;
+                width: 100%;
+                box-sizing: border-box;
+            }
+            
+            .btn-save-meaning {
+                width: 100%;
+                padding: 10px;
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .settings-section {
+                padding: 15px;
+                margin: 10px 0;
+            }
+            
+            .color-meaning-item {
+                padding: 10px;
+                gap: 8px;
+            }
+            
+            .color-meaning-input {
+                font-size: 16px; /* iOS zoom 방지 */
+                padding: 10px;
+            }
+            
+            .btn-save-meaning {
+                padding: 12px;
+                font-size: 16px;
+            }
+        }
     </style>
 </head>
 <body>
