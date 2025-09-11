@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
             '주황': 'orange', 
             '노랑': 'yellow',
             '초록': 'green',
+            '하늘': 'sky',
             '파랑': 'blue',
             '보라': 'purple',
             '회색': 'gray'

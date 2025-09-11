@@ -41,7 +41,7 @@ const FIXED_COLORS = [
     { key: 'yellow', name: '노랑', value: '#f1c40f' },
     { key: 'green', name: '초록', value: '#27ae60' },
     { key: 'sky', name: '하늘', value: '#87ceeb' },
-    { key: 'blue', name: '파랑', value: '#3498db' },
+    { key: 'blue', name: '파랑', value: '#1e90ff' },
     { key: 'purple', name: '보라', value: '#9b59b6' },
     { key: 'gray', name: '회색', value: '#95a5a6' }
 ];

@@ -292,7 +292,7 @@ async function getColorValue(colorCode) {
         'yellow': '#f1c40f',
         'green': '#27ae60',
         'sky': '#87ceeb',
-        'blue': '#3498db',
+        'blue': '#1e90ff',
         'purple': '#9b59b6',
         'gray': '#95a5a6'
     };

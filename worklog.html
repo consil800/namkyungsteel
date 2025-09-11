@@ -78,8 +78,12 @@
             background-color: rgba(39, 174, 96, 0.25) !important;
         }
         
+        .company-row.color-sky {
+            background-color: rgba(135, 206, 235, 0.35) !important;
+        }
+        
         .company-row.color-blue {
-            background-color: rgba(52, 152, 219, 0.25) !important;
+            background-color: rgba(30, 144, 255, 0.35) !important;
         }
         
         .company-row.color-purple {
@@ -106,8 +110,12 @@
             background-color: rgba(39, 174, 96, 0.4) !important;
         }
         
+        .company-row.color-sky:hover {
+            background-color: rgba(135, 206, 235, 0.5) !important;
+        }
+        
         .company-row.color-blue:hover {
-            background-color: rgba(52, 152, 219, 0.4) !important;
+            background-color: rgba(30, 144, 255, 0.5) !important;
         }
         
         .company-row.color-purple:hover {
@@ -137,7 +145,8 @@
         .color-orange .color-indicator { background-color: #f39c12; }
         .color-yellow .color-indicator { background-color: #f1c40f; }
         .color-green .color-indicator { background-color: #27ae60; }
-        .color-blue .color-indicator { background-color: #3498db; }
+        .color-sky .color-indicator { background-color: #87ceeb; }
+        .color-blue .color-indicator { background-color: #1e90ff; }
         .color-purple .color-indicator { background-color: #9b59b6; }
         .color-gray .color-indicator { background-color: #95a5a6; }
         
@@ -310,7 +319,7 @@
     <script src="shared-assets/js/auth.js?v=20250107"></script>
     <script src="data-loader.js"></script>
     <script src="data-cache.js"></script>
-    <script src="main.js?v=20250121005"></script>
+    <script src="main.js?v=20250111005"></script>
     <!-- 디버그 스크립트들 완전 제거 (새로고침 원인) -->
     <!--
     <script src="debug_worklog.js"></script>
@@ -533,7 +542,7 @@
             { key: 'yellow', name: '노랑', value: '#f1c40f' },
             { key: 'green', name: '초록', value: '#27ae60' },
             { key: 'sky', name: '하늘', value: '#87ceeb' },
-            { key: 'blue', name: '파랑', value: '#3498db' },
+            { key: 'blue', name: '파랑', value: '#1e90ff' },
             { key: 'purple', name: '보라', value: '#9b59b6' },
             { key: 'gray', name: '회색', value: '#95a5a6' }
         ];
