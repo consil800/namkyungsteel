@@ -215,8 +215,10 @@ async function loadCompanyDetails(companyId) {
         await displayCompanyDetails(currentCompany);
         
         // 업무일지 목록 로드 및 방문횟수 동기화 (캐시 활용)
-        await loadWorkLogs(companyId);
-        await syncVisitCount(companyId);
+        // ID에서 ?_refresh 파라미터 제거
+        const cleanCompanyId = String(companyId).split('?')[0];
+        await loadWorkLogs(cleanCompanyId);
+        await syncVisitCount(cleanCompanyId);
         
     } catch (error) {
         console.error('❌ 업체 정보 로드 오류:', error);
@@ -935,6 +937,7 @@ async function updateCompany() {
             '주황': 'orange', 
             '노랑': 'yellow',
             '초록': 'green',
+            '하늘': 'sky',
             '파랑': 'blue',
             '보라': 'purple',
             '회색': 'gray'
@@ -977,9 +980,13 @@ async function updateCompany() {
             
             // 색상 적용을 위한 약간의 대기 후 강제 새로고침
             console.log('✅ 색상 적용을 위한 강제 새로고침 실행');
+            console.log('🎨 저장된 색상:', updateData.color_code);
             setTimeout(() => {
-                // 캐시 무시하는 강제 새로고침
-                window.location.href = window.location.href + '?_refresh=' + Date.now();
+                // 기존 URL에서 _refresh 파라미터 제거 후 새로운 _refresh 추가
+                const baseUrl = window.location.href.split('?')[0];
+                const urlParams = new URLSearchParams(window.location.search);
+                const companyId = urlParams.get('id');
+                window.location.href = `${baseUrl}?id=${companyId}&_refresh=${Date.now()}`;
             }, 500);
         } else {
             throw new Error('업체 정보 수정에 실패했습니다.');
