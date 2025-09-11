@@ -137,24 +137,70 @@ function getCompanyNotes(notes) {
 // 업체 상세 정보 로드 (캐시 시스템 활용)
 async function loadCompanyDetails(companyId) {
     try {
-        console.log('📊 업체 정보 캐시 로드 시작, ID:', companyId);
+        console.log('📊 업체 정보 캐시 로드 시작, ID:', companyId, 'typeof:', typeof companyId);
+        
+        // ID를 숫자로 변환 (문자열로 전달될 수 있음)
+        const numericCompanyId = parseInt(companyId);
+        console.log('🔢 변환된 숫자 ID:', numericCompanyId);
         
         // cachedDataLoader 사용하여 캐시된 데이터 로딩
         const companies = await window.cachedDataLoader.loadCompanies(currentUser.id);
+        console.log('📋 로드된 업체 수:', companies.length);
         
-        currentCompany = companies.find(c => c.id == companyId);
+        // 처음 몇 개 업체의 ID 타입 확인
+        if (companies.length > 0) {
+            console.log('🔍 첫 5개 업체 ID 샘플:', companies.slice(0, 5).map(c => ({id: c.id, type: typeof c.id, name: c.company_name})));
+        }
+        
+        // 숫자와 문자열 둘 다 확인
+        currentCompany = companies.find(c => c.id == numericCompanyId || c.id == companyId || c.id === numericCompanyId || c.id === companyId);
         console.log('🔍 company-detail.js - 찾은 업체:', currentCompany);
         
         if (!currentCompany) {
+            // 특정 ID를 가진 업체들 찾기 (디버깅용)
+            const similarIds = companies.filter(c => String(c.id).includes(String(companyId))).map(c => ({id: c.id, name: c.company_name}));
+            console.warn('⚠️ 유사한 ID를 가진 업체들:', similarIds);
+            
             // 캐시 클리어 후 한 번 더 시도
             console.warn('⚠️ 업체를 찾을 수 없어 캐시 클리어 후 재시도');
             window.cachedDataLoader.invalidateCompanyCache(currentUser.id);
             
             const companiesRetry = await window.cachedDataLoader.loadCompanies(currentUser.id, true); // forceRefresh = true
-            currentCompany = companiesRetry.find(c => c.id == companyId);
+            console.log('🔄 재시도 후 로드된 업체 수:', companiesRetry.length);
+            
+            currentCompany = companiesRetry.find(c => c.id == numericCompanyId || c.id == companyId || c.id === numericCompanyId || c.id === companyId);
             
             if (!currentCompany) {
-                throw new Error('업체를 찾을 수 없습니다.');
+                // 최후의 수단: 데이터베이스에서 직접 조회
+                console.warn('🔧 캐시에서 찾지 못함. 데이터베이스 직접 조회 시도...');
+                try {
+                    const { data: directCompany, error: directError } = await window.db.client
+                        .from('companies')
+                        .select('*')
+                        .eq('id', numericCompanyId)
+                        .eq('user_id', currentUser.id)
+                        .single();
+                    
+                    if (directError) {
+                        console.error('❌ 직접 조회 오류:', directError);
+                    } else if (directCompany) {
+                        console.log('✅ 데이터베이스 직접 조회 성공:', directCompany);
+                        currentCompany = directCompany;
+                    }
+                } catch (directQueryError) {
+                    console.error('❌ 직접 조회 예외:', directQueryError);
+                }
+                
+                if (!currentCompany) {
+                    // 최종 오류 전에 더 상세한 정보 출력
+                    console.error('❌ 최종 검색 실패. 검색 조건:', {
+                        원본_ID: companyId,
+                        숫자_ID: numericCompanyId,
+                        전체_업체수: companiesRetry.length,
+                        사용자_ID: currentUser.id
+                    });
+                    throw new Error(`업체를 찾을 수 없습니다. (ID: ${companyId})`);
+                }
             }
         }
         
