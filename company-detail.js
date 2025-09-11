@@ -6,6 +6,27 @@ let currentUser = null;
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('업체 상세 페이지 로드 시작');
     
+    // URL에서 새로고침 파라미터 확인
+    const urlParams = new URLSearchParams(window.location.search);
+    const isRefreshed = urlParams.has('_refresh');
+    
+    if (isRefreshed) {
+        console.log('🔄 색상 변경 후 새로고침 감지 - 강제 캐시 무효화');
+        // 브라우저 캐시 강제 무효화
+        if ('caches' in window) {
+            caches.keys().then(names => {
+                names.forEach(name => {
+                    caches.delete(name);
+                });
+            });
+        }
+        
+        // URL에서 _refresh 파라미터 제거 (깨끗한 URL 유지)
+        urlParams.delete('_refresh');
+        const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+        window.history.replaceState({}, '', newUrl);
+    }
+    
     // 데이터베이스 초기화 대기
     await waitForDatabase();
     
@@ -352,8 +373,8 @@ async function displayCompanyDetails(company) {
         </div>
         <div class="info-item">
             <label>업체 색상:</label>
-            <span style="display: inline-block; width: 20px; height: 20px; background-color: ${colorValue}; border: 1px solid #ddd; border-radius: 3px; vertical-align: middle;"></span>
-            <span style="margin-left: 10px;">${colorName || '기본'}</span>
+            <span id="companyColorPreview" style="display: inline-block; width: 20px; height: 20px; background-color: ${colorValue}; border: 1px solid #ddd; border-radius: 3px; vertical-align: middle;"></span>
+            <span id="companyColorName" style="margin-left: 10px;">${colorName || '기본'}</span>
         </div>
         <div class="info-item">
             <label>PDF 파일:</label>
@@ -366,6 +387,21 @@ async function displayCompanyDetails(company) {
             <span>${new Date(company.created_at).toLocaleDateString() || '-'}</span>
         </div>
     `;
+    
+    // 색상 강제 적용 (새로고침 후에도 확실히 적용되도록)
+    setTimeout(() => {
+        const colorPreview = document.getElementById('companyColorPreview');
+        const colorName = document.getElementById('companyColorName');
+        
+        if (colorPreview) {
+            colorPreview.style.backgroundColor = colorValue;
+            console.log('🎨 업체 색상 강제 적용:', colorValue);
+        }
+        
+        if (colorName) {
+            colorName.textContent = colorName || '기본';
+        }
+    }, 100);
 }
 
 // PDF 파일 표시 함수
@@ -553,6 +589,15 @@ function initEventListeners() {
             // 전체 캐시 무효화 (확실한 방법)
             if (window.cachedDataLoader && window.cachedDataLoader.clearAllCache) {
                 window.cachedDataLoader.clearAllCache();
+            }
+            
+            // 브라우저 캐시도 초기화
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => {
+                        caches.delete(name);
+                    });
+                });
             }
             
             // 최신 데이터로 다시 로드
@@ -920,12 +965,21 @@ async function updateCompany() {
                 window.cachedDataLoader.clearAllCache();
             }
             
-            // 강제 새로고침 (캐시 무시)
-            setTimeout(() => {
-                window.location.reload(true);
-            }, 100);
+            // 브라우저 캐시도 강제 초기화
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => {
+                        caches.delete(name);
+                    });
+                });
+            }
             
-            console.log('✅ 페이지 새로고침 예정');
+            // 색상 적용을 위한 약간의 대기 후 강제 새로고침
+            console.log('✅ 색상 적용을 위한 강제 새로고침 실행');
+            setTimeout(() => {
+                // 캐시 무시하는 강제 새로고침
+                window.location.href = window.location.href + '?_refresh=' + Date.now();
+            }, 500);
         } else {
             throw new Error('업체 정보 수정에 실패했습니다.');
         }
