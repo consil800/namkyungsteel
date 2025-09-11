@@ -230,6 +230,7 @@ async function getColorValue(colorCode) {
         '주황': 'orange', 
         '노랑': 'yellow',
         '초록': 'green',
+        '하늘': 'sky',
         '파랑': 'blue',
         '보라': 'purple',
         '회색': 'gray'
@@ -243,6 +244,7 @@ async function getColorValue(colorCode) {
         'orange': '#f39c12',
         'yellow': '#f1c40f',
         'green': '#27ae60',
+        'sky': '#87ceeb',
         'blue': '#3498db',
         'purple': '#9b59b6',
         'gray': '#95a5a6'
@@ -285,6 +287,7 @@ async function getColorName(colorCode) {
         'orange': '주황', 
         'yellow': '노랑',
         'green': '초록',
+        'sky': '하늘',
         'blue': '파랑',
         'purple': '보라',
         'gray': '회색'
@@ -715,6 +718,7 @@ function loadDefaultColors() {
         { key: 'orange', name: '주황', value: '#f39c12' },
         { key: 'yellow', name: '노랑', value: '#f1c40f' },
         { key: 'green', name: '초록', value: '#27ae60' },
+        { key: 'sky', name: '하늘', value: '#87ceeb' },
         { key: 'blue', name: '파랑', value: '#3498db' },
         { key: 'purple', name: '보라', value: '#9b59b6' },
         { key: 'gray', name: '회색', value: '#95a5a6' }
