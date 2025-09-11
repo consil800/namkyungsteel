@@ -218,21 +218,30 @@ async function loadSettings() {
         const finalSettings = settings || { ...defaultSettings };
         
         // 색상은 항상 고정된 8가지 색상을 사용하고, 사용자별 의미만 불러오기
-        const colorMeanings = await loadColorMeanings(currentUser.id);
+        let colorMeanings = {};
+        try {
+            colorMeanings = await loadColorMeanings(currentUser.id);
+        } catch (error) {
+            console.error('색상 의미 로드 오류:', error);
+        }
+        
         finalSettings.colors = FIXED_COLORS.map(color => ({
             ...color,
             meaning: colorMeanings[color.name] || ''
         }));
         
+        console.log('🎨 최종 색상 설정:', finalSettings.colors);
+        
         // 화면에 표시
         displayItemLists(finalSettings);
-        updateColorPreview();
         
         console.log('✅ 설정 로드 완료');
         
     } catch (error) {
         console.error('❌ 설정 로드 오류:', error);
-        displayItemLists({ ...defaultSettings });
+        const fallbackSettings = { ...defaultSettings };
+        fallbackSettings.colors = FIXED_COLORS;
+        displayItemLists(fallbackSettings);
     }
 }
 
@@ -341,8 +350,8 @@ function displayItemLists(settings) {
     // 방문목적 리스트 표시
     displayItemList('visitPurposesList', settings.visitPurposes || [], '방문목적');
     
-    // 색상 리스트 표시
-    displayColorList('colorsList', settings.colors || []);
+    // 색상 리스트 표시 (항상 고정된 색상 사용)
+    displayColorList('colorsList', settings.colors && settings.colors.length > 0 ? settings.colors : FIXED_COLORS);
 }
 
 // 일반 항목 리스트 표시 함수
@@ -411,7 +420,7 @@ function updateColorMeaningsDisplay(colors) {
     if (!meaningsList) return;
     
     if (!colors || colors.length === 0) {
-        meaningsList.innerHTML = '<p style="color: #999; font-style: italic;">색상을 추가하면 여기에 의미가 표시됩니다.</p>';
+        meaningsList.innerHTML = '<p style="color: #999; font-style: italic;">색상 의미를 설정하면 여기에 표시됩니다.</p>';
         return;
     }
     
