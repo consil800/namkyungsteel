@@ -87,8 +87,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         console.error('❌ window.dataLoader가 로드되지 않음');
     }
     
-    // URL에서 업체 ID 추출
-    const urlParams = new URLSearchParams(window.location.search);
+    // URL에서 업체 ID 추출 (이미 선언된 urlParams 재사용)
     const companyId = urlParams.get('id');
     
     if (!companyId) {
@@ -653,62 +652,12 @@ function initEventListeners() {
     });
 }
 
-// 색상 옵션 로드 (캐시 활용)
+// 색상 옵션 로드 (하드코딩된 8가지 색상 강제 사용)
 async function loadColorOptions() {
-    try {
-        // cachedDataLoader를 통해 사용자 설정 가져오기
-        const settings = await window.cachedDataLoader.loadUserSettings(currentUser.id);
-        
-        const colorSelect = document.getElementById('editCompanyColor');
-        if (!colorSelect) return;
-        
-        // 기본 옵션 제외하고 기존 옵션들 제거
-        colorSelect.innerHTML = '<option value="">색상을 선택하세요</option>';
-        
-        // 색상 옵션들 추가
-        const colors = settings.colors || [];
-        if (colors.length === 0) {
-            // 색상이 없으면 기본 색상 사용
-            loadDefaultColors();
-            return;
-        }
-        
-        colors.forEach(color => {
-            const option = document.createElement('option');
-            option.value = color.key;
-            option.textContent = color.name;
-            
-            // color.value가 이미 database.js에서 파싱된 HEX 색상값이므로 바로 사용
-            if (color.value) {
-                const actualColorValue = color.value;
-                
-                // 색상 값 디버깅
-                console.log(`🔍 색상 처리: ${color.name}`, {
-                    색상값: actualColorValue,
-                    타입: typeof actualColorValue,
-                    hideVisitDate: color.hideVisitDate
-                });
-                
-                // 유효한 색상 값인 경우에만 스타일 적용
-                if (actualColorValue && actualColorValue.startsWith('#')) {
-                    option.style.backgroundColor = actualColorValue;
-                    option.style.color = getContrastColor(actualColorValue);
-                    console.log(`🎨 색상 옵션 설정: ${color.name} = ${actualColorValue}`);
-                } else {
-                    console.warn(`⚠️ 유효하지 않은 색상 값: ${color.name} = ${actualColorValue}`);
-                }
-            }
-            
-            colorSelect.appendChild(option);
-        });
-        
-        console.log('🎨 색상 옵션 로드 완료:', colors.length, '개');
-        
-    } catch (error) {
-        console.error('색상 옵션 로드 오류:', error);
-        // 기본 색상들로 대체
-        loadDefaultColors();
-    }
+    console.log('🎨 색상 옵션 로드 시작 - 하드코딩된 색상 사용');
+    
+    // 항상 기본 색상 사용 (하드코딩된 8가지 색상)
+    loadDefaultColors();
 }
 
 // 기본 색상 로드
