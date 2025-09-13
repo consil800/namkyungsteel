@@ -201,8 +201,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function shouldHideVisitDate(colorCode) {
         if (!colorCode) return false;
         
-        // 회색과 보라색은 항상 숨김
-        if (colorCode === 'gray' || colorCode === '회색' || colorCode === 'purple' || colorCode === '보라') return true;
+        // 회색, 보라색, 빨강색은 항상 숨김
+        if (colorCode === 'gray' || colorCode === '회색' || colorCode === 'purple' || colorCode === '보라' || colorCode === 'red' || colorCode === '빨강') return true;
         
         // 색상별 hideVisitDate 설정 확인
         return colorHideVisitDateMap[colorCode] === true;

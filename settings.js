@@ -391,8 +391,8 @@ function displayColorList(listId, colors) {
     
     listElement.innerHTML = '';
     colors.forEach((color, index) => {
-        // 회색과 보라색은 항상 방문일 숨김
-        const hideVisitDate = (color.name === '회색' || color.name === 'gray' || color.name === '보라' || color.name === 'purple');
+        // 회색, 보라색, 빨강색은 항상 방문일 숨김
+        const hideVisitDate = (color.name === '회색' || color.name === 'gray' || color.name === '보라' || color.name === 'purple' || color.name === '빨강' || color.name === 'red');
         
         const li = document.createElement('li');
         li.className = 'color-meaning-item';
