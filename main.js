@@ -211,6 +211,46 @@ document.addEventListener('DOMContentLoaded', function() {
     // 초기 데이터 로드 (사용자 정보가 업데이트될 때까지 대기)
     // worklog.html에서 getCurrentUserFromDB() 실행 후 loadCompanies()를 호출하므로 여기서는 주석 처리
     
+    // 검색 상태 저장 함수
+    function saveSearchState() {
+        const searchState = {
+            region: searchRegionSelect.value,
+            companyName: searchCompanyInput.value,
+            isFiltered: !!(searchRegionSelect.value || searchCompanyInput.value)
+        };
+        sessionStorage.setItem('worklogSearchState', JSON.stringify(searchState));
+        console.log('🔵 검색 상태 저장:', searchState);
+    }
+
+    // 검색 상태 복원 함수
+    function restoreSearchState() {
+        const savedState = sessionStorage.getItem('worklogSearchState');
+        if (savedState) {
+            try {
+                const searchState = JSON.parse(savedState);
+                console.log('🔵 저장된 검색 상태 복원:', searchState);
+                
+                // 지역 선택 복원
+                if (searchState.region && searchRegionSelect) {
+                    searchRegionSelect.value = searchState.region;
+                }
+                
+                // 업체명 입력 복원
+                if (searchState.companyName && searchCompanyInput) {
+                    searchCompanyInput.value = searchState.companyName;
+                }
+                
+                // 검색 상태가 있었다면 검색 실행
+                if (searchState.isFiltered) {
+                    console.log('🔍 필터링된 상태였으므로 검색 실행');
+                    handleSearch();
+                }
+            } catch (error) {
+                console.error('검색 상태 복원 오류:', error);
+            }
+        }
+    }
+
     // 페이지 로드 시 즉시 검색 상태 복원
     setTimeout(() => {
         restoreSearchState();
@@ -244,13 +284,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 지역 선택 시 자동 검색
     searchRegionSelect.addEventListener('change', function() {
+        saveSearchState(); // 지역 변경 시 상태 저장
         handleSearch();
     });
 
     searchCompanyInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
+            saveSearchState(); // 엔터 입력 시 상태 저장
             handleSearch();
         }
+    });
+
+    // 업체명 입력 시에도 상태 저장 (입력 완료 시)
+    searchCompanyInput.addEventListener('input', function() {
+        // 디바운싱을 위해 타이머 사용
+        clearTimeout(this.saveTimer);
+        this.saveTimer = setTimeout(() => {
+            saveSearchState();
+        }, 500); // 500ms 후 저장
     });
 
     // 검색 처리 함수
@@ -349,6 +400,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // loadCompanies 함수를 전역으로 노출하여 worklog.html에서 호출 가능하게 함
     window.loadCompanies = loadCompanies;
+    
+    // restoreSearchState 함수도 전역으로 노출
+    window.restoreSearchState = restoreSearchState;
 
     // 회사 목록 표시
     async function displayCompanies(companies) {

@@ -48,37 +48,46 @@ class DatabaseManager {
         }
     }
 
-    // RLS를 위한 현재 사용자 ID 설정 (안전한 방식)
+    // RLS를 위한 현재 사용자 ID 설정 (Supabase Auth 기반)
     async setCurrentUserForRLS() {
         try {
-            // sessionStorage에서 현재 사용자 정보 가져오기
+            // 먼저 Supabase Auth 세션 확인
+            const { data: { session }, error: sessionError } = await this.client.auth.getSession();
+            
+            if (sessionError) {
+                console.error('❌ Supabase Auth 세션 확인 오류:', sessionError);
+            }
+            
+            if (session && session.user) {
+                console.log('✅ Supabase Auth 세션 활성화됨:', session.user.id);
+                // Auth 세션이 있으면 RLS가 자동으로 작동함
+                return;
+            }
+            
+            // Auth 세션이 없는 경우 sessionStorage 확인 (하위 호환성)
             const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
-            if (currentUser && currentUser.id) {
-                const userId = String(currentUser.id);  // 명시적으로 문자열로 변환
-                console.log('🔧 RLS용 사용자 ID 설정:', userId);
+            if (currentUser && currentUser.oauth_id) {
+                // OAuth ID가 있으면 Supabase Auth로 세션 생성 시도
+                console.log('🔄 sessionStorage에서 OAuth ID 발견, Auth 세션 복원 시도');
                 
-                // Supabase에서 RLS 정책이 참조할 수 있는 사용자 ID 설정
-                const { data, error } = await this.client.rpc('set_current_user_id', { user_id: userId });
+                // 사용자 정보로 세션 복원은 불가능하므로, 대신 로그인 페이지로 리다이렉트
+                console.warn('⚠️ Auth 세션이 만료되었습니다. 다시 로그인해주세요.');
+                // 여기서는 리다이렉트하지 않고 경고만 표시
+            } else if (currentUser && currentUser.id) {
+                // 레거시 방식 (set_current_user_id 함수 호출)
+                const userId = String(currentUser.id);
+                console.log('🔧 레거시 RLS 방식 사용:', userId);
                 
-                if (error) {
-                    console.error('❌ RLS 사용자 ID 설정 오류:', error);
-                    throw error;
-                } else {
-                    console.log('✅ RLS 사용자 ID 설정 완료', data);
+                try {
+                    await this.client.rpc('set_current_user_id', { user_id: userId });
+                } catch (rpcError) {
+                    console.warn('⚠️ 레거시 RLS 설정 실패:', rpcError);
                 }
-                
-                // 설정 확인
-                const { data: checkData, error: checkError } = await this.client.rpc('get_current_user_id');
-                if (!checkError && checkData) {
-                    console.log('🔍 RLS 설정 확인:', checkData);
-                }
-                
             } else {
                 console.warn('⚠️ 사용자 정보가 없어 RLS 설정을 건너뜁니다');
             }
         } catch (error) {
-            console.warn('⚠️ RLS 사용자 ID 설정 실패, 일반 모드로 진행:', error);
-            // RLS 실패해도 시스템이 계속 작동하도록 변경 (throw 제거)
+            console.warn('⚠️ RLS 설정 중 오류, 계속 진행:', error);
         }
     }
 
@@ -978,17 +987,21 @@ class DatabaseManager {
 
             let actualUserId = companyData.user_id;
             
-            // RLS를 위한 사용자 ID 설정 (createWorkLog와 동일한 패턴)
-            await this.client.rpc('set_current_user_id', { user_id: String(actualUserId) });
-            console.log('📌 RLS 사용자 ID 설정:', actualUserId);
+            // Supabase Auth 세션 확인
+            const { data: { session }, error: sessionError } = await this.client.auth.getSession();
             
-            // 설정이 제대로 되었는지 확인
-            const { data: currentUserId, error: getUserError } = await this.client.rpc('get_current_user_id');
-            console.log('📌 현재 설정된 사용자 ID:', currentUserId);
-            
-            if (getUserError || currentUserId !== String(actualUserId)) {
-                console.warn('⚠️ RLS 사용자 ID 설정 실패, 재시도...');
-                await this.client.rpc('set_current_user_id', { user_id: String(actualUserId) });
+            if (!session || !session.user) {
+                console.warn('⚠️ Supabase Auth 세션이 없습니다. RLS가 제대로 작동하지 않을 수 있습니다.');
+                
+                // 레거시 방식으로 시도 (하위 호환성)
+                try {
+                    await this.client.rpc('set_current_user_id', { user_id: String(actualUserId) });
+                    console.log('📌 레거시 RLS 방식으로 사용자 ID 설정:', actualUserId);
+                } catch (rlsError) {
+                    console.warn('⚠️ 레거시 RLS 설정도 실패:', rlsError);
+                }
+            } else {
+                console.log('✅ Supabase Auth 세션 확인됨, RLS 자동 적용');
             }
             
             // OAuth 사용자 ID(UUID 형태)인 경우 실제 데이터베이스 ID로 변환
@@ -1046,20 +1059,8 @@ class DatabaseManager {
                 }
             }
 
-            // OAuth ID 변환 후 RLS 재설정 (actualUserId가 변경되었을 수 있으므로)
-            if (actualUserId !== companyData.user_id) {
-                console.log('🔄 RLS 사용자 ID 재설정 (OAuth 변환 후):', actualUserId);
-                await this.client.rpc('set_current_user_id', { user_id: String(actualUserId) });
-                
-                // 재설정 확인
-                const { data: updatedUserId, error: reCheckError } = await this.client.rpc('get_current_user_id');
-                console.log('📌 재설정된 사용자 ID 확인:', updatedUserId);
-                
-                if (reCheckError || updatedUserId !== String(actualUserId)) {
-                    console.error('❌ RLS 사용자 ID 재설정 실패');
-                    throw new Error('RLS 사용자 ID 설정에 실패했습니다.');
-                }
-            }
+            // OAuth ID 변환 후에는 Auth 세션을 다시 확인할 필요 없음
+            // (이미 위에서 확인했으므로)
 
             const newCompany = {
                 ...companyData,

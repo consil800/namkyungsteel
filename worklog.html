@@ -453,8 +453,27 @@
                 const roleMap = { master: '마스터', company_admin: '업체 관리자', company_manager: '매니저', employee: '직원' };
                 window.dataLoader.safeUpdateElement('#userRole', roleMap[currentUser.role] || '직원');
                 
-                // 지역 목록 로드
-                loadRegions();
+                // 지역 목록 로드 (로드 완료 후 검색 상태 복원)
+                loadRegions().then(() => {
+                    // 지역 목록 로드 완료 후 검색 상태 복원
+                    const savedState = sessionStorage.getItem('worklogSearchState');
+                    if (savedState) {
+                        try {
+                            const searchState = JSON.parse(savedState);
+                            if (searchState.region || searchState.companyName) {
+                                console.log('🔵 지역 목록 로드 후 검색 상태 복원 트리거');
+                                // main.js의 restoreSearchState가 실행되도록 약간의 지연 추가
+                                setTimeout(() => {
+                                    if (window.restoreSearchState) {
+                                        window.restoreSearchState();
+                                    }
+                                }, 200);
+                            }
+                        } catch (error) {
+                            console.error('검색 상태 확인 오류:', error);
+                        }
+                    }
+                });
                 
                 // 색상 의미 가이드 로드
                 loadColorMeanings();
@@ -599,7 +618,7 @@
         // 지역 목록 로드 함수 (설정 페이지와 DB 고유값 합집합)
         async function loadRegions() {
             const regionSelect = document.getElementById('searchRegion');
-            if (!regionSelect) return;
+            if (!regionSelect) return Promise.resolve();
             
             try {
                 // Set을 사용하여 중복 제거
