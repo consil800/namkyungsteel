@@ -222,32 +222,68 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('🔵 검색 상태 저장:', searchState);
     }
 
-    // 검색 상태 복원 함수
+    // 검색 상태 복원 함수 (개선된 버전)
     function restoreSearchState() {
         const savedState = sessionStorage.getItem('worklogSearchState');
+        console.log('🔵 restoreSearchState 호출, 저장된 상태:', savedState);
+        
         if (savedState) {
             try {
                 const searchState = JSON.parse(savedState);
-                console.log('🔵 저장된 검색 상태 복원:', searchState);
+                console.log('🔵 파싱된 검색 상태:', searchState);
                 
-                // 지역 선택 복원
-                if (searchState.region && searchRegionSelect) {
-                    searchRegionSelect.value = searchState.region;
-                }
+                // DOM 요소들이 준비될 때까지 대기
+                const maxAttempts = 10;
+                let attempts = 0;
                 
-                // 업체명 입력 복원
-                if (searchState.companyName && searchCompanyInput) {
-                    searchCompanyInput.value = searchState.companyName;
-                }
+                const restoreLoop = () => {
+                    attempts++;
+                    console.log(`🔵 복원 시도 ${attempts}/${maxAttempts}`);
+                    
+                    const searchRegion = document.getElementById('searchRegion');
+                    const searchCompany = document.getElementById('searchCompany');
+                    
+                    if (searchRegion && searchCompany) {
+                        console.log('🔵 DOM 요소 확인됨, 상태 복원 진행');
+                        
+                        // 지역 선택 복원
+                        if (searchState.region) {
+                            searchRegion.value = searchState.region;
+                            console.log('🔵 지역 선택 설정:', searchState.region, '실제값:', searchRegion.value);
+                        }
+                        
+                        // 업체명 입력 복원
+                        if (searchState.companyName) {
+                            searchCompany.value = searchState.companyName;
+                            console.log('🔵 업체명 입력 설정:', searchState.companyName);
+                        }
+                        
+                        // 검색 실행
+                        if (searchState.isFiltered) {
+                            console.log('🔍 필터링된 상태 - 검색 실행');
+                            setTimeout(() => {
+                                handleSearch();
+                            }, 100);
+                        }
+                        
+                        return; // 성공적으로 복원됨
+                    }
+                    
+                    // DOM 요소가 없으면 재시도
+                    if (attempts < maxAttempts) {
+                        setTimeout(restoreLoop, 100);
+                    } else {
+                        console.error('🔵 DOM 요소를 찾을 수 없어 검색 상태 복원 실패');
+                    }
+                };
                 
-                // 검색 상태가 있었다면 검색 실행
-                if (searchState.isFiltered) {
-                    console.log('🔍 필터링된 상태였으므로 검색 실행');
-                    handleSearch();
-                }
+                restoreLoop();
+                
             } catch (error) {
                 console.error('검색 상태 복원 오류:', error);
             }
+        } else {
+            console.log('🔵 저장된 검색 상태 없음');
         }
     }
 
@@ -386,9 +422,32 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.forceDataRefresh = false; // 플래그 초기화
             }
 
-            // 최신 업체 목록 로드
+            // 검색 상태 확인 - 필터링된 상태라면 검색 실행
+            const savedState = sessionStorage.getItem('worklogSearchState');
+            if (savedState) {
+                try {
+                    const searchState = JSON.parse(savedState);
+                    if (searchState.isFiltered && (searchState.region || searchState.companyName)) {
+                        console.log('🔍 검색 상태 감지됨, 필터링된 결과 로드:', searchState);
+                        
+                        // 검색된 업체 목록 로드
+                        const companies = await window.cachedDataLoader.searchCompanies(
+                            searchState.region, 
+                            searchState.companyName, 
+                            currentUser.id
+                        );
+                        console.log(`🔍 검색 결과: ${companies.length}개 업체`);
+                        displayCompanies(companies);
+                        return; // 검색 결과를 표시했으므로 전체 목록 로드 생략
+                    }
+                } catch (error) {
+                    console.warn('검색 상태 확인 오류:', error);
+                }
+            }
+
+            // 전체 업체 목록 로드 (검색 상태가 없거나 오류가 있는 경우)
             const companies = await window.cachedDataLoader.loadCompanies(currentUser.id);
-            console.log(`✅ ${currentUser.name}님의 업체 ${companies.length}개 로드 완료`);
+            console.log(`✅ ${currentUser.name}님의 전체 업체 ${companies.length}개 로드 완료`);
             console.log('🔍 실제 로드된 업체 배열:', companies ? companies.length : 'null');
             
             displayCompanies(companies);
