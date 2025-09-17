@@ -23,6 +23,9 @@
   <link href="assets/vendor/aos/aos.css" rel="stylesheet">
   <link href="assets/vendor/swiper/swiper-bundle.min.css" rel="stylesheet">
 
+  <!-- Preload 히어로 이미지 - 최우선 로딩 -->
+  <link rel="preload" as="image" href="namkyung1.png" fetchpriority="high">
+
   <!-- Supabase JS CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
@@ -313,10 +316,42 @@
           </div>
           <div class="col-lg-6">
             <div class="hero-image" data-aos="zoom-out" data-aos-delay="200">
-              <div id="heroImagePlaceholder" class="image-placeholder" style="border: none; padding: 0; text-align: center; height: 500px; display: flex; align-items: center; justify-content: center; background: #000000; overflow: hidden; border-radius: 10px;">
-                <img src="namkyung1.png" 
-                     style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" 
-                     alt="Scout 히어로 이미지">
+              <div id="heroImagePlaceholder" class="image-placeholder" style="border: none; padding: 0; text-align: center; height: 500px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #0066cc 0%, #004499 50%, #0066cc 100%); overflow: hidden; border-radius: 10px; position: relative;">
+                <!-- 스켈레톤 로더 효과 -->
+                <style>
+                  @keyframes shimmer {
+                    0% { background-position: -468px 0; }
+                    100% { background-position: 468px 0; }
+                  }
+                  .image-skeleton {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 20%, rgba(255,255,255,0.5) 60%, rgba(255,255,255,0));
+                    background-size: 468px 100%;
+                    animation: shimmer 2s infinite linear;
+                  }
+                  .hero-image-loaded .image-skeleton {
+                    display: none;
+                  }
+                </style>
+                <div class="image-skeleton"></div>
+                
+                <picture>
+                  <!-- WebP 형식 (더 빠른 로딩) -->
+                  <source srcset="namkyung1.webp" type="image/webp">
+                  <!-- 원본 PNG 폴백 -->
+                  <img src="namkyung1.png" 
+                       style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" 
+                       alt="남경스틸 히어로 이미지"
+                       loading="eager"
+                       fetchpriority="high"
+                       width="600"
+                       height="500"
+                       onload="this.parentElement.parentElement.classList.add('hero-image-loaded')">
+                </picture>
               </div>
             </div>
           </div>
