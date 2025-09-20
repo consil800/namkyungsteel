@@ -11,6 +11,10 @@
   <!-- Favicons -->
   <link href="logo.jpg" rel="icon">
   <link href="logo.jpg" rel="apple-touch-icon">
+  
+  <!-- 이미지 프리로딩을 위한 link 태그 -->
+  <link rel="preload" href="namkyung1.png" as="image" type="image/png">
+  <link rel="prefetch" href="namkyung1.png">
 
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com" rel="preconnect">
@@ -217,6 +221,47 @@
   <!-- Mobile CSS File -->
   <link href="shared-assets/css/mobile.css?v=1.2" rel="stylesheet">
   
+  <!-- 이미지 캐시 및 로딩 최적화 CSS -->
+  <style>
+    /* 이미지 로딩 최적화 */
+    #heroMainImage {
+      /* 이미지가 로드되기 전 배경 */
+      background: linear-gradient(135deg, #0066cc, #004499);
+      /* 부드러운 페이드인 효과 */
+      transition: opacity 0.5s ease-in-out;
+    }
+    
+    /* 이미지 로딩 중 플레이스홀더 */
+    .image-placeholder::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 10px;
+      z-index: 1;
+    }
+    
+    #heroMainImage[style*="opacity: 1"] + .image-placeholder::before {
+      display: none;
+    }
+    
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    
+    /* 캐시된 이미지는 즉시 표시 */
+    .cached-image {
+      opacity: 1 !important;
+      transition: none !important;
+    }
+  </style>
+  
   <style>
     body { 
       font-family: 'Noto Sans KR', sans-serif !important; 
@@ -314,9 +359,12 @@
           <div class="col-lg-6">
             <div class="hero-image" data-aos="zoom-out" data-aos-delay="200">
               <div id="heroImagePlaceholder" class="image-placeholder" style="border: none; padding: 0; text-align: center; height: 500px; display: flex; align-items: center; justify-content: center; background: #000000; overflow: hidden; border-radius: 10px;">
-                <img src="namkyung1.png" 
-                     style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" 
-                     alt="Scout 히어로 이미지">
+                <img id="heroMainImage" 
+                     src="namkyung1.png" 
+                     style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; opacity: 0; transition: opacity 0.3s ease;" 
+                     alt="남경스틸 히어로 이미지"
+                     onload="this.style.opacity='1'"
+                     onerror="this.style.display='none'">
               </div>
             </div>
           </div>
@@ -1207,6 +1255,89 @@
 
   <!-- Initialize AOS and PureCounter -->
   <script>
+    // 이미지 캐시 및 프리로딩 최적화
+    function preloadHeroImage() {
+      // Service Worker를 통한 이미지 캐싱 (지원하는 브라우저에서)
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistration().then(function(registration) {
+          if (!registration) {
+            // 간단한 서비스 워커 등록 (이미지 캐싱용)
+            const swCode = `
+              const CACHE_NAME = 'namkyungsteel-images-v1';
+              const CACHE_URLS = ['./namkyung1.png'];
+              
+              self.addEventListener('install', function(event) {
+                event.waitUntil(
+                  caches.open(CACHE_NAME)
+                    .then(function(cache) {
+                      return cache.addAll(CACHE_URLS);
+                    })
+                );
+              });
+              
+              self.addEventListener('fetch', function(event) {
+                if (event.request.url.includes('namkyung1.png')) {
+                  event.respondWith(
+                    caches.match(event.request)
+                      .then(function(response) {
+                        return response || fetch(event.request);
+                      })
+                  );
+                }
+              });
+            `;
+            
+            const blob = new Blob([swCode], { type: 'application/javascript' });
+            const swURL = URL.createObjectURL(blob);
+            navigator.serviceWorker.register(swURL).catch(function(error) {
+              console.log('SW 등록 실패:', error);
+            });
+          }
+        });
+      }
+      
+      // 즉시 이미지 프리로드
+      const preloadImg = new Image();
+      preloadImg.onload = function() {
+        console.log('✅ 히어로 이미지 프리로드 완료');
+        // 이미지가 로드되면 localStorage에 캐시 플래그 설정
+        localStorage.setItem('heroImageCached', 'true');
+        localStorage.setItem('heroImageCacheTime', Date.now().toString());
+      };
+      preloadImg.onerror = function() {
+        console.error('❌ 히어로 이미지 프리로드 실패');
+      };
+      preloadImg.src = 'namkyung1.png';
+    }
+    
+    // 캐시된 이미지 확인 및 프리로드
+    function checkImageCache() {
+      const cached = localStorage.getItem('heroImageCached');
+      const cacheTime = localStorage.getItem('heroImageCacheTime');
+      const now = Date.now();
+      const oneWeek = 7 * 24 * 60 * 60 * 1000; // 1주일
+      
+      // 캐시가 없거나 1주일이 지났으면 다시 프리로드
+      if (!cached || !cacheTime || (now - parseInt(cacheTime)) > oneWeek) {
+        console.log('🔄 이미지 캐시 갱신 필요');
+        preloadHeroImage();
+      } else {
+        console.log('✅ 이미지 캐시 유효함');
+      }
+    }
+    
+    // DOM 로드 즉시 이미지 캐시 확인
+    document.addEventListener('DOMContentLoaded', function() {
+      checkImageCache();
+      
+      // 캐시된 이미지가 있으면 즉시 표시
+      const heroImage = document.getElementById('heroMainImage');
+      if (heroImage && localStorage.getItem('heroImageCached') === 'true') {
+        heroImage.classList.add('cached-image');
+        console.log('💨 캐시된 이미지 즉시 표시');
+      }
+    });
+
     // Initialize AOS (Animation on Scroll)
     if (typeof AOS !== 'undefined') {
       AOS.init({
