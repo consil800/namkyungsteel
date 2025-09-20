@@ -445,12 +445,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
-            // 전체 업체 목록 로드 (검색 상태가 없거나 오류가 있는 경우)
-            const companies = await window.cachedDataLoader.loadCompanies(currentUser.id);
-            console.log(`✅ ${currentUser.name}님의 전체 업체 ${companies.length}개 로드 완료`);
-            console.log('🔍 실제 로드된 업체 배열:', companies ? companies.length : 'null');
-            
-            displayCompanies(companies);
+            // 검색 상태가 없는 경우 빈 목록 표시
+            console.log('📋 검색 상태가 없어 업체 목록을 표시하지 않습니다.');
+            if (companyList) {
+                companyList.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px; color: #666;">업체를 검색하여 주세요.</td></tr>';
+                
+                // 업체 개수도 0개로 업데이트
+                const companyCountElement = document.getElementById('companyCount');
+                if (companyCountElement) {
+                    companyCountElement.textContent = '(0개)';
+                }
+            }
         } catch (error) {
             console.error('❌ 업체 목록 로드 오류:', error);
             displayCompanies([]);
