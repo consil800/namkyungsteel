@@ -475,37 +475,33 @@ const DropdownLoader = {
     // 색상 드롭다운 로드 (직접입력 없음 - company-register용)
     loadColorsOnly: async function(selectElement) {
         try {
-            // 현재 사용자 ID 가져오기
-            let userId = null;
-            const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
-            if (currentUser.id) {
-                userId = currentUser.id;
-            } else {
-                const user = AuthManager.getCurrentUser();
-                userId = user?.id;
-            }
-            if (!userId) return;
-
-            const db = new DatabaseManager();
-            await db.init();
-            const settings = await db.getUserSettings(userId);
-            
             // 기존 옵션 제거 (첫 번째 옵션 제외)
             while (selectElement.options.length > 1) {
                 selectElement.remove(1);
             }
             
-            // 데이터베이스의 색상 목록만 추가 (직접입력 옵션 없음)
-            if (settings.colors && settings.colors.length > 0) {
-                settings.colors.forEach(color => {
-                    const option = document.createElement('option');
-                    option.value = color.key;
-                    option.textContent = color.name;
-                    option.style.backgroundColor = color.value;
-                    option.style.color = DropdownLoader.getContrastColor(color.value);
-                    selectElement.appendChild(option);
-                });
-            }
+            // 하드코딩된 8가지 색상 추가
+            const fixedColors = [
+                { key: 'red', name: '빨강', value: '#e74c3c' },
+                { key: 'orange', name: '주황', value: '#f39c12' },
+                { key: 'yellow', name: '노랑', value: '#f1c40f' },
+                { key: 'green', name: '초록', value: '#27ae60' },
+                { key: 'sky', name: '하늘', value: '#87ceeb' },
+                { key: 'blue', name: '파랑', value: '#1e90ff' },
+                { key: 'purple', name: '보라', value: '#9b59b6' },
+                { key: 'gray', name: '회색', value: '#95a5a6' }
+            ];
+            
+            fixedColors.forEach(color => {
+                const option = document.createElement('option');
+                option.value = color.name;  // 한글 이름을 value로 사용
+                option.textContent = color.name;
+                option.style.backgroundColor = color.value;
+                option.style.color = DropdownLoader.getContrastColor(color.value);
+                selectElement.appendChild(option);
+            });
+            
+            console.log('✅ 하드코딩된 8가지 색상 로드 완료');
             
         } catch (error) {
             console.error('색상 로드 오류:', error);
