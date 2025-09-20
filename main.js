@@ -285,17 +285,32 @@ document.addEventListener('DOMContentLoaded', function() {
                             console.log('🔵 업체명 입력 설정:', searchState.companyName);
                         }
                         
-                        // 검색 실행
+                        // 검색 실행 (직접 실행)
                         if (searchState.isFiltered) {
                             console.log('🔍 필터링된 상태 - 검색 실행');
                             console.log('🔍 검색 상태:', {
-                                region: searchRegion.value,
-                                companyName: searchCompany.value,
+                                region: searchState.region,
+                                companyName: searchState.companyName,
                                 isFiltered: searchState.isFiltered
                             });
-                            setTimeout(() => {
-                                handleSearch();
-                            }, 100);
+                            
+                            // handleSearch 대신 직접 검색 실행
+                            setTimeout(async () => {
+                                try {
+                                    const currentUser = await window.dataLoader.getCurrentUser();
+                                    if (currentUser) {
+                                        const companies = await window.cachedDataLoader.searchCompanies(
+                                            searchState.region || '', 
+                                            searchState.companyName || '', 
+                                            currentUser.id
+                                        );
+                                        console.log(`🔍 상태 복원 검색 결과: ${companies.length}개`);
+                                        displayCompanies(companies);
+                                    }
+                                } catch (error) {
+                                    console.error('상태 복원 검색 오류:', error);
+                                }
+                            }, 200);
                         } else {
                             console.log('🔵 필터링되지 않은 상태');
                         }
