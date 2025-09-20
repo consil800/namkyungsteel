@@ -512,19 +512,37 @@
                 
                 // 지역 목록 로드 (로드 완료 후 검색 상태 복원)
                 loadRegions().then(() => {
+                    console.log('🌐 지역 목록 로드 완료');
+                    
                     // 지역 목록 로드 완료 후 검색 상태 복원
                     const savedState = sessionStorage.getItem('worklogSearchState');
                     if (savedState) {
                         try {
                             const searchState = JSON.parse(savedState);
-                            if (searchState.region || searchState.companyName) {
+                            if (searchState.isFiltered && (searchState.region || searchState.companyName)) {
                                 console.log('🔵 지역 목록 로드 후 검색 상태 복원 트리거');
+                                console.log('🔵 복원할 검색 상태:', searchState);
+                                
+                                // 지역 선택 값 직접 설정
+                                const searchRegion = document.getElementById('searchRegion');
+                                const searchCompany = document.getElementById('searchCompany');
+                                
+                                if (searchRegion && searchState.region) {
+                                    searchRegion.value = searchState.region;
+                                    console.log('🌐 지역 설정:', searchState.region);
+                                }
+                                
+                                if (searchCompany && searchState.companyName) {
+                                    searchCompany.value = searchState.companyName;
+                                    console.log('🌐 업체명 설정:', searchState.companyName);
+                                }
+                                
                                 // main.js의 restoreSearchState가 실행되도록 약간의 지연 추가
                                 setTimeout(() => {
                                     if (window.restoreSearchState) {
                                         window.restoreSearchState();
                                     }
-                                }, 200);
+                                }, 300);
                             }
                         } catch (error) {
                             console.error('검색 상태 확인 오류:', error);

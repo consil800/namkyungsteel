@@ -248,8 +248,35 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         // 지역 선택 복원
                         if (searchState.region) {
-                            searchRegion.value = searchState.region;
-                            console.log('🔵 지역 선택 설정:', searchState.region, '실제값:', searchRegion.value);
+                            // 옵션이 존재하는지 확인
+                            let optionExists = false;
+                            for (let i = 0; i < searchRegion.options.length; i++) {
+                                if (searchRegion.options[i].value === searchState.region) {
+                                    optionExists = true;
+                                    break;
+                                }
+                            }
+                            
+                            if (optionExists) {
+                                searchRegion.value = searchState.region;
+                                console.log('🔵 지역 선택 설정 성공:', searchState.region);
+                            } else {
+                                console.warn('🔵 지역 옵션이 아직 로드되지 않음:', searchState.region);
+                                // 지역 옵션이 로드될 때까지 대기
+                                const waitForOption = setInterval(() => {
+                                    for (let i = 0; i < searchRegion.options.length; i++) {
+                                        if (searchRegion.options[i].value === searchState.region) {
+                                            searchRegion.value = searchState.region;
+                                            console.log('🔵 지역 선택 설정 성공 (재시도):', searchState.region);
+                                            clearInterval(waitForOption);
+                                            break;
+                                        }
+                                    }
+                                }, 100);
+                                
+                                // 3초 후 타이머 정리
+                                setTimeout(() => clearInterval(waitForOption), 3000);
+                            }
                         }
                         
                         // 업체명 입력 복원
@@ -261,9 +288,16 @@ document.addEventListener('DOMContentLoaded', function() {
                         // 검색 실행
                         if (searchState.isFiltered) {
                             console.log('🔍 필터링된 상태 - 검색 실행');
+                            console.log('🔍 검색 상태:', {
+                                region: searchRegion.value,
+                                companyName: searchCompany.value,
+                                isFiltered: searchState.isFiltered
+                            });
                             setTimeout(() => {
                                 handleSearch();
                             }, 100);
+                        } else {
+                            console.log('🔵 필터링되지 않은 상태');
                         }
                         
                         return; // 성공적으로 복원됨
@@ -292,6 +326,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const immediateState = sessionStorage.getItem('worklogSearchState');
     if (immediateState) {
         console.log('🔵 즉시 검색 상태 복원 시도');
+        console.log('🔵 저장된 상태:', immediateState);
         restoreSearchState();
     }
     
@@ -304,9 +339,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // 3. 페이지 완전 로드 후
     window.addEventListener('load', () => {
         console.log('🔵 페이지 완전 로드 후 검색 상태 복원 시도');
+        // 지역 목록이 로드될 시간을 충분히 주기 위해 대기 시간 증가
         setTimeout(() => {
             restoreSearchState();
-        }, 200);
+        }, 500);
     });
 
     // 이벤트 리스너 등록
