@@ -423,13 +423,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
             let companies = [];
             
-            // 캐시된 업체 검색 또는 목록 로드
+            // 캐시된 업체 검색만 수행 (전체 목록 로드 제거)
             if (region || companyName) {
                 companies = await window.cachedDataLoader.searchCompanies(region, companyName, currentUser.id);
                 console.log(`🔍 검색 결과: ${companies.length}개`);
             } else {
-                companies = await window.cachedDataLoader.loadCompanies(currentUser.id);
-                console.log(`📋 전체 목록: ${companies.length}개`);
+                // 검색어가 없으면 빈 배열 반환 (전체 목록 로드하지 않음)
+                companies = [];
+                console.log('🔍 검색어가 없어 빈 결과 반환');
             }
 
             displayCompanies(companies);
