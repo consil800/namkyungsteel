@@ -623,7 +623,7 @@ async function removePdfFile(filename) {
 function initEventListeners() {
     // 뒤로가기 버튼
     document.getElementById('backBtn').addEventListener('click', function() {
-        window.location.href = 'worklog.html';
+        history.back();
     });
     
     // 메인으로 버튼
