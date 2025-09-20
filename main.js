@@ -287,10 +287,27 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 페이지 로드 시 즉시 검색 상태 복원
+    // 페이지 로드 시 검색 상태 복원 (여러 타이밍에서 시도)
+    // 1. 즉시 실행
+    const immediateState = sessionStorage.getItem('worklogSearchState');
+    if (immediateState) {
+        console.log('🔵 즉시 검색 상태 복원 시도');
+        restoreSearchState();
+    }
+    
+    // 2. DOM 완전 로드 후
     setTimeout(() => {
+        console.log('🔵 100ms 후 검색 상태 복원 시도');
         restoreSearchState();
     }, 100);
+    
+    // 3. 페이지 완전 로드 후
+    window.addEventListener('load', () => {
+        console.log('🔵 페이지 완전 로드 후 검색 상태 복원 시도');
+        setTimeout(() => {
+            restoreSearchState();
+        }, 200);
+    });
 
     // 이벤트 리스너 등록
     searchBtn.addEventListener('click', handleSearch);
@@ -481,7 +498,24 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         if (!companies || companies.length === 0) {
-            companyList.innerHTML = '<tr><td colspan="' + (isDeleteMode ? '8' : '7') + '" style="text-align: center; padding: 20px; color: #666;">등록된 업체가 없습니다. 새 업체를 등록해보세요.</td></tr>';
+            // 검색 상태 확인
+            const savedState = sessionStorage.getItem('worklogSearchState');
+            let isSearching = false;
+            
+            if (savedState) {
+                try {
+                    const searchState = JSON.parse(savedState);
+                    isSearching = searchState.isFiltered && (searchState.region || searchState.companyName);
+                } catch (error) {
+                    console.error('검색 상태 확인 오류:', error);
+                }
+            }
+            
+            const message = isSearching 
+                ? '검색 결과가 없습니다.' 
+                : '업체를 검색하여 주세요.';
+            
+            companyList.innerHTML = '<tr><td colspan="' + (isDeleteMode ? '8' : '7') + '" style="text-align: center; padding: 20px; color: #666;">' + message + '</td></tr>';
             return;
         }
 
