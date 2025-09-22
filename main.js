@@ -215,12 +215,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 검색 상태 저장 함수
     function saveSearchState() {
-        const searchState = {
-            region: searchRegionSelect.value,
-            companyName: searchCompanyInput.value,
-            isFiltered: !!(searchRegionSelect.value || searchCompanyInput.value),
-            excludeNoVisitColors: excludeNoVisitColorsCheckbox ? excludeNoVisitColorsCheckbox.checked : true
-        };
+        // 전역 searchState 객체 업데이트
+        searchState.region = searchRegionSelect.value;
+        searchState.companyName = searchCompanyInput.value;
+        searchState.isFiltered = !!(searchRegionSelect.value || searchCompanyInput.value);
+        searchState.excludeNoVisitColors = excludeNoVisitColorsCheckbox ? excludeNoVisitColorsCheckbox.checked : true;
+        
         sessionStorage.setItem('worklogSearchState', JSON.stringify(searchState));
         console.log('🔵 검색 상태 저장:', searchState);
     }
@@ -352,7 +352,19 @@ document.addEventListener('DOMContentLoaded', function() {
     if (immediateState) {
         console.log('🔵 즉시 검색 상태 복원 시도');
         console.log('🔵 저장된 상태:', immediateState);
-        restoreSearchState();
+        try {
+            const parsed = JSON.parse(immediateState);
+            // 잘못된 상태 정리 (region, companyName이 누락된 경우)
+            if (!parsed.hasOwnProperty('region') || !parsed.hasOwnProperty('companyName')) {
+                console.log('🔵 잘못된 검색 상태 감지, 초기화함');
+                sessionStorage.removeItem('worklogSearchState');
+            } else {
+                restoreSearchState();
+            }
+        } catch (error) {
+            console.error('🔵 검색 상태 파싱 오류:', error);
+            sessionStorage.removeItem('worklogSearchState');
+        }
     }
     
     // 2. DOM 완전 로드 후
@@ -418,8 +430,15 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // 검색 처리 함수
-    async function handleSearch(restoredState = null) {
-        console.log('🔍 handleSearch 호출됨, restoredState:', restoredState);
+    async function handleSearch(eventOrState = null) {
+        console.log('🔍 handleSearch 호출됨, eventOrState:', eventOrState);
+        
+        // 이벤트 객체인지 상태 객체인지 구분
+        let restoredState = null;
+        if (eventOrState && typeof eventOrState === 'object' && !eventOrState.type) {
+            // 상태 객체로 판단 (이벤트 객체는 type 속성을 가짐)
+            restoredState = eventOrState;
+        }
         
         // 복원된 상태가 있으면 그것을 사용, 없으면 DOM에서 읽기
         const region = restoredState ? restoredState.region : searchRegionSelect.value.trim();
@@ -436,6 +455,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 검색 상태를 sessionStorage에 저장 (뒤로가기 시 복원용)
         sessionStorage.setItem('worklogSearchState', JSON.stringify(searchState));
+        console.log('🔍 handleSearch에서 상태 저장:', searchState);
 
         try {
             // 로딩 표시
@@ -735,10 +755,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
     
-    // 검색 상태 저장
-    function saveSearchState() {
-        sessionStorage.setItem('worklogSearchState', JSON.stringify(searchState));
-    }
+    // 검색 상태 저장 (중복 제거됨 - 위의 saveSearchState 함수 사용)
     
     // 검색 상태 복원 (강화된 버전)
     function restoreSearchState() {
