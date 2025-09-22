@@ -259,6 +259,10 @@
                         <option value="">전체 지역</option>
                     </select>
                     <input type="text" id="searchCompany" placeholder="업체명으로 검색">
+                    <label style="display: flex; align-items: center; gap: 5px; margin: 0; font-size: 0.9rem; color: #333;">
+                        <input type="checkbox" id="excludeNoVisitColors" checked style="width: 16px; height: 16px;">
+                        <span>방문 기록 없는 색상 제외</span>
+                    </label>
                     <button id="searchBtn" class="btn btn-primary">검색</button>
                 </div>
             </section>
@@ -466,6 +470,13 @@
                         console.log('🔵 업체명 입력 복원:', searchState.companyName);
                     }
                     
+                    // 체크박스 상태 복원
+                    const excludeCheckbox = document.getElementById('excludeNoVisitColors');
+                    if (excludeCheckbox && searchState.hasOwnProperty('excludeNoVisitColors')) {
+                        excludeCheckbox.checked = searchState.excludeNoVisitColors;
+                        console.log('🔵 체크박스 상태 복원:', searchState.excludeNoVisitColors);
+                    }
+                    
                     // 검색 실행 (필터링된 상태였다면)
                     if (searchState.isFiltered) {
                         console.log('🔍 필터링된 상태 - 검색 실행');
@@ -535,6 +546,13 @@
                                 if (searchCompany && searchState.companyName) {
                                     searchCompany.value = searchState.companyName;
                                     console.log('🌐 업체명 설정:', searchState.companyName);
+                                }
+                                
+                                // 체크박스 상태 복원
+                                const excludeCheckbox = document.getElementById('excludeNoVisitColors');
+                                if (excludeCheckbox && searchState.hasOwnProperty('excludeNoVisitColors')) {
+                                    excludeCheckbox.checked = searchState.excludeNoVisitColors;
+                                    console.log('🌐 체크박스 상태 설정:', searchState.excludeNoVisitColors);
                                 }
                                 
                                 // main.js의 restoreSearchState가 실행되도록 약간의 지연 추가

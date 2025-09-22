@@ -9,13 +9,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const deleteBtn = document.getElementById('deleteBtn');
     const xlsxFileInput = document.getElementById('xlsxFileInput');
     const companyList = document.getElementById('companyList');
+    const excludeNoVisitColorsCheckbox = document.getElementById('excludeNoVisitColors');
 
     let isDeleteMode = false;
     let selectedCompanies = new Set();
     let searchState = {
         region: '',
         companyName: '',
-        isFiltered: false
+        isFiltered: false,
+        excludeNoVisitColors: true  // 기본값 true
     };
 
     // 색상 변환 함수 - 모든 색상을 데이터베이스 기반으로 동적 생성
@@ -216,7 +218,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const searchState = {
             region: searchRegionSelect.value,
             companyName: searchCompanyInput.value,
-            isFiltered: !!(searchRegionSelect.value || searchCompanyInput.value)
+            isFiltered: !!(searchRegionSelect.value || searchCompanyInput.value),
+            excludeNoVisitColors: excludeNoVisitColorsCheckbox ? excludeNoVisitColorsCheckbox.checked : true
         };
         sessionStorage.setItem('worklogSearchState', JSON.stringify(searchState));
         console.log('🔵 검색 상태 저장:', searchState);
@@ -283,6 +286,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (searchState.companyName) {
                             searchCompany.value = searchState.companyName;
                             console.log('🔵 업체명 입력 설정:', searchState.companyName);
+                        }
+                        
+                        // 체크박스 상태 복원
+                        const excludeCheckbox = document.getElementById('excludeNoVisitColors');
+                        if (excludeCheckbox && searchState.hasOwnProperty('excludeNoVisitColors')) {
+                            excludeCheckbox.checked = searchState.excludeNoVisitColors;
+                            console.log('🔵 체크박스 상태 설정:', searchState.excludeNoVisitColors);
                         }
                         
                         // 검색 실행 (직접 실행)
@@ -386,10 +396,9 @@ document.addEventListener('DOMContentLoaded', function() {
     deleteBtn.addEventListener('click', handleDeleteMode);
     xlsxFileInput.addEventListener('change', importCompanies);
 
-    // 지역 선택 시 자동 검색
+    // 지역 선택 시 상태만 저장 (자동 검색 제거)
     searchRegionSelect.addEventListener('change', function() {
         saveSearchState(); // 지역 변경 시 상태 저장
-        handleSearch();
     });
 
     searchCompanyInput.addEventListener('keypress', function(e) {
@@ -412,11 +421,13 @@ document.addEventListener('DOMContentLoaded', function() {
     async function handleSearch() {
         const region = searchRegionSelect.value.trim();
         const companyName = searchCompanyInput.value.trim();
+        const excludeNoVisitColors = excludeNoVisitColorsCheckbox ? excludeNoVisitColorsCheckbox.checked : false;
 
         // 검색 상태 업데이트
         searchState.region = region;
         searchState.companyName = companyName;
         searchState.isFiltered = !!(region || companyName);
+        searchState.excludeNoVisitColors = excludeNoVisitColors;
         
         // 검색 상태를 sessionStorage에 저장 (뒤로가기 시 복원용)
         sessionStorage.setItem('worklogSearchState', JSON.stringify(searchState));
@@ -446,6 +457,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 검색어가 없으면 빈 배열 반환 (전체 목록 로드하지 않음)
                 companies = [];
                 console.log('🔍 검색어가 없어 빈 결과 반환');
+            }
+            
+            // 색상 필터링 적용
+            if (excludeNoVisitColors) {
+                const excludeColors = ['빨강', '보라', '회색', 'red', 'purple', 'gray'];
+                companies = companies.filter(company => {
+                    return !excludeColors.includes(company.color_code);
+                });
+                console.log(`🎨 색상 필터링 후: ${companies.length}개`);
             }
 
             displayCompanies(companies);
