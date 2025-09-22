@@ -481,12 +481,15 @@
                     if (searchState.isFiltered) {
                         console.log('🔍 필터링된 상태 - 검색 실행');
                         setTimeout(() => {
-                            if (window.restoreSearchState) {
+                            // handleSearch 함수 직접 호출로 변경
+                            if (window.handleSearch) {
+                                window.handleSearch();
+                            } else if (window.restoreSearchState) {
                                 window.restoreSearchState();
                             } else if (window.loadCompanies) {
                                 window.loadCompanies();
                             }
-                        }, 200);
+                        }, 300);
                     }
                 } catch (error) {
                     console.error('뒤로가기 검색 상태 복원 오류:', error);
@@ -555,12 +558,14 @@
                                     console.log('🌐 체크박스 상태 설정:', searchState.excludeNoVisitColors);
                                 }
                                 
-                                // main.js의 restoreSearchState가 실행되도록 약간의 지연 추가
+                                // main.js의 handleSearch가 실행되도록 약간의 지연 추가
                                 setTimeout(() => {
-                                    if (window.restoreSearchState) {
+                                    if (window.handleSearch) {
+                                        window.handleSearch();
+                                    } else if (window.restoreSearchState) {
                                         window.restoreSearchState();
                                     }
-                                }, 300);
+                                }, 400);
                             }
                         } catch (error) {
                             console.error('검색 상태 확인 오류:', error);

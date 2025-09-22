@@ -556,6 +556,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // restoreSearchState 함수도 전역으로 노출
     window.restoreSearchState = restoreSearchState;
+    
+    // handleSearch 함수도 전역으로 노출 (뒤로가기 시 사용)
+    window.handleSearch = handleSearch;
 
     // 회사 목록 표시
     async function displayCompanies(companies) {
@@ -751,6 +754,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (searchCompanyInput) {
                     searchCompanyInput.value = state.companyName || '';
                     console.log('업체명 복원:', state.companyName);
+                }
+                
+                // 체크박스 상태 복원
+                if (excludeNoVisitColorsCheckbox && state.hasOwnProperty('excludeNoVisitColors')) {
+                    excludeNoVisitColorsCheckbox.checked = state.excludeNoVisitColors;
+                    console.log('체크박스 복원:', state.excludeNoVisitColors);
                 }
                 
                 // 필터가 있는 경우 자동 검색 수행
