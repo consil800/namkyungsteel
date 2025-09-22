@@ -483,7 +483,7 @@
                         setTimeout(() => {
                             // handleSearch 함수 직접 호출로 변경
                             if (window.handleSearch) {
-                                window.handleSearch();
+                                window.handleSearch(searchState);  // 복원된 상태값 전달
                             } else if (window.restoreSearchState) {
                                 window.restoreSearchState();
                             } else if (window.loadCompanies) {
@@ -561,7 +561,7 @@
                                 // main.js의 handleSearch가 실행되도록 약간의 지연 추가
                                 setTimeout(() => {
                                     if (window.handleSearch) {
-                                        window.handleSearch();
+                                        window.handleSearch(searchState);  // 복원된 상태값 전달
                                     } else if (window.restoreSearchState) {
                                         window.restoreSearchState();
                                     }

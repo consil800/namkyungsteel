@@ -418,10 +418,15 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // 검색 처리 함수
-    async function handleSearch() {
-        const region = searchRegionSelect.value.trim();
-        const companyName = searchCompanyInput.value.trim();
-        const excludeNoVisitColors = excludeNoVisitColorsCheckbox ? excludeNoVisitColorsCheckbox.checked : false;
+    async function handleSearch(restoredState = null) {
+        console.log('🔍 handleSearch 호출됨, restoredState:', restoredState);
+        
+        // 복원된 상태가 있으면 그것을 사용, 없으면 DOM에서 읽기
+        const region = restoredState ? restoredState.region : searchRegionSelect.value.trim();
+        const companyName = restoredState ? restoredState.companyName : searchCompanyInput.value.trim();
+        const excludeNoVisitColors = restoredState ? restoredState.excludeNoVisitColors : (excludeNoVisitColorsCheckbox ? excludeNoVisitColorsCheckbox.checked : false);
+        
+        console.log('🔍 검색 조건:', { region, companyName, excludeNoVisitColors });
 
         // 검색 상태 업데이트
         searchState.region = region;
@@ -766,7 +771,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (state.isFiltered && (state.region || state.companyName)) {
                     console.log('필터된 상태 - 자동 검색 수행');
                     setTimeout(() => {
-                        handleSearch();
+                        handleSearch(state);  // 복원된 상태값을 직접 전달
                     }, 200);
                 }
                 
