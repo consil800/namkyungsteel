@@ -623,7 +623,17 @@ async function removePdfFile(filename) {
 function initEventListeners() {
     // 뒤로가기 버튼
     document.getElementById('backBtn').addEventListener('click', function() {
-        history.back();
+        // URL 파라미터에서 검색 조건 추출
+        const urlParams = new URLSearchParams(window.location.search);
+        const referrer = urlParams.get('referrer');
+        
+        if (referrer) {
+            // referrer 파라미터가 있으면 해당 URL로 이동 (검색 조건 포함)
+            window.location.href = decodeURIComponent(referrer);
+        } else {
+            // referrer가 없으면 기본 worklog.html로 이동
+            window.location.href = 'worklog.html';
+        }
     });
     
     // 메인으로 버튼

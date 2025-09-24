@@ -751,7 +751,26 @@ document.addEventListener('DOMContentLoaded', function() {
     window.goToCompanyDetail = function(companyId) {
         if (!isDeleteMode) {
             saveSearchState();
-            window.location.href = `company-detail.html?id=${companyId}`;
+            
+            // 현재 페이지 URL과 검색 파라미터를 함께 전달
+            const currentParams = new URLSearchParams();
+            if (searchRegionSelect.value) {
+                currentParams.set('region', searchRegionSelect.value);
+            }
+            if (searchCompanyInput.value) {
+                currentParams.set('company', searchCompanyInput.value);
+            }
+            if (excludeNoVisitColorsCheckbox) {
+                currentParams.set('exclude', excludeNoVisitColorsCheckbox.checked);
+            }
+            
+            // 현재 페이지의 전체 URL을 referrer로 인코딩
+            const referrerURL = currentParams.toString() ? 
+                `worklog.html?${currentParams.toString()}` : 
+                'worklog.html';
+            
+            // company-detail 페이지로 이동 (referrer 파라미터 포함)
+            window.location.href = `company-detail.html?id=${companyId}&referrer=${encodeURIComponent(referrerURL)}`;
         }
     };
     
