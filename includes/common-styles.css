@@ -105,13 +105,14 @@ section {
 }
 
 .header .sitename {
-    color: #ffffff;
+    color: #ffffff !important;
     font-family: var(--font-display);
     font-weight: 800;
     font-size: 1.5rem;
     letter-spacing: -0.02em;
     text-decoration: none;
     transition: var(--transition-base);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .header .sitename:hover {
