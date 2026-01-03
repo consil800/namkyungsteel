@@ -366,6 +366,7 @@ async function buildRouteNearestNeighbor(depot, stops, candidateK = ROUTE_OPTIMI
     const durations = await fetchRouteMatrix(current, candidates);
 
     // 3) 가장 가까운 곳 선택
+    // ★ ChatGPT 리뷰 반영: tie-breaker 추가 (동점 시 company_name 순으로 안정적 정렬)
     let minDuration = Infinity;
     let nearest = null;
 
@@ -374,6 +375,13 @@ async function buildRouteNearestNeighbor(depot, stops, candidateK = ROUTE_OPTIMI
       if (dur < minDuration) {
         minDuration = dur;
         nearest = cand;
+      } else if (dur === minDuration && nearest) {
+        // tie-breaker: company_name 가나다순으로 안정적 선택
+        const candName = cand.company_name || '';
+        const nearestName = nearest.company_name || '';
+        if (candName.localeCompare(nearestName, 'ko') < 0) {
+          nearest = cand;
+        }
       }
     }
 
@@ -404,6 +412,13 @@ async function buildRouteNearestNeighbor(depot, stops, candidateK = ROUTE_OPTIMI
 /**
  * 2-opt 알고리즘으로 경로 개선
  * 두 간선을 교환하여 총 거리를 줄임
+ *
+ * ★ ChatGPT 리뷰 반영:
+ * - 현재 Haversine(직선거리) 기반으로 평가
+ * - API 호출 비용을 줄이기 위해 직선거리 사용
+ * - NN은 Google 거리 기반, 2-opt는 Haversine 기반 (metric 불일치)
+ * - 실무에서 큰 차이가 있다면 2-opt도 Google 거리 사용 고려
+ *
  * @param {Array} route - 경로 [{geo: {lat, lng}, ...}]
  * @returns {Array} 개선된 경로
  */
