@@ -450,8 +450,30 @@
               <div><b>9~11개</b> <span class="muted small">(목표 10)</span></div>
             </div>
           </div>
+        </div>
+
+        <div class="section">
+          <label>경로 알고리즘 선택</label>
+          <div class="listbox" style="max-height:none;">
+            <div class="row">
+              <input type="radio" name="algorithm" value="basic" checked />
+              <div><b>기본</b> <span class="muted small">(지역 그룹핑)</span></div>
+            </div>
+            <div class="row">
+              <input type="radio" name="algorithm" value="optimal" />
+              <div><b>최적 경로</b> <span class="muted small">(Google Maps 거리 기반)</span></div>
+            </div>
+          </div>
           <div class="hint" style="margin-top:8px;">
-            자동 배정 우선순위: <b>① 색상(빨강→회색)</b> → <b>② 방문일(오래된 순)</b> → <b>③ 방문횟수(적은 순)</b>
+            <b>최적 경로</b>: 실제 주행거리 기반, 업체 순서대로 1→2→3→... 가장 가까운 곳으로 이동 (시간 소요)
+          </div>
+        </div>
+
+        <div class="section" id="apiKeySection" style="display:none;">
+          <label>Google Maps API 키</label>
+          <input type="password" id="googleMapsApiKey" placeholder="API 키 입력 (선택사항)" />
+          <div class="hint" style="margin-top:8px;">
+            API 키 없으면 직선거리 기반으로 계산됩니다.
           </div>
         </div>
 
@@ -547,8 +569,9 @@
   <div id="toast" class="toast">-</div>
 
   <!-- 인증 및 데이터베이스 로드 -->
-  <script src="shared-assets/js/auth.js?v=20260103b"></script>
-  <script src="database.js?v=20260103b"></script>
-  <script type="module" src="schedule-generator.js?v=20260103b"></script>
+  <script src="shared-assets/js/auth.js?v=20260103c"></script>
+  <script src="database.js?v=20260103c"></script>
+  <script src="route-optimizer.js?v=20260103c"></script>
+  <script src="schedule-generator.js?v=20260103c"></script>
 </body>
 </html>

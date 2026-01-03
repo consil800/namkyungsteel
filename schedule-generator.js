@@ -97,6 +97,9 @@ const el = {
   btnRegionNone: document.getElementById('btnRegionNone'),
   btnSelectAllFiltered: document.getElementById('btnSelectAllFiltered'),
   btnClearSelected: document.getElementById('btnClearSelected'),
+  // 경로 최적화 관련
+  apiKeySection: document.getElementById('apiKeySection'),
+  googleMapsApiKey: document.getElementById('googleMapsApiKey'),
 };
 
 // ===== 색상 우선순위 (빨강→주황→노랑→초록→하늘→파랑→보라→회색) =====
@@ -570,7 +573,7 @@ async function loadCompanies() {
   try {
     const { data, error } = await supabase
       .from('client_companies')
-      .select('id, company_name, region, address, color_code, visit_count, last_visit_date')
+      .select('id, company_name, region, address, color_code, visit_count, last_visit_date, geo_lat, geo_lng, geo_place_id')
       .eq('user_id', USER_ID)
       .order('region')
       .order('company_name');
@@ -818,10 +821,103 @@ function updateEstimate() {
   }
 }
 
+// ===== 최적 경로 스케줄 생성 (Google Maps 거리 기반) =====
+// ★ ChatGPT + Claude Ultra Think 설계: Nearest Neighbor + 2-opt 알고리즘
+// 실제 주행거리 기반으로 1 → 2 → 3 → 4 → 5... 순서로 가까운 업체 연결
+async function generateScheduleOptimal(companies, days, cap) {
+  if (!window.RouteOptimizer) {
+    toast('경로 최적화 모듈이 로드되지 않았습니다.');
+    console.error('RouteOptimizer 모듈 없음');
+    return;
+  }
+
+  // 로딩 표시
+  el.calendar.innerHTML = `
+    <div class="hint" style="padding: 40px; text-align: center;">
+      <h3>🚗 최적 경로 계산 중...</h3>
+      <p>Google Maps API를 사용하여 실제 주행거리를 계산합니다.</p>
+      <p>업체 수에 따라 수 분이 소요될 수 있습니다.</p>
+      <p style="margin-top: 20px; font-size: 12px; color: #666;">
+        콘솔(F12)에서 진행 상황을 확인할 수 있습니다.
+      </p>
+    </div>
+  `;
+
+  try {
+    // 근무일만 필터
+    const workdays = days.filter(d => !d.isWeekend && !d.isHoliday && !d.isOff);
+
+    console.log('');
+    console.log('🚗🚗🚗 최적 경로 알고리즘 시작 🚗🚗🚗');
+    console.log(`업체: ${companies.length}개, 근무일: ${workdays.length}일, 하루 방문: ${cap.target}개`);
+
+    // RouteOptimizer 호출 (시간이 오래 걸릴 수 있음)
+    const optimalRoutes = await window.RouteOptimizer.generateOptimalRoutes(
+      companies,
+      null,        // 시작점 (null = 첫 업체)
+      cap.target   // 하루 방문 수
+    );
+
+    if (!optimalRoutes || optimalRoutes.length === 0) {
+      toast('경로 생성 실패: 좌표가 없는 업체가 많습니다.');
+      el.calendar.innerHTML = '<div class="hint">경로 생성 실패. 업체 주소를 확인하세요.</div>';
+      return;
+    }
+
+    // 결과를 기존 스케줄 형식으로 변환
+    let dayIdx = 0;
+    let totalAssigned = 0;
+
+    for (const optRoute of optimalRoutes) {
+      if (dayIdx >= workdays.length) {
+        // 근무일이 부족하면 나머지는 미배정
+        console.log(`⚠️ 근무일 부족: ${optimalRoutes.length - optimalRoutes.indexOf(optRoute)}일분 미배정`);
+        break;
+      }
+
+      // 해당 날짜에 업체 배정 (workdays는 이미 근무일만 필터된 배열)
+      workdays[dayIdx].companies = optRoute.route;
+      totalAssigned += optRoute.route.length;
+
+      console.log(`📅 ${workdays[dayIdx].date}: ${optRoute.route.length}개 업체, 총 ${optRoute.totalDistanceKm}km`);
+
+      dayIdx++;
+    }
+
+    // 미배정 업체 계산
+    const assignedIds = new Set();
+    days.forEach(d => {
+      d.companies.forEach(c => assignedIds.add(c.id));
+    });
+    state.unassigned = companies.filter(c => !assignedIds.has(c.id));
+
+    state.schedule = days;
+    state.isDirty = true;
+
+    // 렌더링
+    renderCalendar();
+    renderUnassigned();
+    updateDirtyState();
+
+    const unassignedCount = state.unassigned.length;
+    toast(`🚗 최적 경로 생성 완료! 배정: ${totalAssigned}개, 미배정: ${unassignedCount}개`);
+
+    console.log('');
+    console.log('🎉🎉🎉 최적 경로 생성 완료 🎉🎉🎉');
+    console.log(`총 배정: ${totalAssigned}개, 미배정: ${unassignedCount}개`);
+    console.log('');
+
+  } catch (e) {
+    console.error('최적 경로 생성 오류:', e);
+    toast('경로 생성 오류: ' + e.message);
+    el.calendar.innerHTML = `<div class="hint" style="color: red;">오류: ${e.message}</div>`;
+  }
+}
+
 // ===== 스케줄 생성 (ChatGPT + Claude 협업 설계 v3) =====
-// ★ 새 알고리즘: Seed = lastVisitAt 가장 오래된 업체 → 그 지역 주변으로 하루 채움
+// ★ 기본 알고리즘: Seed = lastVisitAt 가장 오래된 업체 → 그 지역 주변으로 하루 채움
 // 예: 오늘 창원 8~9군데, 내일 김해 8~9군데, 다음날 양산 8~9군데
-function generateSchedule() {
+async function generateSchedule() {
   const startStr = el.startDate.value;
   const endStr = el.endDate.value;
 
@@ -861,7 +957,16 @@ function generateSchedule() {
   // 날짜 목록 생성
   const days = buildDays(startStr, endStr);
 
-  // ★ 새 알고리즘: Seed = lastVisitAt 가장 오래된 업체
+  // ★ 알고리즘 선택 확인
+  const selectedAlgo = getSelectedAlgorithm();
+
+  // ★★★ 최적 경로 알고리즘 (Google Maps 거리 기반) ★★★
+  if (selectedAlgo === 'optimal') {
+    await generateScheduleOptimal(companies, days, cap);
+    return;
+  }
+
+  // ★ 기본 알고리즘: Seed = lastVisitAt 가장 오래된 업체
   let pool = [...companies];
 
   console.log('📊 새 알고리즘 v3: Seed(lastVisitAt 가장 오래된) + 지역 주변 채움');
@@ -1250,8 +1355,36 @@ function resetAll() {
   toast('초기화 완료');
 }
 
+// ===== 알고리즘 선택 관련 =====
+function getSelectedAlgorithm() {
+  const radio = document.querySelector('input[name="algorithm"]:checked');
+  return radio ? radio.value : 'basic';
+}
+
+function toggleApiKeySection() {
+  const algo = getSelectedAlgorithm();
+  if (el.apiKeySection) {
+    el.apiKeySection.style.display = (algo === 'optimal') ? 'block' : 'none';
+  }
+}
+
 // ===== 이벤트 바인딩 =====
 function bindEvents() {
+  // 알고리즘 선택 변경 (API 키 섹션 표시/숨김)
+  document.querySelectorAll('input[name="algorithm"]').forEach(radio => {
+    radio.addEventListener('change', toggleApiKeySection);
+  });
+
+  // API 키 입력 시 RouteOptimizer에 설정
+  if (el.googleMapsApiKey) {
+    el.googleMapsApiKey.addEventListener('change', () => {
+      const key = el.googleMapsApiKey.value.trim();
+      if (key && window.RouteOptimizer) {
+        window.RouteOptimizer.setGoogleMapsApiKey(key);
+      }
+    });
+  }
+
   // 날짜 변경
   el.startDate.addEventListener('change', async () => {
     await loadHolidaysForRange(el.startDate.value, el.endDate.value);
@@ -1346,6 +1479,9 @@ async function init() {
 
     // 이벤트 바인딩
     bindEvents();
+
+    // 알고리즘 선택 섹션 초기화
+    toggleApiKeySection();
 
     // 초기 range 반영
     updateWorkdayCountUI();
