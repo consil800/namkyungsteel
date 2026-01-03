@@ -69,23 +69,43 @@ async function loadUserSafely() {
         }
 
         // 데이터베이스에서 최신 정보 확인 (우선순위)
-        if (userEmail && window.db && window.db.client) {
+        if (window.db && window.db.client) {
             try {
-                const { data: dbUser, error } = await window.db.client
-                    .from('users')
-                    .select('*')
-                    .eq('email', userEmail)
-                    .single();
-                
+                let dbUser = null;
+                let error = null;
+
+                // 1차: 이메일로 조회
+                if (userEmail) {
+                    const result = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .eq('email', userEmail)
+                        .single();
+                    dbUser = result.data;
+                    error = result.error;
+                }
+
+                // 2차: 이메일 조회 실패 시 ID로 조회
+                if (!dbUser && userId) {
+                    console.log('🔄 이메일 조회 실패, ID로 재시도:', userId);
+                    const result = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .eq('id', userId)
+                        .single();
+                    dbUser = result.data;
+                    error = result.error;
+                }
+
                 if (!error && dbUser) {
                     console.log('🗄️ 데이터베이스에서 최신 사용자 정보 로드:', {
                         id: dbUser.id,
                         name: dbUser.name,
                         email: dbUser.email,
+                        role: dbUser.role,
+                        is_approved: dbUser.is_approved,
                         profile_image: dbUser.profile_image ? 'YES' : 'NO',
-                        profile_image_length: dbUser.profile_image ? dbUser.profile_image.length : 0,
-                        profile_image_preview: dbUser.profile_image ? dbUser.profile_image.substring(0, 30) : 'none',
-                        profileImage: dbUser.profileImage ? 'YES' : 'NO'
+                        profile_image_length: dbUser.profile_image ? dbUser.profile_image.length : 0
                     });
                     // 최신 정보를 세션에 저장
                     sessionStorage.setItem('currentUser', JSON.stringify(dbUser));
@@ -412,8 +432,12 @@ function updateUserUI(user) {
 
     if (infoElement) {
         let infoText = '';
-        if (!user.role) {
+        // is_approved가 false인 경우에만 승인 대기 표시 (role이 없는 것과 별개)
+        if (user.is_approved === false) {
             infoText = '⏳ 계정 승인 대기 중입니다.';
+        } else if (!user.role) {
+            // role이 없지만 승인된 경우 - 역할 미설정 상태
+            infoText = '직원';
         } else {
             switch(user.role) {
                 case 'master':
