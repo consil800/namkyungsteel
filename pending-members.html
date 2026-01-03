@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>가입 승인 관리 - 남경스틸(주)</title>
+    
+    <!-- Favicons -->
+    <link href="logo.jpg" rel="icon">
+    <link href="logo.jpg" rel="apple-touch-icon">
+    
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Database Scripts -->
+    <script src="database.js"></script>
+    <!-- Data Stability Scripts -->
+    <script src="data-stability.js"></script>
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem 2rem;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: white;
+            color: #667eea;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .section-title {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .data-grid {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+
+        .grid-header {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .grid-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-approve {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .btn-reject {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .members-list {
+            padding: 2rem;
+        }
+
+        .member-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .member-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .member-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .member-info h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #ffffff;
+        }
+
+        .member-info p {
+            color: #cbd5e0;
+            margin: 0.25rem 0;
+            font-size: 0.9rem;
+        }
+
+        .member-status {
+            background: rgba(249, 115, 22, 0.2);
+            color: #f59e0b;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            border: 1px solid rgba(249, 115, 22, 0.3);
+        }
+
+        .member-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .role-select {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        .role-select option {
+            background: #2d3748;
+            color: white;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #cbd5e0;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #667eea;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #cbd5e0;
+        }
+
+        .loading i {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .member-header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .member-actions {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.75rem;
+            }
+            
+            .role-select {
+                margin-bottom: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1><i class="fas fa-user-clock"></i> 가입 승인 관리</h1>
+        <a href="admin-dashboard.html" class="back-btn">
+            <i class="fas fa-arrow-left"></i> 관리자 대시보드
+        </a>
+    </header>
+
+    <div class="container">
+        <h2 class="section-title">신규 가입 신청 관리</h2>
+        
+        <div class="data-grid">
+            <div class="grid-header">
+                <h3 class="grid-title">승인 대기 목록</h3>
+                <button class="btn" onclick="refreshPendingMembers()">
+                    <i class="fas fa-sync-alt"></i> 새로고침
+                </button>
+            </div>
+            <div class="members-list">
+                <div id="pendingMembersList">
+                    <div class="loading">
+                        <i class="fas fa-spinner"></i>
+                        <p>승인 대기 목록을 불러오는 중...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 전역 변수
+        let currentUser = null;
+
+        // 페이지 초기화
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 가입 승인 페이지 초기화');
+            
+            // 데이터베이스 초기화
+            if (window.db) {
+                try {
+                    await window.db.init();
+                    console.log('✅ 데이터베이스 초기화 완료');
+                } catch (error) {
+                    console.error('❌ 데이터베이스 초기화 실패:', error);
+                }
+            }
+            
+            // 안전한 사용자 정보 가져오기
+            currentUser = await window.getCurrentUserSafely();
+            if (!currentUser) {
+                console.error('❌ 사용자 인증 실패');
+                alert('사용자 인증에 실패했습니다. 다시 로그인해주세요.');
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            // 권한 확인 (디버그 정보 추가)
+            console.log('🕵️ 가입 승인 권한 확인:', {
+                currentUser: currentUser,
+                userRole: currentUser?.role,
+                canManage: currentUser ? canManageEmployees(currentUser) : false
+            });
+            
+            if (!currentUser || !canManageEmployees(currentUser)) {
+                console.error('❌ 권한 부족:', {
+                    hasUser: !!currentUser,
+                    userRole: currentUser?.role,
+                    allowedRoles: ['master', 'company_CEO', 'company_admin', 'company_manager']
+                });
+                alert('가입 승인 권한이 없습니다.');
+                window.location.href = 'admin-dashboard.html';
+                return;
+            }
+            
+            console.log('✅ 가입 승인 권한 확인 완료');
+            
+            // 승인 대기 목록 로드
+            await loadPendingMembers();
+        });
+
+        // 권한 확인 함수
+        function canManageEmployees(user) {
+            if (!user) return false;
+            // admin-dashboard.html과 동일한 역할 목록 사용
+            const managerRoles = ['master', 'company_CEO', 'company_admin', 'company_manager'];
+            return managerRoles.includes(user.role);
+        }
+
+        // 승인 대기 회원 목록 로드 (안전한 방식)
+        async function loadPendingMembers() {
+            console.log('📋 승인 대기 회원 목록 로드');
+            
+            const pendingMembersList = document.getElementById('pendingMembersList');
+            
+            // 로딩 상태 표시
+            pendingMembersList.innerHTML = `
+                <div class="loading">
+                    <i class="fas fa-spinner"></i>
+                    <p>승인 대기 목록을 불러오는 중...</p>
+                </div>
+            `;
+            
+            // 안전한 데이터 로딩 사용
+            const pendingMembers = await window.safeLoadData(
+                async () => {
+                    const { data, error } = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .is('role', null)  // role이 null인 사용자들 (승인 대기)
+                        .eq('is_active', true)
+                        .order('created_at', { ascending: false });
+                        
+                    if (error) throw error;
+                    return data || [];
+                },
+                'pending_members',
+                [] // 기본값: 빈 배열
+            );
+            
+            // HTML 생성
+            let html = '';
+            
+            if (pendingMembers.length === 0) {
+                html = `
+                    <div class="empty-state">
+                        <i class="fas fa-user-check"></i>
+                        <h3>승인 대기 중인 회원이 없습니다</h3>
+                        <p>모든 가입 신청이 처리되었습니다.</p>
+                    </div>
+                `;
+            } else {
+                pendingMembers.forEach(member => {
+                    const joinDate = new Date(member.created_at).toLocaleDateString('ko-KR', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    
+                    html += `
+                        <div class="member-card">
+                            <div class="member-header">
+                                <div class="member-info">
+                                    <h4>${member.name || '이름 없음'}</h4>
+                                    <p><i class="fas fa-envelope"></i> ${member.email}</p>
+                                    <p><i class="fas fa-building"></i> ${member.department || '부서 미지정'}</p>
+                                    <p><i class="fas fa-user-tie"></i> ${member.position || '직급 미지정'}</p>
+                                    <p><i class="fas fa-calendar"></i> 가입 신청: ${joinDate}</p>
+                                </div>
+                                <div class="member-status">
+                                    <i class="fas fa-clock"></i> 승인 대기
+                                </div>
+                            </div>
+                            
+                            <div class="member-actions">
+                                <select class="role-select" id="roleSelect_${member.id}">
+                                    <option value="">역할 선택</option>
+                                    <option value="employee">일반 직원</option>
+                                    <option value="company_manager">회사 관리자</option>
+                                    <option value="company_CEO">회사 대표</option>
+                                </select>
+                                <button class="btn btn-approve" onclick="approveMember('${member.id}')">
+                                    <i class="fas fa-check"></i> 승인
+                                </button>
+                                <button class="btn btn-reject" onclick="rejectMember('${member.id}')">
+                                    <i class="fas fa-times"></i> 거부
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            pendingMembersList.innerHTML = html;
+        }
+
+        // 회원 승인
+        async function approveMember(memberId) {
+            // 선택된 역할 확인
+            const roleSelect = document.getElementById(`roleSelect_${memberId}`);
+            if (!roleSelect || !roleSelect.value) {
+                alert('먼저 사용자의 역할을 선택해주세요.');
+                return;
+            }
+            
+            const selectedRole = roleSelect.value;
+            
+            if (!confirm(`이 사용자를 '${getRoleDisplayName(selectedRole)}' 역할로 승인하시겠습니까?`)) {
+                return;
+            }
+            
+            try {
+                if (window.db && window.db.client) {
+                    // 사용자 정보 먼저 가져오기
+                    const { data: userData, error: userError } = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .eq('id', memberId)
+                        .single();
+                    
+                    if (userError || !userData) {
+                        console.error('❌ 사용자 조회 오류:', userError);
+                        alert('사용자 정보를 찾을 수 없습니다.');
+                        return;
+                    }
+                    
+                    // 사용자 역할 업데이트 및 승인 처리
+                    const { error } = await window.db.client
+                        .from('users')
+                        .update({
+                            role: selectedRole,
+                            is_approved: true,
+                            approved_at: new Date().toISOString(),
+                            approved_by: currentUser?.id || currentUser?.email || 'admin'
+                        })
+                        .eq('id', memberId);
+                    
+                    if (error) {
+                        console.error('❌ 회원 승인 오류:', error);
+                        alert('회원 승인 중 오류가 발생했습니다.');
+                        return;
+                    }
+                    
+                    // 승인 알림 생성
+                    try {
+                        await window.db.createNotification({
+                            user_id: memberId,
+                            type: 'user_approved',
+                            title: '회원가입 승인 완료',
+                            message: `귀하의 회원가입이 승인되었습니다. ${getRoleDisplayName(selectedRole)} 권한이 부여되었습니다.`,
+                            company_domain: userData.company_domain || 'namkyungsteel.com'
+                        });
+                        
+                        // 관련 회원가입 알림들을 읽음 처리
+                        const { data: notifications } = await window.db.client
+                            .from('notifications')
+                            .select('id')
+                            .eq('type', 'user_registration')
+                            .eq('related_id', memberId)
+                            .eq('is_read', false);
+                        
+                        if (notifications && notifications.length > 0) {
+                            for (const notif of notifications) {
+                                await window.db.markNotificationAsRead(notif.id);
+                            }
+                        }
+                    } catch (notifError) {
+                        console.error('알림 처리 오류:', notifError);
+                        // 알림 실패해도 승인은 성공한 것으로 처리
+                    }
+                    
+                    console.log('✅ 회원 승인 완료:', memberId);
+                    alert('회원이 성공적으로 승인되었습니다.');
+                    
+                    // 목록 새로고침
+                    await loadPendingMembers();
+                }
+            } catch (error) {
+                console.error('❌ 회원 승인 예외:', error);
+                alert('회원 승인 중 예외가 발생했습니다.');
+            }
+        }
+
+        // 회원 거부
+        async function rejectMember(memberId) {
+            const reason = prompt('가입 거부 사유를 입력하세요:');
+            if (!reason || reason.trim() === '') {
+                alert('거부 사유를 입력해주세요.');
+                return;
+            }
+            
+            if (!confirm('이 사용자의 가입을 거부하시겠습니까?\n거부된 사용자는 다시 가입 신청을 해야 합니다.')) {
+                return;
+            }
+            
+            try {
+                if (window.db && window.db.client) {
+                    // 사용자를 비활성화하고 거부 사유 기록
+                    const { error } = await window.db.client
+                        .from('users')
+                        .update({
+                            is_active: false,
+                            is_approved: false,
+                            rejection_reason: reason,
+                            rejected_at: new Date().toISOString(),
+                            rejected_by: currentUser?.id || currentUser?.email || 'admin'
+                        })
+                        .eq('id', memberId);
+                    
+                    if (error) {
+                        console.error('❌ 회원 거부 오류:', error);
+                        alert('회원 거부 중 오류가 발생했습니다.');
+                        return;
+                    }
+                    
+                    console.log('✅ 회원 거부 완료:', memberId);
+                    alert('회원 가입이 거부되었습니다.');
+                    
+                    // 목록 새로고침
+                    await loadPendingMembers();
+                }
+            } catch (error) {
+                console.error('❌ 회원 거부 예외:', error);
+                alert('회원 거부 중 예외가 발생했습니다.');
+            }
+        }
+
+        // 목록 새로고침
+        function refreshPendingMembers() {
+            console.log('🔄 승인 대기 목록 새로고침');
+            loadPendingMembers();
+        }
+
+        // 역할 표시명 반환
+        function getRoleDisplayName(role) {
+            const roleNames = {
+                'employee': '일반 직원',
+                'company_manager': '회사 관리자',
+                'company_CEO': '회사 대표',
+                'master': '최고 관리자'
+            };
+            return roleNames[role] || role;
+        }
+    </script>
+</body>
+</html>

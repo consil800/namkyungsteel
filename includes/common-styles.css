@@ -1,0 +1,582 @@
+/* 공통 스타일 */
+body { 
+    font-family: 'Noto Sans KR', sans-serif !important; 
+    background-color: #fafbfc !important;
+}
+
+/* 헤더 스타일 */
+.header {
+    background-color: #ffffff !important;
+    box-shadow: 0 2px 15px rgba(0, 102, 204, 0.08) !important;
+    border-bottom: 1px solid #e9ecef !important;
+    backdrop-filter: blur(10px) !important;
+}
+
+.header .sitename {
+    color: #1a365d !important;
+}
+
+.navmenu a {
+    color: #2c3e50 !important;
+}
+
+.navmenu a:hover {
+    color: #0066cc !important;
+}
+
+.navmenu .active {
+    color: #0066cc !important;
+    font-weight: 600 !important;
+}
+
+/* 로그인 버튼 스타일 */
+.login-btn { 
+    background: #0066cc; 
+    color: white; 
+    padding: 8px 20px; 
+    border-radius: 5px; 
+    margin-left: 25px;
+    text-decoration: none;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.login-btn:hover { 
+    background: #0052a3; 
+    color: white;
+}
+
+/* 모바일에서 네비바 조정 */
+@media (max-width: 1199px) {
+    .login-btn {
+        margin-left: 15px;
+        padding: 6px 12px;
+        font-size: 13px;
+        white-space: nowrap;
+        min-width: fit-content;
+        flex-shrink: 0;
+    }
+    
+    .login-btn span {
+        white-space: nowrap;
+    }
+    
+    .header .container-fluid {
+        align-items: center;
+        flex-wrap: nowrap;
+    }
+    
+    .header .d-flex {
+        align-items: center !important;
+    }
+    
+    /* 로고 영역 모바일 조정 */
+    .header .logo {
+        flex-shrink: 1;
+        min-width: 0;
+    }
+    
+    .header .logo img {
+        height: 35px !important;
+        margin-right: 8px !important;
+    }
+    
+    .header .sitename {
+        font-size: 18px !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.2 !important;
+    }
+}
+
+/* 더 작은 모바일 화면에서 추가 조정 */
+@media (max-width: 480px) {
+    .login-btn {
+        padding: 5px 10px;
+        font-size: 12px;
+        margin-left: 10px;
+    }
+    
+    .login-btn i {
+        font-size: 14px;
+    }
+    
+    /* 매우 작은 화면에서 로고 더 축소 */
+    .header .logo img {
+        height: 30px !important;
+        margin-right: 6px !important;
+    }
+    
+    .header .sitename {
+        font-size: 16px !important;
+    }
+    
+    .header .container-fluid {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+}
+
+/* 사용자 프로필 스타일 */
+.user-profile {
+    margin-left: 25px;
+}
+
+.profile-icon {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 5px 10px;
+    border-radius: 25px;
+}
+
+.profile-icon:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.profile-icon img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #fff;
+    margin-right: 8px;
+}
+
+.profile-name {
+    color: #2c3e50;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+/* Navigation Dropdown Styles */
+.navmenu ul {
+    display: flex;
+    align-items: center;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.navmenu > ul > li {
+    white-space: nowrap;
+    padding: 15px 16px;
+    position: relative;
+}
+
+.navmenu a {
+    color: #2c3e50;
+    padding: 12px 0;
+    font-size: 16px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    white-space: nowrap;
+    transition: 0.3s;
+    text-decoration: none;
+}
+
+.navmenu .dropdown ul {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 99;
+    background-color: #ffffff;
+    box-shadow: 0px 0px 30px rgba(44, 62, 80, 0.15);
+    padding: 10px 0;
+    border-radius: 6px;
+    min-width: 180px;
+    flex-direction: column;
+}
+
+.navmenu .dropdown:hover > ul {
+    display: flex;
+}
+
+.navmenu .dropdown ul li {
+    padding: 0;
+    width: 100%;
+}
+
+.navmenu .dropdown ul a {
+    padding: 10px 20px;
+    font-size: 15px;
+    color: #2c3e50;
+    border: none;
+    width: 100%;
+    justify-content: flex-start;
+}
+
+.navmenu .dropdown ul a:hover {
+    color: #3498db;
+    background-color: #f8f9fa;
+}
+
+.toggle-dropdown {
+    margin-left: 5px;
+}
+
+@media (max-width: 1199px) {
+    .navmenu .dropdown ul {
+        position: static;
+        display: none;
+        z-index: 99;
+        padding: 10px 0;
+        margin: 10px 20px;
+        background-color: #ffffff;
+        border: 1px solid #e9ecef;
+        box-shadow: none;
+        border-radius: 6px;
+    }
+    
+    .navmenu .dropdown.active > ul {
+        display: flex;
+    }
+}
+
+/* Footer Styles */
+.footer {
+    background-color: #2d3748;
+    color: #ffffff;
+    border-top: 3px solid #0066cc;
+}
+
+.footer-top {
+    padding: 30px 0 20px;
+}
+
+.footer-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1.2fr;
+    gap: 30px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* 고객지원과 연락처 사이 간격 늘리기 */
+.footer-column:nth-child(3) {
+    margin-right: 20px;
+}
+
+.footer-column h3,
+.footer-column h4 {
+    margin-bottom: 20px;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.footer-column ul {
+    list-style: none;
+    padding: 0;
+}
+
+.footer-column ul li {
+    margin-bottom: 10px;
+}
+
+.footer-column a {
+    color: #cbd5e0;
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+.footer-column a:hover {
+    color: #0066cc;
+}
+
+.footer-column p {
+    color: #a0aec0;
+    line-height: 1.6;
+}
+
+.contact-info li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 15px;
+    color: #cbd5e0;
+}
+
+.contact-info {
+    text-align: left;
+}
+
+/* 연락처 섹션만 왼쪽 정렬 */
+.footer-column:last-child h4 {
+    text-align: left;
+}
+
+.footer-column:last-child {
+    padding-left: 0;
+}
+
+.contact-info i {
+    margin-top: 4px;
+    color: #0066cc;
+}
+
+.footer-bottom {
+    background-color: #1a202c;
+    padding: 20px 0;
+}
+
+.bottom-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.bottom-content p {
+    color: #a0aec0;
+    margin: 0;
+}
+
+.footer-links {
+    display: flex;
+    gap: 20px;
+}
+
+.footer-links a {
+    color: #a0aec0;
+    font-size: 14px;
+    text-decoration: none;
+}
+
+.footer-links a:hover {
+    color: #0066cc;
+}
+
+/* Mobile Drawer Styles */
+.mobile-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100%;
+    background-color: #ffffff;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 10001;
+    overflow-y: auto;
+}
+
+.mobile-drawer.active {
+    transform: translateX(0);
+}
+
+.mobile-drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.mobile-drawer-header h3 {
+    margin: 0;
+    font-size: 20px;
+    color: #2c3e50;
+}
+
+.mobile-drawer-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 5px;
+    line-height: 1;
+}
+
+.mobile-drawer-close:hover {
+    color: #2c3e50;
+}
+
+.mobile-drawer-nav {
+    padding: 0;
+}
+
+.mobile-drawer-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.mobile-drawer-nav > ul > li {
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.mobile-drawer-nav a {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    color: #2c3e50;
+    text-decoration: none;
+    font-size: 16px;
+    transition: background-color 0.2s;
+}
+
+.mobile-drawer-nav > ul > li > a:hover {
+    background-color: #f8f9fa;
+}
+
+.mobile-drawer-nav .dropdown-arrow {
+    font-size: 12px;
+    transition: transform 0.3s;
+}
+
+.mobile-drawer-nav .dropdown.active .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.mobile-drawer-nav .dropdown ul {
+    display: none;
+    background-color: #f8f9fa;
+    padding: 0;
+    margin: 0;
+}
+
+.mobile-drawer-nav .dropdown.active ul {
+    display: block;
+}
+
+.mobile-drawer-nav .dropdown ul a {
+    padding-left: 40px;
+    font-size: 14px;
+    color: #6c757d;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.mobile-drawer-nav .dropdown ul a:hover {
+    background-color: #e9ecef;
+    color: #2c3e50;
+}
+
+/* Mobile Overlay */
+.mobile-drawer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease;
+    z-index: 10000;
+}
+
+.mobile-drawer-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Mobile Nav Toggle Button */
+.mobile-nav-toggle {
+    color: #2c3e50;
+    font-size: 28px;
+    line-height: 0;
+    margin-left: 15px;
+    cursor: pointer;
+    transition: color 0.3s;
+    border: none;
+    background: none;
+    padding: 5px;
+}
+
+.mobile-nav-toggle:hover {
+    color: #0066cc;
+}
+
+@media (max-width: 1199px) {
+    .navmenu {
+        display: none !important;
+    }
+    
+    .mobile-nav-toggle {
+        display: block !important;
+    }
+}
+
+@media (min-width: 1200px) {
+    .mobile-nav-toggle {
+        display: none;
+    }
+    
+    .mobile-drawer,
+    .mobile-drawer-overlay {
+        display: none !important;
+    }
+}
+
+/* Page Title/Header Mobile Styles */
+.page-title, .page-header {
+    padding: 80px 0 50px 0;
+    margin-top: 0;
+}
+
+.page-title h1, .page-header h1 {
+    margin: 0;
+    padding: 0;
+    line-height: 1.2;
+}
+
+/* Mobile adjustments for page titles */
+@media (max-width: 768px) {
+    .page-title, .page-header {
+        padding: 10px 0 60px 0;
+        margin-top: 30px; /* Account for fixed header */
+    }
+    
+    .page-title .container, .page-header .container {
+        padding: 0 20px;
+    }
+    
+    .page-title h1, .page-header h1 {
+        font-size: 1.8rem !important;
+        line-height: 1.3 !important;
+        margin: 0 !important;
+        padding: 10px 0 !important;
+        word-wrap: break-word;
+    }
+    
+    .bottom-content {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+    }
+    
+    .footer-grid {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+    
+    .contact-info {
+        text-align: left;
+    }
+}
+
+@media (max-width: 480px) {
+    .page-title, .page-header {
+        padding: 10px 0 50px 0;
+        margin-top: 30px;
+    }
+    
+    .page-title .container, .page-header .container {
+        padding: 0 15px;
+    }
+    
+    .page-title h1, .page-header h1 {
+        font-size: 1.5rem !important;
+        line-height: 1.2 !important;
+        padding: 15px 0 !important;
+    }
+}

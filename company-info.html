@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회사 정보 관리 - 남경스틸(주)</title>
+    
+    <!-- Favicons -->
+    <link href="logo.jpg" rel="icon">
+    <link href="logo.jpg" rel="apple-touch-icon">
+    
+    <!-- External CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="database.js"></script>
+    <script src="shared-assets/js/auth.js"></script>
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: white;
+            color: #667eea;
+        }
+
+        .form-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-label {
+            color: white;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            padding: 0.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .form-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-select option {
+            background: #2d3748;
+            color: white;
+        }
+
+        .btn-container {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn {
+            padding: 0.875rem 2rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .loading {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            padding: 2rem;
+        }
+
+        .loading i {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #10b981;
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+
+        .file-upload-area {
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .file-upload-area:hover {
+            border-color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .file-upload-area.dragover {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .upload-preview {
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .upload-preview img {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .upload-info {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .btn-container {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-building"></i> 회사 정보 관리</h1>
+            <a href="admin-dashboard.html" class="back-btn">
+                <i class="fas fa-arrow-left"></i> 관리자 대시보드
+            </a>
+        </div>
+
+        <div class="form-container">
+            <div id="alertContainer"></div>
+            
+            <div id="loadingIndicator" class="loading">
+                <i class="fas fa-spinner"></i>
+                <p>회사 정보를 불러오는 중...</p>
+            </div>
+
+            <form id="companyInfoForm" style="display: none;">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="companyType">회사 형태</label>
+                        <select class="form-select" id="companyType" name="company_type" required>
+                            <option value="corporation">주식회사</option>
+                            <option value="partnership">합명회사</option>
+                            <option value="sole_proprietorship">개인사업자</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="companyName">회사명</label>
+                        <input type="text" class="form-input" id="companyName" name="company_name" required placeholder="회사명을 입력하세요">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="representativeName">대표자명</label>
+                        <input type="text" class="form-input" id="representativeName" name="representative_name" placeholder="대표자명을 입력하세요">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="businessNumber">사업자번호</label>
+                        <input type="text" class="form-input" id="businessNumber" name="business_number" placeholder="000-00-00000">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="corporateNumber">법인번호</label>
+                        <input type="text" class="form-input" id="corporateNumber" name="corporate_number" placeholder="000000-0000000">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="establishmentDate">설립일</label>
+                        <input type="date" class="form-input" id="establishmentDate" name="establishment_date">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label class="form-label" for="address">주소</label>
+                        <input type="text" class="form-input" id="address" name="address" placeholder="기본 주소를 입력하세요">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label class="form-label" for="detailedAddress">상세주소</label>
+                        <input type="text" class="form-input" id="detailedAddress" name="detailed_address" placeholder="상세 주소를 입력하세요">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="contactPhone">대표전화</label>
+                        <input type="tel" class="form-input" id="contactPhone" name="contact_phone" placeholder="000-0000-0000">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="faxNumber">팩스번호</label>
+                        <input type="tel" class="form-input" id="faxNumber" name="fax_number" placeholder="000-0000-0000">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="email">이메일</label>
+                        <input type="email" class="form-input" id="email" name="email" placeholder="company@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="website">웹사이트</label>
+                        <input type="url" class="form-input" id="website" name="website" placeholder="https://example.com">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="businessType">업종</label>
+                        <input type="text" class="form-input" id="businessType" name="business_type" placeholder="제조업, 서비스업 등">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="employeeCount">직원 수</label>
+                        <input type="number" class="form-input" id="employeeCount" name="employee_count" min="1" placeholder="직원 수">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label class="form-label" for="businessItems">사업내용</label>
+                        <textarea class="form-textarea" id="businessItems" name="business_items" placeholder="주요 사업내용을 입력하세요"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="capitalAmount">자본금 (원)</label>
+                        <input type="number" class="form-input" id="capitalAmount" name="capital_amount" min="0" placeholder="자본금">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="annualRevenue">연간매출 (원)</label>
+                        <input type="number" class="form-input" id="annualRevenue" name="annual_revenue" min="0" placeholder="연간매출">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="bankName">거래은행</label>
+                        <input type="text" class="form-input" id="bankName" name="bank_name" placeholder="은행명">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="accountNumber">계좌번호</label>
+                        <input type="text" class="form-input" id="accountNumber" name="account_number" placeholder="계좌번호">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="accountHolder">예금주</label>
+                        <input type="text" class="form-input" id="accountHolder" name="account_holder" placeholder="예금주명">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="taxInvoiceEmail">세금계산서 이메일</label>
+                        <input type="email" class="form-input" id="taxInvoiceEmail" name="tax_invoice_email" placeholder="tax@example.com">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="accountingManager">경리담당자</label>
+                        <input type="text" class="form-input" id="accountingManager" name="accounting_manager" placeholder="경리담당자명">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="accountingPhone">경리담당자 연락처</label>
+                        <input type="tel" class="form-input" id="accountingPhone" name="accounting_phone" placeholder="000-0000-0000">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label class="form-label">회사 직인</label>
+                        <div class="file-upload-area" id="sealUploadArea">
+                            <input type="file" id="sealFileInput" accept="image/*" style="display: none;">
+                            <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: rgba(255, 255, 255, 0.6); margin-bottom: 0.5rem;"></i>
+                            <p style="color: white; margin: 0.5rem 0;">클릭하거나 이미지를 드래그하여 업로드</p>
+                            <p class="upload-info">권장: PNG, JPG (최대 5MB)</p>
+                        </div>
+                        <div class="upload-preview" id="sealPreview">
+                            <img id="sealPreviewImage" src="" alt="직인 미리보기">
+                            <p class="upload-info">현재 직인 이미지</p>
+                        </div>
+                        <input type="hidden" id="companySealUrl" name="company_seal_url">
+                    </div>
+                </div>
+
+                <div class="btn-container">
+                    <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                        <i class="fas fa-undo"></i> 초기화
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> 저장
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+
+        // 페이지 초기화
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 회사 정보 관리 페이지 초기화');
+            
+            // 데이터베이스 초기화
+            if (window.db) {
+                try {
+                    await window.db.init();
+                    console.log('✅ 데이터베이스 초기화 완료');
+                } catch (error) {
+                    console.error('❌ 데이터베이스 초기화 실패:', error);
+                    showAlert('데이터베이스 연결에 실패했습니다.', 'error');
+                    return;
+                }
+            }
+            
+            // 현재 사용자 확인
+            currentUser = AuthManager.getCurrentUser();
+            if (!currentUser || !canManageCompanyInfo(currentUser)) {
+                alert('회사 정보 관리 권한이 없습니다.');
+                window.location.href = 'admin-dashboard.html';
+                return;
+            }
+            
+            // 회사 정보 로드
+            await loadCompanyInfo();
+            
+            // 폼 제출 이벤트 등록
+            document.getElementById('companyInfoForm').addEventListener('submit', handleFormSubmit);
+            
+            // 직인 업로드 이벤트 등록
+            setupSealUpload();
+        });
+
+        // 권한 확인 함수
+        function canManageCompanyInfo(user) {
+            if (!user) return false;
+            const managerRoles = ['master', 'company_CEO', 'company_admin'];
+            return managerRoles.includes(user.role);
+        }
+
+        // 회사 정보 로드
+        async function loadCompanyInfo() {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const form = document.getElementById('companyInfoForm');
+            
+            try {
+                const { data, error } = await window.db.client
+                    .from('company_info')
+                    .select('*')
+                    .eq('company_domain', 'namkyungsteel.com')
+                    .single();
+                
+                if (error && error.code !== 'PGRST116') {
+                    throw error;
+                }
+                
+                // 폼에 데이터 채우기
+                if (data) {
+                    populateForm(data);
+                }
+                
+                loadingIndicator.style.display = 'none';
+                form.style.display = 'block';
+                
+            } catch (error) {
+                console.error('❌ 회사 정보 로드 오류:', error);
+                showAlert('회사 정보를 불러오는 중 오류가 발생했습니다.', 'error');
+                loadingIndicator.style.display = 'none';
+                form.style.display = 'block';
+            }
+        }
+
+        // 폼에 데이터 채우기
+        function populateForm(data) {
+            Object.keys(data).forEach(key => {
+                const input = document.querySelector(`[name="${key}"]`);
+                if (input && data[key] !== null) {
+                    input.value = data[key];
+                }
+            });
+            
+            // 직인 이미지 표시
+            if (data.company_seal_url) {
+                document.getElementById('sealPreviewImage').src = data.company_seal_url;
+                document.getElementById('sealPreview').style.display = 'block';
+            }
+        }
+
+        // 폼 제출 처리
+        async function handleFormSubmit(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const companyData = {};
+            
+            // FormData를 객체로 변환
+            for (let [key, value] of formData.entries()) {
+                companyData[key] = value || null;
+            }
+            
+            // 필수 필드 추가
+            companyData.company_domain = 'namkyungsteel.com';
+            companyData.updated_at = new Date().toISOString();
+            
+            console.log('💾 회사정보 저장 시작:', companyData);
+            
+            try {
+                const { data, error } = await window.db.client
+                    .from('company_info')
+                    .upsert([companyData], {
+                        onConflict: 'company_domain'
+                    })
+                    .select()
+                    .single();
+                
+                if (error) {
+                    throw error;
+                }
+                
+                console.log('✅ 회사정보 저장 완료:', data);
+                alert('회사 정보가 성공적으로 저장되었습니다.');
+                
+            } catch (error) {
+                console.error('❌ 회사정보 저장 오류:', error);
+                showAlert(`회사 정보 저장에 실패했습니다: ${error.message}`, 'error');
+            }
+        }
+
+        // 폼 초기화
+        function resetForm() {
+            if (confirm('모든 입력 내용이 초기화됩니다. 계속하시겠습니까?')) {
+                document.getElementById('companyInfoForm').reset();
+                loadCompanyInfo(); // 저장된 데이터 다시 로드
+            }
+        }
+
+        // 알림 표시
+        function showAlert(message, type = 'info') {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertClass = type === 'error' ? 'alert-error' : 'alert-success';
+            
+            alertContainer.innerHTML = `
+                <div class="alert ${alertClass}">
+                    <i class="fas fa-${type === 'error' ? 'exclamation-circle' : 'check-circle'}"></i>
+                    ${message}
+                </div>
+            `;
+            
+            // 3초 후 알림 제거
+            setTimeout(() => {
+                alertContainer.innerHTML = '';
+            }, 3000);
+        }
+
+        // 직인 업로드 설정
+        function setupSealUpload() {
+            const uploadArea = document.getElementById('sealUploadArea');
+            const fileInput = document.getElementById('sealFileInput');
+            const preview = document.getElementById('sealPreview');
+            const previewImage = document.getElementById('sealPreviewImage');
+            
+            // 클릭으로 파일 선택
+            uploadArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+            
+            // 파일 선택 시
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    handleSealFile(file);
+                }
+            });
+            
+            // 드래그 앤 드롭
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                
+                const file = e.dataTransfer.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    handleSealFile(file);
+                }
+            });
+        }
+        
+        // 직인 파일 처리
+        async function handleSealFile(file) {
+            // 파일 크기 체크 (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                showAlert('파일 크기는 5MB를 초과할 수 없습니다.', 'error');
+                return;
+            }
+            
+            // 파일 타입 체크
+            if (!file.type.startsWith('image/')) {
+                showAlert('이미지 파일만 업로드 가능합니다.', 'error');
+                return;
+            }
+            
+            try {
+                // Supabase Storage에 업로드
+                const fileName = `company-seal-${Date.now()}.${file.name.split('.').pop()}`;
+                const { data: uploadData, error: uploadError } = await window.db.client.storage
+                    .from('company-assets')
+                    .upload(fileName, file, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+                
+                if (uploadError) {
+                    // 버킷이 없는 경우 생성 필요
+                    console.error('업로드 오류:', uploadError);
+                    
+                    // 대체 방법: Base64로 저장
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const base64Data = e.target.result;
+                        document.getElementById('companySealUrl').value = base64Data;
+                        
+                        // 미리보기 표시
+                        document.getElementById('sealPreviewImage').src = base64Data;
+                        document.getElementById('sealPreview').style.display = 'block';
+                        
+                        showAlert('직인 이미지가 선택되었습니다.', 'success');
+                    };
+                    reader.readAsDataURL(file);
+                    return;
+                }
+                
+                // 공개 URL 가져오기
+                const { data: urlData } = window.db.client.storage
+                    .from('company-assets')
+                    .getPublicUrl(fileName);
+                
+                if (urlData) {
+                    document.getElementById('companySealUrl').value = urlData.publicUrl;
+                    
+                    // 미리보기 표시
+                    document.getElementById('sealPreviewImage').src = urlData.publicUrl;
+                    document.getElementById('sealPreview').style.display = 'block';
+                    
+                    showAlert('직인 이미지가 업로드되었습니다.', 'success');
+                }
+            } catch (error) {
+                console.error('직인 업로드 오류:', error);
+                showAlert('직인 업로드 중 오류가 발생했습니다.', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

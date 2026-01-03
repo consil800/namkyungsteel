@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>업체 관계도 - 철강영업 업무일지</title>
+    <!-- Favicons -->
+    <link href="logo.jpg" rel="icon">
+    <link href="logo.jpg" rel="apple-touch-icon">
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- D3.js for network visualization -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    
+    <style>
+        /* 네트워크 차트 컨테이너 */
+        .network-container {
+            width: 100%;
+            height: calc(100vh - 200px);
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        /* SVG 차트 스타일 */
+        .network-svg {
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+        
+        .network-svg:active {
+            cursor: grabbing;
+        }
+        
+        /* 노드 스타일 */
+        .company-node {
+            cursor: pointer;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+            transition: filter 0.2s ease;
+        }
+        
+        .company-node:hover {
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+        }
+        
+        .company-node.center {
+            filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4));
+        }
+        
+        .company-node.dragging {
+            cursor: grabbing;
+        }
+        
+        /* 노드 텍스트 스타일 */
+        .node-text {
+            font-family: 'Malgun Gothic', sans-serif;
+            font-weight: 600;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            pointer-events: none;
+            user-select: none;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        /* 링크 (화살표) 스타일 */
+        .company-link {
+            stroke-width: 2;
+            fill: none;
+            marker-end: url(#arrowhead);
+        }
+        
+        /* 링크 레이블 스타일 */
+        .link-label {
+            font-family: 'Malgun Gothic', sans-serif;
+            font-size: 12px;
+            font-weight: 500;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            fill: #2c3e50;
+            background: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            pointer-events: none;
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+        }
+        
+        /* 컨트롤 패널 */
+        .control-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 100;
+            min-width: 250px;
+        }
+        
+        .control-section {
+            margin-bottom: 15px;
+        }
+        
+        .control-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .control-section h4 {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        
+        /* 업체 검색 */
+        .company-search {
+            position: relative;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 101;
+            display: none;
+        }
+        
+        .search-result-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .search-result-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+        
+        /* 관계 추가 폼 */
+        .relationship-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            align-items: end;
+        }
+        
+        .relationship-form input, .relationship-form select {
+            padding: 6px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .relationship-form .full-width {
+            grid-column: 1 / -1;
+        }
+        
+        /* 버튼 스타일 */
+        .control-btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .control-btn:hover {
+            background: linear-gradient(135deg, #2980b9, #1f4e79);
+            transform: translateY(-1px);
+        }
+        
+        .control-btn.success {
+            background: linear-gradient(135deg, #27ae60, #229954);
+        }
+        
+        .control-btn.success:hover {
+            background: linear-gradient(135deg, #229954, #1e8449);
+        }
+        
+        .control-btn.danger {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+        
+        .control-btn.danger:hover {
+            background: linear-gradient(135deg, #c0392b, #a93226);
+        }
+        
+        /* 범례 */
+        .legend {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 100;
+            min-width: 200px;
+        }
+        
+        .legend h4 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            margin-right: 8px;
+            border: 1px solid #ddd;
+        }
+        
+        .legend-text {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        /* 하단 컨트롤 */
+        .bottom-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            background: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 100;
+        }
+        
+        /* 반응형 */
+        @media (max-width: 768px) {
+            .control-panel {
+                position: relative;
+                top: auto;
+                left: auto;
+                margin-bottom: 20px;
+                width: 100%;
+                box-sizing: border-box;
+            }
+            
+            .legend {
+                position: relative;
+                top: auto;
+                right: auto;
+                margin-bottom: 20px;
+                width: 100%;
+                box-sizing: border-box;
+            }
+            
+            .network-container {
+                height: 400px;
+            }
+            
+            .bottom-controls {
+                position: relative;
+                bottom: auto;
+                left: auto;
+                transform: none;
+                margin-top: 20px;
+                justify-content: center;
+            }
+            
+            /* 모바일에서 노드 간격 조정 */
+            .company-node circle {
+                stroke-width: 3;
+            }
+        }
+        
+        /* 태블릿 크기에서 추가 조정 */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .control-panel {
+                min-width: 220px;
+            }
+            
+            .legend {
+                min-width: 180px;
+            }
+        }
+        
+        /* 로딩 스타일 */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            font-size: 18px;
+            color: #666;
+        }
+        
+        /* 토스트 메시지 */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #27ae60;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .toast.error {
+            background: #e74c3c;
+        }
+        
+        .toast.show {
+            display: block;
+            animation: slideInDown 0.3s ease-out;
+        }
+        
+        @keyframes slideInDown {
+            from {
+                transform: translateX(-50%) translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header style="background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%); padding: 2rem; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); margin-bottom: 2rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <h1 style="margin: 0; color: #ffffff; font-size: 1.8rem; font-weight: 700; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
+                    <span id="companyName">업체</span> 관계도
+                </h1>
+                <div style="display: flex; gap: 10px;">
+                    <button id="backBtn" class="btn btn-secondary">뒤로가기</button>
+                    <button id="saveNetworkBtn" class="btn btn-success">저장</button>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <!-- 컨트롤 패널 -->
+            <div class="control-panel">
+                <div class="control-section">
+                    <h4>📊 업체 추가</h4>
+                    <div class="company-search">
+                        <input type="text" id="companySearchInput" class="search-input" placeholder="업체명 검색 또는 직접 입력...">
+                        <div id="searchResults" class="search-results"></div>
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <h4>🔗 관계 추가</h4>
+                    <div class="relationship-form">
+                        <select id="fromCompany" class="full-width">
+                            <option value="">시작 업체 선택</option>
+                        </select>
+                        <select id="toCompany" class="full-width">
+                            <option value="">대상 업체 선택</option>
+                        </select>
+                        <select id="relationshipType" class="full-width">
+                            <option value="">관계 선택</option>
+                            <option value="납품">납품</option>
+                            <option value="매입">매입</option>
+                            <option value="자회사">자회사</option>
+                            <option value="모회사">모회사</option>
+                            <option value="협력사">협력사</option>
+                            <option value="경쟁사">경쟁사</option>
+                            <option value="기타">기타</option>
+                        </select>
+                        <div id="customRelationshipDiv" style="display: none; margin-top: 8px;">
+                            <input type="text" id="customRelationshipInput" class="full-width" placeholder="사용자 정의 관계 입력..." maxlength="20">
+                        </div>
+                        <button id="addRelationshipBtn" class="control-btn success full-width">관계 추가</button>
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <h4>⚙️ 컨트롤</h4>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button id="resetZoomBtn" class="control-btn">줌 리셋</button>
+                        <button id="toggleGridBtn" class="control-btn">그리드 표시</button>
+                        <button id="clearAllBtn" class="control-btn danger">모두 삭제</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 범례 -->
+            <div class="legend">
+                <h4>🎨 범례</h4>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #e74c3c;"></div>
+                    <span class="legend-text">중심 업체</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #3498db;"></div>
+                    <span class="legend-text">등록된 업체</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #95a5a6;"></div>
+                    <span class="legend-text">임시 업체</span>
+                </div>
+            </div>
+            
+            <!-- 네트워크 차트 영역 -->
+            <div class="network-container">
+                <div class="loading" id="loadingMessage">
+                    네트워크 차트를 로딩 중입니다...
+                </div>
+                <svg class="network-svg" id="networkSvg"></svg>
+            </div>
+            
+            <!-- 하단 컨트롤 -->
+            <div class="bottom-controls">
+                <button id="addCompanyBtn" class="control-btn">업체 추가</button>
+                <button id="autoLayoutBtn" class="control-btn">자동 배치</button>
+                <button id="exportBtn" class="control-btn">이미지 저장</button>
+            </div>
+        </main>
+    </div>
+    
+    <!-- 토스트 메시지 -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Scripts -->
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Database Scripts -->
+    <script src="database.js?v=20250119003"></script>
+    <!-- Data Cache Scripts -->
+    <script src="data-cache.js?v=20250909001"></script>
+    <!-- Auth and Data Scripts -->
+    <script src="shared-assets/js/auth.js"></script>
+    <script src="data-loader.js"></script>
+    <script src="company-network.js?v=20250909005"></script>
+</body>
+</html>
