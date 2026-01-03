@@ -137,6 +137,155 @@ function compareCompanies(a, b) {
   return (a.company_name || '').localeCompare(b.company_name || '', 'ko');
 }
 
+// ===== 인접 지역 맵 (ChatGPT + Claude 협업 설계) =====
+// 같은 생활권 내 지역들을 정의 (이동 효율을 위한 권역 설정)
+const REGION_ADJACENCY = {
+  '김해': ['부산', '양산', '창원', '밀양'],
+  '부산': ['김해', '양산', '울산'],
+  '양산': ['부산', '김해', '울산', '밀양'],
+  '창원': ['김해', '함안', '밀양', '진주', '고성'],
+  '울산': ['부산', '양산', '경주'],
+  '밀양': ['김해', '양산', '창원', '창녕'],
+  '함안': ['창원', '의령', '창녕'],
+  '경주': ['울산', '영천', '포항'],
+  '진주': ['창원', '사천', '고성', '의령'],
+  '고성': ['창원', '진주', '사천'],
+};
+
+// ===== 근접성 점수 계산 (ChatGPT + Claude 협업 설계) =====
+// 낮을수록 더 가까움 - Seed 기준으로 후보들을 정렬할 때 사용
+const PROXIMITY_WEIGHT = {
+  sameGroup: 0,        // 같은 groupKey (김해|한림면)
+  sameRegionDiffSub: 20, // 같은 region, 다른 읍면동
+  adjacentRegion: 40,  // 인접 지역 (REGION_ADJACENCY에 정의)
+  diffRegion: 80,      // 완전히 다른 지역
+};
+
+// ===== 안정 키 함수 (ChatGPT 리뷰 반영) =====
+// c.id가 없거나 undefined일 때를 대비한 고유 키 생성
+function getCompanyKey(c) {
+  return c.id ?? `${c.region ?? '기타'}|${getLocationGroupKey(c) ?? ''}|${c.address ?? ''}|${c.name ?? ''}`;
+}
+
+function proximityScore(seed, candidate) {
+  const seedKey = getLocationGroupKey(seed);
+  const candKey = getLocationGroupKey(candidate);
+  const seedRegion = seed.region || '기타';
+  const candRegion = candidate.region || '기타';
+
+  // 1) 같은 groupKey면 최우선 (같은 지역 + 같은 읍면동)
+  // ★ ChatGPT 리뷰 반영: null/빈값 방어 (가짜 동일 그룹 버그 수정)
+  if (seedKey && candKey && seedKey === candKey) {
+    return PROXIMITY_WEIGHT.sameGroup;
+  }
+
+  // 2) 같은 region이면 다음 우선
+  if (seedRegion === candRegion) {
+    return PROXIMITY_WEIGHT.sameRegionDiffSub;
+  }
+
+  // 3) 인접 지역이면 중간 우선
+  const neighbors = REGION_ADJACENCY[seedRegion] || [];
+  if (neighbors.includes(candRegion)) {
+    return PROXIMITY_WEIGHT.adjacentRegion;
+  }
+
+  // 4) 그 외 먼 지역
+  return PROXIMITY_WEIGHT.diffRegion;
+}
+
+// ===== 지역별 인덱스 생성 (빠른 후보 탐색용) =====
+function buildGeoIndex(companies) {
+  const byGroupKey = new Map(); // "김해|한림면" -> [company...]
+  const byRegion = new Map();   // "김해" -> [company...]
+
+  for (const c of companies) {
+    const gk = getLocationGroupKey(c);
+    const region = c.region || '기타';
+
+    if (!byGroupKey.has(gk)) byGroupKey.set(gk, []);
+    byGroupKey.get(gk).push(c);
+
+    if (!byRegion.has(region)) byRegion.set(region, []);
+    byRegion.get(region).push(c);
+  }
+
+  return { byGroupKey, byRegion };
+}
+
+// ===== 하루 업체 선택 (Seed + 근접순) =====
+// Seed는 기존 우선순위로 선택, 나머지는 Seed 근접순으로 채움
+function pickDayCompanies(remaining, dailyCapacity, index) {
+  if (remaining.length === 0) return [];
+
+  // 1) Seed 선택: 기존 우선순위(색상→방문일→방문횟수) 기준으로 첫 업체
+  // ★ ChatGPT 리뷰 반영: 원본 배열 변경 방지 (spread 연산자 사용)
+  const sorted = [...remaining].sort(compareCompanies);
+  const seed = sorted[0];
+  const seedKey = getLocationGroupKey(seed);
+  const seedRegion = seed.region || '기타';
+
+  const picked = [seed];
+  // ★ ChatGPT 리뷰 반영: 안정 키 사용 (c.id가 undefined일 때 대비)
+  const pickedIds = new Set([getCompanyKey(seed)]);
+
+  // 2) 후보 풀을 "가까운 순서로" 확장해서 모으기
+  const candidates = [];
+  const addedIds = new Set([getCompanyKey(seed)]);
+
+  const addCandidates = (arr) => {
+    for (const c of arr || []) {
+      const key = getCompanyKey(c);
+      if (!addedIds.has(key)) {
+        candidates.push(c);
+        addedIds.add(key);
+      }
+    }
+  };
+
+  // 같은 groupKey 최우선
+  addCandidates(index.byGroupKey.get(seedKey));
+  // 같은 region 다음
+  addCandidates(index.byRegion.get(seedRegion));
+  // 인접 지역
+  const neighbors = REGION_ADJACENCY[seedRegion] || [];
+  for (const r of neighbors) {
+    addCandidates(index.byRegion.get(r));
+  }
+  // 안전망: 후보가 부족하면 전체 remaining 추가
+  if (candidates.length < dailyCapacity * 2) {
+    addCandidates(remaining);
+  }
+
+  // 3) 후보를 근접성 점수로 정렬 + 동점이면 기존 우선순위로 정렬
+  // ★ ChatGPT 리뷰 반영: 안정 키로 필터링 (c.id가 undefined일 때 대비)
+  const seedCompanyKey = getCompanyKey(seed);
+  const scored = candidates
+    .filter(c => getCompanyKey(c) !== seedCompanyKey)
+    .map(c => ({
+      c,
+      score: proximityScore(seed, c)
+    }));
+
+  scored.sort((x, y) => {
+    // 근접성 점수 우선
+    if (x.score !== y.score) return x.score - y.score;
+    // 동점이면 기존 우선순위 (색상→방문일→방문횟수)
+    return compareCompanies(x.c, y.c);
+  });
+
+  // 4) dailyCapacity까지 채우기
+  for (const { c } of scored) {
+    if (picked.length >= dailyCapacity) break;
+    const key = getCompanyKey(c);
+    if (pickedIds.has(key)) continue;
+    picked.push(c);
+    pickedIds.add(key);
+  }
+
+  return picked;
+}
+
 // ===== 하루 방문 수 옵션 =====
 const CAP_OPTIONS = {
   '1-3': { min: 1, max: 3, target: 2 },
@@ -544,8 +693,8 @@ function updateEstimate() {
   }
 }
 
-// ===== 스케줄 생성 (ChatGPT Ultra Think 설계) =====
-// 정렬 우선순위: 1) 색상 우선순위 2) 최근방문일(NULL/오래된 순) 3) 방문횟수(적은 순)
+// ===== 스케줄 생성 (ChatGPT + Claude 협업 설계 v2) =====
+// 새 알고리즘: Seed(기존 우선순위) + 같은 날 나머지는 지리적 근접순
 function generateSchedule() {
   const startStr = el.startDate.value;
   const endStr = el.endDate.value;
@@ -573,32 +722,48 @@ function generateSchedule() {
   // 날짜 목록 생성
   const days = buildDays(startStr, endStr);
 
-  // ★ 핵심: compareCompanies 함수로 업체 정렬
-  // 우선순위: 색상(빨강→회색) → 최근방문일(NULL/오래된 순) → 방문횟수(적은 순)
-  const sortedCompanies = [...companies].sort(compareCompanies);
+  // ★ 새 알고리즘: 지역별 인덱스 빌드
+  let remaining = [...companies];
+  let index = buildGeoIndex(remaining);
 
-  console.log('📊 정렬 결과 (상위 10개):');
-  sortedCompanies.slice(0, 10).forEach((c, i) => {
-    console.log(`  ${i + 1}. ${c.company_name} | 색상: ${c.color_code} | 방문일: ${c.last_visit_date || 'NULL'} | 횟수: ${c.visit_count || 0}`);
-  });
+  console.log('📊 새 알고리즘: Seed(우선순위) + 근접순 배정');
+  console.log(`  총 업체: ${remaining.length}개`);
+  console.log(`  인덱스 그룹: ${index.byGroupKey.size}개 groupKey, ${index.byRegion.size}개 region`);
 
-  // 근무일에 순차 배정
-  let companyIndex = 0;
+  // 근무일 필터링
   const workdays = days.filter(d => !d.isWeekend && !d.isHoliday && !d.isOff);
+  let totalAssigned = 0;
 
+  // ★ 핵심: 각 근무일마다 Seed + 근접순으로 업체 배정
   for (const day of workdays) {
-    const remaining = sortedCompanies.length - companyIndex;
-    if (remaining <= 0) break;
+    if (remaining.length === 0) break;
 
-    const toAssign = Math.min(cap.target, remaining);
-    day.companies = sortedCompanies.slice(companyIndex, companyIndex + toAssign);
-    companyIndex += toAssign;
+    // pickDayCompanies: Seed는 기존 우선순위, 나머지는 근접순
+    const dayCompanies = pickDayCompanies(remaining, cap.target, index);
+    day.companies = dayCompanies;
+    totalAssigned += dayCompanies.length;
+
+    // 배정된 업체 remaining에서 제거
+    const pickedIds = new Set(dayCompanies.map(c => c.id));
+    remaining = remaining.filter(c => !pickedIds.has(c.id));
+
+    // 인덱스 재빌드 (remaining이 변경되었으므로)
+    index = buildGeoIndex(remaining);
+
+    // 디버그 로그 (첫 3일만)
+    if (totalAssigned <= cap.target * 3) {
+      const seed = dayCompanies[0];
+      if (seed) {
+        console.log(`  ${day.dateStr}: Seed=${seed.company_name}(${seed.region}|${extractSubDistrict(seed.address)})`);
+        dayCompanies.slice(1, 4).forEach((c, i) => {
+          console.log(`    ${i + 2}. ${c.company_name} (${c.region}|${extractSubDistrict(c.address)}) 근접도:${proximityScore(seed, c)}`);
+        });
+      }
+    }
   }
 
   // 미배정 업체
-  state.unassigned = companyIndex < sortedCompanies.length
-    ? sortedCompanies.slice(companyIndex)
-    : [];
+  state.unassigned = remaining;
 
   state.schedule = days;
   state.isDirty = true;
@@ -607,9 +772,8 @@ function generateSchedule() {
   renderUnassigned();
   updateDirtyState();
 
-  const assignedCount = companyIndex;
   const unassignedCount = state.unassigned.length;
-  toast(`스케줄 생성 완료! 배정: ${assignedCount}개, 미배정: ${unassignedCount}개`);
+  toast(`스케줄 생성 완료! 배정: ${totalAssigned}개, 미배정: ${unassignedCount}개`);
 }
 
 // ===== 위치 기반 그룹핑 후 순서 정렬 =====
