@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OAuth 리다이렉트 처리</title>
+    
+    <!-- Favicons -->
+    <link href="logo.jpg" rel="icon">
+    <link href="logo.jpg" rel="apple-touch-icon">
 </head>
 <body>
     <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
@@ -29,6 +33,17 @@
         if (accessToken) {
             console.log('✅ OAuth 토큰 발견, 처리 중...');
             
+            // OAuth 에러 파라미터 확인
+            const errorParam = urlParams.get('error');
+            const errorDesc = urlParams.get('error_description');
+            
+            if (errorParam) {
+                console.error('❌ OAuth 오류:', errorParam, decodeURIComponent(errorDesc || ''));
+                alert(`로그인 오류: ${decodeURIComponent(errorDesc || errorParam)}`);
+                window.location.href = 'https://namkyungsteel.com';
+                return;
+            }
+            
             try {
                 // Supabase 세션 설정
                 const { data: { session }, error: sessionError } = await supabase.auth.setSession({
@@ -42,6 +57,12 @@
                 }
                 
                 console.log('✅ 세션 설정 완료:', session);
+                console.log('📝 사용자 정보:', {
+                    provider: session.user.app_metadata?.provider,
+                    email: session.user.email,
+                    id: session.user.id,
+                    metadata: session.user.user_metadata
+                });
                 
                 // public.users 테이블에서 사용자 확인/생성
                 const provider = session.user.app_metadata?.provider || 'unknown';
@@ -93,8 +114,11 @@
                         profile_image: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture,
                         password: 'oauth_user',
                         is_active: true,
+                        is_approved: true,  // OAuth 사용자는 자동 승인
                         created_at: new Date().toISOString()
                     };
+                    
+                    console.log('📝 생성할 사용자 데이터:', newUser);
                     
                     const { data: createdUser, error: createError } = await supabase
                         .from('users')
@@ -104,43 +128,84 @@
                     
                     if (createError) {
                         console.error('❌ 사용자 생성 오류:', createError);
-                        // 트리거가 이미 생성했을 수 있으므로 다시 조회
-                        const { data: retriedUser } = await supabase
-                            .from('users')
-                            .select('*')
-                            .eq('email', userEmail)
-                            .single();
-                        dbUser = retriedUser;
+                        console.error('📝 시도한 데이터:', newUser);
+                        
+                        // RLS 정책 오류나 권한 오류인 경우
+                        if (createError.code === '42501' || createError.message?.includes('RLS')) {
+                            console.log('📝 RLS 정책 오류 - 관리자 승인 필요');
+                            
+                            // 이메일이 없는 경우 (카카오) OAuth ID로 다시 조회
+                            if (userEmail) {
+                                const { data: retriedUser } = await supabase
+                                    .from('users')
+                                    .select('*')
+                                    .eq('email', userEmail)
+                                    .single();
+                                dbUser = retriedUser;
+                            } else {
+                                const { data: retriedUser } = await supabase
+                                    .from('users')
+                                    .select('*')
+                                    .eq('oauth_id', userId)
+                                    .single();
+                                dbUser = retriedUser;
+                            }
+                            
+                            if (!dbUser) {
+                                // 사용자 생성은 실패했지만 OAuth 인증은 성공했으므로
+                                // 임시로 사용자 객체를 만들어 세션 저장
+                                console.log('⚠️ DB 저장 실패, 임시 세션 생성');
+                                dbUser = newUser;
+                                dbUser.id = userId;
+                                
+                                alert('회원가입이 처리 중입니다. 관리자 승인 후 정상적으로 이용 가능합니다.');
+                            }
+                        } else {
+                            throw new Error(`사용자 등록 실패: ${createError.message}`);
+                        }
                     } else {
                         dbUser = createdUser;
                         
-                        // 새 사용자 가입 알림 생성
-                        const notification = {
-                            id: Date.now().toString(),
-                            type: 'new_user_signup',
-                            title: '새로운 사용자 가입',
-                            message: `${userName}님이 ${provider === 'kakao' ? '카카오' : 'Google'} 로그인으로 가입했습니다.`,
-                            userInfo: {
-                                name: userName,
-                                email: userEmail || '이메일 미제공',
-                                provider: provider === 'kakao' ? '카카오' : 'Google',
-                                signupTime: new Date().toISOString()
-                            },
-                            isRead: false,
-                            createdAt: new Date().toISOString()
-                        };
-                        
-                        // 관리자용 알림 저장
-                        const notifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
-                        notifications.unshift(notification);
-                        
-                        // 최대 50개까지만 보관
-                        if (notifications.length > 50) {
-                            notifications.splice(50);
+                        // 새 사용자 가입 알림 생성 - Supabase notifications 테이블에 저장
+                        try {
+                            // 관리자들(company_CEO, company_admin) 조회
+                            const { data: admins, error: adminError } = await supabase
+                                .from('users')
+                                .select('id')
+                                .in('role', ['company_CEO', 'company_admin'])
+                                .eq('company_domain', 'namkyungsteel.com')
+                                .eq('is_active', true);
+                            
+                            if (adminError) {
+                                console.error('관리자 조회 오류:', adminError);
+                            } else if (admins && admins.length > 0) {
+                                // 각 관리자에게 알림 생성
+                                const notifications = admins.map(admin => ({
+                                    user_id: admin.id,
+                                    type: 'user_registration',
+                                    title: '신규 회원가입 승인 요청',
+                                    message: `${userName}님이 ${provider === 'kakao' ? '카카오' : 'Google'} 로그인으로 가입했습니다. 승인이 필요합니다.`,
+                                    related_id: dbUser.id,
+                                    company_domain: 'namkyungsteel.com',
+                                    is_read: false,
+                                    created_at: new Date().toISOString()
+                                }));
+                                
+                                const { error: notifError } = await supabase
+                                    .from('notifications')
+                                    .insert(notifications);
+                                
+                                if (notifError) {
+                                    console.error('알림 생성 오류:', notifError);
+                                } else {
+                                    console.log('✅ 관리자 알림 생성 완료:', notifications.length, '개');
+                                }
+                            }
+                        } catch (notifError) {
+                            console.error('알림 처리 오류:', notifError);
+                            // 알림 실패해도 가입은 성공으로 처리
                         }
                         
-                        localStorage.setItem('admin_notifications', JSON.stringify(notifications));
-                        console.log('📢 새 사용자 가입 알림 생성:', notification);
                     }
                 } else {
                     // 기존 사용자 업데이트
@@ -197,23 +262,36 @@
                     permissions: ['access_employee_dashboard', 'create_work_log', 'access_sales_system', 'view_team_data']
                 };
                 
-                // 로컬 스토리지에 저장
-                localStorage.setItem('currentUser', JSON.stringify(user));
-                localStorage.setItem('userRole', user.role);
-                localStorage.setItem('userName', user.name);
-                localStorage.setItem('accessToken', accessToken);
+                // sessionStorage에 저장 (기존 localStorage 대신)
+                sessionStorage.setItem('currentUser', JSON.stringify(user));
+                sessionStorage.setItem('userRole', user.role);
+                sessionStorage.setItem('userName', user.name);
+                sessionStorage.setItem('accessToken', accessToken);
                 if (refreshToken) {
-                    localStorage.setItem('refreshToken', refreshToken);
+                    sessionStorage.setItem('refreshToken', refreshToken);
                 }
                 
-                console.log('✅ Google 로그인 완료:', user);
+                console.log('✅ OAuth 로그인 완료:', user);
+                
                 
                 // 메인 페이지로 리다이렉트
                 window.location.href = 'https://namkyungsteel.com';
                 
             } catch (error) {
                 console.error('❌ 토큰 처리 오류:', error);
-                alert('로그인 처리 중 오류가 발생했습니다.');
+                console.error('오류 상세:', {
+                    message: error.message,
+                    stack: error.stack,
+                    error: error
+                });
+                
+                // 사용자 친화적인 에러 메시지
+                let errorMessage = '로그인 처리 중 오류가 발생했습니다.';
+                if (error.message?.includes('Database error granting user')) {
+                    errorMessage = '계정 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+                }
+                
+                alert(errorMessage);
                 window.location.href = 'https://namkyungsteel.com';
             }
         } else {
