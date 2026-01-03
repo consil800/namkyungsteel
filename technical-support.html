@@ -4,32 +4,154 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>기술지원 - 남경스틸(주)</title>
-    <!-- Favicons -->
-    <link href="logo.jpg" rel="icon">
-    <link href="logo.jpg" rel="apple-touch-icon">
     <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
-    <link href="assets/css/main.css" rel="stylesheet">    <!-- Common Styles -->
-    <link href="includes/common-styles.css" rel="stylesheet">
-
-
-    
-    <!-- Font Awesome for icons -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    
-    <!-- Supabase JS CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="assets/css/main.css" rel="stylesheet">
     
     <style>
         body { font-family: 'Noto Sans KR', sans-serif !important; }
         
-        /* Page-specific styles */
-        .footer-column:last-child h4 {
-            text-align: left;
+        /* Navigation Dropdown Styles */
+        .navmenu ul {
+            display: flex;
+            align-items: center;
+            list-style: none;
+            padding: 0;
+            margin: 0;
         }
         
-        .footer-column:last-child {
-            padding-left: 0;
+        .navmenu > ul > li {
+            white-space: nowrap;
+            padding: 15px 16px;
+            position: relative;
+        }
+        
+        .navmenu a {
+            color: #2c3e50;
+            padding: 12px 0;
+            font-size: 16px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            white-space: nowrap;
+            transition: 0.3s;
+            text-decoration: none;
+        }
+        
+        .navmenu .dropdown ul {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            z-index: 99;
+            background-color: #ffffff;
+            box-shadow: 0px 0px 30px rgba(44, 62, 80, 0.15);
+            padding: 10px 0;
+            border-radius: 6px;
+            min-width: 180px;
+            flex-direction: column;
+        }
+        
+        .navmenu .dropdown:hover > ul {
+            display: flex;
+        }
+        
+        .navmenu .dropdown ul li {
+            padding: 0;
+            width: 100%;
+        }
+        
+        .navmenu .dropdown ul a {
+            padding: 10px 20px;
+            font-size: 15px;
+            color: #2c3e50;
+            border: none;
+            width: 100%;
+            justify-content: flex-start;
+        }
+        
+        .navmenu .dropdown ul a:hover {
+            color: #3498db;
+            background-color: #f8f9fa;
+        }
+        
+        .toggle-dropdown {
+            margin-left: 5px;
+        }
+        
+        @media (max-width: 1199px) {
+            .navmenu .dropdown ul {
+                position: static;
+                display: none;
+                z-index: 99;
+                padding: 10px 0;
+                margin: 10px 20px;
+                background-color: #ffffff;
+                border: 1px solid #e9ecef;
+                box-shadow: none;
+                border-radius: 6px;
+            }
+            
+            .navmenu .dropdown.active > ul {
+                display: flex;
+            }
+        }
+        
+        /* Footer Styles from namkyungst/index.html */
+        .footer {
+            background-color: #2d3748;
+            color: #ffffff;
+            border-top: 3px solid #0066cc;
+        }
+        
+        .footer-top {
+            padding: 30px 0 20px;
+        }
+        
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+        }
+        
+        .footer-column h3,
+        .footer-column h4 {
+            margin-bottom: 20px;
+            color: #ffffff;
+            font-weight: 600;
+        }
+        
+        .footer-column ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .footer-column ul li {
+            margin-bottom: 10px;
+        }
+        
+        .footer-column a {
+            color: #cbd5e0;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        
+        .footer-column a:hover {
+            color: #0066cc;
+        }
+        
+        .footer-column p {
+            color: #a0aec0;
+            line-height: 1.6;
+        }
+        
+        .contact-info li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 15px;
+            color: #cbd5e0;
         }
         
         .contact-info i {
@@ -84,7 +206,6 @@
                 text-align: left;
             }
         }
-        }
         
         .page-header {
             background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('namkyung.png');
@@ -100,7 +221,7 @@
         }
         
         .support-card {
-            background: #fafbfc;
+            background: white;
             border-radius: 15px;
             padding: 40px;
             text-align: center;
@@ -135,7 +256,7 @@
         }
         
         .form-container {
-            background: #fafbfc;
+            background: white;
             border-radius: 15px;
             padding: 40px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
@@ -202,7 +323,7 @@
         }
         
         .expert-card {
-            background: #fafbfc;
+            background: white;
             border-radius: 15px;
             padding: 30px;
             text-align: center;
@@ -233,7 +354,7 @@
         }
         
         .knowledge-item {
-            background: #fafbfc;
+            background: white;
             border-radius: 10px;
             padding: 25px;
             margin-bottom: 20px;
@@ -259,16 +380,66 @@
             margin-bottom: 15px;
             font-size: 18px;
         }
-        /* 연락처 섹션만 왼쪽 정렬 */
-        .footer-column:last-child h4 {
-            text-align: left;
-        }
-
-        .footer-column:last-child {
-            padding-left: 0;
-        }</style>
+    </style>
 </head>
 <body>
+    <!-- Header -->
+    <header id="header" class="header d-flex align-items-center sticky-top">
+        <div class="container-fluid container-xl position-relative d-flex align-items-center">
+            <a href="index.html" class="logo d-flex align-items-center me-auto">
+                <img src="logo.jpg" alt="남경스틸 로고" style="height: 40px; margin-right: 10px;">
+                <h1 class="sitename">남경스틸(주)</h1>
+            </a>
+            
+            <nav id="navmenu" class="navmenu">
+                <ul>
+                    <li><a href="index.html">홈</a></li>
+                    <li class="dropdown"><a href="index.html#about"><span>회사소개</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="ceo-message.html">CEO 인사말</a></li>
+                            <li><a href="company-history.html">회사연혁</a></li>
+                            <li><a href="vision-mission.html">비전/미션</a></li>
+                            <li><a href="organization.html">조직도</a></li>
+                            <li><a href="certificates.html">인증서</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown"><a href="index.html#services"><span>제품소개</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="service1-details.html">열연강판</a></li>
+                            <li><a href="service2-details.html">냉연강판</a></li>
+                            <li><a href="service3-details.html">특수강</a></li>
+                            <li><a href="service4-details.html">맞춤 가공</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown"><a href="#"><span>사업영역</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="steel-manufacturing.html">철강제조</a></li>
+                            <li><a href="processing-service.html">가공서비스</a></li>
+                            <li><a href="tech-research.html">기술연구</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown"><a href="#"><span>고객센터</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="quote-inquiry.html">견적문의</a></li>
+                            <li><a href="catalog.html">카탈로그</a></li>
+                            <li><a href="faq.html">FAQ</a></li>
+                            <li><a href="location.html">오시는길</a></li>
+                            <li><a href="product-inquiry.html">제품문의</a></li>
+                            <li><a href="technical-support.html">기술지원</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown"><a href="#"><span>홍보센터</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="notice.html">공지사항</a></li>
+                            <li><a href="newsroom.html">뉴스룸</a></li>
+                            <li><a href="media-materials.html">홍보자료</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+            </nav>
+        </div>
+    </header>
 
     <!-- Page Header -->
     <div class="page-header">
@@ -592,96 +763,117 @@
         </div>
     </section>
 
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-top">
+            <div class="container">
+                <div class="footer-grid">
+                    <div class="footer-column">
+                        <h3>남경스틸(주)</h3>
+                        <p>철강산업의 리더로서 최고의 품질과 서비스를 제공합니다.</p>
+                    </div>
+                    <div class="footer-column">
+                        <h4>빠른 링크</h4>
+                        <ul>
+                            <li><a href="#">회사소개</a></li>
+                            <li><a href="#">제품정보</a></li>
+                            <li><a href="#">견적문의</a></li>
+                            <li><a href="#">채용정보</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-column">
+                        <h4>고객지원</h4>
+                        <ul>
+                            <li><a href="#">자주묻는질문</a></li>
+                            <li><a href="#">카탈로그</a></li>
+                            <li><a href="#">A/S 신청</a></li>
+                            <li><a href="#">오시는길</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-column">
+                        <h4>연락처</h4>
+                        <ul class="contact-info">
+                            <li><i class="fas fa-map-marker-alt"></i> 부산시 사상구 낙동대로 832</li>
+                            <li><i class="fas fa-phone"></i> 051-314-9701</li>
+                            <li><i class="fas fa-fax"></i> 051-314-9702</li>
+                            <li><i class="fas fa-envelope"></i> namkyungst@naver.com</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="container">
+                <div class="bottom-content">
+                    <p>&copy; 2025 남경스틸(주). All rights reserved.</p>
+                    <div class="footer-links">
+                        <a href="#">개인정보처리방침</a>
+                        <a href="#">이용약관</a>
+                        <a href="#">이메일무단수집거부</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
     <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Common JavaScript -->
-    <script src="includes/common.js"></script>
-    
-    <!-- Main JavaScript -->
-    <script src="assets/js/main.js"></script>
-    
     <script>
-        // Supabase 설정
-        const SUPABASE_URL = 'https://zgyawfmjconubxaiamod.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpneWF3Zm1qY29udWJ4YWlhbW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NjQzNzIsImV4cCI6MjA2NzM0MDM3Mn0.shjBE2OQeILwkLLi4E6Bq0-b6YPUs-WFwquexdUiM9A';
-        
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
-        // 기술지원 요청 폼 처리
+        // 드롭다운 메뉴 클릭 기능 (모바일용)
         document.addEventListener('DOMContentLoaded', function() {
-            const techForm = document.getElementById('technicalSupportForm');
-            if (techForm) {
-                techForm.addEventListener('submit', handleTechSupportSubmit);
+            const dropdownToggles = document.querySelectorAll('.toggle-dropdown');
+            
+            dropdownToggles.forEach(function(toggle) {
+                toggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const dropdown = this.closest('.dropdown');
+                    const isActive = dropdown.classList.contains('active');
+                    
+                    // 다른 모든 드롭다운 닫기
+                    document.querySelectorAll('.dropdown.active').forEach(function(activeDropdown) {
+                        if (activeDropdown !== dropdown) {
+                            activeDropdown.classList.remove('active');
+                        }
+                    });
+                    
+                    // 현재 드롭다운 토글
+                    dropdown.classList.toggle('active', !isActive);
+                });
+            });
+            
+            // 외부 클릭 시 드롭다운 닫기
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.dropdown')) {
+                    document.querySelectorAll('.dropdown.active').forEach(function(dropdown) {
+                        dropdown.classList.remove('active');
+                    });
+                }
+            });
+        });
+
+        // 기술지원 폼 제출 처리
+        document.getElementById('technicalSupportForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const required = ['company', 'contact_name', 'phone', 'email', 'support_type', 'support_content'];
+            let isValid = true;
+            
+            required.forEach(field => {
+                if (!formData.get(field)) {
+                    isValid = false;
+                }
+            });
+            
+            if (isValid) {
+                alert('기술지원 요청이 접수되었습니다. 빠른 시일 내에 전문가가 연락드리겠습니다.');
+                this.reset();
+            } else {
+                alert('필수 항목을 모두 입력해주세요.');
             }
         });
-        
-        async function handleTechSupportSubmit(event) {
-            event.preventDefault();
-            
-            const form = event.target;
-            const formData = new FormData(form);
-            
-            // 로딩 상태 표시
-            const submitBtn = form.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> 요청 중...';
-            submitBtn.disabled = true;
-            
-            try {
-                // 폼 데이터 수집
-                // 지원 방식 체크박스 수집
-                const supportMethods = [];
-                const methodCheckboxes = form.querySelectorAll('input[name="support_method[]"]');
-                methodCheckboxes.forEach(checkbox => {
-                    if (checkbox.checked) {
-                        supportMethods.push(checkbox.value);
-                    }
-                });
-                
-                const techData = {
-                    company: formData.get('company'),
-                    contact_name: formData.get('contact_name'),
-                    phone: formData.get('phone'),
-                    email: formData.get('email'),
-                    support_type: formData.get('support_type'),
-                    product_info: formData.get('related_product'),
-                    issue_description: formData.get('support_content'),
-                    urgency_level: formData.get('priority') || 'normal',
-                    preferred_contact_method: supportMethods.join(', '),
-                    status: 'pending',
-                    priority: formData.get('priority') === '긴급' ? 'high' : 'normal'
-                };
-                
-                // 파일 업로드 처리 (추후 구현 가능)
-                const attachment = formData.get('attachment');
-                if (attachment && attachment.size > 0) {
-                    console.log('첨부파일:', attachment.name);
-                }
-                
-                // Supabase에 데이터 저장
-                const { data, error } = await supabaseClient
-                    .from('technical_support_requests')
-                    .insert([techData]);
-                
-                if (error) {
-                    throw error;
-                }
-                
-                // 성공 메시지
-                alert('기술지원 요청이 성공적으로 접수되었습니다.\n전문 기술진이 확인 후 연락드리겠습니다.');
-                
-                // 폼 초기화
-                form.reset();
-                
-            } catch (error) {
-                console.error('기술지원 요청 처리 오류:', error);
-                alert('기술지원 요청 처리 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
-            } finally {
-                // 버튼 상태 복원
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            }
-        }
     </script>
 </body>
 </html>

@@ -234,15 +234,12 @@ class AdminSystem {
     }
 
     demoLogin(type) {
-        // 하드코딩된 마스터 계정 제거 - 데이터베이스 기반 인증만 사용
-        console.log('데모 로그인이 비활성화되었습니다. 실제 계정으로 로그인하세요.');
-        return false;
-        
         let email, password;
         switch(type) {
             case 'master':
-                // 하드코딩된 계정 제거됨
-                return false;
+                email = 'master@steelworks.com';
+                password = 'demo123';
+                break;
             case 'admin':
                 email = 'ceo@seokyoung.com';
                 password = 'demo123';

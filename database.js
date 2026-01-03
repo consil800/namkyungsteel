@@ -39,55 +39,9 @@ class DatabaseManager {
             if (typeof domainManager !== 'undefined') {
                 this.currentDomain = domainManager.getCurrentDomain();
             }
-            
-            // RLS를 위한 현재 사용자 ID 설정
-            await this.setCurrentUserForRLS();
         } catch (error) {
             console.error('Supabase 초기화 오류:', error);
             throw error;
-        }
-    }
-
-    // RLS를 위한 현재 사용자 ID 설정 (Supabase Auth 기반)
-    async setCurrentUserForRLS() {
-        try {
-            // 먼저 Supabase Auth 세션 확인
-            const { data: { session }, error: sessionError } = await this.client.auth.getSession();
-            
-            if (sessionError) {
-                console.error('❌ Supabase Auth 세션 확인 오류:', sessionError);
-            }
-            
-            if (session && session.user) {
-                console.log('✅ Supabase Auth 세션 활성화됨:', session.user.id);
-                // Auth 세션이 있으면 RLS가 자동으로 작동함
-                return;
-            }
-            
-            // Auth 세션이 없는 경우 sessionStorage 확인 (하위 호환성)
-            const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
-            if (currentUser && currentUser.oauth_id) {
-                // OAuth ID가 있으면 Supabase Auth로 세션 생성 시도
-                console.log('🔄 sessionStorage에서 OAuth ID 발견, Auth 세션 복원 시도');
-                
-                // 사용자 정보로 세션 복원은 불가능하므로, 대신 로그인 페이지로 리다이렉트
-                console.warn('⚠️ Auth 세션이 만료되었습니다. 다시 로그인해주세요.');
-                // 여기서는 리다이렉트하지 않고 경고만 표시
-            } else if (currentUser && currentUser.id) {
-                // 레거시 방식 (set_current_user_id 함수 호출)
-                const userId = String(currentUser.id);
-                console.log('🔧 레거시 RLS 방식 사용:', userId);
-                
-                try {
-                    await this.client.rpc('set_current_user_id', { user_id: userId });
-                } catch (rpcError) {
-                    console.warn('⚠️ 레거시 RLS 설정 실패:', rpcError);
-                }
-            } else {
-                console.warn('⚠️ 사용자 정보가 없어 RLS 설정을 건너뜁니다');
-            }
-        } catch (error) {
-            console.warn('⚠️ RLS 설정 중 오류, 계속 진행:', error);
         }
     }
 
@@ -210,35 +164,6 @@ class DatabaseManager {
             return data || [];
         } catch (error) {
             console.error('사용자 목록 조회 오류:', error);
-            throw error;
-        }
-    }
-
-    // 역할별 사용자 조회
-    async getUsersByRole(roles, companyDomain = 'namkyungsteel.com') {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            let query = this.client
-                .from('users')
-                .select('id, name, email, position, department, role')
-                .eq('company_domain', companyDomain)
-                .eq('is_active', true);
-            
-            if (Array.isArray(roles)) {
-                query = query.in('role', roles);
-            } else {
-                query = query.eq('role', roles);
-            }
-            
-            const { data, error } = await query.order('name', { ascending: true });
-            
-            if (error) throw error;
-            return data || [];
-        } catch (error) {
-            console.error('역할별 사용자 조회 오류:', error);
             throw error;
         }
     }
@@ -372,70 +297,6 @@ class DatabaseManager {
         }
     }
 
-    // 사용자 설정 관리
-    async getUserSettings(userId) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            const { data, error } = await this.client
-                .from('users')
-                .select('settings')
-                .eq('id', userId)
-                .single();
-            
-            if (error) throw error;
-            
-            // settings가 없거나 null인 경우 기본값 반환
-            return data?.settings || {
-                paymentTerms: [],
-                industries: [],
-                regions: [],
-                visitPurposes: [],
-                colors: []
-            };
-        } catch (error) {
-            console.error('사용자 설정 조회 오류:', error);
-            // 오류 발생 시 기본값 반환
-            return {
-                paymentTerms: [],
-                industries: [],
-                regions: [],
-                visitPurposes: [],
-                colors: []
-            };
-        }
-    }
-
-    async updateUserSettings(userId, settings) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            const { data, error } = await this.client
-                .from('users')
-                .update({ 
-                    settings: settings,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', userId)
-                .select();
-            
-            if (error) throw error;
-            
-            if (!data || data.length === 0) {
-                throw new Error('사용자를 찾을 수 없습니다.');
-            }
-            
-            return { success: true, data: data[0].settings };
-        } catch (error) {
-            console.error('사용자 설정 업데이트 오류:', error);
-            throw error;
-        }
-    }
-
     // 직원 관리 (Employees)
     async getEmployees(companyId = null) {
         if (!this.client) {
@@ -503,88 +364,67 @@ class DatabaseManager {
             throw new Error('데이터베이스 연결이 필요합니다.');
         }
 
+        // work_logs 테이블이 없으므로 client_companies의 notes 필드를 활용하여 업무일지 저장
         try {
-            console.log('🔍 업무일지 생성 시작:', workLogData);
+            // 기존 업체 정보 가져오기
+            const { data: companies, error: fetchError } = await this.client
+                .from('client_companies')
+                .select('notes')
+                .eq('id', workLogData.company_id)
+                .single();
             
-            // user_id가 숫자인 경우 문자열로 변환
-            const userId = workLogData.user_id ? workLogData.user_id.toString() : workLogData.userId?.toString();
+            if (fetchError) throw fetchError;
             
-            // RLS를 위해 현재 사용자 ID 설정 및 확인
-            console.log('🔐 RLS를 위한 사용자 ID 설정:', userId);
-            const { error: rpcError } = await this.client.rpc('set_current_user_id', { user_id: userId });
+            // 기존 notes를 파싱하여 업무일지와 메모 분리
+            let workLogs = [];
+            let originalNotes = companies.notes || '';
             
-            if (rpcError) {
-                console.error('❌ RLS 사용자 ID 설정 오류:', rpcError);
-                throw rpcError;
+            if (companies && companies.notes) {
+                try {
+                    const notesData = JSON.parse(companies.notes);
+                    if (notesData.workLogs && Array.isArray(notesData.workLogs)) {
+                        workLogs = notesData.workLogs;
+                        originalNotes = notesData.memo || '';
+                    }
+                } catch (e) {
+                    // 기존 notes가 JSON이 아닌 경우 원본 텍스트 보존
+                    originalNotes = companies.notes;
+                    workLogs = [];
+                }
             }
             
-            // RLS 설정 확인 (디버깅)
-            const { data: currentUserId, error: checkError } = await this.client.rpc('get_current_user_id');
-            console.log('🔍 RLS 현재 사용자 ID 확인:', currentUserId, 'checkError:', checkError);
-            
-            if (!currentUserId || currentUserId !== userId) {
-                console.error('❌ RLS 사용자 ID 불일치:', { expected: userId, actual: currentUserId });
-                // 한 번 더 시도
-                await this.client.rpc('set_current_user_id', { user_id: userId });
-                const { data: retryUserId } = await this.client.rpc('get_current_user_id');
-                console.log('🔄 RLS 재시도 결과:', retryUserId);
-            }
-            
-            // work_logs 테이블에 저장 (타입 변환 확인)
-            const insertData = {
-                company_id: parseInt(workLogData.company_id),
-                user_id: parseInt(userId), // 숫자로 변환
+            // 새 업무일지 추가
+            const newWorkLog = {
+                id: Date.now(), // 간단한 ID 생성
+                user_id: workLogData.user_id || workLogData.userId,
                 visit_date: workLogData.visit_date,
                 visit_purpose: workLogData.visit_purpose,
                 meeting_person: workLogData.meeting_person || '',
                 discussion_content: workLogData.discussion_content,
                 next_action: workLogData.next_action || '',
-                follow_up_date: workLogData.follow_up_date || null,
-                additional_notes: workLogData.additional_notes || ''
+                follow_up_date: workLogData.follow_up_date,
+                additional_notes: workLogData.additional_notes || '',
+                created_at: new Date().toISOString()
             };
             
-            console.log('🔍 삽입할 데이터:', insertData);
-            console.log('🔍 user_id 타입:', typeof insertData.user_id, '값:', insertData.user_id);
+            workLogs.push(newWorkLog);
             
-            let { data, error } = await this.client
-                .from('work_logs')
-                .insert(insertData)
-                .select()
-                .single();
+            // notes 필드에 업무일지와 메모를 함께 저장
+            const { data, error } = await this.client
+                .from('client_companies')
+                .update({
+                    notes: JSON.stringify({ 
+                        workLogs: workLogs,
+                        memo: originalNotes 
+                    })
+                })
+                .eq('id', workLogData.company_id)
+                .select();
             
-            // RLS 오류 시 대안 방법 시도
-            if (error && error.code === '42501') {
-                console.log('🔄 RLS 오류로 인한 대안 방법 시도');
-                
-                // 사용자 ID를 문자열로 다시 시도
-                const altInsertData = {
-                    ...insertData,
-                    user_id: userId.toString() // 문자열로 시도
-                };
-                
-                console.log('🔄 대안 데이터:', altInsertData);
-                
-                const result2 = await this.client
-                    .from('work_logs')
-                    .insert(altInsertData)
-                    .select()
-                    .single();
-                    
-                data = result2.data;
-                error = result2.error;
-            }
-            
-            if (error) {
-                console.error('❌ 업무일지 생성 오류 (최종):', error);
-                console.log('💡 임시 해결: RLS 정책 업데이트가 필요합니다.');
-                throw error;
-            }
-            
-            console.log('✅ 업무일지 생성 성공:', data);
-            // 트리거가 자동으로 업체 방문 통계를 업데이트함
-            return { success: true, data: data };
+            if (error) throw error;
+            return { success: true, data: newWorkLog };
         } catch (error) {
-            console.error('업무일지 생성 오류:', error);
+            console.error('업무 일지 생성 오류:', error);
             throw error;
         }
     }
@@ -596,31 +436,39 @@ class DatabaseManager {
         }
 
         try {
-            console.log('🔍 업무일지 조회 시작 - companyId:', companyId, 'userId:', userId);
+            // client_companies의 notes 필드에서 업무일지 가져오기
+            const { data: companies, error } = await this.client
+                .from('client_companies')
+                .select('notes')
+                .eq('id', companyId)
+                .single();
             
-            // work_logs 테이블에서 직접 조회
-            let query = this.client
-                .from('work_logs')
-                .select('*')
-                .eq('company_id', parseInt(companyId));
+            if (error) throw error;
             
-            // userId가 제공된 경우 해당 사용자의 업무일지만 필터링
-            if (userId) {
-                query = query.eq('user_id', userId.toString());
+            let workLogs = [];
+            if (companies && companies.notes) {
+                try {
+                    const notesData = JSON.parse(companies.notes);
+                    if (notesData.workLogs && Array.isArray(notesData.workLogs)) {
+                        workLogs = notesData.workLogs;
+                        
+                        // userId가 제공된 경우 해당 사용자의 업무일지만 필터링
+                        if (userId) {
+                            workLogs = workLogs.filter(log => log.user_id === userId);
+                        }
+                        
+                        // 날짜순 정렬 (최신순)
+                        workLogs.sort((a, b) => new Date(b.visit_date) - new Date(a.visit_date));
+                    }
+                } catch (e) {
+                    console.error('업무일지 파싱 오류:', e);
+                    workLogs = [];
+                }
             }
             
-            // 날짜순 정렬 (최신순)
-            const { data: workLogs, error } = await query.order('visit_date', { ascending: false });
-            
-            if (error) {
-                console.error('❌ 업무일지 조회 오류:', error);
-                throw error;
-            }
-            
-            console.log('✅ 업무일지 조회 성공:', workLogs?.length || 0, '개');
-            return workLogs || [];
+            return workLogs;
         } catch (error) {
-            console.error('업체별 업무일지 조회 오류:', error);
+            console.error('업체별 업무 일지 조회 오류:', error);
             throw error;
         }
     }
@@ -632,66 +480,60 @@ class DatabaseManager {
         }
 
         try {
-            console.log('🔍 업무일지 삭제 시작 - companyId:', companyId, 'workLogId:', workLogId);
-            
-            // work_logs 테이블에서 직접 삭제
-            const { data, error } = await this.client
-                .from('work_logs')
-                .delete()
-                .eq('id', parseInt(workLogId))
-                .eq('company_id', parseInt(companyId))
-                .select();
-            
-            if (error) {
-                console.error('❌ 업무일지 삭제 오류:', error);
-                throw error;
-            }
-            
-            console.log('✅ 업무일지 삭제 성공:', data);
-            // 트리거가 자동으로 업체 방문 통계를 업데이트함
-            return { success: true, data: data };
-        } catch (error) {
-            console.error('업무일지 삭제 오류:', error);
-            throw error;
-        }
-    }
-
-    // 업체의 방문 통계 업데이트
-    async updateCompanyVisitStats(companyId) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            // 해당 업체의 모든 업무일지 가져오기
-            const { data: workLogs, error: fetchError } = await this.client
-                .from('work_logs')
-                .select('visit_date')
-                .eq('company_id', parseInt(companyId))
-                .order('visit_date', { ascending: false });
+            // 기존 업체 정보 가져오기
+            const { data: companies, error: fetchError } = await this.client
+                .from('client_companies')
+                .select('notes, visit_count, last_visit_date')
+                .eq('id', companyId)
+                .single();
             
             if (fetchError) throw fetchError;
             
-            // 방문횟수와 최근 방문일 계산
-            const visitCount = workLogs ? workLogs.length : 0;
-            const lastVisitDate = workLogs && workLogs.length > 0 ? workLogs[0].visit_date : null;
+            let workLogs = [];
+            let originalMemo = '';
             
-            // client_companies 테이블 업데이트
+            if (companies && companies.notes) {
+                try {
+                    const notesData = JSON.parse(companies.notes);
+                    if (notesData.workLogs && Array.isArray(notesData.workLogs)) {
+                        // 삭제할 업무일지를 제외한 나머지만 필터링
+                        workLogs = notesData.workLogs.filter(log => log.id !== workLogId);
+                        originalMemo = notesData.memo || '';
+                    }
+                } catch (e) {
+                    console.error('업무일지 파싱 오류:', e);
+                    throw new Error('업무일지 데이터를 읽을 수 없습니다.');
+                }
+            }
+            
+            // 방문횟수를 남은 업무일지 개수로 설정
+            const newVisitCount = workLogs.length;
+            
+            // 최근 방문일 재계산 (남은 업무일지 중 가장 최근 날짜)
+            let newLastVisitDate = null;
+            if (workLogs.length > 0) {
+                const sortedLogs = workLogs.sort((a, b) => new Date(b.visit_date) - new Date(a.visit_date));
+                newLastVisitDate = sortedLogs[0].visit_date;
+            }
+            
+            // notes 필드와 방문 정보 업데이트
             const { data, error } = await this.client
                 .from('client_companies')
                 .update({
-                    visit_count: visitCount,
-                    last_visit_date: lastVisitDate
+                    notes: JSON.stringify({ 
+                        workLogs: workLogs,
+                        memo: originalMemo 
+                    }),
+                    visit_count: newVisitCount,
+                    last_visit_date: newLastVisitDate
                 })
-                .eq('id', parseInt(companyId))
+                .eq('id', companyId)
                 .select();
             
             if (error) throw error;
-            
-            console.log('✅ 업체 방문 통계 업데이트 완료:', { visitCount, lastVisitDate });
-            return { success: true, visitCount, lastVisitDate };
+            return { success: true };
         } catch (error) {
-            console.error('업체 방문 통계 업데이트 오류:', error);
+            console.error('업무 일지 삭제 오류:', error);
             throw error;
         }
     }
@@ -745,79 +587,6 @@ class DatabaseManager {
         } catch (error) {
             console.error('사용자 정보 업데이트 오류:', error);
             throw error;
-        }
-    }
-
-    // 사용자 승인
-    async approveUser(userId) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            console.log('👍 사용자 승인 시작:', userId);
-            
-            const { data, error } = await this.client
-                .from('users')
-                .update({
-                    is_approved: true,
-                    role: 'employee', // 승인 시 기본 역할을 employee로 설정
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', userId)
-                .select();
-
-            if (error) {
-                console.error('❌ 사용자 승인 오류:', error);
-                throw error;
-            }
-
-            if (!data || data.length === 0) {
-                throw new Error('사용자를 찾을 수 없습니다.');
-            }
-
-            console.log('✅ 사용자 승인 완료:', data[0]);
-            return { success: true, data: data[0] };
-        } catch (error) {
-            console.error('❌ 사용자 승인 오류:', error);
-            return { success: false, message: error.message };
-        }
-    }
-
-    // 사용자 반려
-    async rejectUser(userId, reason) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            console.log('👎 사용자 반려 시작:', userId, reason);
-            
-            const { data, error } = await this.client
-                .from('users')
-                .update({
-                    is_approved: false,
-                    is_active: false,
-                    rejection_reason: reason,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', userId)
-                .select();
-
-            if (error) {
-                console.error('❌ 사용자 반려 오류:', error);
-                throw error;
-            }
-
-            if (!data || data.length === 0) {
-                throw new Error('사용자를 찾을 수 없습니다.');
-            }
-
-            console.log('✅ 사용자 반려 완료:', data[0]);
-            return { success: true, data: data[0] };
-        } catch (error) {
-            console.error('❌ 사용자 반려 오류:', error);
-            return { success: false, message: error.message };
         }
     }
 
@@ -912,26 +681,9 @@ class DatabaseManager {
         }
 
         try {
-            // RLS를 위한 사용자 ID 설정
-            if (userId) {
-                await this.client.rpc('set_current_user_id', { user_id: userId.toString() });
-                console.log('✅ RLS 사용자 ID 설정 완료:', userId);
-            }
-            
             let query = this.client.from('client_companies').select('*');
             
             if (userId) {
-                // 사용자 권한 확인
-                const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
-                const userRole = currentUser.role;
-                
-                console.log('현재 사용자 권한:', userRole);
-                console.log('🔍 getClientCompanies - 전달받은 userId:', userId);
-                console.log('🔍 getClientCompanies - sessionStorage 사용자:', currentUser);
-                
-                // 모든 사용자는 자신이 등록한 업체만 볼 수 있음 (보안 강화)
-                console.log('사용자별 개인 업체만 로드 (user_id 필터링 적용)');
-                
                 // UUID 형식인지 확인 (OAuth 사용자)
                 const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
                 
@@ -948,23 +700,14 @@ class DatabaseManager {
                         return [];
                     }
                     
-                    query = query.eq('user_id', userRecord.id.toString());
+                    query = query.eq('user_id', userRecord.id);
                 } else {
-                    // 일반 사용자 (numeric ID) - 문자열로 변환해서 검색
-                    console.log('🔍 일반 사용자 쿼리 - userId:', userId, 'typeof:', typeof userId);
-                    console.log('🔍 문자열로 변환:', userId.toString());
-                    query = query.eq('user_id', userId.toString());
+                    // 일반 사용자 (numeric ID)
+                    query = query.eq('user_id', userId);
                 }
             }
             
             const { data, error } = await query.order('company_name', { ascending: true });
-            
-            console.log('🔍 getClientCompanies 쿼리 결과:', {
-                userId: userId,
-                dataCount: data ? data.length : 0,
-                error: error,
-                data: data
-            });
             
             if (error) throw error;
             return data || [];
@@ -987,29 +730,12 @@ class DatabaseManager {
 
             let actualUserId = companyData.user_id;
             
-            // Supabase Auth 세션 확인
-            const { data: { session }, error: sessionError } = await this.client.auth.getSession();
-            
-            if (!session || !session.user) {
-                console.warn('⚠️ Supabase Auth 세션이 없습니다. RLS가 제대로 작동하지 않을 수 있습니다.');
-                
-                // 레거시 방식으로 시도 (하위 호환성)
-                try {
-                    await this.client.rpc('set_current_user_id', { user_id: String(actualUserId) });
-                    console.log('📌 레거시 RLS 방식으로 사용자 ID 설정:', actualUserId);
-                } catch (rlsError) {
-                    console.warn('⚠️ 레거시 RLS 설정도 실패:', rlsError);
-                }
-            } else {
-                console.log('✅ Supabase Auth 세션 확인됨, RLS 자동 적용');
-            }
-            
             // OAuth 사용자 ID(UUID 형태)인 경우 실제 데이터베이스 ID로 변환
             if (typeof companyData.user_id === 'string' && companyData.user_id.includes('-')) {
                 console.log('🔍 OAuth 사용자 ID 감지, 데이터베이스에서 실제 ID 조회:', companyData.user_id);
                 
                 // 현재 사용자 정보 가져오기
-                const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
                 console.log('👤 현재 사용자 정보:', currentUser);
                 
                 if (currentUser.email) {
@@ -1039,7 +765,7 @@ class DatabaseManager {
                         }
                     } else {
                         actualUserId = userData.id;
-                        console.log('✅ 이메일로 실제 사용자 ID 조회 성공:', actualUserId, '(타입:', typeof actualUserId, ')');
+                        console.log('✅ 이메일로 실제 사용자 ID 조회 성공:', actualUserId);
                     }
                 } else {
                     // 이메일이 없으면 OAuth ID로 조회
@@ -1054,17 +780,14 @@ class DatabaseManager {
                         throw new Error('사용자 정보를 찾을 수 없습니다.');
                     } else {
                         actualUserId = oauthUserData.id;
-                        console.log('✅ OAuth ID로 실제 사용자 ID 조회 성공:', actualUserId, '(타입:', typeof actualUserId, ')');
+                        console.log('✅ OAuth ID로 실제 사용자 ID 조회 성공:', actualUserId);
                     }
                 }
             }
 
-            // OAuth ID 변환 후에는 Auth 세션을 다시 확인할 필요 없음
-            // (이미 위에서 확인했으므로)
-
             const newCompany = {
                 ...companyData,
-                user_id: String(actualUserId), // VARCHAR 필드이므로 문자열로 변환
+                user_id: actualUserId, // 실제 숫자 ID 사용
                 company_domain: companyData.company_domain || this.currentDomain || 'namkyungsteel.com',
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
@@ -1128,420 +851,6 @@ class DatabaseManager {
             return { success: true };
         } catch (error) {
             console.error('거래처 삭제 오류:', error);
-            throw error;
-        }
-    }
-
-    // 사용자 설정 가져오기 (user_settings 테이블에서 조회)
-    async getUserSettings(userId) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            console.log('🔍 사용자 설정 조회 시작 - userId:', userId);
-            
-            // RLS를 위한 사용자 ID 설정
-            await this.client.rpc('set_current_user_id', { user_id: userId.toString() });
-            console.log('✅ RLS 사용자 ID 설정 완료');
-            
-            // CRITICAL: 보안을 위해 사용자 ID를 명시적으로 필터링
-            const targetUserId = userId.toString();
-            console.log('🔒 보안 필터 적용 - 대상 사용자 ID:', targetUserId);
-            
-            // user_settings 테이블에서 해당 사용자의 모든 설정 조회 (강화된 필터링)
-            const { data: settings, error } = await this.client
-                .from('user_settings')
-                .select('*')
-                .eq('user_id', targetUserId)
-                .order('created_at', { ascending: true });
-            
-            if (error) {
-                console.error('사용자 설정 조회 오류:', error);
-                return {
-                    paymentTerms: [],
-                    businessTypes: [],
-                    visitPurposes: [],
-                    regions: [],
-                    colors: []
-                };
-            }
-
-            console.log('📊 user_settings 조회 결과:', {
-                settingsCount: settings?.length || 0,
-                requestedUserId: userId,
-                settings: settings?.map(s => ({
-                    user_id: s.user_id,
-                    setting_type: s.setting_type,
-                    setting_value: s.setting_value,
-                    display_name: s.display_name
-                }))
-            });
-            
-            // CRITICAL 보안 검증: 모든 설정이 요청한 사용자 것인지 이중 확인
-            if (settings && settings.length > 0) {
-                console.log('🔍 보안 검증 시작 - 총 설정 개수:', settings.length);
-                
-                // 각 설정의 user_id 검증
-                const settingsUserIds = [...new Set(settings.map(s => s.user_id.toString()))];
-                console.log('📊 설정에 포함된 user_id들:', settingsUserIds);
-                console.log('🎯 요청된 user_id:', targetUserId);
-                
-                const invalidSettings = settings.filter(s => s.user_id.toString() !== targetUserId);
-                if (invalidSettings.length > 0) {
-                    console.error('🚨🚨 심각한 보안 위반: 다른 사용자 설정이 포함됨!', {
-                        requestedUserId: targetUserId,
-                        totalSettings: settings.length,
-                        invalidSettingsCount: invalidSettings.length,
-                        invalidUserIds: [...new Set(invalidSettings.map(s => s.user_id.toString()))],
-                        invalidSettings: invalidSettings.map(s => ({
-                            user_id: s.user_id,
-                            setting_type: s.setting_type,
-                            setting_value: s.setting_value
-                        }))
-                    });
-                    
-                    // 즉시 다른 사용자 설정 제거
-                    const originalCount = settings.length;
-                    settings = settings.filter(s => s.user_id.toString() === targetUserId);
-                    console.log(`🔒 보안 필터링 완료: ${originalCount}개 → ${settings.length}개`);
-                    
-                    // 보안 위반 알림 (개발 모드에서만)
-                    if (window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1')) {
-                        alert(`보안 경고: 다른 사용자 설정 ${invalidSettings.length}개가 감지되어 제거되었습니다.`);
-                    }
-                } else {
-                    console.log('✅ 보안 검증 통과: 모든 설정이 올바른 사용자 것임');
-                }
-            } else {
-                console.log('📭 설정 없음 - 빈 배열 반환');
-            }
-
-            // 설정 타입별로 분류
-            const result = {
-                paymentTerms: [],
-                businessTypes: [],
-                visitPurposes: [],
-                regions: [],
-                colors: []
-            };
-
-            if (settings && settings.length > 0) {
-                settings.forEach(setting => {
-                    switch (setting.setting_type) {
-                        case 'payment_terms':
-                            result.paymentTerms.push(setting.setting_value);
-                            break;
-                        case 'business_type':
-                            result.businessTypes.push(setting.setting_value);
-                            break;
-                        case 'visit_purpose':
-                            result.visitPurposes.push(setting.setting_value);
-                            break;
-                        case 'region':
-                            result.regions.push(setting.setting_value);
-                            break;
-                        case 'color':
-                            // color_value가 JSON 문자열인 경우 파싱
-                            let colorValue = setting.color_value || '#cccccc';
-                            let parsedColorData = null;
-                            
-                            try {
-                                if (typeof colorValue === 'string' && colorValue.startsWith('{')) {
-                                    parsedColorData = JSON.parse(colorValue);
-                                    colorValue = parsedColorData.color || colorValue;
-                                }
-                            } catch (e) {
-                                console.warn('색상 JSON 파싱 실패:', setting.setting_value, colorValue);
-                            }
-                            
-                            result.colors.push({
-                                key: setting.setting_value,
-                                name: setting.display_name || setting.setting_value,
-                                value: colorValue,
-                                rawValue: setting.color_value, // 원본 JSON 문자열 보존
-                                metadata: parsedColorData,
-                                hideVisitDate: parsedColorData?.hideVisitDate || false,
-                                meaning: setting.color_meaning || ''
-                            });
-                            break;
-                    }
-                });
-            }
-
-            // 지역만 가나다 순으로 정렬
-            result.regions.sort((a, b) => a.localeCompare(b, 'ko'));
-            
-            console.log('📊 분류된 설정 데이터:', result);
-            console.log('✅ 사용자 설정 조회 성공');
-            
-            return result;
-        } catch (error) {
-            console.error('사용자 설정 조회 오류:', error);
-            // 오류 시 빈 배열 반환
-            return {
-                paymentTerms: [],
-                businessTypes: [],
-                visitPurposes: [],
-                regions: [],
-                colors: []
-            };
-        }
-    }
-
-    // 사용자 설정 업데이트 (user_settings 테이블에 저장)
-    async updateUserSettings(userId, settings) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            console.log('📝 사용자 설정 업데이트 시작 - userId:', userId);
-            console.log('📝 업데이트할 설정:', settings);
-
-            // 각 설정 타입별로 처리
-            const settingTypes = [
-                { key: 'paymentTerms', type: 'payment_terms' },
-                { key: 'businessTypes', type: 'business_type' },
-                { key: 'visitPurposes', type: 'visit_purpose' },
-                { key: 'regions', type: 'region' },
-                { key: 'colors', type: 'color' }
-            ];
-
-            for (const settingType of settingTypes) {
-                if (settings[settingType.key] && Array.isArray(settings[settingType.key])) {
-                    await this.updateUserSettingType(userId, settingType.type, settings[settingType.key]);
-                }
-            }
-
-            console.log('✅ 사용자 설정 업데이트 완료');
-            return { success: true, message: 'settings_updated' };
-        } catch (error) {
-            console.error('사용자 설정 업데이트 오류:', error);
-            throw error;
-        }
-    }
-
-    // 특정 설정 타입의 모든 값 업데이트
-    async updateUserSettingType(userId, settingType, values) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            // 기존 해당 타입의 설정 모두 삭제
-            await this.client
-                .from('user_settings')
-                .delete()
-                .eq('user_id', userId.toString())
-                .eq('setting_type', settingType);
-
-            // 새 설정들 추가
-            if (values && values.length > 0) {
-                const newSettings = values.map(value => ({
-                    user_id: userId.toString(),
-                    setting_type: settingType,
-                    setting_value: settingType === 'color' ? value.key : value,
-                    display_name: settingType === 'color' ? value.name : value,
-                    color_value: settingType === 'color' ? value.value : null,
-                    created_at: new Date().toISOString()
-                }));
-
-                const { error } = await this.client
-                    .from('user_settings')
-                    .insert(newSettings);
-
-                if (error) throw error;
-            }
-
-            console.log(`✅ ${settingType} 설정 업데이트 완료:`, values.length, '개');
-        } catch (error) {
-            console.error(`${settingType} 설정 업데이트 오류:`, error);
-            throw error;
-        }
-    }
-
-    // 단일 사용자 설정 추가
-    async addUserSetting(userId, settingType, settingValue, displayName = null, colorValue = null, colorMeaning = null) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            console.log('📝 사용자 설정 추가:', { userId, settingType, settingValue, displayName, colorValue });
-
-            // RLS를 위한 사용자 ID 설정 (매번 설정)
-            try {
-                await this.client.rpc('set_current_user_id', { user_id: userId.toString() });
-                console.log('✅ 추가용 RLS 사용자 ID 설정 완료');
-            } catch (rlsError) {
-                console.warn('⚠️ RLS 설정 실패, 계속 진행:', rlsError);
-            }
-
-            // 중복 확인 (user_id를 숫자로 사용)
-            const { data: existing, error: checkError } = await this.client
-                .from('user_settings')
-                .select('*')
-                .eq('user_id', parseInt(userId))
-                .eq('setting_type', settingType)
-                .eq('setting_value', settingValue);
-
-            if (checkError) throw checkError;
-
-            if (existing && existing.length > 0) {
-                console.log('⚠️ 이미 존재하는 설정입니다.');
-                return { success: true, message: 'setting_already_exists' };
-            }
-
-            // 새 설정 추가 (user_id를 BIGINT에 맞게 숫자로 변환)
-            const newSetting = {
-                user_id: parseInt(userId),  // BIGINT에 맞게 숫자로 변환
-                setting_type: settingType,
-                setting_value: settingValue,
-                display_name: displayName || settingValue,
-                color_value: colorValue,
-                color_meaning: colorMeaning,
-                created_at: new Date().toISOString()
-            };
-
-            // RLS 우회를 위해 명시적으로 사용자 ID 포함
-            console.log('🔧 INSERT 시도 중, newSetting:', newSetting);
-            
-            const { data, error } = await this.client
-                .from('user_settings')
-                .insert([newSetting])
-                .select();
-
-            if (error) throw error;
-
-            console.log('✅ 사용자 설정 추가 완료:', data[0]);
-            return { success: true, data: data[0] };
-        } catch (error) {
-            console.error('사용자 설정 추가 오류:', error);
-            
-            // RLS 정책 위반 오류인 경우 더 자세한 정보 제공
-            if (error.code === '42501' || error.message?.includes('row-level security')) {
-                console.error('🚨 RLS 정책 위반 감지:', {
-                    code: error.code,
-                    message: error.message,
-                    userId: userId,
-                    settingType: settingType,
-                    settingValue: settingValue
-                });
-                
-                // RLS 오류는 무시하고 성공으로 처리 (임시 조치)
-                return { success: false, error: 'rls_policy_violation', message: 'RLS 정책 위반' };
-            }
-            
-            throw error;
-        }
-    }
-
-    // 단일 사용자 설정 삭제
-    async deleteUserSetting(userId, settingType, settingValue) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            console.log('🗑️ 사용자 설정 삭제:', { userId, settingType, settingValue });
-            
-            // RLS를 위한 사용자 ID 설정
-            await this.client.rpc('set_current_user_id', { user_id: userId.toString() });
-            console.log('✅ 삭제용 RLS 사용자 ID 설정 완료');
-
-            const { error } = await this.client
-                .from('user_settings')
-                .delete()
-                .eq('user_id', userId.toString())
-                .eq('setting_type', settingType)
-                .eq('setting_value', settingValue);
-
-            if (error) throw error;
-
-            console.log('✅ 사용자 설정 삭제 완료');
-            return { success: true, message: 'setting_deleted' };
-        } catch (error) {
-            console.error('사용자 설정 삭제 오류:', error);
-            throw error;
-        }
-    }
-
-    // 특정 설정 타입의 모든 설정 삭제
-    async deleteUserSettingType(userId, settingType) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            console.log('🗑️ 사용자 설정 타입 전체 삭제:', { userId, settingType });
-
-            const { error } = await this.client
-                .from('user_settings')
-                .delete()
-                .eq('user_id', userId.toString())
-                .eq('setting_type', settingType);
-
-            if (error) throw error;
-
-            console.log('✅ 사용자 설정 타입 삭제 완료');
-            return { success: true, message: 'setting_type_deleted' };
-        } catch (error) {
-            console.error('사용자 설정 타입 삭제 오류:', error);
-            throw error;
-        }
-    }
-
-    // 사용자의 모든 설정 초기화
-    async clearUserSettings(userId) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            console.log('🗑️ 사용자 전체 설정 초기화:', userId);
-
-            const { error } = await this.client
-                .from('user_settings')
-                .delete()
-                .eq('user_id', userId.toString());
-
-            if (error) throw error;
-
-            console.log('✅ 사용자 전체 설정 초기화 완료');
-            return { success: true, message: 'all_settings_cleared' };
-        } catch (error) {
-            console.error('사용자 전체 설정 초기화 오류:', error);
-            throw error;
-        }
-    }
-
-    // 설정값 업데이트 (display_name이나 color_value 변경 시)
-    async updateUserSettingDetails(userId, settingType, settingValue, updateData) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            console.log('📝 사용자 설정 상세정보 업데이트:', { userId, settingType, settingValue, updateData });
-
-            const { data, error } = await this.client
-                .from('user_settings')
-                .update({
-                    ...updateData,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('user_id', userId.toString())
-                .eq('setting_type', settingType)
-                .eq('setting_value', settingValue)
-                .select();
-
-            if (error) throw error;
-
-            console.log('✅ 사용자 설정 상세정보 업데이트 완료:', data[0]);
-            return { success: true, data: data[0] };
-        } catch (error) {
-            console.error('사용자 설정 상세정보 업데이트 오류:', error);
             throw error;
         }
     }
@@ -1638,7 +947,7 @@ class DatabaseManager {
         }
 
         try {
-            const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
             
             // 요청자 ID 확인
             let requesterId = currentUser.id;
@@ -1759,7 +1068,7 @@ class DatabaseManager {
         }
 
         try {
-            const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
             
             // 현재 서류 정보 조회
             const { data: doc, error: fetchError } = await this.client
@@ -1885,897 +1194,6 @@ class DatabaseManager {
             return [];
         }
     }
-
-    // 문서 템플릿 설정 관리
-    async getDocumentTemplatesSettings(companyDomain = 'namkyungsteel.com') {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            const { data, error } = await this.client
-                .from('document_templates_with_approver')
-                .select('*')
-                .eq('company_domain', companyDomain)
-                .order('template_id');
-
-            if (error) throw error;
-            return data || [];
-        } catch (error) {
-            console.error('문서 템플릿 설정 조회 오류:', error);
-            throw error;
-        }
-    }
-
-    async updateDocumentTemplateSettings(templateId, settings) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            const updateData = {
-                template_name: settings.template_name,
-                template_content: settings.template_content,
-                is_enabled: settings.is_enabled,
-                final_approver_id: settings.final_approver_id,
-                final_approver_name: settings.final_approver_name,
-                final_approver_email: settings.final_approver_email,
-                updated_at: new Date().toISOString()
-            };
-
-            const { data, error } = await this.client
-                .from('document_templates_settings')
-                .update(updateData)
-                .eq('template_id', templateId)
-                .select();
-
-            if (error) throw error;
-            return { success: true, data: data[0] };
-        } catch (error) {
-            console.error('문서 템플릿 설정 업데이트 오류:', error);
-            throw error;
-        }
-    }
-
-    async createDocumentTemplateSettings(templateData) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            const { data, error } = await this.client
-                .from('document_templates_settings')
-                .insert([templateData])
-                .select();
-
-            if (error) throw error;
-            return { success: true, data: data[0] };
-        } catch (error) {
-            console.error('문서 템플릿 설정 생성 오류:', error);
-            throw error;
-        }
-    }
-
-    async deleteDocumentTemplateSettings(templateId) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            const { data, error } = await this.client
-                .from('document_templates_settings')
-                .delete()
-                .eq('template_id', templateId)
-                .select();
-
-            if (error) throw error;
-            return { success: true, data: data[0] };
-        } catch (error) {
-            console.error('문서 템플릿 설정 삭제 오류:', error);
-            throw error;
-        }
-    }
-
-    // 문서 승인 흐름 개선
-    async updateDocumentStatus(documentId, action, comment = '', approverId = null) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            // 먼저 현재 문서 상태 조회
-            const { data: currentDoc, error: fetchError } = await this.client
-                .from('document_requests')
-                .select('*')
-                .eq('id', documentId)
-                .single();
-
-            if (fetchError) throw fetchError;
-
-            let nextStatus = action;
-            let nextApproverId = null;
-
-            // 문서 템플릿 설정에서 최종 승인자 확인
-            const { data: templateSettings, error: templateError } = await this.client
-                .from('document_templates_settings')
-                .select('final_approver_id')
-                .eq('template_id', currentDoc.document_type)
-                .single();
-
-            if (!templateError && templateSettings?.final_approver_id) {
-                const finalApproverId = templateSettings.final_approver_id;
-                
-                if (action === 'approved') {
-                    // 현재 승인자가 최종 승인자인지 확인
-                    if (currentDoc.current_approver_id === finalApproverId) {
-                        // 최종 승인자가 승인하면 완료
-                        nextStatus = 'completed';
-                        nextApproverId = null;
-                    } else if (currentDoc.current_approver_id === currentDoc.approver_1_id) {
-                        // 1차 승인자가 승인하면 2차 승인자 또는 최종 승인자로
-                        if (currentDoc.approver_2_id && currentDoc.approver_2_id !== finalApproverId) {
-                            nextStatus = 'pending';
-                            nextApproverId = currentDoc.approver_2_id;
-                        } else {
-                            nextStatus = 'pending';
-                            nextApproverId = finalApproverId;
-                        }
-                    } else if (currentDoc.current_approver_id === currentDoc.approver_2_id) {
-                        // 2차 승인자가 승인하면 최종 승인자로
-                        nextStatus = 'pending';
-                        nextApproverId = finalApproverId;
-                    }
-                }
-            } else {
-                // 최종 승인자가 설정되지 않은 경우 기존 로직 사용
-                if (action === 'approved') {
-                    if (currentDoc.current_approver_id === currentDoc.approver_1_id && currentDoc.approver_2_id) {
-                        nextStatus = 'pending';
-                        nextApproverId = currentDoc.approver_2_id;
-                    } else {
-                        nextStatus = 'completed';
-                        nextApproverId = null;
-                    }
-                }
-            }
-
-            const updateData = {
-                status: nextStatus,
-                current_approver_id: nextApproverId,
-                approval_comment: comment,
-                updated_at: new Date().toISOString()
-            };
-
-            if (action === 'approved') {
-                updateData.approved_at = new Date().toISOString();
-                updateData.approved_by = approverId || currentDoc.current_approver_id;
-            } else if (action === 'rejected') {
-                updateData.rejected_at = new Date().toISOString();
-                updateData.rejected_by = approverId || currentDoc.current_approver_id;
-            }
-
-            const { data, error } = await this.client
-                .from('document_requests')
-                .update(updateData)
-                .eq('id', documentId)
-                .select();
-
-            if (error) throw error;
-            return { success: true, data: data[0] };
-        } catch (error) {
-            console.error('문서 상태 업데이트 오류:', error);
-            throw error;
-        }
-    }
-
-    // ========================================
-    // 권한 관리 시스템 메서드들
-    // ========================================
-
-    // 권한 유형 목록 조회
-    async getPermissionTypes(companyDomain = 'namkyungsteel.com') {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-        
-        try {
-            const { data, error } = await this.client
-                .from('permission_types')
-                .select('*')
-                .eq('company_domain', companyDomain)
-                .eq('is_active', true)
-                .order('display_name', { ascending: true });
-            
-            if (error) throw error;
-            return data || [];
-        } catch (error) {
-            console.error('권한 유형 조회 오류:', error);
-            throw error;
-        }
-    }
-
-    // 사용자 권한 확인 (OR 조건: 개인별 OR 부서별 OR 직급별)
-    async checkUserPermission(userId, permissionType, companyDomain = 'namkyungsteel.com') {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-        
-        try {
-            const { data, error } = await this.client
-                .from('user_permission_check')
-                .select('*')
-                .eq('user_id', userId)
-                .eq('permission_type', permissionType)
-                .eq('company_domain', companyDomain)
-                .single();
-            
-            if (error && error.code !== 'PGRST116') throw error;
-            
-            return {
-                hasPermission: data ? data.max_permission_level > 0 : false,
-                permissionLevel: data ? data.effective_permission_level : 'none',
-                maxLevel: data ? data.max_permission_level : 0
-            };
-        } catch (error) {
-            console.error('사용자 권한 확인 오류:', error);
-            return { hasPermission: false, permissionLevel: 'none', maxLevel: 0 };
-        }
-    }
-
-    // 사용자의 모든 권한 조회
-    async getUserAllPermissions(userId, companyDomain = 'namkyungsteel.com') {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-        
-        try {
-            const { data, error } = await this.client
-                .from('user_permission_check')
-                .select('*')
-                .eq('user_id', userId)
-                .eq('company_domain', companyDomain)
-                .gt('max_permission_level', 0);
-            
-            if (error) throw error;
-            return data || [];
-        } catch (error) {
-            console.error('사용자 전체 권한 조회 오류:', error);
-            throw error;
-        }
-    }
-
-    // 권한 설정 목록 조회 (관리자용)
-    async getPermissionSettings(companyDomain = 'namkyungsteel.com') {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-        
-        try {
-            const { data, error } = await this.client
-                .from('user_permissions')
-                .select(`
-                    *,
-                    permission_types (
-                        name,
-                        display_name
-                    ),
-                    users (
-                        name,
-                        email
-                    )
-                `)
-                .eq('company_domain', companyDomain)
-                .eq('is_active', true)
-                .order('created_at', { ascending: false });
-            
-            if (error) throw error;
-            return data || [];
-        } catch (error) {
-            console.error('권한 설정 조회 오류:', error);
-            throw error;
-        }
-    }
-
-    // 권한 부여 (개인별)
-    async grantUserPermission(permissionTypeId, userId, permissionLevel = 'read', grantedBy, companyDomain = 'namkyungsteel.com') {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-        
-        try {
-            // 기존 개인 권한 비활성화
-            await this.client
-                .from('user_permissions')
-                .update({ is_active: false })
-                .eq('permission_type_id', permissionTypeId)
-                .eq('user_id', userId)
-                .eq('company_domain', companyDomain);
-            
-            // 새 권한 부여
-            const { data, error } = await this.client
-                .from('user_permissions')
-                .insert([{
-                    permission_type_id: permissionTypeId,
-                    user_id: userId,
-                    permission_level: permissionLevel,
-                    company_domain: companyDomain,
-                    granted_by: grantedBy,
-                    is_active: true
-                }])
-                .select();
-            
-            if (error) throw error;
-            return data[0];
-        } catch (error) {
-            console.error('개인 권한 부여 오류:', error);
-            throw error;
-        }
-    }
-
-    // 권한 부여 (부서별)
-    async grantDepartmentPermission(permissionTypeId, department, permissionLevel = 'read', grantedBy, companyDomain = 'namkyungsteel.com') {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-        
-        try {
-            // 기존 부서 권한 비활성화
-            await this.client
-                .from('user_permissions')
-                .update({ is_active: false })
-                .eq('permission_type_id', permissionTypeId)
-                .eq('department', department)
-                .is('user_id', null)
-                .eq('company_domain', companyDomain);
-            
-            // 새 권한 부여
-            const { data, error } = await this.client
-                .from('user_permissions')
-                .insert([{
-                    permission_type_id: permissionTypeId,
-                    department: department,
-                    permission_level: permissionLevel,
-                    company_domain: companyDomain,
-                    granted_by: grantedBy,
-                    is_active: true
-                }])
-                .select();
-            
-            if (error) throw error;
-            return data[0];
-        } catch (error) {
-            console.error('부서 권한 부여 오류:', error);
-            throw error;
-        }
-    }
-
-    // 권한 부여 (직급별)
-    async grantPositionPermission(permissionTypeId, position, permissionLevel = 'read', grantedBy, companyDomain = 'namkyungsteel.com') {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-        
-        try {
-            // 기존 직급 권한 비활성화
-            await this.client
-                .from('user_permissions')
-                .update({ is_active: false })
-                .eq('permission_type_id', permissionTypeId)
-                .eq('position', position)
-                .is('user_id', null)
-                .is('department', null)
-                .eq('company_domain', companyDomain);
-            
-            // 새 권한 부여
-            const { data, error } = await this.client
-                .from('user_permissions')
-                .insert([{
-                    permission_type_id: permissionTypeId,
-                    position: position,
-                    permission_level: permissionLevel,
-                    company_domain: companyDomain,
-                    granted_by: grantedBy,
-                    is_active: true
-                }])
-                .select();
-            
-            if (error) throw error;
-            return data[0];
-        } catch (error) {
-            console.error('직급 권한 부여 오류:', error);
-            throw error;
-        }
-    }
-
-    // 권한 취소
-    async revokePermission(permissionId) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-        
-        try {
-            const { data, error } = await this.client
-                .from('user_permissions')
-                .update({ is_active: false })
-                .eq('id', permissionId)
-                .select();
-            
-            if (error) throw error;
-            return data[0];
-        } catch (error) {
-            console.error('권한 취소 오류:', error);
-            throw error;
-        }
-    }
-
-    // 부서 목록 조회 (권한 설정용)
-    async getDepartments(companyDomain = 'namkyungsteel.com') {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-        
-        try {
-            const { data, error } = await this.client
-                .from('users')
-                .select('department')
-                .eq('company_domain', companyDomain)
-                .eq('is_active', true)
-                .not('department', 'is', null)
-                .not('department', 'eq', '');
-            
-            if (error) throw error;
-            
-            // 중복 제거
-            const uniqueDepartments = [...new Set(data.map(item => item.department))];
-            return uniqueDepartments.sort();
-        } catch (error) {
-            console.error('부서 목록 조회 오류:', error);
-            throw error;
-        }
-    }
-
-    // 직급 목록 조회 (권한 설정용)
-    async getPositions(companyDomain = 'namkyungsteel.com') {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-        
-        try {
-            const { data, error } = await this.client
-                .from('users')
-                .select('position')
-                .eq('company_domain', companyDomain)
-                .eq('is_active', true)
-                .not('position', 'is', null)
-                .not('position', 'eq', '');
-            
-            if (error) throw error;
-            
-            // 중복 제거
-            const uniquePositions = [...new Set(data.map(item => item.position))];
-            return uniquePositions.sort();
-        } catch (error) {
-            console.error('직급 목록 조회 오류:', error);
-            throw error;
-        }
-    }
-
-    // ========================================
-    // 알림(Notification) 관리 메서드들
-    // ========================================
-
-    // 알림 생성
-    async createNotification(notificationData) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            const notification = {
-                ...notificationData,
-                created_at: new Date().toISOString(),
-                is_read: false
-            };
-
-            const { data, error } = await this.client
-                .from('notifications')
-                .insert([notification])
-                .select();
-            
-            if (error) throw error;
-            return { success: true, data: data[0] };
-        } catch (error) {
-            console.error('알림 생성 오류:', error);
-            throw error;
-        }
-    }
-
-    // 여러 사용자에게 알림 생성
-    async createNotificationsForUsers(userIds, notificationTemplate) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            const notifications = userIds.map(userId => ({
-                ...notificationTemplate,
-                user_id: userId,
-                created_at: new Date().toISOString(),
-                is_read: false
-            }));
-
-            const { data, error } = await this.client
-                .from('notifications')
-                .insert(notifications)
-                .select();
-            
-            if (error) throw error;
-            return { success: true, data };
-        } catch (error) {
-            console.error('다중 알림 생성 오류:', error);
-            throw error;
-        }
-    }
-
-    // 특정 역할의 모든 사용자에게 알림 생성
-    async createNotificationForRoles(roles, companyDomain, notificationTemplate) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            // 해당 역할의 사용자들 조회
-            const { data: users, error: userError } = await this.client
-                .from('users')
-                .select('id')
-                .in('role', roles)
-                .eq('company_domain', companyDomain)
-                .eq('is_active', true);
-            
-            if (userError) throw userError;
-            
-            if (!users || users.length === 0) {
-                return { success: true, data: [] };
-            }
-
-            // 알림 생성
-            const userIds = users.map(user => user.id);
-            return await this.createNotificationsForUsers(userIds, notificationTemplate);
-        } catch (error) {
-            console.error('역할별 알림 생성 오류:', error);
-            throw error;
-        }
-    }
-
-    // 사용자의 알림 목록 조회
-    async getUserNotifications(userId, limit = 50) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            const { data, error } = await this.client
-                .from('notifications')
-                .select('*')
-                .eq('user_id', userId)
-                .order('created_at', { ascending: false })
-                .limit(limit);
-            
-            if (error) throw error;
-            return data || [];
-        } catch (error) {
-            console.error('알림 목록 조회 오류:', error);
-            throw error;
-        }
-    }
-
-    // 알림 읽음 처리
-    async markNotificationAsRead(notificationId) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            const { data, error } = await this.client
-                .from('notifications')
-                .update({ 
-                    is_read: true,
-                    read_at: new Date().toISOString()
-                })
-                .eq('id', notificationId)
-                .select();
-            
-            if (error) throw error;
-            return { success: true, data: data[0] };
-        } catch (error) {
-            console.error('알림 읽음 처리 오류:', error);
-            throw error;
-        }
-    }
-
-    // 모든 알림 읽음 처리
-    async markAllNotificationsAsRead(userId) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            const { data, error } = await this.client
-                .from('notifications')
-                .update({ 
-                    is_read: true,
-                    read_at: new Date().toISOString()
-                })
-                .eq('user_id', userId)
-                .eq('is_read', false)
-                .select();
-            
-            if (error) throw error;
-            return { success: true, count: data.length };
-        } catch (error) {
-            console.error('모든 알림 읽음 처리 오류:', error);
-            throw error;
-        }
-    }
-
-    // 읽지 않은 알림 개수 조회
-    async getUnreadNotificationCount(userId) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            const { count, error } = await this.client
-                .from('notifications')
-                .select('*', { count: 'exact', head: true })
-                .eq('user_id', userId)
-                .eq('is_read', false);
-            
-            if (error) throw error;
-            return count || 0;
-        } catch (error) {
-            console.error('읽지 않은 알림 개수 조회 오류:', error);
-            throw error;
-        }
-    }
-
-    // ==================== 업체 네트워크 관리 ====================
-    
-    // 업체 네트워크 저장
-    async saveCompanyNetwork(userId, centerCompanyId, centerCompanyName, networkData) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            console.log('💾 업체 네트워크 저장 시작:', {
-                userId,
-                centerCompanyId,
-                centerCompanyName,
-                nodesCount: networkData.nodes?.length,
-                linksCount: networkData.links?.length
-            });
-
-            // 기존 네트워크가 있는지 확인 (user_id를 문자열로 변환)
-            const { data: existingNetwork, error: selectError } = await this.client
-                .from('company_networks')
-                .select('id')
-                .eq('user_id', String(userId))
-                .eq('center_company_id', centerCompanyId)
-                .single();
-
-            if (selectError && selectError.code !== 'PGRST116') { // 'PGRST116'은 "no rows returned" 오류
-                throw selectError;
-            }
-
-            let result;
-            if (existingNetwork) {
-                // 기존 네트워크 업데이트
-                const { data, error } = await this.client
-                    .from('company_networks')
-                    .update({
-                        network_data: networkData,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', existingNetwork.id)
-                    .select();
-                
-                if (error) throw error;
-                result = { success: true, data: data[0], action: 'updated' };
-                
-                console.log('✅ 기존 네트워크 업데이트 완료');
-            } else {
-                // 새 네트워크 생성 (user_id를 문자열로 변환)
-                const { data, error } = await this.client
-                    .from('company_networks')
-                    .insert({
-                        user_id: String(userId),
-                        center_company_id: centerCompanyId,
-                        center_company_name: centerCompanyName,
-                        network_data: networkData
-                    })
-                    .select();
-                
-                if (error) throw error;
-                result = { success: true, data: data[0], action: 'created' };
-                
-                console.log('✅ 새 네트워크 생성 완료');
-            }
-
-            return result;
-
-        } catch (error) {
-            console.error('❌ 업체 네트워크 저장 오류:', error);
-            throw error;
-        }
-    }
-
-    // 업체 네트워크 조회
-    async getCompanyNetwork(userId, centerCompanyId) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            console.log('📊 업체 네트워크 조회:', { userId, centerCompanyId });
-
-            const { data, error } = await this.client
-                .from('company_networks')
-                .select('*')
-                .eq('user_id', String(userId))
-                .eq('center_company_id', centerCompanyId)
-                .single();
-
-            if (error) {
-                if (error.code === 'PGRST116') {
-                    // 네트워크가 없는 경우
-                    console.log('📊 기존 네트워크 없음');
-                    return null;
-                }
-                throw error;
-            }
-
-            console.log('✅ 네트워크 조회 완료:', data ? '데이터 있음' : '데이터 없음');
-            return data;
-
-        } catch (error) {
-            console.error('❌ 업체 네트워크 조회 오류:', error);
-            throw error;
-        }
-    }
-
-    // 사용자의 모든 네트워크 목록 조회
-    async getUserNetworks(userId) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            const { data, error } = await this.client
-                .from('company_networks')
-                .select('id, center_company_id, center_company_name, created_at, updated_at')
-                .eq('user_id', String(userId))
-                .order('updated_at', { ascending: false });
-
-            if (error) throw error;
-            return data || [];
-
-        } catch (error) {
-            console.error('❌ 사용자 네트워크 목록 조회 오류:', error);
-            throw error;
-        }
-    }
-
-    // 네트워크 삭제
-    async deleteCompanyNetwork(userId, centerCompanyId) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            const { data, error } = await this.client
-                .from('company_networks')
-                .delete()
-                .eq('user_id', String(userId))
-                .eq('center_company_id', centerCompanyId)
-                .select();
-
-            if (error) throw error;
-            
-            console.log('✅ 네트워크 삭제 완료:', data.length, '개');
-            return { success: true, deletedCount: data.length };
-
-        } catch (error) {
-            console.error('❌ 네트워크 삭제 오류:', error);
-            throw error;
-        }
-    }
-
-    // ==================== PDF 파일 관리 ====================
-    
-    // 업체의 PDF 파일 존재 여부 확인
-    async checkCompanyPdfExists(companyId) {
-        if (!this.client) {
-            throw new Error('데이터베이스 연결이 필요합니다.');
-        }
-
-        try {
-            // client_companies 테이블에서 pdf_files 확인
-            const { data, error } = await this.client
-                .from('client_companies')
-                .select('pdf_files')
-                .eq('id', companyId)
-                .single();
-
-            if (error) {
-                if (error.code === 'PGRST116') {
-                    // 업체가 없는 경우
-                    return false;
-                }
-                throw error;
-            }
-
-            // PDF 파일 배열이 있고 비어있지 않으면 true
-            return !!(data && data.pdf_files && Array.isArray(data.pdf_files) && data.pdf_files.length > 0);
-        } catch (error) {
-            console.error('PDF 파일 확인 오류:', error);
-            return false;
-        }
-    }
-
-    // 여러 업체의 PDF 파일 존재 여부를 한번에 확인
-    async checkCompaniesPdfExists(companyIds) {
-        if (!this.client || !companyIds || companyIds.length === 0) {
-            return {};
-        }
-
-        try {
-            // ID 개수가 많으면 분할해서 처리 (URL 길이 제한 때문)
-            const chunkSize = 100; // 한 번에 최대 100개씩 처리
-            const pdfStatusMap = {};
-            
-            // 기본값 false로 초기화
-            companyIds.forEach(id => {
-                pdfStatusMap[id] = false;
-            });
-
-            for (let i = 0; i < companyIds.length; i += chunkSize) {
-                const chunk = companyIds.slice(i, i + chunkSize);
-                
-                try {
-                    const { data, error } = await this.client
-                        .from('client_companies')
-                        .select('id, pdf_files')
-                        .in('id', chunk);
-
-                    if (error) {
-                        console.warn(`PDF 확인 청크 ${i}~${i + chunk.length} 오류:`, error);
-                        continue; // 이 청크는 건너뛰고 다음 청크 처리
-                    }
-
-                    if (data) {
-                        data.forEach(company => {
-                            // PDF 파일 배열이 있고 비어있지 않으면 true
-                            pdfStatusMap[company.id] = !!(company.pdf_files && Array.isArray(company.pdf_files) && company.pdf_files.length > 0);
-                        });
-                    }
-                } catch (chunkError) {
-                    console.warn(`PDF 확인 청크 ${i} 처리 오류:`, chunkError);
-                    continue;
-                }
-            }
-
-            return pdfStatusMap;
-        } catch (error) {
-            console.error('PDF 파일 일괄 확인 오류:', error);
-            // 오류 발생 시 기본값 false로 채운 객체 반환
-            const fallbackMap = {};
-            companyIds.forEach(id => {
-                fallbackMap[id] = false;
-            });
-            return fallbackMap;
-        }
-    }
 }
 
 // 전역 데이터베이스 매니저 인스턴스
@@ -2783,6 +1201,7 @@ const db = new DatabaseManager();
 
 // 전역 함수로 내보내기
 window.db = db;
+
 
 // 초기화 완료 후 이벤트 발생
 document.addEventListener('DOMContentLoaded', function() {
@@ -2796,11 +1215,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 const users = await db.getUsers();
                 console.log('현재 사용자 수:', users.length);
                 
-                // 데이터베이스 사용자 수 확인만 수행 (마스터 체크 제거)
-                console.log('데이터베이스 사용자 확인 완료');
+                // 마스터 사용자가 없으면 생성
+                const masterUser = users.find(u => u.email === 'master@steelworks.com');
+                if (!masterUser) {
+                    console.log('마스터 사용자가 없습니다. 생성 중...');
+                    await createTestUser();
+                }
             } catch (error) {
                 console.error('사용자 데이터 확인 오류:', error);
             }
+        } else {
+            console.error('❌ 데이터베이스 연결 실패 - 모든 데이터베이스 작업이 실패합니다.');
         }
     }, 1000);
 });

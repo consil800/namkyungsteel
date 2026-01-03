@@ -3,17 +3,20 @@
 let currentUser = null;
 
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('📄 업체 등록 페이지 로드 시작');
+    console.log('업체 등록 페이지 로드 시작');
     
-    // 간단한 사용자 인증
-    currentUser = await window.dataLoader.getCurrentUser();
+    // 데이터베이스 초기화 대기
+    await waitForDatabase();
+    
+    // 로그인 확인
+    currentUser = AuthManager.getCurrentUser();
     if (!currentUser) {
         alert('로그인이 필요합니다.');
         window.location.href = 'login.html';
         return;
     }
 
-    console.log('✅ 현재 사용자:', currentUser.name);
+    console.log('현재 사용자:', currentUser);
 
     // 드롭다운 옵션 로드
     await loadDropdownOptions();
@@ -42,7 +45,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             products: formData.get('products').trim(),
             usage_items: formData.get('usageItems').trim(),
             notes: formData.get('notes').trim(),
-            color_code: formData.get('companyColor') || '',
+            company_color: formData.get('companyColor') || '',
             visit_count: 0,
             last_visit_date: null,
             user_id: currentUser.id,
@@ -68,25 +71,22 @@ document.addEventListener('DOMContentLoaded', async function() {
             submitBtn.disabled = true;
             submitBtn.textContent = '등록 중...';
 
-            console.log('📝 업체 등록 시작');
+            console.log('데이터베이스 저장 시작');
             
-            // 간단한 업체 등록
-            const result = await window.dataLoader.createCompany(companyData, currentUser.id);
-            
-            if (result.success) {
-                alert('업체가 성공적으로 등록되었습니다.');
+            // 데이터베이스에 저장 (개인 업체로)
+            if (window.db && window.db.client) {
+                const result = await window.db.createClientCompany(companyData);
+                console.log('저장 결과:', result);
                 
-                // 데이터 변경 알림 (자동 캐시 무효화 및 새로고침 포함)
-                if (currentUser.id && window.dataChangeManager) {
-                    window.dataChangeManager.notifyChange(currentUser.id, 'create');
-                }
-                
-                // worklog.html로 이동하여 새로 등록된 업체 확인
-                setTimeout(() => {
+                if (result.success) {
+                    alert('업체가 성공적으로 등록되었습니다.');
+                    // worklog.html로 돌아가기
                     window.location.href = 'worklog.html';
-                }, 200);
+                } else {
+                    throw new Error('업체 등록에 실패했습니다.');
+                }
             } else {
-                throw new Error('업체 등록에 실패했습니다.');
+                throw new Error('데이터베이스 연결이 필요합니다.');
             }
 
         } catch (error) {
@@ -108,39 +108,91 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 });
 
-// 제거됨 - data-loader.js에서 처리
+// 데이터베이스 초기화 대기
+async function waitForDatabase() {
+    let retryCount = 0;
+    while ((!window.db || !window.db.client) && retryCount < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        retryCount++;
+    }
+    console.log('데이터베이스 초기화 상태:', !!window.db, !!window.db?.client);
+}
 
 // 드롭다운 옵션 로드
 async function loadDropdownOptions() {
     console.log('드롭다운 옵션 로드 시작');
     
     try {
-        // 데이터베이스 초기화 대기
-        if (!window.DropdownLoader) {
-            console.error('DropdownLoader가 로드되지 않았습니다.');
-            loadBasicOptions();
-            return;
+        // 로컬 스토리지에서 설정 가져오기
+        const storedSettings = localStorage.getItem('dropdownSettings');
+        let settings;
+        
+        if (storedSettings) {
+            settings = JSON.parse(storedSettings);
+        } else {
+            // 기본값 설정
+            settings = {
+                paymentTerms: ['현금', '월말결제', '30일', '45일', '60일', '90일', '어음', '기타'],
+                businessTypes: ['제조업', '건설업', '유통업', '기타'],
+                regions: ['서울','부산','대구','경주','김해','양산','함안','밀양','창원','창녕','울산','목포','광주','광양'].sort((a, b) => a.localeCompare(b)),
+                colors: [
+                    { key: 'red', name: '빨강', value: '#e74c3c' },
+                    { key: 'orange', name: '주황', value: '#f39c12' },
+                    { key: 'yellow', name: '노랑', value: '#f1c40f' },
+                    { key: 'green', name: '초록', value: '#27ae60' },
+                    { key: 'blue', name: '파랑', value: '#3498db' },
+                    { key: 'purple', name: '보라', value: '#9b59b6' },
+                    { key: 'gray', name: '회색', value: '#95a5a6' }
+                ]
+            };
         }
 
-        // 각 드롭다운 로드 (직접입력 옵션 없이)
+        console.log('드롭다운 설정:', settings);
+
+        // 지역 드롭다운 로드
         const regionSelect = document.getElementById('region');
-        if (regionSelect) {
-            await DropdownLoader.loadRegionsOnly(regionSelect);
+        if (regionSelect && settings.regions) {
+            settings.regions.forEach(region => {
+                const option = document.createElement('option');
+                option.value = region;
+                option.textContent = region;
+                regionSelect.appendChild(option);
+            });
         }
 
+        // 결제조건 드롭다운 로드
         const paymentTermsSelect = document.getElementById('paymentTerms');
-        if (paymentTermsSelect) {
-            await DropdownLoader.loadPaymentTermsOnly(paymentTermsSelect);
+        if (paymentTermsSelect && settings.paymentTerms) {
+            settings.paymentTerms.forEach(term => {
+                const option = document.createElement('option');
+                option.value = term;
+                option.textContent = term;
+                paymentTermsSelect.appendChild(option);
+            });
         }
 
+        // 업종 드롭다운 로드
         const businessTypeSelect = document.getElementById('businessType');
-        if (businessTypeSelect) {
-            await DropdownLoader.loadBusinessTypesOnly(businessTypeSelect);
+        if (businessTypeSelect && settings.businessTypes) {
+            settings.businessTypes.forEach(type => {
+                const option = document.createElement('option');
+                option.value = type;
+                option.textContent = type;
+                businessTypeSelect.appendChild(option);
+            });
         }
 
+        // 색상 드롭다운 로드
         const colorSelect = document.getElementById('companyColor');
-        if (colorSelect) {
-            await DropdownLoader.loadColorsOnly(colorSelect);
+        if (colorSelect && settings.colors) {
+            settings.colors.forEach(color => {
+                const option = document.createElement('option');
+                option.value = color.key;
+                option.textContent = color.name;
+                option.style.backgroundColor = color.value;
+                option.style.color = getContrastColor(color.value);
+                colorSelect.appendChild(option);
+            });
         }
 
         console.log('드롭다운 옵션 로드 완료');
@@ -153,29 +205,66 @@ async function loadDropdownOptions() {
     }
 }
 
-// 빈 옵션 로드 (오류 시 백업)
+// 기본 옵션 로드 (오류 시 백업)
 function loadBasicOptions() {
-    console.log('빈 옵션 로드 - 사용자가 설정 페이지에서 항목을 추가해야 합니다.');
+    console.log('기본 옵션 로드');
     
-    // 드롭다운에는 기본 선택 옵션만 남겨두고 직접입력 옵션은 제거
+    // 기본 지역
+    const regions = ['서울','부산','대구','경주','김해','양산','함안','밀양','창원','창녕','울산','목포','광주','광양'];
     const regionSelect = document.getElementById('region');
-    if (regionSelect && regionSelect.options.length <= 1) {
-        console.log('지역 드롭다운이 비어있습니다. 설정 페이지에서 항목을 추가하세요.');
+    if (regionSelect) {
+        regions.forEach(region => {
+            const option = document.createElement('option');
+            option.value = region;
+            option.textContent = region;
+            regionSelect.appendChild(option);
+        });
     }
 
+    // 기본 결제조건
+    const paymentTerms = ['현금', '월말결제', '30일', '45일', '60일', '90일', '어음', '기타'];
     const paymentTermsSelect = document.getElementById('paymentTerms');
-    if (paymentTermsSelect && paymentTermsSelect.options.length <= 1) {
-        console.log('결제조건 드롭다운이 비어있습니다. 설정 페이지에서 항목을 추가하세요.');
+    if (paymentTermsSelect) {
+        paymentTerms.forEach(term => {
+            const option = document.createElement('option');
+            option.value = term;
+            option.textContent = term;
+            paymentTermsSelect.appendChild(option);
+        });
     }
 
+    // 기본 업종
+    const businessTypes = ['제조업', '건설업', '유통업', '기타'];
     const businessTypeSelect = document.getElementById('businessType');
-    if (businessTypeSelect && businessTypeSelect.options.length <= 1) {
-        console.log('업종 드롭다운이 비어있습니다. 설정 페이지에서 항목을 추가하세요.');
+    if (businessTypeSelect) {
+        businessTypes.forEach(type => {
+            const option = document.createElement('option');
+            option.value = type;
+            option.textContent = type;
+            businessTypeSelect.appendChild(option);
+        });
     }
 
+    // 기본 색상
+    const colors = [
+        { key: 'red', name: '빨강', value: '#e74c3c' },
+        { key: 'orange', name: '주황', value: '#f39c12' },
+        { key: 'yellow', name: '노랑', value: '#f1c40f' },
+        { key: 'green', name: '초록', value: '#27ae60' },
+        { key: 'blue', name: '파랑', value: '#3498db' },
+        { key: 'purple', name: '보라', value: '#9b59b6' },
+        { key: 'gray', name: '회색', value: '#95a5a6' }
+    ];
     const colorSelect = document.getElementById('companyColor');
-    if (colorSelect && colorSelect.options.length <= 1) {
-        console.log('색상 드롭다운이 비어있습니다. 설정 페이지에서 항목을 추가하세요.');
+    if (colorSelect) {
+        colors.forEach(color => {
+            const option = document.createElement('option');
+            option.value = color.key;
+            option.textContent = color.name;
+            option.style.backgroundColor = color.value;
+            option.style.color = getContrastColor(color.value);
+            colorSelect.appendChild(option);
+        });
     }
 }
 

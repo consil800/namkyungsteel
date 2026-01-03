@@ -4,11 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SteelWorks Platform - 플랫폼 관리자</title>
-    
-    <!-- Favicons -->
-    <link href="logo.jpg" rel="icon">
-    <link href="logo.jpg" rel="apple-touch-icon">
-    
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
@@ -186,7 +181,7 @@
 
         .platform-stats {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 1.5rem;
             margin-bottom: 3rem;
         }
@@ -362,7 +357,7 @@
 
         .platform-actions {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 1rem;
         }
 
@@ -639,10 +634,10 @@
             console.log('입력된 이메일:', email);
             console.log('입력된 비밀번호:', password);
             
-            // 데이터베이스 기반 인증으로 변경 - 하드코딩된 계정 제거
-            if (!email || !password) {
+            // 마스터 계정만 허용
+            if (email !== 'master@steelworks.com') {
                 document.getElementById('adminErrorMessage').style.display = 'block';
-                document.getElementById('adminErrorMessage').textContent = '이메일과 비밀번호를 입력하세요.';
+                document.getElementById('adminErrorMessage').textContent = '플랫폼 관리자만 접근할 수 있습니다.';
                 return;
             }
             

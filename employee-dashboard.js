@@ -1151,6 +1151,11 @@ function openDocumentApproval() {
     window.location.href = 'document-approval.html';
 }
 
+function openScheduleGenerator() {
+    console.log('스케줄 생성 메뉴 클릭');
+    window.location.href = 'schedule-generator.html';
+}
+
 // 4. 로그아웃 처리
 async function handleLogout() {
     if (!confirm('정말 로그아웃 하시겠습니까?')) {

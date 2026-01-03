@@ -303,93 +303,23 @@
             await loadDocuments();
         });
 
-        // 데이터베이스에서 현재 사용자 정보 가져오기
-        async function getCurrentUserFromDB() {
-            try {
-                console.log('🔍 getCurrentUserFromDB 시작');
-                
-                if (!window.db) {
-                    console.warn('⚠️ 데이터베이스가 초기화되지 않음');
-                    return null;
-                }
-                
-                await window.db.init();
-                console.log('✅ 데이터베이스 초기화 완료');
-                
-                // 세션 스토리지에서 로그인 정보 가져오기
-                const loginInfo = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
-                console.log('📋 세션 스토리지 로그인 정보:', loginInfo);
-                
-                if (!loginInfo || (!loginInfo.email && !loginInfo.id)) {
-                    console.error('❌ 로그인 정보가 없습니다.');
-                    return null;
-                }
-                
-                // Supabase users 테이블에서 최신 사용자 정보 조회 (이메일 또는 ID로)
-                let user, error;
-                if (loginInfo.email && loginInfo.email !== 'null') {
-                    // 이메일로 조회 (Google 로그인)
-                    console.log('🔍 이메일로 사용자 조회:', loginInfo.email);
-                    const result = await window.db.client
-                        .from('users')
-                        .select('*')
-                        .eq('email', loginInfo.email)
-                        .single();
-                    user = result.data;
-                    error = result.error;
-                    console.log('📊 이메일 조회 결과:', { user, error });
-                } else if (loginInfo.id) {
-                    // ID로 조회 (카카오 로그인에서 이메일이 없는 경우)
-                    console.log('🔍 ID로 사용자 조회:', loginInfo.id);
-                    const result = await window.db.client
-                        .from('users')
-                        .select('*')
-                        .eq('id', loginInfo.id)
-                        .single();
-                    user = result.data;
-                    error = result.error;
-                    console.log('📊 ID 조회 결과:', { user, error });
-                }
-                
-                if (error) {
-                    console.error('❌ 사용자 정보 조회 오류:', error);
-                    return null;
-                }
-                
-                if (!user) {
-                    console.error('❌ 사용자를 찾을 수 없습니다');
-                    return null;
-                }
-                
-                console.log('✅ 사용자 정보 조회 성공:', user);
-                return user;
-            } catch (error) {
-                console.error('❌ getCurrentUserFromDB 오류:', error);
-                return null;
-            }
-        }
-
         // 서류 목록 로드
         async function loadDocuments() {
             showLoading();
             try {
-                const currentUser = await getCurrentUserFromDB();
-                console.log('📋 현재 사용자 정보:', currentUser);
-                
-                if (!currentUser || !currentUser.id) {
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                if (!currentUser.id) {
                     alert('로그인 정보를 확인할 수 없습니다.');
-                    window.location.href = 'employee-dashboard.html';
                     return;
                 }
 
                 // 현재 사용자가 승인해야 할 서류 조회
-                console.log('🔍 승인 대기 서류 조회 시작, 승인자 ID:', currentUser.id);
                 allDocuments = await window.db.getPendingDocuments(currentUser.id);
-                console.log('📊 승인 대기 서류:', allDocuments);
+                console.log('승인 대기 서류:', allDocuments);
                 
                 displayDocuments(allDocuments);
             } catch (error) {
-                console.error('❌ 서류 로드 오류:', error);
+                console.error('서류 로드 오류:', error);
                 alert('서류 목록을 불러오는 중 오류가 발생했습니다.');
             } finally {
                 hideLoading();

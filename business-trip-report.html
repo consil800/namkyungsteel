@@ -4,9 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>출장 보고서 - SteelWorks Platform</title>
-    <!-- Favicons -->
-    <link href="logo.jpg" rel="icon">
-    <link href="logo.jpg" rel="apple-touch-icon">
     
     <!-- Supabase JS CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -105,7 +102,7 @@
 
         .form-row {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 1.5rem;
             margin-bottom: 1.5rem;
         }
@@ -878,7 +875,6 @@
                 if (result.success) {
                     alert('출장 보고서 승인 요청이 완료되었습니다.\n승인자의 검토를 기다려주세요.');
                     resetForm();
-                    window.location.href = 'documents.html';
                 } else {
                     alert('서류 요청 저장 중 오류가 발생했습니다.');
                     console.error('저장 오류:', result.error);
@@ -967,7 +963,7 @@
                 await window.db.init();
                 
                 // localStorage에서 로그인 정보(이메일)만 가져오기
-                const loginInfo = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+                const loginInfo = JSON.parse(localStorage.getItem('currentUser') || '{}');
                 if (!loginInfo || !loginInfo.email) {
                     console.error('로그인 정보가 없습니다.');
                     return null;

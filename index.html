@@ -11,10 +11,6 @@
   <!-- Favicons -->
   <link href="logo.jpg" rel="icon">
   <link href="logo.jpg" rel="apple-touch-icon">
-  
-  <!-- 이미지 프리로딩을 위한 link 태그 -->
-  <link rel="preload" href="namkyung1.png" as="image" type="image/png">
-  <link rel="prefetch" href="namkyung1.png">
 
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com" rel="preconnect">
@@ -217,50 +213,12 @@
   </style>
 
   <!-- Main CSS File -->
-  <link href="assets/css/main.css?v=1.2" rel="stylesheet">
-  <!-- Mobile CSS File -->
-  <link href="shared-assets/css/mobile.css?v=1.2" rel="stylesheet">
-  
-  <!-- 이미지 캐시 및 로딩 최적화 CSS -->
-  <style>
-    /* 이미지 로딩 최적화 */
-    #heroMainImage {
-      /* 이미지가 로드되기 전 배경 */
-      background: linear-gradient(135deg, #0066cc, #004499);
-      /* 기본적으로 보이도록 설정 */
-      opacity: 1;
-    }
-    
-    /* 이미지 로딩 중 플레이스홀더 */
-    .image-placeholder.loading::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.5s infinite;
-      border-radius: 10px;
-      z-index: 1;
-    }
-    
-    @keyframes shimmer {
-      0% { background-position: -200% 0; }
-      100% { background-position: 200% 0; }
-    }
-    
-    /* 캐시된 이미지는 즉시 표시 */
-    .cached-image {
-      opacity: 1 !important;
-    }
-  </style>
+  <link href="assets/css/main.css" rel="stylesheet">
   
   <style>
     body { 
       font-family: 'Noto Sans KR', sans-serif !important; 
-      background-color: #fafbfc !important;
+      background-color: #ffffff !important;
     }
     
     /* 메인 섭션과 푸터 사이 공간 추가 */
@@ -268,6 +226,294 @@
       margin-bottom: 0 !important;
     }
     
+    /* 헤더 밝게 스타일링 */
+    .header {
+      background-color: #ffffff !important;
+      box-shadow: 0 2px 15px rgba(0, 102, 204, 0.08) !important;
+      border-bottom: 1px solid #e9ecef !important;
+      backdrop-filter: blur(10px) !important;
+    }
+    
+    .header .sitename {
+      color: #1a365d !important;
+    }
+    
+    .navmenu a {
+      color: #2c3e50 !important;
+    }
+    
+    .navmenu a:hover {
+      color: #0066cc !important;
+    }
+    
+    .navmenu .active {
+      color: #0066cc !important;
+      font-weight: 600 !important;
+    }
+    
+    /* Footer Styles - 적당한 대비감 있는 색상 */
+    .footer {
+      background-color: #2d3748;
+      color: #ffffff;
+      border-top: 3px solid #0066cc;
+    }
+    
+    .footer-top {
+      padding: 30px 0 20px;
+    }
+    
+    .footer-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 40px;
+    }
+    
+    .footer-column h3,
+    .footer-column h4 {
+      margin-bottom: 20px;
+      color: #ffffff;
+      font-weight: 600;
+    }
+    
+    .footer-column ul {
+      list-style: none;
+      padding: 0;
+    }
+    
+    .footer-column ul li {
+      margin-bottom: 10px;
+    }
+    
+    .footer-column a {
+      color: #cbd5e0;
+      transition: all 0.3s ease;
+      text-decoration: none;
+    }
+    
+    .footer-column a:hover {
+      color: #0066cc;
+    }
+    
+    .footer-column p {
+      color: #a0aec0;
+      line-height: 1.6;
+    }
+    
+    .social-links {
+      display: flex;
+      gap: 15px;
+      margin-top: 20px;
+    }
+    
+    .social-links a {
+      width: 40px;
+      height: 40px;
+      background-color: #4a5568;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      color: #ffffff;
+    }
+    
+    .social-links a:hover {
+      background-color: #004499;
+      color: #ffffff;
+    }
+    
+    .contact-info li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 15px;
+      color: #cbd5e0;
+    }
+    
+    .contact-info i {
+      margin-top: 4px;
+      color: #0066cc;
+    }
+    
+    .footer-bottom {
+      background-color: #1a202c;
+      padding: 20px 0;
+    }
+    
+    .bottom-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .bottom-content p {
+      color: #a0aec0;
+      margin: 0;
+    }
+    
+    .footer-links {
+      display: flex;
+      gap: 20px;
+    }
+    
+    .footer-links a {
+      color: #a0aec0;
+      font-size: 14px;
+      text-decoration: none;
+    }
+    
+    .footer-links a:hover {
+      color: #0066cc;
+    }
+    
+    @media (max-width: 768px) {
+      .bottom-content {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+      }
+      
+      .footer-grid {
+        grid-template-columns: 1fr;
+        text-align: center;
+      }
+      
+      .social-links {
+        justify-content: center;
+      }
+      
+      .contact-info {
+        text-align: left;
+      }
+    }
+    .login-btn { 
+      background: #0066cc; 
+      color: white; 
+      padding: 8px 20px; 
+      border-radius: 5px; 
+      margin-left: 25px;
+      text-decoration: none;
+      transition: all 0.3s;
+    }
+    .login-btn:hover { 
+      background: #0052a3; 
+      color: white;
+    }
+    
+    /* 사용자 프로필 스타일 */
+    .user-profile {
+      margin-left: 25px;
+    }
+    
+    .profile-icon {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      padding: 5px 10px;
+      border-radius: 25px;
+    }
+    
+    .profile-icon:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .profile-icon img {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #fff;
+      margin-right: 8px;
+    }
+    
+    .profile-name {
+      color: #2c3e50;
+      font-weight: 500;
+      font-size: 14px;
+    }
+    
+    /* 🎯 NAVIGATION MENU FIXES */
+    .navmenu ul {
+      display: flex;
+      align-items: center;
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .navmenu > ul > li {
+      white-space: nowrap;
+      padding: 15px 16px; /* 균등한 간격 */
+      position: relative;
+    }
+    
+    .navmenu a {
+      color: var(--nav-color, #2c3e50);
+      padding: 12px 0;
+      font-size: 16px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      white-space: nowrap;
+      transition: 0.3s;
+      text-decoration: none;
+    }
+    
+    /* 드롭다운 기본적으로 숨김 */
+    .navmenu .dropdown ul {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      z-index: 99;
+      background-color: #ffffff;
+      box-shadow: 0px 0px 30px rgba(44, 62, 80, 0.15);
+      padding: 10px 0;
+      border-radius: 6px;
+      min-width: 180px;
+    }
+    
+    /* 드롭다운 호버 시 보이기 */
+    .navmenu .dropdown:hover > ul {
+      display: block;
+    }
+    
+    .navmenu .dropdown ul li {
+      padding: 0;
+    }
+    
+    .navmenu .dropdown ul a {
+      padding: 10px 20px;
+      font-size: 15px;
+      color: #2c3e50;
+      border: none;
+    }
+    
+    .navmenu .dropdown ul a:hover {
+      color: #3498db;
+      background-color: #f8f9fa;
+    }
+    
+    /* 모바일 네비게이션에서도 드롭다운 처리 */
+    @media (max-width: 1199px) {
+      .navmenu .dropdown ul {
+        position: static;
+        display: none;
+        z-index: 99;
+        padding: 10px 0;
+        margin: 10px 20px;
+        background-color: #ffffff;
+        border: 1px solid #e9ecef;
+        box-shadow: none;
+        border-radius: 6px;
+      }
+      
+      .navmenu .dropdown.active > ul {
+        display: block;
+      }
+    }
     
     /* 🎯 HERO SECTION STYLES - 밝은 상단, 어두운 하단 대비 */
     #hero {
@@ -316,18 +562,83 @@
     }
   </style>
   
-
   <!-- Font Awesome for icons -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  
-  <!-- 공통 컴포넌트 스타일 -->
-  <link href="includes/common-styles.css" rel="stylesheet">
 </head>
 
 <body class="index-page">
 
-  <!-- 공통 네비게이션 include -->
-  <div id="navbar-placeholder"></div>
+  <header id="header" class="header d-flex align-items-center sticky-top">
+    <div class="container-fluid container-xl position-relative d-flex align-items-center">
+
+      <a href="index.html" class="logo d-flex align-items-center me-auto">
+        <img src="logo.jpg" alt="남경스틸 로고" style="height: 40px; margin-right: 10px;">
+        <h1 class="sitename" id="companyNameHeader">남경스틸(주)</h1>
+      </a>
+
+      <nav id="navmenu" class="navmenu">
+        <ul>
+          <li><a href="#hero" class="active">홈</a></li>
+          <li class="dropdown"><a href="#about"><span>회사소개</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+            <ul>
+              <li><a href="ceo-message.html">CEO 인사말</a></li>
+              <li><a href="company-history.html">회사연혁</a></li>
+              <li><a href="vision-mission.html">비전/미션</a></li>
+              <li><a href="organization.html">조직도</a></li>
+              <li><a href="certificates.html">인증서</a></li>
+            </ul>
+          </li>
+          <li class="dropdown"><a href="#services"><span>제품소개</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+            <ul>
+              <li><a href="service1-details.html">열연강판</a></li>
+              <li><a href="service2-details.html">냉연강판</a></li>
+              <li><a href="service3-details.html">특수강</a></li>
+              <li><a href="service4-details.html">맞춤 가공</a></li>
+            </ul>
+          </li>
+          <li class="dropdown"><a href="#"><span>사업영역</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+            <ul>
+              <li><a href="steel-manufacturing.html">철강제조</a></li>
+              <li><a href="processing-service.html">가공서비스</a></li>
+              <li><a href="tech-research.html">기술연구</a></li>
+            </ul>
+          </li>
+          <li class="dropdown"><a href="#"><span>고객센터</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+            <ul>
+              <li><a href="quote-inquiry.html">견적문의</a></li>
+              <li><a href="catalog.html">카탈로그</a></li>
+              <li><a href="faq.html">FAQ</a></li>
+              <li><a href="location.html">오시는길</a></li>
+              <li><a href="product-inquiry.html">제품문의</a></li>
+              <li><a href="technical-support.html">기술지원</a></li>
+            </ul>
+          </li>
+          <li class="dropdown"><a href="#"><span>홍보센터</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+            <ul>
+              <li><a href="notice.html">공지사항</a></li>
+              <li><a href="newsroom.html">뉴스룸</a></li>
+              <li><a href="media-materials.html">홍보자료</a></li>
+            </ul>
+          </li>
+        </ul>
+        <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+      </nav>
+
+      <!-- 로그인 버튼 -->
+      <a class="login-btn" href="#" onclick="showLoginModal(); return false;" id="mainLoginBtn">
+        <i class="bi bi-person-circle"></i> <span id="loginBtnText">로그인</span>
+      </a>
+      
+      <!-- 로그인 후 프로필 아이콘 -->
+      <div class="user-profile" id="userProfile" style="display: none;">
+        <div class="profile-icon" onclick="handleProfileClick()">
+          <img id="profileImage" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiM2NjdlZWEiLz4KPHN2ZyB4PSIyMCIgeT0iMjQiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPvCfkYQ8L3N2Zz4KPC9zdmc+" alt="프로필" />
+          <span class="profile-name" id="profileName">사용자</span>
+        </div>
+      </div>
+
+    </div>
+  </header>
 
   <main class="main">
 
@@ -342,24 +653,20 @@
                 <span id="heroTag">철강 산업의 리더</span>
               </div>
               <h1 id="heroTitle">최고의 <span class="highlight">품질</span>과 <span class="highlight">기술력</span>으로 미래를 만듭니다</h1>
-              <p class="lead" id="heroDescription"><span style="color: #0052a3; font-size: 1.4em; font-weight: bold;">남경스틸(주)</span>은 최고의 품질과 정직한 경영으로<br>철강 산업의 중심을 지켜왔습니다.<br>고객과의 신뢰를 바탕으로, 더 나은 미래를 만들어갑니다.</p>
+              <p class="lead" id="heroDescription">12년 전통의 기술력과 혁신으로 대한민국 철강 산업을 선도하는<br><span style="color: #0052a3; font-size: 1.3em; font-weight: bold;">남경스틸(주)</span>입니다.</p>
               <ul class="hero-features">
-                <li><i class="bi bi-check-circle"></i> <span>ASTM. ASME 전문 기자재 업체</span></li>
-                <li><i class="bi bi-check-circle"></i> <span>원자력, 플랜트 전문 업체</span></li>
-                <li><i class="bi bi-check-circle"></i> <span>열연, 냉연, 스텐레스, 알루미늄 전문 유통업체</span></li>
-                <li><i class="bi bi-check-circle"></i> <span>월 1만톤 생산 능력 코일센터 26년3월 완공예정</span></li>
+                <li><i class="bi bi-check-circle"></i> <span>ISO 9001 품질경영시스템 인증</span></li>
+                <li><i class="bi bi-check-circle"></i> <span>연간 10만톤 생산 능력</span></li>
+                <li><i class="bi bi-check-circle"></i> <span>24시간 고객 기술지원</span></li>
               </ul>
             </div>
           </div>
           <div class="col-lg-6">
             <div class="hero-image" data-aos="zoom-out" data-aos-delay="200">
               <div id="heroImagePlaceholder" class="image-placeholder" style="border: none; padding: 0; text-align: center; height: 500px; display: flex; align-items: center; justify-content: center; background: #000000; overflow: hidden; border-radius: 10px;">
-                <img id="heroMainImage" 
-                     src="namkyung1.png" 
+                <img src="namkyung.png" 
                      style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" 
-                     alt="남경스틸 히어로 이미지"
-                     onload="console.log('이미지 로드 완료')"
-                     onerror="console.error('이미지 로드 실패')">
+                     alt="Scout 히어로 이미지">
               </div>
             </div>
           </div>
@@ -369,6 +676,57 @@
 
   </main>
 
+  <footer class="footer">
+    <div class="footer-top">
+      <div class="container">
+        <div class="footer-grid">
+          <div class="footer-column">
+            <h3>남경스틸(주)</h3>
+            <p>철강산업의 리더로서 최고의 품질과 서비스를 제공합니다.</p>
+          </div>
+          <div class="footer-column">
+            <h4>빠른 링크</h4>
+            <ul>
+              <li><a href="#">회사소개</a></li>
+              <li><a href="#">제품정보</a></li>
+              <li><a href="#">견적문의</a></li>
+              <li><a href="#">채용정보</a></li>
+            </ul>
+          </div>
+          <div class="footer-column">
+            <h4>고객지원</h4>
+            <ul>
+              <li><a href="#">자주묻는질문</a></li>
+              <li><a href="#">카탈로그</a></li>
+              <li><a href="#">A/S 신청</a></li>
+              <li><a href="#">오시는길</a></li>
+            </ul>
+          </div>
+          <div class="footer-column">
+            <h4>연락처</h4>
+            <ul class="contact-info">
+              <li><i class="fas fa-map-marker-alt"></i> 부산시 사상구 낙동대로 832</li>
+              <li><i class="fas fa-phone"></i> 051-314-9701</li>
+              <li><i class="fas fa-fax"></i> 051-314-9702</li>
+              <li><i class="fas fa-envelope"></i> namkyungst@naver.com</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="container">
+        <div class="bottom-content">
+          <p>&copy; 2025 남경스틸(주). All rights reserved.</p>
+          <div class="footer-links">
+            <a href="#">개인정보처리방침</a>
+            <a href="#">이용약관</a>
+            <a href="#">이메일무단수집거부</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
 
   <!-- 로그인/회원가입 모달 -->
   <div id="authModal" class="modal" style="display: none;">
@@ -479,8 +837,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@srexi/purecounterjs/dist/purecounter_vanilla.js"></script>
   <script src="https://unpkg.com/swiper@8/swiper-bundle.min.js"></script>
 
-  <!-- 네비게이션은 common.js에서 로드됩니다 -->
-  
   <!-- Supabase 및 로그인 기능 -->
   <script>
     // Supabase 설정
@@ -713,27 +1069,13 @@
     
     // 사용자 정보 저장 및 UI 업데이트
     function saveUserAndUpdateUI(user) {
-      // sessionStorage에 사용자 정보 저장 (브라우저 세션 동안만 유지)
-      sessionStorage.setItem('currentUser', JSON.stringify(user));
-      sessionStorage.setItem('userRole', user.role || 'employee');
-      sessionStorage.setItem('userName', user.name);
+      // localStorage에 사용자 정보 저장
+      localStorage.setItem('currentUser', JSON.stringify(user));
       
-      // 네비바 상태 업데이트 (공통 컴포넌트) - 여러 시점에서 시도
-      function tryUpdateNavbar() {
-        if (window.updateNavbarLoginState) {
-          console.log('🔄 index.html: 네비바 상태 업데이트 실행');
-          window.updateNavbarLoginState();
-        } else {
-          console.warn('⚠️ index.html: updateNavbarLoginState 함수 없음');
-        }
-      }
+      // UI 업데이트
+      updateUIForLoggedInUser(user);
       
-      setTimeout(tryUpdateNavbar, 100);
-      setTimeout(tryUpdateNavbar, 300);
-      setTimeout(tryUpdateNavbar, 500);
-      setTimeout(tryUpdateNavbar, 1000);
-      
-      console.log('✅ 사용자 정보 저장 및 네비바 상태 업데이트 완료:', user);
+      console.log('✅ 사용자 정보 저장 및 UI 업데이트 완료:', user);
     }
     
     // 로그인된 사용자용 UI 업데이트
@@ -778,15 +1120,8 @@
     
     // 로그아웃
     function logout() {
-      sessionStorage.removeItem('currentUser');
-      sessionStorage.removeItem('userRole');
-      sessionStorage.removeItem('userName');
-      
-      // 네비바 상태 업데이트 (공통 컴포넌트)
-      if (window.updateNavbarLoginState) {
-        window.updateNavbarLoginState();
-      }
-      
+      localStorage.removeItem('currentUser');
+      updateUIForLoggedOutUser();
       console.log('🚪 로그아웃 완료');
       
       // 프로필 모달 닫기
@@ -794,7 +1129,7 @@
       
       // 메인 페이지로 리다이렉트
       setTimeout(() => {
-        window.location.href = 'index.html';
+        window.location.href = '/index.html';
       }, 100);
     }
     
@@ -844,7 +1179,7 @@
           provider: 'kakao',
           options: {
             redirectTo: 'https://namkyungsteel.com',
-            scopes: 'profile_nickname profile_image account_email' // 이메일 포함
+            scopes: 'profile_nickname profile_image' // 이메일 제외
           }
         });
         
@@ -866,32 +1201,6 @@
       const urlParams = new URLSearchParams(window.location.search);
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       
-      // 먼저 오류 확인
-      const error = urlParams.get('error') || hashParams.get('error');
-      const errorDescription = urlParams.get('error_description') || hashParams.get('error_description');
-      
-      if (error) {
-        console.error('❌ OAuth 오류:', error, errorDescription);
-        
-        // 오류 메시지 처리
-        let userMessage = '로그인 중 오류가 발생했습니다.';
-        if (errorDescription) {
-          if (errorDescription.includes('Database error granting user')) {
-            userMessage = '사용자 등록 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
-            console.log('📝 Supabase 사용자 권한 오류 - RLS 정책 확인 필요');
-          } else {
-            userMessage = decodeURIComponent(errorDescription);
-          }
-        }
-        
-        // 오류 표시
-        alert(userMessage);
-        
-        // URL 정리
-        window.history.replaceState({}, document.title, window.location.pathname);
-        return;
-      }
-      
       if (urlParams.get('code') || hashParams.get('access_token') || window.location.hash.includes('access_token')) {
         console.log('🔐 OAuth 콜백 감지됨');
         
@@ -900,65 +1209,15 @@
           
           if (error && !error.message.includes('skew')) {
             console.error('❌ 세션 확인 오류:', error);
-            alert('로그인 처리 중 오류가 발생했습니다.');
-            window.history.replaceState({}, document.title, window.location.pathname);
             return;
           }
           
           if (session && session.user) {
             console.log('✅ OAuth 로그인 성공:', session.user);
             
-            // 데이터베이스에서 실제 사용자 정보 조회
-            let dbUser = null;
-            try {
-              if (session.user.email) {
-                const { data: existingUserByEmail, error: emailError } = await supabaseClient
-                  .from('users')
-                  .select('*')
-                  .eq('email', session.user.email)
-                  .single();
-                
-                if (!emailError && existingUserByEmail) {
-                  dbUser = existingUserByEmail;
-                  console.log('📋 이메일로 기존 사용자 찾음:', dbUser);
-                }
-              }
-              
-              if (!dbUser && session.user.id) {
-                const { data: existingUserByOAuth, error: oauthError } = await supabaseClient
-                  .from('users')
-                  .select('*')
-                  .eq('oauth_id', session.user.id)
-                  .single();
-                
-                if (!oauthError && existingUserByOAuth) {
-                  dbUser = existingUserByOAuth;
-                  console.log('📋 OAuth ID로 기존 사용자 찾음:', dbUser);
-                }
-              }
-            } catch (lookupError) {
-              console.log('🔍 사용자 조회 중:', lookupError.message);
-            }
-            
-            // 사용자 정보 구성
+            // 사용자 정보 저장
             const actualProvider = session.user.app_metadata?.provider || 'unknown';
-            const user = dbUser ? {
-              id: dbUser.id,
-              email: dbUser.email,
-              name: dbUser.name,
-              role: dbUser.role,
-              department: dbUser.department,
-              position: dbUser.position,
-              company_domain: dbUser.company_domain,
-              company_name: dbUser.company_name,
-              profileImage: dbUser.profile_image || session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture,
-              profile_image: dbUser.profile_image,
-              oauth_id: dbUser.oauth_id,
-              oauth_provider: dbUser.oauth_provider,
-              provider: actualProvider,
-              is_approved: dbUser.is_approved,
-              is_active: dbUser.is_active
-            } : {
+            const user = {
               id: session.user.id,
               email: session.user.email,
               name: session.user.user_metadata?.name || session.user.user_metadata?.full_name || session.user.email,
@@ -966,9 +1225,7 @@
               provider: actualProvider
             };
             
-            // users 테이블 저장은 이미 데이터베이스에서 처리됨 (주석 처리)
-            console.log('📋 최종 사용자 정보:', user);
-            /*
+            // users 테이블에 사용자 정보 저장 (없으면 생성)
             try {
               const { data: existingUser, error: selectError } = await supabaseClient
                 .from('users')
@@ -978,12 +1235,32 @@
               
               if (!existingUser) {
                 // 새 사용자라면 users 테이블에 저장
-                console.log('🔄 새 사용자 저장 건너뜀 (이미 데이터베이스에 존재)');
+                const { data: insertData, error: insertError } = await supabaseClient
+                  .from('users')
+                  .insert([
+                    {
+                      id: user.id,
+                      email: user.email,
+                      name: user.name,
+                      company_domain: 'namkyungsteel.com',
+                      company_name: '남경스틸(주)',
+                      role: null,
+                      provider: actualProvider,
+                      is_approved: false,
+                      is_active: true,
+                      created_at: new Date().toISOString()
+                    }
+                  ]);
+                
+                if (insertError) {
+                  console.error('❌ Google 사용자 저장 오류:', insertError);
+                } else {
+                  console.log('✅ Google 사용자 정보 저장 완료:', insertData);
+                }
               }
             } catch (tableError) {
-              console.log('🔄 사용자 테이블 처리 건너뜀');
+              console.error('❌ Google 사용자 테이블 처리 예외:', tableError);
             }
-            */
             
             saveUserAndUpdateUI(user);
             
@@ -1002,8 +1279,10 @@
             }
             alert(`${providerName} 로그인 성공! 환영합니다, ${user.name}`);
             
-            // employee-dashboard로 즉시 이동
-            window.location.href = 'employee-dashboard.html';
+            // employee-dashboard로 이동
+            setTimeout(() => {
+              window.location.href = 'employee-dashboard.html';
+            }, 1000);
           }
         } catch (error) {
           if (!error.message.includes('skew')) {
@@ -1013,25 +1292,12 @@
       }
     }
     
-    // 페이지 로드 시 OAuth 콜백 처리 및 navbar 상태 업데이트
+    // 페이지 로드 시 사용자 상태 확인 및 OAuth 콜백 처리
     document.addEventListener('DOMContentLoaded', function() {
       console.log('📄 페이지 로드됨');
       
-      // navbar 상태 강제 업데이트 (navbar가 로드된 후)
-      setTimeout(() => {
-        if (window.updateNavbarLoginState) {
-          console.log('🔄 navbar 로그인 상태 강제 업데이트');
-          window.updateNavbarLoginState();
-        }
-      }, 500);
-      
-      // 추가 지연 후 재확인
-      setTimeout(() => {
-        if (window.updateNavbarLoginState) {
-          console.log('🔄 navbar 로그인 상태 재확인 (2초 후)');
-          window.updateNavbarLoginState();
-        }
-      }, 2000);
+      // 먼저 저장된 사용자 정보 확인 및 UI 업데이트
+      checkAndRestoreUserSession();
       
       // OAuth 콜백 처리
       handleOAuthCallback();
@@ -1039,7 +1305,7 @@
     
     // 저장된 사용자 세션 확인 및 복원
     function checkAndRestoreUserSession() {
-      const currentUser = sessionStorage.getItem('currentUser');
+      const currentUser = localStorage.getItem('currentUser');
       if (currentUser) {
         try {
           const user = JSON.parse(currentUser);
@@ -1047,7 +1313,7 @@
           updateUIForLoggedInUser(user);
         } catch (error) {
           console.error('❌ 사용자 정보 파싱 오류:', error);
-          sessionStorage.removeItem('currentUser');
+          localStorage.removeItem('currentUser');
           updateUIForLoggedOutUser();
         }
       } else {
@@ -1061,15 +1327,9 @@
       showProfileModal();
     }
     
-    // 기본 아바타 생성 함수
-    function generateDefaultAvatar(name) {
-      // 기본 아바타 이미지 반환
-      return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiM2NjdlZWEiLz4KPHN2ZyB4PSIyMCIgeT0iMjQiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPvCfkYQ8L3N2Zz4KPC9zdmc+';
-    }
-
     // 프로필 모달 표시
     function showProfileModal() {
-      const currentUser = sessionStorage.getItem('currentUser');
+      const currentUser = localStorage.getItem('currentUser');
       if (currentUser) {
         try {
           const user = JSON.parse(currentUser);
@@ -1130,7 +1390,7 @@
         const imageData = e.target.result;
         
         try {
-          const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+          const currentUser = JSON.parse(localStorage.getItem('currentUser'));
           
           // 데이터베이스에 업데이트 (Google OAuth 사용자는 이메일로 식별)
           if (supabaseClient) {
@@ -1158,8 +1418,8 @@
           // currentUser 객체 업데이트
           currentUser.profileImage = imageData;
           
-          // sessionStorage에 업데이트된 정보 저장
-          sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+          // localStorage에 업데이트된 정보 저장
+          localStorage.setItem('currentUser', JSON.stringify(currentUser));
           
           // UI 업데이트
           const modalProfileImage = document.getElementById('modalProfileImage');
@@ -1180,159 +1440,27 @@
       reader.readAsDataURL(file);
     }
 
-    // 전역 함수로 노출 (공통 컴포넌트에서 사용)
     window.handleProfileClick = handleProfileClick;
     window.showProfileModal = showProfileModal;
     window.hideProfileModal = hideProfileModal;
     window.handleProfileImageUpload = handleProfileImageUpload;
     window.logout = logout;
-    
-    // 원본 함수들을 백업 (네비바에서 호출할 수 있도록)
-    window._originalShowLoginModal = showLoginModal;
-    window._originalHandleProfileClick = handleProfileClick;
   </script>
 
-  
-  <!-- 공통 컴포넌트 로드 -->
-  <script src="includes/common.js"></script>
-  
-  <!-- Main JS 파일 로드 -->
-  <script src="assets/js/main.js"></script>
-  
-  <!-- Index 페이지 모바일 드로워 디버깅 -->
+  <!-- Main Template JS File - 에러 방지를 위한 조건부 로드 -->
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      console.log('🔄 Index 페이지: DOMContentLoaded 시작');
-      
-      // 네비바가 로드될 때까지 기다림
-      setTimeout(function() {
-        console.log('🔍 Index 페이지: 모바일 드로워 요소 확인');
-        
-        const mobileNavToggle = document.querySelector('.mobile-nav-toggle');
-        const mobileDrawer = document.getElementById('mobileDrawer');
-        const mobileDrawerOverlay = document.getElementById('mobileDrawerOverlay');
-        
-        console.log('📱 Index 페이지: 요소 발견 상태:', {
-          hamburger: !!mobileNavToggle,
-          drawer: !!mobileDrawer,
-          overlay: !!mobileDrawerOverlay
-        });
-        
-        if (mobileNavToggle) {
-          console.log('✅ Index 페이지: 햄버거 버튼 발견됨');
-          
-          // 기존 이벤트 리스너가 있는지 확인
-          mobileNavToggle.addEventListener('click', function(e) {
-            console.log('🔄 Index 페이지: 햄버거 버튼 클릭 감지됨!');
-            e.preventDefault();
-            e.stopPropagation();
-          });
-        } else {
-          console.warn('⚠️ Index 페이지: 햄버거 버튼을 찾을 수 없음');
-        }
-        
-        if (mobileDrawer) {
-          console.log('✅ Index 페이지: 모바일 드로워 발견됨');
-        } else {
-          console.warn('⚠️ Index 페이지: 모바일 드로워를 찾을 수 없음');
-        }
-        
-        if (mobileDrawerOverlay) {
-          console.log('✅ Index 페이지: 드로워 오버레이 발견됨');
-        } else {
-          console.warn('⚠️ Index 페이지: 드로워 오버레이를 찾을 수 없음');
-        }
-      }, 1000);
-    });
+    // OAuth 콜백 처리 중이 아닐 때만 main.js 로드
+    if (!window.location.hash.includes('access_token') && !window.location.search.includes('code')) {
+      const script = document.createElement('script');
+      script.src = 'assets/js/main.js';
+      document.head.appendChild(script);
+    }
   </script>
   
   <!-- Authentication Scripts will be loaded later -->
 
   <!-- Initialize AOS and PureCounter -->
   <script>
-    // 이미지 캐시 및 프리로딩 최적화
-    function preloadHeroImage() {
-      // Service Worker를 통한 이미지 캐싱 (지원하는 브라우저에서)
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistration().then(function(registration) {
-          if (!registration) {
-            // 간단한 서비스 워커 등록 (이미지 캐싱용)
-            const swCode = `
-              const CACHE_NAME = 'namkyungsteel-images-v1';
-              const CACHE_URLS = ['./namkyung1.png'];
-              
-              self.addEventListener('install', function(event) {
-                event.waitUntil(
-                  caches.open(CACHE_NAME)
-                    .then(function(cache) {
-                      return cache.addAll(CACHE_URLS);
-                    })
-                );
-              });
-              
-              self.addEventListener('fetch', function(event) {
-                if (event.request.url.includes('namkyung1.png')) {
-                  event.respondWith(
-                    caches.match(event.request)
-                      .then(function(response) {
-                        return response || fetch(event.request);
-                      })
-                  );
-                }
-              });
-            `;
-            
-            const blob = new Blob([swCode], { type: 'application/javascript' });
-            const swURL = URL.createObjectURL(blob);
-            navigator.serviceWorker.register(swURL).catch(function(error) {
-              console.log('SW 등록 실패:', error);
-            });
-          }
-        });
-      }
-      
-      // 즉시 이미지 프리로드
-      const preloadImg = new Image();
-      preloadImg.onload = function() {
-        console.log('✅ 히어로 이미지 프리로드 완료');
-        // 이미지가 로드되면 localStorage에 캐시 플래그 설정
-        localStorage.setItem('heroImageCached', 'true');
-        localStorage.setItem('heroImageCacheTime', Date.now().toString());
-      };
-      preloadImg.onerror = function() {
-        console.error('❌ 히어로 이미지 프리로드 실패');
-      };
-      preloadImg.src = 'namkyung1.png';
-    }
-    
-    // 캐시된 이미지 확인 및 프리로드
-    function checkImageCache() {
-      const cached = localStorage.getItem('heroImageCached');
-      const cacheTime = localStorage.getItem('heroImageCacheTime');
-      const now = Date.now();
-      const oneWeek = 7 * 24 * 60 * 60 * 1000; // 1주일
-      
-      // 캐시가 없거나 1주일이 지났으면 다시 프리로드
-      if (!cached || !cacheTime || (now - parseInt(cacheTime)) > oneWeek) {
-        console.log('🔄 이미지 캐시 갱신 필요');
-        preloadHeroImage();
-      } else {
-        console.log('✅ 이미지 캐시 유효함');
-      }
-    }
-    
-    // DOM 로드 즉시 이미지 캐시 확인
-    document.addEventListener('DOMContentLoaded', function() {
-      checkImageCache();
-      
-      // 캐시된 이미지가 있으면 즉시 표시
-      const heroImage = document.getElementById('heroMainImage');
-      if (heroImage && localStorage.getItem('heroImageCached') === 'true') {
-        heroImage.classList.add('cached-image');
-        console.log('💨 캐시된 이미지 즉시 표시');
-      }
-    });
-
     // Initialize AOS (Animation on Scroll)
     if (typeof AOS !== 'undefined') {
       AOS.init({
@@ -1348,6 +1476,39 @@
       new PureCounter();
     }
     
+    // 드롭다운 메뉴 클릭 기능 (모바일용)
+    document.addEventListener('DOMContentLoaded', function() {
+      const dropdownToggles = document.querySelectorAll('.toggle-dropdown');
+      
+      dropdownToggles.forEach(function(toggle) {
+        toggle.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          const dropdown = this.closest('.dropdown');
+          const isActive = dropdown.classList.contains('active');
+          
+          // 다른 모든 드롭다운 닫기
+          document.querySelectorAll('.dropdown.active').forEach(function(activeDropdown) {
+            if (activeDropdown !== dropdown) {
+              activeDropdown.classList.remove('active');
+            }
+          });
+          
+          // 현재 드롭다운 토글
+          dropdown.classList.toggle('active', !isActive);
+        });
+      });
+      
+      // 외부 클릭 시 드롭다운 닫기
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('.dropdown')) {
+          document.querySelectorAll('.dropdown.active').forEach(function(dropdown) {
+            dropdown.classList.remove('active');
+          });
+        }
+      });
+    });
     
     // Initialize Swiper if needed
     if (typeof Swiper !== 'undefined') {
@@ -1436,7 +1597,7 @@
             
             <div class="form-group">
               <label>새 비밀번호 확인</label>
-              <input type="password" id="confirmPasswordChange" required>
+              <input type="password" id="confirmPassword" required>
             </div>
             
             <button type="submit" class="btn-change-password">비밀번호 변경</button>

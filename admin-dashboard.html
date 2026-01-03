@@ -5,392 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>통합 관리자 대시보드 - SteelWorks Platform</title>
     
-    <!-- Favicons -->
-    <link href="logo.jpg" rel="icon">
-    <link href="logo.jpg" rel="apple-touch-icon">
-    
     <!-- Supabase JS CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Database Manager -->
     <script src="database.js"></script>
-    <!-- Data Stability Manager -->
-    <script src="data-stability.js"></script>
-    <!-- Auth Manager -->
-    <script src="shared-assets/js/auth.js"></script>
-    
-    <script>
-        // 관리 카드 클릭 함수들을 즉시 정의
-        window.showEmployeeManagement = function() {
-            console.log('showEmployeeManagement 함수 호출됨 - 전용 페이지로 이동');
-            
-            // 전용 직원관리 페이지로 이동
-            window.location.href = 'employee-management.html';
-        };
-
-
-        window.showPendingMembers = function() {
-            console.log('가입 승인 페이지로 이동');
-            window.location.href = 'pending-members.html';
-        };
-
-        window.showDocumentManagement = function() {
-            console.log('문서 권한 관리 페이지로 이동');
-            window.location.href = 'document-permissions.html';
-        };
-
-        window.showPermissionManagement = function() {
-            console.log('권한 관리 페이지로 이동');
-            window.location.href = 'permission-management.html';
-        };
-
-        window.openCorporateCardManagement = function() {
-            console.log('openCorporateCardManagement 함수 호출됨');
-            window.location.href = 'corporate-card.html';
-        };
-
-        window.showCompanyInfoManagement = function() {
-            console.log('회사정보 관리 페이지로 이동');
-            window.location.href = 'company-info.html';
-        };
-
-        // 대시보드로 돌아가기 함수
-        window.backToDashboard = function() {
-            console.log('backToDashboard 함수 호출됨');
-            document.querySelector('.management-container').style.display = 'flex';
-            // 모든 섹션 숨기기
-            const sections = ['employees', 'documents', 'company-info', 'companyInfo'];
-            sections.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.style.display = 'none';
-                }
-            });
-            // 히스토리 업데이트
-            history.pushState({ section: 'dashboard' }, '대시보드', '#dashboard');
-        };
-
-        // 문서 템플릿 로드 함수
-        window.loadDocumentTemplates = function() {
-            console.log('🔄 문서 템플릿 로드 시작');
-            const templateContainer = document.getElementById('documentTemplates');
-            console.log('📋 템플릿 컨테이너 찾기 결과:', templateContainer);
-            
-            if (!templateContainer) {
-                console.error('❌ documentTemplates 컨테이너를 찾을 수 없습니다.');
-                // 다른 방법으로 컨테이너 찾기 시도
-                const allDivs = document.querySelectorAll('div[id*="document"]');
-                console.log('🔍 document 관련 div들:', allDivs);
-                
-                // backup: 직접 HTML 추가
-                const documentsSection = document.getElementById('documents');
-                if (documentsSection) {
-                    console.log('📝 documents 섹션 발견, 직접 템플릿 추가 시도');
-                    const templateHtml = `
-                        <div style="padding: 2rem; margin-top: 2rem;">
-                            <h3 style="color: #ffffff; margin-bottom: 2rem;">📋 문서 템플릿 목록</h3>
-                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
-                                <div style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 15px; padding: 1.5rem;">
-                                    <h4 style="color: #ffffff; margin: 0 0 1rem 0;">📝 업무일지</h4>
-                                    <p style="color: #cbd5e0; margin: 0 0 1rem 0;">일일 업무 내용을 기록하는 템플릿</p>
-                                    <button onclick="window.open('worklog.html', '_blank')" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer;">미리보기</button>
-                                </div>
-                                <div style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 15px; padding: 1.5rem;">
-                                    <h4 style="color: #ffffff; margin: 0 0 1rem 0;">📄 사직서</h4>
-                                    <p style="color: #cbd5e0; margin: 0 0 1rem 0;">사직 의사를 전달하는 공식 문서</p>
-                                    <button onclick="window.open('resignation-letter.html', '_blank')" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer;">미리보기</button>
-                                </div>
-                                <div style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 15px; padding: 1.5rem;">
-                                    <h4 style="color: #ffffff; margin: 0 0 1rem 0;">🏖️ 휴가신청서</h4>
-                                    <p style="color: #cbd5e0; margin: 0 0 1rem 0;">연차/병가 등 휴가 신청 문서</p>
-                                    <button onclick="window.open('leave-request.html', '_blank')" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer;">미리보기</button>
-                                </div>
-                                <div style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 15px; padding: 1.5rem;">
-                                    <h4 style="color: #ffffff; margin: 0 0 1rem 0;">🎓 재직증명서</h4>
-                                    <p style="color: #cbd5e0; margin: 0 0 1rem 0;">재직 상태를 증명하는 공식 문서</p>
-                                    <button onclick="window.open('employment-certificate.html', '_blank')" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer;">미리보기</button>
-                                </div>
-                                <div style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 15px; padding: 1.5rem;">
-                                    <h4 style="color: #ffffff; margin: 0 0 1rem 0;">✈️ 출장보고서</h4>
-                                    <p style="color: #cbd5e0; margin: 0 0 1rem 0;">출장 업무 내용 및 결과 보고서</p>
-                                    <button onclick="window.open('business-trip-report.html', '_blank')" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer;">미리보기</button>
-                                </div>
-                                <div style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 15px; padding: 1.5rem;">
-                                    <h4 style="color: #ffffff; margin: 0 0 1rem 0;">⚠️ 사고보고서</h4>
-                                    <p style="color: #cbd5e0; margin: 0 0 1rem 0;">안전사고 및 각종 사건 보고서</p>
-                                    <button onclick="window.open('incident-report.html', '_blank')" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer;">미리보기</button>
-                                </div>
-                                <div style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 15px; padding: 1.5rem;">
-                                    <h4 style="color: #ffffff; margin: 0 0 1rem 0;">📋 경위서</h4>
-                                    <p style="color: #cbd5e0; margin: 0 0 1rem 0;">사건이나 업무 처리 경위를 설명하는 문서</p>
-                                    <button onclick="window.open('explanatory-note.html', '_blank')" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer;">미리보기</button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    
-                    // 기존 내용 뒤에 추가
-                    documentsSection.insertAdjacentHTML('beforeend', templateHtml);
-                    console.log('✅ 백업 방법으로 템플릿 추가 완료');
-                    return;
-                }
-                
-                return;
-            }
-
-            // 기본 문서 템플릿들
-            const documentTemplates = [
-                {
-                    id: 'work-log',
-                    name: '업무일지',
-                    description: '일일 업무 내용을 기록하는 템플릿',
-                    enabled: true,
-                    icon: 'fas fa-file-alt',
-                    url: 'worklog.html'
-                },
-                {
-                    id: 'resignation-letter',
-                    name: '사직서',
-                    description: '사직 의사를 전달하는 공식 문서',
-                    enabled: true,
-                    icon: 'fas fa-file-signature',
-                    url: 'resignation-letter.html'
-                },
-                {
-                    id: 'leave-request',
-                    name: '휴가신청서',
-                    description: '연차/병가 등 휴가 신청 문서',
-                    enabled: true,
-                    icon: 'fas fa-calendar-times',
-                    url: 'leave-request.html'
-                },
-                {
-                    id: 'employment-certificate',
-                    name: '재직증명서',
-                    description: '재직 상태를 증명하는 공식 문서',
-                    enabled: true,
-                    icon: 'fas fa-certificate',
-                    url: 'employment-certificate.html'
-                },
-                {
-                    id: 'business-trip-report',
-                    name: '출장보고서',
-                    description: '출장 업무 내용 및 결과 보고서',
-                    enabled: true,
-                    icon: 'fas fa-plane',
-                    url: 'business-trip-report.html'
-                },
-                {
-                    id: 'incident-report',
-                    name: '사고보고서',
-                    description: '안전사고 및 각종 사건 보고서',
-                    enabled: true,
-                    icon: 'fas fa-exclamation-triangle',
-                    url: 'incident-report.html'
-                },
-                {
-                    id: 'explanatory-note',
-                    name: '경위서',
-                    description: '사건이나 업무 처리 경위를 설명하는 문서',
-                    enabled: true,
-                    icon: 'fas fa-file-text',
-                    url: 'explanatory-note.html'
-                }
-            ];
-
-            let html = '';
-            documentTemplates.forEach(template => {
-                html += `
-                    <div class="document-template-card" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 15px; padding: 1.5rem;">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                            <div style="display: flex; align-items: center; gap: 1rem;">
-                                <div style="color: #667eea; font-size: 2rem;">
-                                    <i class="${template.icon}"></i>
-                                </div>
-                                <div>
-                                    <h4 style="color: #ffffff; margin: 0 0 0.5rem 0; font-size: 1.25rem;">${template.name}</h4>
-                                    <p style="color: #cbd5e0; margin: 0; font-size: 0.9rem;">${template.description}</p>
-                                </div>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <label style="color: #ffffff; font-size: 0.9rem;">표시:</label>
-                                <input type="checkbox" id="template_${template.id}" ${template.enabled ? 'checked' : ''} 
-                                       onchange="toggleTemplate('${template.id}')"
-                                       style="transform: scale(1.2);">
-                            </div>
-                        </div>
-                        <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
-                            <button class="btn btn-sm" onclick="previewTemplate('${template.url}')" 
-                                    style="background: linear-gradient(135deg, #667eea, #764ba2); font-size: 0.85rem; padding: 0.5rem 1rem;">
-                                <i class="fas fa-eye"></i> 미리보기
-                            </button>
-                            <button class="btn btn-sm" onclick="editTemplate('${template.id}')" 
-                                    style="background: linear-gradient(135deg, #f59e0b, #d97706); font-size: 0.85rem; padding: 0.5rem 1rem;">
-                                <i class="fas fa-edit"></i> 편집
-                            </button>
-                        </div>
-                    </div>
-                `;
-            });
-
-            templateContainer.innerHTML = html;
-            console.log('문서 템플릿 로드 완료:', documentTemplates.length, '개');
-        };
-
-        // 템플릿 관련 함수들
-        window.previewTemplate = function(url) {
-            console.log('템플릿 미리보기:', url);
-            window.open(url, '_blank');
-        };
-
-        window.editTemplate = function(templateId) {
-            console.log('템플릿 편집:', templateId);
-            
-            // 템플릿 정보 가져오기
-            const templateData = {
-                'work-log': { name: '업무일지', content: '업무일지 템플릿 내용...' },
-                'resignation-letter': { name: '사직서', content: '사직서 템플릿 내용...' },
-                'leave-request': { name: '휴가신청서', content: '휴가신청서 템플릿 내용...' },
-                'employment-certificate': { name: '재직증명서', content: '재직증명서 템플릿 내용...' },
-                'business-trip-report': { name: '출장보고서', content: '출장보고서 템플릿 내용...' },
-                'incident-report': { name: '사고보고서', content: '사고보고서 템플릿 내용...' },
-                'explanatory-note': { name: '경위서', content: '경위서 템플릿 내용...' }
-            };
-            
-            const template = templateData[templateId];
-            if (!template) {
-                alert('템플릿을 찾을 수 없습니다.');
-                return;
-            }
-            
-            // 편집 모달 표시
-            showTemplateEditModal(templateId, template.name, template.content);
-        };
-
-        window.toggleTemplate = function(templateId) {
-            console.log('템플릿 토글:', templateId);
-            const checkbox = document.getElementById(`template_${templateId}`);
-            if (checkbox) {
-                console.log(`템플릿 ${templateId} 표시 상태:`, checkbox.checked ? '활성' : '비활성');
-            }
-        };
-
-        window.saveDocumentSettings = function() {
-            console.log('문서 설정 저장');
-            alert('설정이 저장되었습니다.');
-        };
-
-        // 템플릿 편집 모달 함수들
-        window.showTemplateEditModal = function(templateId, templateName, templateContent) {
-            console.log('템플릿 편집 모달 표시:', templateId);
-            
-            // 모달 요소 찾기
-            const modal = document.getElementById('templateEditModal');
-            if (!modal) {
-                console.error('템플릿 편집 모달을 찾을 수 없습니다.');
-                return;
-            }
-            
-            // 폼 필드에 값 설정
-            const nameInput = document.getElementById('templateEditName');
-            const contentTextarea = document.getElementById('templateEditContent');
-            
-            if (nameInput) nameInput.value = templateName;
-            if (contentTextarea) contentTextarea.value = templateContent;
-            
-            // 현재 편집 중인 템플릿 ID 저장
-            window.currentEditingTemplateId = templateId;
-            
-            // 모달 표시
-            modal.style.display = 'flex';
-        };
-
-        window.closeTemplateEdit = function() {
-            console.log('템플릿 편집 모달 닫기');
-            const modal = document.getElementById('templateEditModal');
-            if (modal) {
-                modal.style.display = 'none';
-            }
-            window.currentEditingTemplateId = null;
-        };
-
-        window.saveTemplateEdit = function() {
-            console.log('템플릿 편집 저장');
-            
-            const templateId = window.currentEditingTemplateId;
-            if (!templateId) {
-                alert('편집 중인 템플릿을 찾을 수 없습니다.');
-                return;
-            }
-            
-            const nameInput = document.getElementById('templateEditName');
-            const contentTextarea = document.getElementById('templateEditContent');
-            
-            if (!nameInput || !contentTextarea) {
-                alert('편집 폼을 찾을 수 없습니다.');
-                return;
-            }
-            
-            const newName = nameInput.value.trim();
-            const newContent = contentTextarea.value.trim();
-            
-            if (!newName || !newContent) {
-                alert('템플릿 이름과 내용을 모두 입력해주세요.');
-                return;
-            }
-            
-            // 여기서 실제 저장 로직 구현
-            console.log('템플릿 저장:', {
-                id: templateId,
-                name: newName,
-                content: newContent
-            });
-            
-            // 승인자 선택 모달 표시
-            showApprovalModal(templateId, newName, newContent);
-        };
-
-        // 최종 승인자 선택 모달
-        window.showApprovalModal = function(templateId, templateName, templateContent) {
-            console.log('승인자 선택 모달 표시');
-            
-            // 간단한 승인자 선택 다이얼로그
-            const approvers = [
-                '김철수 (대표이사)',
-                '이영희 (관리부장)',
-                '박민수 (인사팀장)',
-                '최지영 (총무팀장)'
-            ];
-            
-            let approverOptions = '최종 승인자를 선택해주세요:\n\n';
-            approvers.forEach((approver, index) => {
-                approverOptions += `${index + 1}. ${approver}\n`;
-            });
-            
-            const selection = prompt(approverOptions + '\n번호를 입력하세요 (1-4):');
-            
-            if (selection && selection >= 1 && selection <= 4) {
-                const selectedApprover = approvers[selection - 1];
-                
-                // 최종 저장 확인
-                if (confirm(`템플릿: ${templateName}\n승인자: ${selectedApprover}\n\n저장하시겠습니까?`)) {
-                    console.log('템플릿 최종 저장:', {
-                        id: templateId,
-                        name: templateName,
-                        content: templateContent,
-                        approver: selectedApprover
-                    });
-                    
-                    alert('템플릿이 성공적으로 저장되었습니다.');
-                    closeTemplateEdit();
-                }
-            } else if (selection !== null) {
-                alert('올바른 번호를 입력해주세요.');
-                showApprovalModal(templateId, templateName, templateContent);
-            }
-        };
-
-        console.log('✅ 모든 관리 함수들이 전역 스코프에 정의됨');
-    </script>
     
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -677,6 +295,30 @@
             color: white;
         }
 
+        .permission-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .permission-item {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .permission-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .permission-item input[type="checkbox"] {
+            margin-right: 0.75rem;
+            transform: scale(1.2);
+        }
 
         .modal {
             display: none;
@@ -735,7 +377,7 @@
             opacity: 1;
         }
 
-        .employee-card {
+        .employee-card, .permission-card {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 10px;
             padding: 1.5rem;
@@ -746,19 +388,19 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .employee-info h4 {
+        .employee-info h4, .permission-info h4 {
             margin: 0 0 0.5rem 0;
             color: #ffffff;
             font-size: 1.2rem;
         }
 
-        .employee-info p {
+        .employee-info p, .permission-info p {
             margin: 0.25rem 0;
             color: #e2e8f0;
             font-size: 0.9rem;
         }
 
-        .employee-actions {
+        .employee-actions, .permission-actions {
             display: flex;
             gap: 0.5rem;
         }
@@ -842,45 +484,12 @@
             transform: translateY(-5px);
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
-        
-        /* 알림 배지 스타일 */
-        .notification-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: #ff4757;
-            color: white;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: bold;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
 
         .management-card i {
             font-size: 4rem;
             margin-bottom: 1.5rem;
             display: block;
         }
-        
-        /* 카드별 아이콘 색상 */
-        .employees-card i { color: #3b82f6; }
-        .pending-members-card i { color: #10b981; }
-        .documents-card i { color: #f59e0b; }
-        .permission-card i { color: #8b5cf6; }
-        .corporate-card-card i { color: #ef4444; }
-        .company-info-card i { color: #6366f1; }
-        .quote-requests-card i { color: #06b6d4; }
 
         .management-card h3 {
             font-size: 1.5rem;
@@ -906,11 +515,17 @@
             background: linear-gradient(135deg, #8b5cf6, #7c3aed);
         }
 
+        .permissions-card {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
 
         .company-info-card {
             background: linear-gradient(135deg, #06b6d4, #0891b2);
         }
 
+        .document-approval-card {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
 
         .checkbox-group {
             display: flex;
@@ -930,6 +545,11 @@
             margin-right: 0.5rem;
         }
 
+        .permission-badges {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
 
         .badge {
             background: linear-gradient(135deg, #10b981, #059669);
@@ -1041,6 +661,74 @@
             }
         }
 
+        /* 권한 관리 스타일 */
+        .permission-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .permission-tab {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+        }
+
+        .permission-tab:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .permission-tab.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-color: transparent;
+        }
+
+        .permission-content {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .permission-panel {
+            display: none;
+        }
+
+        .permission-panel.active {
+            display: block;
+        }
+
+        .permission-checkbox {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+            margin-bottom: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .permission-checkbox:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .permission-checkbox input[type="checkbox"] {
+            margin-right: 0.75rem;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .permission-checkbox label {
+            color: #e2e8f0;
+            cursor: pointer;
+            flex: 1;
+            margin: 0;
+        }
 
         /* 문서 관리 스타일 */
         .document-management {
@@ -1258,142 +946,7 @@
                 gap: 1rem;
             }
         }
-
-
-        .btn-small {
-            padding: 0.5rem 1rem;
-            font-size: 0.85rem;
-            border-radius: 6px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-        }
-
-        .btn-secondary {
-            background: linear-gradient(135deg, #6b7280, #4b5563);
-        }
-
-        .empty-state, .error-state {
-            text-align: center;
-            padding: 3rem 2rem;
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .empty-state i, .error-state i {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            display: block;
-        }
-
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .modal-content {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 20px;
-            width: 90%;
-            max-width: 500px;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        .modal-header {
-            padding: 1.5rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-header h3 {
-            color: #ffffff;
-            margin: 0;
-            font-size: 1.3rem;
-            font-weight: 700;
-        }
-
-        .close-btn {
-            background: none;
-            border: none;
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 1.5rem;
-            cursor: pointer;
-            padding: 0.25rem;
-            border-radius: 4px;
-            transition: all 0.3s ease;
-        }
-
-        .close-btn:hover {
-            color: #ffffff;
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .modal-body {
-            padding: 1.5rem;
-        }
-
-        .form-actions {
-            display: flex;
-            gap: 1rem;
-            justify-content: flex-end;
-            margin-top: 1.5rem;
-            padding-top: 1rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .form-group select, .form-group input {
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            color: #ffffff;
-            border-radius: 8px;
-            padding: 0.75rem;
-            font-size: 1rem;
-        }
-
-        .form-group select:focus, .form-group input:focus {
-            outline: none;
-            border-color: rgba(255, 255, 255, 0.7);
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        .form-group select option {
-            background: #2d3748;
-            color: #ffffff;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: #ffffff;
-            font-weight: 600;
-        }
-
-        @media (max-width: 768px) {
-            
-            .modal-content {
-                width: 95%;
-                margin: 1rem;
-            }
-            
-            .form-actions {
-                flex-direction: column;
-            }
-        }
     </style>
-  <!-- Mobile CSS File -->
-  <link href="shared-assets/css/mobile.css" rel="stylesheet">
 </head>
 <body>
     <div class="admin-dashboard">
@@ -1417,63 +970,326 @@
                 <h1 class="management-title">관리자 대시보드</h1>
                 
                 <div class="management-grid">
-                    <a href="index.html" class="management-card homepage-card">
+                    <a href="index.html" class="management-card homepage-card" target="_blank">
                         <i class="fas fa-home"></i>
                         <h3>홈페이지</h3>
                         <p>실제 웹사이트를 확인하고 변경된 내용을 미리 볼 수 있습니다.</p>
                     </a>
                     
-                    <button class="management-card employees-card" id="employeeManagementBtn" onclick="console.log('직원 관리 클릭'); showEmployeeManagement();">
+                    <button class="management-card employees-card" onclick="showEmployeeManagement()">
                         <i class="fas fa-users"></i>
                         <h3>직원 관리</h3>
                         <p>직원 정보를 추가, 수정, 삭제하고 역할을 관리합니다.</p>
                     </button>
                     
-                    
-                    <button class="management-card pending-members-card" id="pendingMembersBtn" onclick="console.log('가입 승인 클릭'); showPendingMembers();" style="position: relative;">
-                        <i class="fas fa-user-check"></i>
-                        <span id="pendingMembersBadge" class="notification-badge" style="display: none;">0</span>
-                        <h3>가입 승인</h3>
-                        <p>신규 회원가입 요청을 검토하고 승인/반려를 처리합니다.</p>
+                    <button class="management-card permissions-card" onclick="showPermissionManagement()">
+                        <i class="fas fa-shield-alt"></i>
+                        <h3>권한 설정</h3>
+                        <p>사용자별 접근 권한과 기능 권한을 설정합니다.</p>
                     </button>
                     
-                    <button class="management-card documents-card" id="documentManagementBtn" onclick="console.log('문서 관리 클릭'); showDocumentManagement();">
+                    <button class="management-card pending-members-card" onclick="showPendingMembers()" style="position: relative;">
+                        <i class="fas fa-user-clock"></i>
+                        <span id="pendingMembersBadge" class="notification-badge" style="display: none;">0</span>
+                        <h3>가입 승인</h3>
+                        <p>신규 가입 신청을 검토하고 승인 또는 거부를 처리합니다.</p>
+                    </button>
+                    
+                    <button class="management-card documents-card" onclick="showDocumentManagement()">
                         <i class="fas fa-file-alt"></i>
                         <h3>문서 관리</h3>
                         <p>각종 서류 템플릿을 관리하고 결재 시스템 표시 여부를 설정합니다.</p>
                     </button>
                     
-                    <button class="management-card permission-card" id="permissionManagementBtn" onclick="console.log('권한 관리 클릭'); showPermissionManagement();">
-                        <i class="fas fa-user-shield"></i>
-                        <h3>권한 관리</h3>
-                        <p>사용자별, 부서별, 직급별 세부 권한을 설정하고 관리합니다.</p>
+                    <button class="management-card document-approval-card" onclick="openDocumentApproval()" style="position: relative;">
+                        <i class="fas fa-stamp"></i>
+                        <span id="documentApprovalBadge" class="notification-badge" style="display: none;">0</span>
+                        <h3>서류 승인</h3>
+                        <p>직원들이 제출한 각종 서류의 승인 요청을 검토하고 처리합니다.</p>
                     </button>
                     
-                    <button class="management-card corporate-card-card" id="corporateCardManagementBtn" onclick="console.log('법인카드 관리 클릭'); openCorporateCardManagement();" style="position: relative;">
+                    <button class="management-card corporate-card-card" onclick="openCorporateCardManagement()" style="position: relative;">
                         <i class="fas fa-credit-card"></i>
                         <span id="adminCardNotificationBadge" class="notification-badge" style="display: none;">0</span>
                         <h3>법인카드 관리</h3>
                         <p>법인카드 사용 내역을 조회하고 승인/반려를 처리합니다.</p>
                     </button>
                     
-                    <button class="management-card company-info-card" id="companyInfoManagementBtn" onclick="window.location.href='company-info.html';">
+                    <button class="management-card company-info-card" onclick="showCompanyInfoManagement()">
                         <i class="fas fa-building"></i>
                         <h3>회사정보</h3>
                         <p>회사 기본정보, 사업자등록증, 법인등록번호 등을 관리합니다.</p>
                     </button>
-                    
-                    <button class="management-card quote-requests-card" id="quoteRequestsBtn" onclick="window.location.href='request-management.html';">
-                        <i class="fas fa-file-invoice-dollar"></i>
-                        <h3>견적요청</h3>
-                        <p>견적 요청, 카탈로그 요청, 기술지원 요청을 관리합니다.</p>
-                        <div id="requestNotificationBadge" class="notification-badge" style="display: none;">
-                            <span id="requestNotificationCount">0</span>
-                        </div>
-                    </button>
                 </div>
             </div>
-            <!-- 직원 관리 섹션은 별도의 employee-management.html 페이지로 이동 -->
+            <section class="content-section" id="employees" style="display: none;">
+                <button class="btn btn-secondary" onclick="backToDashboard()" style="margin-bottom: 1rem;">
+                    <i class="fas fa-arrow-left"></i> 대시보드로 돌아가기
+                </button>
+                <h2 class="section-title">직원 관리</h2>
+                
+                <div class="data-grid">
+                    <div class="grid-header">
+                        <h3 class="grid-title">직원 목록</h3>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn" onclick="console.log('⚙️ 설정 버튼 클릭됨'); window.openEmployeeSettingsModal(); return false;" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                                <i class="fas fa-cog"></i> 설정
+                            </button>
+                            <button class="btn" onclick="console.log('➕ 직원 추가 버튼 클릭됨'); window.openEmployeeModal(); return false;">
+                                <i class="fas fa-plus"></i> 직원 추가
+                            </button>
+                        </div>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <div id="employeeList">
+                            <!-- 직원 목록이 여기에 로드됩니다 -->
+                        </div>
+                    </div>
+                </div>
+            </section>
 
+            <!-- 권한 설정 섹션 -->
+            <section class="content-section" id="permissions" style="display: none;">
+                <button class="btn btn-secondary" onclick="backToDashboard()" style="margin-bottom: 1rem;">
+                    <i class="fas fa-arrow-left"></i> 대시보드로 돌아가기
+                </button>
+                <h2 class="section-title">권한 설정</h2>
+                
+                <div class="data-grid">
+                    <div class="grid-header">
+                        <h3 class="grid-title">메뉴 접근 권한 관리</h3>
+                        <button class="btn" onclick="savePermissions()" style="background: linear-gradient(135deg, #10b981, #059669);">
+                            <i class="fas fa-save"></i> 권한 저장
+                        </button>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <!-- 메뉴별 권한 설정 -->
+                        <div style="margin-bottom: 2rem;">
+                            <h4 style="color: #e2e8f0; margin-bottom: 1rem;">메뉴별 접근 권한</h4>
+                            <div id="menuPermissions">
+                                <!-- 업무일지 -->
+                                <div class="permission-menu-item" style="background: rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 10px; margin-bottom: 1rem;">
+                                    <h5 style="color: #fff; margin-bottom: 1rem;">
+                                        <i class="fas fa-file-alt"></i> 업무일지
+                                    </h5>
+                                    <div class="permission-tabs">
+                                        <button class="permission-tab active" onclick="switchPermissionTab('worklog', 'department')">부서별</button>
+                                        <button class="permission-tab" onclick="switchPermissionTab('worklog', 'position')">직급별</button>
+                                        <button class="permission-tab" onclick="switchPermissionTab('worklog', 'individual')">개인별</button>
+                                    </div>
+                                    <div id="worklog-permissions" class="permission-content">
+                                        <div id="worklog-department" class="permission-panel active"></div>
+                                        <div id="worklog-position" class="permission-panel" style="display: none;"></div>
+                                        <div id="worklog-individual" class="permission-panel" style="display: none;"></div>
+                                    </div>
+                                </div>
+
+                                <!-- 법인카드 사용 -->
+                                <div class="permission-menu-item" style="background: rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 10px; margin-bottom: 1rem;">
+                                    <h5 style="color: #fff; margin-bottom: 1rem;">
+                                        <i class="fas fa-credit-card"></i> 법인카드 사용
+                                    </h5>
+                                    <div class="permission-tabs">
+                                        <button class="permission-tab active" onclick="switchPermissionTab('corporate-card', 'department')">부서별</button>
+                                        <button class="permission-tab" onclick="switchPermissionTab('corporate-card', 'position')">직급별</button>
+                                        <button class="permission-tab" onclick="switchPermissionTab('corporate-card', 'individual')">개인별</button>
+                                    </div>
+                                    <div id="corporate-card-permissions" class="permission-content">
+                                        <div id="corporate-card-department" class="permission-panel active"></div>
+                                        <div id="corporate-card-position" class="permission-panel" style="display: none;"></div>
+                                        <div id="corporate-card-individual" class="permission-panel" style="display: none;"></div>
+                                    </div>
+                                </div>
+
+                                <!-- 결제 서류 -->
+                                <div class="permission-menu-item" style="background: rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 10px; margin-bottom: 1rem;">
+                                    <h5 style="color: #fff; margin-bottom: 1rem;">
+                                        <i class="fas fa-file-invoice"></i> 결제 서류
+                                    </h5>
+                                    <div class="permission-tabs">
+                                        <button class="permission-tab active" onclick="switchPermissionTab('documents', 'department')">부서별</button>
+                                        <button class="permission-tab" onclick="switchPermissionTab('documents', 'position')">직급별</button>
+                                        <button class="permission-tab" onclick="switchPermissionTab('documents', 'individual')">개인별</button>
+                                    </div>
+                                    <div id="documents-permissions" class="permission-content">
+                                        <div id="documents-department" class="permission-panel active"></div>
+                                        <div id="documents-position" class="permission-panel" style="display: none;"></div>
+                                        <div id="documents-individual" class="permission-panel" style="display: none;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 회사정보 관리 섹션 -->
+            <section class="content-section" id="companyInfo" style="display: none;">
+                <button class="btn btn-secondary" onclick="backToDashboard()" style="margin-bottom: 1rem;">
+                    <i class="fas fa-arrow-left"></i> 대시보드로 돌아가기
+                </button>
+                <h2 class="section-title">회사정보 관리</h2>
+                
+                <div class="data-grid">
+                    <div class="grid-header">
+                        <h3 class="grid-title">회사 기본 정보</h3>
+                        <button class="btn" onclick="saveCompanyInfo()" style="background: linear-gradient(135deg, #10b981, #059669);">
+                            <i class="fas fa-save"></i> 저장
+                        </button>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <form id="companyInfoForm" onsubmit="event.preventDefault(); saveCompanyInfo(); return false;" novalidate>
+                            <!-- 첫 번째 행: 회사구분과 회사명 -->
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">회사구분 *</label>
+                                    <select class="form-select" id="companyType">
+                                        <option value="">구분을 선택하세요</option>
+                                        <option value="corporation">법인</option>
+                                        <option value="individual">개인사업자</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">회사명 *</label>
+                                    <input type="text" class="form-input" id="companyName" placeholder="회사명을 입력하세요">
+                                </div>
+                            </div>
+                            
+                            <!-- 두 번째 행: 대표자명과 사업자등록번호 -->
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">대표자명 *</label>
+                                    <input type="text" class="form-input" id="representativeName" placeholder="대표자명을 입력하세요">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">사업자등록번호 *</label>
+                                    <input type="text" class="form-input" id="businessNumber" placeholder="000-00-00000">
+                                </div>
+                            </div>
+                            
+                            <!-- 세 번째 행: 법인등록번호와 전화번호 -->
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">법인등록번호</label>
+                                    <input type="text" class="form-input" id="corporateNumber" placeholder="000000-0000000">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">전화번호</label>
+                                    <input type="tel" class="form-input" id="companyPhone" placeholder="02-000-0000">
+                                </div>
+                            </div>
+                            
+                            <!-- 네 번째 행: 팩스번호와 이메일 -->
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">팩스번호</label>
+                                    <input type="tel" class="form-input" id="companyFax" placeholder="02-000-0000">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">이메일</label>
+                                    <input type="email" class="form-input" id="companyEmail" placeholder="company@example.com">
+                                </div>
+                            </div>
+                            
+                            <!-- 다섯 번째 행: 주소 -->
+                            <div class="form-row">
+                                <div class="form-group" style="flex: 1;">
+                                    <label class="form-label">주소</label>
+                                    <input type="text" class="form-input" id="companyAddress" placeholder="주소를 입력하세요">
+                                </div>
+                            </div>
+                            
+                            <!-- 여섯 번째 행: 업종과 업태 -->
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">업종</label>
+                                    <input type="text" class="form-input" id="businessType" placeholder="업종을 입력하세요">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">업태</label>
+                                    <input type="text" class="form-input" id="businessCategory" placeholder="업태를 입력하세요">
+                                </div>
+                            </div>
+                            
+                            <!-- 일곱 번째 행: 설립일과 자본금 -->
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">설립일</label>
+                                    <input type="date" class="form-input" id="establishmentDate">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">자본금</label>
+                                    <input type="number" class="form-input" id="capital" placeholder="자본금을 입력하세요">
+                                </div>
+                            </div>
+                            
+                            <!-- 여덟 번째 행: 직원수와 홈페이지 -->
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">직원수</label>
+                                    <input type="number" class="form-input" id="employeeCount" placeholder="직원수를 입력하세요">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">홈페이지</label>
+                                    <input type="url" class="form-input" id="website" placeholder="https://www.company.com">
+                                </div>
+                            </div>
+                            
+                            <!-- 비고 -->
+                            <div class="form-row">
+                                <div class="form-group" style="flex: 1;">
+                                    <label class="form-label">비고</label>
+                                    <textarea class="form-textarea" id="companyNotes" rows="3" placeholder="추가 정보를 입력하세요"></textarea>
+                                </div>
+                            </div>
+                            
+                            <!-- 회사 인감 -->
+                            <div class="form-row">
+                                <div class="form-group" style="flex: 1;">
+                                    <label class="form-label">회사 인감 (법인 사용인감)</label>
+                                    <div style="display: flex; align-items: center; gap: 1rem;">
+                                        <input type="file" id="companySealUpload" accept="image/*" style="display: none;" onchange="handleCompanySealUpload(this)">
+                                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('companySealUpload').click();">
+                                            <i class="fas fa-upload"></i> 인감 이미지 업로드
+                                        </button>
+                                        <div style="position: relative;">
+                                            <img id="companySealPreview" src="" alt="회사 인감 미리보기" 
+                                                 style="display: none; max-width: 100px; max-height: 100px; border: 1px solid #ddd; border-radius: 4px; object-fit: contain;">
+                                            <button type="button" id="companySealRemove" onclick="removeCompanySeal()" 
+                                                    style="display: none; position: absolute; top: -5px; right: -5px; background: #dc3545; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer;">×</button>
+                                        </div>
+                                    </div>
+                                    <small style="color: #6c757d; margin-top: 0.5rem; display: block;">JPG, PNG 파일만 업로드 가능합니다. (최대 2MB)</small>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 가입 승인 섹션 -->
+            <section class="content-section" id="pendingMembers" style="display: none;">
+                <button class="btn btn-secondary" onclick="backToDashboard()" style="margin-bottom: 1rem;">
+                    <i class="fas fa-arrow-left"></i> 대시보드로 돌아가기
+                </button>
+                <h2 class="section-title">가입 승인 관리</h2>
+                
+                <div class="data-grid">
+                    <div class="grid-header">
+                        <h3 class="grid-title">신규 가입 신청 목록</h3>
+                        <button class="btn" onclick="refreshPendingMembers()">
+                            <i class="fas fa-sync-alt"></i> 새로고침
+                        </button>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <div id="pendingMembersList">
+                            <!-- 신청 목록이 여기에 로드됩니다 -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 문서 관리 섹션 -->
             <section class="content-section" id="documents" style="display: none;">
                 <button class="btn btn-secondary" onclick="backToDashboard()" style="margin-bottom: 1rem;">
                     <i class="fas fa-arrow-left"></i> 대시보드로 돌아가기
@@ -1549,7 +1365,111 @@
             </section>
         </main>
 
-        <!-- 직원 관리 모달들은 employee-management.html로 이동 -->
+        <!-- 직원 모달 (최상위 레벨) -->
+        <div id="employeeModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modalTitle">직원 정보</h3>
+                    <button class="close" onclick="window.closeEmployeeModal()">&times;</button>
+                </div>
+                <form id="employeeForm" onsubmit="event.preventDefault(); console.log('📤 폼 제출됨'); window.saveEmployee(); return false;" novalidate>
+                    <!-- 첫 번째 행: 이름과 이메일 -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">이름 *</label>
+                            <input type="text" class="form-input" id="employeeName" placeholder="이름을 입력하세요">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">이메일 *</label>
+                            <input type="email" class="form-input" id="employeeEmail" placeholder="example@company.com">
+                        </div>
+                    </div>
+                    
+                    <!-- 두 번째 행: 권한과 연락처 -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">권한 *</label>
+                            <select class="form-select" id="employeeRole">
+                                <option value="">권한을 선택하세요</option>
+                                <option value="employee">직원</option>
+                                <option value="company_admin">회사 관리자</option>
+                                <option value="company_CEO">회사 대표</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">연락처</label>
+                            <input type="tel" class="form-input" id="employeePhone" placeholder="010-1234-5678">
+                        </div>
+                    </div>
+                    
+                    <!-- 세 번째 행: 소속 부서와 직책 -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">소속 부서</label>
+                            <select class="form-select" id="employeeDepartment">
+                                <option value="">부서를 선택하세요</option>
+                                <!-- 동적으로 로드됩니다 -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">직책</label>
+                            <select class="form-select" id="employeePosition">
+                                <option value="">직책을 선택하세요</option>
+                                <!-- 동적으로 로드됩니다 -->
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- 버튼 영역 -->
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" onclick="window.closeEmployeeModal()">취소</button>
+                        <button type="submit" class="btn btn-primary">저장</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 직원 설정 모달 -->
+        <div id="employeeSettingsModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>직원 관리 설정</h3>
+                    <button class="close" onclick="closeEmployeeSettingsModal()">&times;</button>
+                </div>
+                <div style="padding: 1rem;">
+                    <!-- 부서 관리 -->
+                    <div style="margin-bottom: 2rem;">
+                        <h4 style="color: #e2e8f0; margin-bottom: 1rem;">부서 관리</h4>
+                        <div id="departmentsList" style="margin-bottom: 1rem;">
+                            <!-- 현재 부서들이 여기에 표시됩니다 -->
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="newDepartmentInput" class="form-input" placeholder="새 부서명 입력" style="flex: 1;">
+                            <button class="btn" onclick="addDepartment()" style="background: linear-gradient(135deg, #10b981, #059669);">
+                                <i class="fas fa-plus"></i> 추가
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 직책 관리 -->
+                    <div style="margin-bottom: 2rem;">
+                        <h4 style="color: #e2e8f0; margin-bottom: 1rem;">직책 관리</h4>
+                        <div id="positionsList" style="margin-bottom: 1rem;">
+                            <!-- 현재 직책들이 여기에 표시됩니다 -->
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="newPositionInput" class="form-input" placeholder="새 직책명 입력" style="flex: 1;">
+                            <button class="btn" onclick="addPosition()" style="background: linear-gradient(135deg, #10b981, #059669);">
+                                <i class="fas fa-plus"></i> 추가
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeEmployeeSettingsModal()">닫기</button>
+                </div>
+            </div>
+        </div>
 
         <!-- 상태 표시 -->
         <div id="statusIndicator" class="status-indicator">
@@ -1560,11 +1480,27 @@
     </div>
 
     <script>
-        // shared-assets/js/auth.js에서 AuthManager를 로드하므로 여기서는 삭제
+        // 인증 관리자 (AuthManager)
+        class AuthManager {
+            static setCurrentUser(user) {
+                localStorage.setItem('currentUser', JSON.stringify(user));
+            }
+
+            static getCurrentUser() {
+                const user = localStorage.getItem('currentUser');
+                return user ? JSON.parse(user) : null;
+            }
+
+            static logout() {
+                localStorage.removeItem('currentUser');
+                window.location.href = 'employee-dashboard.html';
+            }
+        }
 
         // 전역 변수
         let currentTemplate = null;
         let currentEditingEmployee = null;
+        let currentEditingPermission = null;
 
         // 회사명 업데이트 함수
         function updateCompanyTitle(companyId) {
@@ -1665,28 +1601,6 @@
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('🚀 관리자 대시보드 시작');
             
-            // 관리 카드 이벤트 리스너 추가
-            const employeeBtn = document.getElementById('employeeManagementBtn');
-            const documentBtn = document.getElementById('documentManagementBtn');
-            const corporateBtn = document.getElementById('corporateCardManagementBtn');
-            const companyBtn = document.getElementById('companyInfoManagementBtn');
-            
-            if (employeeBtn) {
-                employeeBtn.addEventListener('click', showEmployeeManagement);
-            }
-            if (documentBtn) {
-                documentBtn.addEventListener('click', showDocumentManagement);
-            }
-            if (corporateBtn) {
-                corporateBtn.addEventListener('click', openCorporateCardManagement);
-            }
-            if (companyBtn) {
-                companyBtn.addEventListener('click', showCompanyInfoManagement);
-            }
-            
-            // 승인 대기 인원 수 확인
-            await checkPendingMembers();
-            
             // localStorage 초기 상태 확인
             console.log('🔍 페이지 로드 시 localStorage 상태:');
             const initialEmployeesData = localStorage.getItem('employees');
@@ -1733,14 +1647,8 @@
             // 알림 체크
             setTimeout(() => {
                 checkAdminNotifications();
+                checkPendingMembersCount();
             }, 500);
-            
-            // AuthManager가 로드되기를 기다림
-            if (typeof AuthManager === 'undefined') {
-                console.error('❌ AuthManager가 로드되지 않았습니다. 재로드합니다.');
-                setTimeout(() => location.reload(), 1000);
-                return;
-            }
             
             let user = AuthManager.getCurrentUser();
             
@@ -1788,20 +1696,19 @@
                 updateCompanyTitle(companyId);
             }
             
-            // 디버그 정보 추가
-            console.log('🕵️ 사용자 인증 확인:', {
-                user: user,
-                userRole: user?.role,
-                sessionStorage: sessionStorage.getItem('currentUser'),
-                AuthManager: typeof AuthManager
-            });
-            
             if (!user) {
-                // 데이터베이스에서 실제 사용자 확인 후 리다이렉트
-                console.error('❌ 인증된 사용자가 없습니다. 로그인 페이지로 이동합니다.');
-                alert('로그인 세션이 만료되었습니다. 다시 로그인해주세요.');
-                window.location.href = 'login.html';
-                return;
+                // 테스트용 마스터 사용자 자동 로그인
+                const testMasterUser = {
+                    id: 'master-001',
+                    name: '시스템 관리자',
+                    email: 'master@namkyungsteel.co.kr',
+                    role: 'master',
+                    department: '관리부',
+                    position: '시스템 관리자'
+                };
+                AuthManager.setCurrentUser(testMasterUser);
+                user = testMasterUser;
+                console.log('✅ 테스트용 마스터 사용자 자동 로그인');
             }
             
             // 권한 확인
@@ -1964,24 +1871,23 @@
             return adminRoles.includes(user.role);
         }
 
-        // 직원 관리 권한 체크 (로컬 사용자 역할로만 확인, 무한 루프 방지)
+        // 직원 관리 권한 체크 (데이터베이스에서 실시간 확인)
         async function canManageEmployees(user) {
             try {
-                if (!user || !user.role) {
-                    console.log('사용자 정보가 없습니다.');
+                // 데이터베이스에서 최신 사용자 정보 확인
+                const { data: dbUser, error } = await window.db.client
+                    .from('users')
+                    .select('role')
+                    .eq('email', user.email)
+                    .single();
+                
+                if (error) {
+                    console.error('사용자 역할 확인 실패:', error);
                     return false;
                 }
                 
-                // 로컬 사용자 정보의 역할로만 확인 (무한 루프 방지)
                 const managerRoles = ['master', 'company_CEO', 'company_admin'];
-                const hasPermission = managerRoles.includes(user.role);
-                
-                console.log('권한 확인 결과:', {
-                    userRole: user.role,
-                    hasPermission: hasPermission
-                });
-                
-                return hasPermission;
+                return managerRoles.includes(dbUser.role);
             } catch (error) {
                 console.error('권한 확인 오류:', error);
                 return false;
@@ -2011,13 +1917,15 @@
             roleSelect.innerHTML = options;
         }
 
-        // 직원 목록 렌더링 (안전한 방식)
+        // 직원 목록 렌더링
         async function renderEmployeeList() {
             console.log('🔄 직원 목록 렌더링 시작');
             
-            // 안전한 데이터 로딩 사용
-            const employees = await window.safeLoadData(
-                async () => {
+            let employees = [];
+            
+            // 데이터베이스에서 직원 목록 로드
+            if (window.db && window.db.client) {
+                try {
                     const { data, error } = await window.db.client
                         .from('users')
                         .select('*')
@@ -2026,12 +1934,23 @@
                         .neq('role', 'master')    // master는 제외
                         .order('name', { ascending: true });
                         
-                    if (error) throw error;
-                    return data || [];
-                },
-                'employee_list',
-                [] // 기본값: 빈 배열
-            );
+                    if (error) {
+                        console.error('❌ 직원 목록 조회 오류:', error);
+                    } else {
+                        employees = data || [];
+                        console.log('✅ 데이터베이스에서 직원 목록 로드 완료:', employees.length, '명 (master 제외)');
+                    }
+                } catch (error) {
+                    console.error('❌ 데이터베이스 조회 예외:', error);
+                }
+            }
+            
+            // 백업으로 localStorage에서 가져오기 (master 제외)
+            if (employees.length === 0) {
+                const allEmployees = JSON.parse(localStorage.getItem('employees') || '[]');
+                employees = allEmployees.filter(emp => emp.role !== 'master');
+                console.log('📂 localStorage에서 직원 데이터 백업 로드:', employees.length, '명 (master 제외)');
+            }
             
             const employeeList = document.getElementById('employeeList');
             const currentUser = AuthManager.getCurrentUser();
@@ -2246,15 +2165,17 @@
                 });
             });
 
-            // 직원 폼 제출 - null 체크 추가
-            const employeeForm = document.getElementById('employeeForm');
-            if (employeeForm) {
-                employeeForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    saveEmployee();
-                });
-            }
+            // 직원 폼 제출
+            document.getElementById('employeeForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveEmployee();
+            });
 
+            // 권한 폼 제출
+            document.getElementById('permissionForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                savePermission();
+            });
         }
 
         function switchSection(sectionId) {
@@ -2275,6 +2196,7 @@
 
         function loadData() {
             loadEmployees();
+            loadPermissions();
         }
 
         // 직원 관리 함수들
@@ -3039,13 +2961,184 @@
             }
         }
 
+        // 권한 관리 함수들
+        function loadPermissions() {
+            const permissions = JSON.parse(localStorage.getItem('permissions') || '[]');
+            const permissionList = document.getElementById('permissionList');
+            
+            if (permissions.length === 0) {
+                permissionList.innerHTML = '<p style="text-align: center; color: #9ca3af;">설정된 권한이 없습니다.</p>';
+                return;
+            }
+            
+            permissionList.innerHTML = permissions.map(perm => `
+                <div class="permission-card">
+                    <div class="permission-info">
+                        <h4>${perm.name}</h4>
+                        <p>${perm.description || '설명 없음'}</p>
+                        <div class="permission-badges">
+                            ${perm.canRead ? '<span class="badge">읽기</span>' : ''}
+                            ${perm.canWrite ? '<span class="badge">쓰기</span>' : ''}
+                            ${perm.canDelete ? '<span class="badge">삭제</span>' : ''}
+                            ${perm.canManage ? '<span class="badge">관리</span>' : ''}
+                        </div>
+                    </div>
+                    <div class="permission-actions">
+                        <button class="btn btn-small" onclick="editPermission('${perm.id}')">
+                            <i class="fas fa-edit"></i> 수정
+                        </button>
+                        <button class="btn btn-small btn-danger" onclick="deletePermission('${perm.id}')">
+                            <i class="fas fa-trash"></i> 삭제
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
 
+        function openPermissionModal(permissionId = null) {
+            currentEditingPermission = permissionId;
+            const modal = document.getElementById('permissionModal');
+            const form = document.getElementById('permissionForm');
+            
+            form.reset();
+            
+            if (permissionId) {
+                const permissions = JSON.parse(localStorage.getItem('permissions') || '[]');
+                const permission = permissions.find(perm => perm.id === permissionId);
+                
+                if (permission) {
+                    document.getElementById('permissionName').value = permission.name;
+                    document.getElementById('permissionDescription').value = permission.description || '';
+                    document.getElementById('canRead').checked = permission.canRead || false;
+                    document.getElementById('canWrite').checked = permission.canWrite || false;
+                    document.getElementById('canDelete').checked = permission.canDelete || false;
+                    document.getElementById('canManage').checked = permission.canManage || false;
+                }
+            }
+            
+            modal.style.display = 'block';
+        }
 
+        function closePermissionModal() {
+            document.getElementById('permissionModal').style.display = 'none';
+            currentEditingPermission = null;
+        }
 
+        function savePermission() {
+            const name = document.getElementById('permissionName').value.trim();
+            const description = document.getElementById('permissionDescription').value.trim();
+            const canRead = document.getElementById('canRead').checked;
+            const canWrite = document.getElementById('canWrite').checked;
+            const canDelete = document.getElementById('canDelete').checked;
+            const canManage = document.getElementById('canManage').checked;
+            
+            if (!name) {
+                alert('권한명은 필수 입력 항목입니다.');
+                return;
+            }
+            
+            const permissions = JSON.parse(localStorage.getItem('permissions') || '[]');
+            
+            if (currentEditingPermission) {
+                // 수정
+                const index = permissions.findIndex(perm => perm.id === currentEditingPermission);
+                if (index !== -1) {
+                    permissions[index] = {
+                        ...permissions[index],
+                        name,
+                        description,
+                        canRead,
+                        canWrite,
+                        canDelete,
+                        canManage,
+                        updatedAt: new Date().toISOString()
+                    };
+                }
+            } else {
+                // 새 권한 추가
+                const newPermission = {
+                    id: Date.now().toString(),
+                    name,
+                    description,
+                    canRead,
+                    canWrite,
+                    canDelete,
+                    canManage,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                permissions.push(newPermission);
+            }
+            
+            localStorage.setItem('permissions', JSON.stringify(permissions));
+            loadPermissions();
+            closePermissionModal();
+            
+            alert(currentEditingPermission ? '권한이 수정되었습니다.' : '권한이 추가되었습니다.');
+        }
 
+        function editPermission(permissionId) {
+            openPermissionModal(permissionId);
+        }
 
+        function deletePermission(permissionId) {
+            if (!confirm('정말로 이 권한을 삭제하시겠습니까?')) {
+                return;
+            }
+            
+            const permissions = JSON.parse(localStorage.getItem('permissions') || '[]');
+            const filteredPermissions = permissions.filter(perm => perm.id !== permissionId);
+            
+            localStorage.setItem('permissions', JSON.stringify(filteredPermissions));
+            loadPermissions();
+            
+            alert('권한이 삭제되었습니다.');
+        }
 
+        // 메인 관리 카드 클릭 함수들
+        async function showEmployeeManagement() {
+            // 권한 체크
+            const user = AuthManager.getCurrentUser();
+            if (!user || !(await canManageEmployees(user))) {
+                alert('직원 관리 권한이 없습니다. 마스터, 회사대표, 관리자만 접근 가능합니다.');
+                return;
+            }
 
+            // 히스토리에 상태 추가 (해시 변경 없이)
+            history.pushState({ section: 'employees' }, '직원 관리', '#employees');
+            
+            // 직원 관리 섹션 표시
+            showSection('employees');
+        }
+
+        async function showPermissionManagement() {
+            // 히스토리에 상태 추가 (해시 변경 없이)
+            history.pushState({ section: 'permissions' }, '권한 설정', '#permissions');
+            
+            // 권한 설정 섹션 표시
+            showSection('permissions');
+            
+            // 권한 데이터 로드
+            await loadMenuPermissions();
+        }
+
+        async function showPendingMembers() {
+            // 권한 체크
+            const user = AuthManager.getCurrentUser();
+            if (!user || !(await canManageEmployees(user))) {
+                alert('가입 승인 권한이 없습니다. 마스터, 회사대표, 관리자만 접근 가능합니다.');
+                return;
+            }
+
+            // 히스토리에 상태 추가 (해시 변경 없이)
+            history.pushState({ section: 'pendingMembers' }, '가입 승인', '#pendingMembers');
+            
+            // 가입 승인 섹션 표시
+            showSection('pendingMembers');
+            
+            // 승인 대기 회원 목록 로드
+            loadPendingMembers();
+        }
 
         function backToDashboard() {
             // 히스토리에 상태 추가 (해시 변경 없이)
@@ -3080,6 +3173,10 @@
                     if (sectionName === 'employees') {
                         renderEmployeeList();
                     }
+                    // 가입 승인 섹션인 경우 데이터 로드
+                    else if (sectionName === 'pendingMembers') {
+                        loadPendingMembers();
+                    }
                     // 회사정보 섹션인 경우 데이터 로드
                     else if (sectionName === 'companyInfo') {
                         loadCompanyInfo();
@@ -3106,6 +3203,8 @@
                     return;
                 }
                 showSection('employees');
+            } else if (hash === 'permissions') {
+                showSection('permissions');
             } else {
                 showSection('dashboard');
             }
@@ -3323,36 +3422,582 @@
             }
         }
 
+        // ==================== 권한 관리 함수들 ====================
         
-
-
-
-
-        
-
-        // 문서 관리 함수들
-        async function showDocumentManagement() {
-            console.log('📄 문서 관리 표시');
+        // 메뉴 권한 데이터 로드
+        async function loadMenuPermissions() {
+            console.log('📋 메뉴 권한 로드 시작');
             
-            // 데이터베이스 초기화 대기
-            if (!window.db || !window.db.client) {
-                console.log('데이터베이스 초기화 중...');
-                for (let i = 0; i < 50; i++) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    if (window.db && window.db.client) {
-                        break;
+            // 저장된 권한 데이터 가져오기
+            const savedPermissions = JSON.parse(localStorage.getItem('menuPermissions') || '{}');
+            
+            // 현재 회사의 부서, 직급, 직원 목록 가져오기
+            const departments = getDepartments();
+            const positions = getPositions();
+            
+            // 데이터베이스에서 직원 목록 로드
+            let employees = [];
+            if (window.db && window.db.client) {
+                try {
+                    const { data, error } = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .eq('is_active', true)
+                        .not('role', 'is', null)  // role이 설정된 사용자들만 (승인된 사용자)
+                        .neq('role', 'master')    // master는 제외
+                        .order('name', { ascending: true });
+                        
+                    if (error) {
+                        console.error('❌ 직원 목록 조회 오류:', error);
+                    } else {
+                        employees = data || [];
+                        console.log('✅ 권한 설정용 직원 목록 로드 완료:', employees.length, '명');
                     }
-                }
-                if (!window.db || !window.db.client) {
-                    alert('데이터베이스 연결을 확인할 수 없습니다. 페이지를 새로고침해주세요.');
-                    return;
+                } catch (error) {
+                    console.error('❌ 데이터베이스 조회 예외:', error);
                 }
             }
             
-            showSection('documents');
-            await loadDocumentTemplates();
+            // 백업으로 localStorage에서 가져오기 (master 제외)
+            if (employees.length === 0) {
+                const allEmployees = JSON.parse(localStorage.getItem('employees') || '[]');
+                employees = allEmployees.filter(emp => emp.role !== 'master');
+                console.log('📂 localStorage에서 직원 데이터 백업 로드:', employees.length, '명 (master 제외)');
+            }
+            
+            // 각 메뉴에 대해 권한 패널 렌더링
+            const menus = ['worklog', 'corporate-card', 'documents'];
+            
+            menus.forEach(menu => {
+                // 부서별 권한
+                renderDepartmentPermissions(menu, departments, savedPermissions);
+                
+                // 직급별 권한
+                renderPositionPermissions(menu, positions, savedPermissions);
+                
+                // 개인별 권한
+                renderIndividualPermissions(menu, employees, savedPermissions);
+            });
         }
-        window.showDocumentManagement = showDocumentManagement;
+        
+        // 부서별 권한 렌더링
+        function renderDepartmentPermissions(menu, departments, savedPermissions) {
+            const container = document.getElementById(`${menu}-department`);
+            if (!container) return;
+            
+            const menuPermissions = savedPermissions[menu] || {};
+            const departmentPermissions = menuPermissions.departments || {};
+            
+            let html = '<div style="max-height: 300px; overflow-y: auto;">';
+            
+            if (departments.length === 0) {
+                html += '<p style="color: #9ca3af; text-align: center;">등록된 부서가 없습니다.</p>';
+            } else {
+                departments.forEach(dept => {
+                    const isChecked = departmentPermissions[dept] || false;
+                    html += `
+                        <div class="permission-checkbox">
+                            <input type="checkbox" id="${menu}-dept-${dept}" 
+                                   data-menu="${menu}" data-type="departments" data-value="${dept}"
+                                   ${isChecked ? 'checked' : ''}>
+                            <label for="${menu}-dept-${dept}">${dept}</label>
+                        </div>
+                    `;
+                });
+            }
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+        
+        // 직급별 권한 렌더링
+        function renderPositionPermissions(menu, positions, savedPermissions) {
+            const container = document.getElementById(`${menu}-position`);
+            if (!container) return;
+            
+            const menuPermissions = savedPermissions[menu] || {};
+            const positionPermissions = menuPermissions.positions || {};
+            
+            let html = '<div style="max-height: 300px; overflow-y: auto;">';
+            
+            if (positions.length === 0) {
+                html += '<p style="color: #9ca3af; text-align: center;">등록된 직급이 없습니다.</p>';
+            } else {
+                positions.forEach(pos => {
+                    const isChecked = positionPermissions[pos] || false;
+                    html += `
+                        <div class="permission-checkbox">
+                            <input type="checkbox" id="${menu}-pos-${pos}" 
+                                   data-menu="${menu}" data-type="positions" data-value="${pos}"
+                                   ${isChecked ? 'checked' : ''}>
+                            <label for="${menu}-pos-${pos}">${pos}</label>
+                        </div>
+                    `;
+                });
+            }
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+        
+        // 개인별 권한 렌더링
+        function renderIndividualPermissions(menu, employees, savedPermissions) {
+            const container = document.getElementById(`${menu}-individual`);
+            if (!container) return;
+            
+            const menuPermissions = savedPermissions[menu] || {};
+            const individualPermissions = menuPermissions.individuals || {};
+            
+            // 대표이사와 master 제외 (모든 권한 자동 부여)
+            const filteredEmployees = employees.filter(emp => emp.position !== '대표이사' && emp.role !== 'master');
+            
+            let html = '<div style="max-height: 300px; overflow-y: auto;">';
+            
+            if (filteredEmployees.length === 0) {
+                html += '<p style="color: #9ca3af; text-align: center;">권한 설정 가능한 직원이 없습니다.<br><small>(대표이사와 마스터는 모든 권한이 자동 부여됩니다)</small></p>';
+            } else {
+                filteredEmployees.forEach(emp => {
+                    const isChecked = individualPermissions[emp.id] || false;
+                    html += `
+                        <div class="permission-checkbox">
+                            <input type="checkbox" id="${menu}-emp-${emp.id}" 
+                                   data-menu="${menu}" data-type="individuals" data-value="${emp.id}"
+                                   data-name="${emp.name}"
+                                   ${isChecked ? 'checked' : ''}>
+                            <label for="${menu}-emp-${emp.id}">${emp.name} (${emp.department || '부서 미지정'} - ${emp.position || '직급 미지정'})</label>
+                        </div>
+                    `;
+                });
+                
+                // 대표이사 안내 메시지 추가
+                const ceoEmployees = employees.filter(emp => emp.position === '대표이사');
+                if (ceoEmployees.length > 0) {
+                    html += '<div style="margin-top: 1rem; padding: 0.75rem; background: rgba(34, 197, 94, 0.1); border-radius: 5px; border-left: 3px solid #22c55e;">';
+                    html += '<p style="color: #22c55e; margin: 0; font-size: 0.875rem;"><i class="fas fa-info-circle"></i> 대표이사는 모든 메뉴에 자동으로 접근 권한이 부여됩니다:</p>';
+                    ceoEmployees.forEach(emp => {
+                        html += `<p style="color: #e2e8f0; margin: 0.25rem 0 0 0; font-size: 0.875rem;">• ${emp.name} (${emp.department || '부서 미지정'} - ${emp.position})</p>`;
+                    });
+                    html += '</div>';
+                }
+            }
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+        
+        // 권한 탭 전환
+        function switchPermissionTab(menu, type) {
+            // 탭 버튼 활성화 상태 변경
+            const tabs = document.querySelectorAll(`#${menu}-permissions .permission-tab`);
+            tabs.forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // 패널 표시/숨김
+            const panels = document.querySelectorAll(`#${menu}-permissions .permission-panel`);
+            panels.forEach(panel => {
+                panel.style.display = 'none';
+                panel.classList.remove('active');
+            });
+            
+            const activePanel = document.getElementById(`${menu}-${type}`);
+            if (activePanel) {
+                activePanel.style.display = 'block';
+                activePanel.classList.add('active');
+            }
+        }
+        
+        // 권한 저장
+        function savePermissions() {
+            console.log('💾 권한 저장 시작');
+            
+            const permissions = {};
+            
+            // 모든 체크박스에서 권한 정보 수집
+            const checkboxes = document.querySelectorAll('#menuPermissions input[type="checkbox"]');
+            
+            checkboxes.forEach(checkbox => {
+                const menu = checkbox.dataset.menu;
+                const type = checkbox.dataset.type;
+                const value = checkbox.dataset.value;
+                const isChecked = checkbox.checked;
+                
+                if (!permissions[menu]) {
+                    permissions[menu] = {
+                        departments: {},
+                        positions: {},
+                        individuals: {}
+                    };
+                }
+                
+                if (type === 'individuals') {
+                    // 개인별 권한은 ID로 저장
+                    permissions[menu][type][value] = isChecked;
+                } else {
+                    // 부서/직급별 권한은 이름으로 저장
+                    permissions[menu][type][value] = isChecked;
+                }
+            });
+            
+            // localStorage에 저장
+            localStorage.setItem('menuPermissions', JSON.stringify(permissions));
+            console.log('✅ 권한 저장 완료:', permissions);
+            
+            alert('권한 설정이 저장되었습니다.');
+        }
+
+        // 가입 승인 관리 함수들
+        async function loadPendingMembers() {
+            console.log('📋 승인 대기 회원 목록 로드');
+            
+            const pendingMembersList = document.getElementById('pendingMembersList');
+            
+            // 데이터베이스에서 승인 대기 중인 사용자 조회
+            let pendingMembers = [];
+            if (window.db && window.db.client) {
+                try {
+                    const { data, error } = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .is('role', null)  // role이 null인 사용자들 (승인 대기)
+                        .eq('is_active', true)
+                        .order('created_at', { ascending: false });
+                        
+                    if (error) {
+                        console.error('❌ 승인 대기 회원 조회 오류:', error);
+                    } else {
+                        pendingMembers = data || [];
+                        console.log('✅ 승인 대기 회원 조회 완료:', pendingMembers.length, '명');
+                    }
+                } catch (error) {
+                    console.error('❌ 데이터베이스 조회 예외:', error);
+                }
+            }
+            
+            if (pendingMembers.length === 0) {
+                pendingMembersList.innerHTML = `
+                    <div style="text-align: center; padding: 3rem; color: #e2e8f0;">
+                        <i class="fas fa-user-check" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                        <p style="font-size: 1.1rem; margin: 0;">현재 승인 대기 중인 회원이 없습니다.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            pendingMembers.forEach(member => {
+                const requestDate = new Date(member.created_at).toLocaleDateString('ko-KR');
+                const provider = member.oauth_provider || '일반';
+                
+                html += `
+                    <div style="background: rgba(255, 255, 255, 0.1); padding: 1.5rem; border-radius: 10px; margin-bottom: 1rem; border: 1px solid rgba(255, 255, 255, 0.2);">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                            <div style="flex: 1;">
+                                <h4 style="color: #fff; margin: 0 0 0.5rem 0; font-size: 1.2rem;">
+                                    <i class="fas fa-user" style="margin-right: 0.5rem;"></i>
+                                    ${member.name}
+                                </h4>
+                                <p style="color: #e2e8f0; margin: 0 0 0.5rem 0;">
+                                    <i class="fas fa-envelope" style="margin-right: 0.5rem;"></i>
+                                    ${member.email || '이메일 미제공'}
+                                </p>
+                                ${member.phone ? `
+                                <p style="color: #e2e8f0; margin: 0 0 0.5rem 0;">
+                                    <i class="fas fa-phone" style="margin-right: 0.5rem;"></i>
+                                    ${member.phone}
+                                </p>` : ''}
+                                <p style="color: #e2e8f0; margin: 0 0 0.5rem 0;">
+                                    <i class="fas fa-sign-in-alt" style="margin-right: 0.5rem;"></i>
+                                    ${provider === 'kakao' ? '카카오' : provider === 'google' ? 'Google' : '일반'} 가입
+                                </p>
+                            </div>
+                            <div style="text-align: right;">
+                                <span style="background: rgba(255, 193, 7, 0.2); color: #ffc107; padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.875rem; font-weight: 600;">
+                                    <i class="fas fa-clock" style="margin-right: 0.25rem;"></i>승인대기
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                            ${member.department ? `
+                            <div>
+                                <strong style="color: #cbd5e0;">소속 부서:</strong>
+                                <span style="color: #e2e8f0; margin-left: 0.5rem;">${member.department}</span>
+                            </div>` : ''}
+                            ${member.position ? `
+                            <div>
+                                <strong style="color: #cbd5e0;">직책:</strong>
+                                <span style="color: #e2e8f0; margin-left: 0.5rem;">${member.position}</span>
+                            </div>` : ''}
+                            <div>
+                                <strong style="color: #cbd5e0;">역할 선택:</strong>
+                                <select id="roleSelect_${member.id}" style="margin-left: 0.5rem; padding: 0.25rem 0.5rem; border-radius: 4px; border: 1px solid #4a5568; background: #2d3748; color: #e2e8f0;">
+                                    <option value="">역할을 선택하세요</option>
+                                    <option value="employee">직원</option>
+                                    <option value="company_manager">관리자</option>
+                                    <option value="company_admin">회사 대표</option>
+                                </select>
+                            </div>
+                            <div>
+                                <strong style="color: #cbd5e0;">신청일:</strong>
+                                <span style="color: #e2e8f0; margin-left: 0.5rem;">${requestDate}</span>
+                            </div>
+                        </div>
+                        
+                        <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                            <button onclick="approveMember('${member.id}')" class="btn" style="background: linear-gradient(135deg, #10b981, #059669); padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                <i class="fas fa-check" style="margin-right: 0.5rem;"></i>승인
+                            </button>
+                            <button onclick="rejectMember('${member.id}')" class="btn btn-danger" style="background: linear-gradient(135deg, #ef4444, #dc2626); padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                <i class="fas fa-times" style="margin-right: 0.5rem;"></i>거부
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            pendingMembersList.innerHTML = html;
+            
+            // 배지 업데이트
+            checkPendingMembersCount(pendingMembers.length);
+        }
+
+        async function approveMember(memberId) {
+            // 선택된 역할 확인
+            const roleSelect = document.getElementById(`roleSelect_${memberId}`);
+            if (!roleSelect || !roleSelect.value) {
+                alert('먼저 사용자의 역할을 선택해주세요.');
+                return;
+            }
+            
+            const selectedRole = roleSelect.value;
+            const roleText = {
+                'employee': '직원',
+                'company_manager': '관리자', 
+                'company_admin': '회사 대표'
+            }[selectedRole];
+            
+            if (!confirm(`이 회원을 "${roleText}" 역할로 승인하시겠습니까?`)) {
+                return;
+            }
+            
+            console.log('✅ 회원 승인:', memberId, '역할:', selectedRole);
+            
+            // 데이터베이스에서 회원 정보 조회
+            let member = null;
+            if (window.db && window.db.client) {
+                try {
+                    const { data, error } = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .eq('id', memberId)
+                        .single();
+                        
+                    if (error) {
+                        console.error('❌ 회원 정보 조회 오류:', error);
+                        alert('회원 정보를 찾을 수 없습니다.');
+                        return;
+                    }
+                    
+                    member = data;
+                } catch (error) {
+                    console.error('❌ 회원 조회 예외:', error);
+                    alert('회원 정보 조회 중 오류가 발생했습니다.');
+                    return;
+                }
+            } else {
+                alert('데이터베이스 연결이 필요합니다.');
+                return;
+            }
+            
+            // 데이터베이스에서 사용자 승인 처리
+            if (window.db && window.db.client) {
+                try {
+                    const { data, error } = await window.db.client
+                        .from('users')
+                        .update({ 
+                            role: selectedRole,
+                            is_approved: true,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', memberId)
+                        .select();
+                        
+                    if (error) {
+                        console.error('❌ 사용자 승인 오류:', error);
+                        alert('사용자 승인 중 오류가 발생했습니다.');
+                        return;
+                    }
+                    
+                    console.log('✅ 데이터베이스 승인 완료:', data);
+                } catch (error) {
+                    console.error('❌ 승인 처리 오류:', error);
+                }
+            }
+            
+            // 승인 완료 - 더 이상 localStorage 조작 불필요 (데이터베이스에서 is_approved가 true로 변경됨)
+            
+            // 승인 완료 알림 생성
+            const approvalNotification = {
+                id: Date.now().toString(),
+                type: 'approval_completed',
+                title: '가입 승인 완료',
+                message: `${member.name}님이 "${roleText}" 역할로 승인되었습니다.`,
+                targetUserId: member.id,
+                assignedRole: selectedRole,
+                createdAt: new Date().toISOString(),
+                isRead: false
+            };
+            
+            // 해당 사용자에게 알림 전송
+            const userNotifications = JSON.parse(localStorage.getItem('notifications_' + member.id) || '[]');
+            userNotifications.unshift(approvalNotification);
+            localStorage.setItem('notifications_' + member.id, JSON.stringify(userNotifications));
+            
+            alert(`${member.name}님이 "${roleText}" 역할로 승인되었습니다.`);
+            
+            // 목록 새로고침
+            loadPendingMembers();
+        }
+
+        async function rejectMember(memberId) {
+            const reason = prompt('가입 거부 사유를 입력하세요:');
+            if (!reason) {
+                return;
+            }
+            
+            if (!confirm('이 회원의 가입을 거부하시겠습니까?')) {
+                return;
+            }
+            
+            console.log('❌ 회원 거부:', memberId);
+            
+            // 데이터베이스에서 회원 정보 조회
+            let member = null;
+            if (window.db && window.db.client) {
+                try {
+                    const { data, error } = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .eq('id', memberId)
+                        .single();
+                        
+                    if (error) {
+                        console.error('❌ 회원 정보 조회 오류:', error);
+                        alert('회원 정보를 찾을 수 없습니다.');
+                        return;
+                    }
+                    
+                    member = data;
+                } catch (error) {
+                    console.error('❌ 회원 조회 예외:', error);
+                    alert('회원 정보 조회 중 오류가 발생했습니다.');
+                    return;
+                }
+            } else {
+                alert('데이터베이스 연결이 필요합니다.');
+                return;
+            }
+            
+            // 데이터베이스에서 사용자 거부 처리
+            if (window.db && window.db.client) {
+                try {
+                    const { data, error } = await window.db.client
+                        .from('users')
+                        .update({ 
+                            is_active: false,
+                            rejection_reason: reason,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', memberId)
+                        .select();
+                        
+                    if (error) {
+                        console.error('❌ 사용자 거부 오류:', error);
+                        alert('사용자 거부 중 오류가 발생했습니다.');
+                        return;
+                    }
+                    
+                    console.log('✅ 데이터베이스 거부 완료:', data);
+                } catch (error) {
+                    console.error('❌ 거부 처리 오류:', error);
+                }
+            }
+            
+            // 거부 완료 - 더 이상 localStorage 조작 불필요 (데이터베이스에서 is_active가 false로 변경됨)
+            
+            // 거부 알림 생성
+            const rejectionNotification = {
+                id: Date.now().toString(),
+                type: 'approval_rejected',
+                title: '가입 거부됨',
+                message: `귀하의 가입이 거부되었습니다. 사유: ${reason}`,
+                targetUserId: member.id,
+                createdAt: new Date().toISOString(),
+                isRead: false
+            };
+            
+            // 해당 사용자에게 알림 전송
+            const userNotifications = JSON.parse(localStorage.getItem('notifications_' + member.id) || '[]');
+            userNotifications.unshift(rejectionNotification);
+            localStorage.setItem('notifications_' + member.id, JSON.stringify(userNotifications));
+            
+            alert(`${member.name}님의 가입이 거부되었습니다.`);
+            
+            // 목록 새로고침
+            loadPendingMembers();
+        }
+
+        function refreshPendingMembers() {
+            console.log('🔄 승인 대기 목록 새로고침');
+            loadPendingMembers();
+            checkPendingMembersCount();
+        }
+        
+        // 승인 대기 회원 수 체크
+        async function checkPendingMembersCount(count = null) {
+            const badge = document.getElementById('pendingMembersBadge');
+            
+            let pendingCount = count;
+            
+            // count가 제공되지 않았으면 데이터베이스에서 조회
+            if (pendingCount === null && window.db && window.db.client) {
+                try {
+                    const { data, error } = await window.db.client
+                        .from('users')
+                        .select('id')
+                        .is('role', null)  // role이 null인 사용자들 (승인 대기)
+                        .eq('is_active', true);
+                        
+                    if (error) {
+                        console.error('❌ 승인 대기 회원 수 조회 오류:', error);
+                        pendingCount = 0;
+                    } else {
+                        pendingCount = data ? data.length : 0;
+                    }
+                } catch (error) {
+                    console.error('❌ 승인 대기 회원 수 조회 예외:', error);
+                    pendingCount = 0;
+                }
+            }
+            
+            if (badge) {
+                if (pendingCount > 0) {
+                    badge.textContent = pendingCount;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+            
+            console.log('📢 승인 대기 회원 수:', pendingCount);
+        }
+
+        // 문서 관리 함수들
+        function showDocumentManagement() {
+            console.log('📄 문서 관리 표시');
+            showSection('documents');
+            loadDocumentTemplates();
+        }
 
         let currentEditingTemplate = null;
         let documentTemplates = {
@@ -3532,96 +4177,41 @@
         };
 
         // 템플릿 로드
-        async function loadDocumentTemplates() {
-            try {
-                // 데이터베이스에서 템플릿 설정 및 로컬스토리지에서 로드
-                const dbSettings = await loadDocumentTemplateSettings();
-                const saved = localStorage.getItem('documentTemplates');
-                
-                if (saved) {
-                    const savedTemplates = JSON.parse(saved);
-                    // 기존 저장된 템플릿과 기본 템플릿을 병합
-                    Object.keys(documentTemplates).forEach(templateId => {
-                        if (savedTemplates[templateId]) {
-                            // enabled 속성이 없는 경우 true로 설정
-                            if (savedTemplates[templateId].enabled === undefined) {
-                                savedTemplates[templateId].enabled = true;
-                            }
-                            documentTemplates[templateId] = savedTemplates[templateId];
+        function loadDocumentTemplates() {
+            const saved = localStorage.getItem('documentTemplates');
+            if (saved) {
+                const savedTemplates = JSON.parse(saved);
+                // 기존 저장된 템플릿과 기본 템플릿을 병합
+                Object.keys(documentTemplates).forEach(templateId => {
+                    if (savedTemplates[templateId]) {
+                        // enabled 속성이 없는 경우 true로 설정
+                        if (savedTemplates[templateId].enabled === undefined) {
+                            savedTemplates[templateId].enabled = true;
                         }
-                    });
-                    // 새로 추가된 사용자 정의 템플릿들도 포함
-                    Object.keys(savedTemplates).forEach(templateId => {
-                        if (!documentTemplates[templateId]) {
-                            documentTemplates[templateId] = savedTemplates[templateId];
-                        }
-                    });
-                }
-                
-                // 데이터베이스 설정으로 업데이트
-                dbSettings.forEach(setting => {
-                    if (documentTemplates[setting.template_id]) {
-                        documentTemplates[setting.template_id].enabled = setting.is_enabled;
+                        documentTemplates[templateId] = savedTemplates[templateId];
                     }
                 });
-                
-                await renderTemplates();
-            } catch (error) {
-                console.error('템플릿 로드 오류:', error);
-                // 에러 발생 시 로컬스토리지만 사용
-                const saved = localStorage.getItem('documentTemplates');
-                if (saved) {
-                    const savedTemplates = JSON.parse(saved);
-                    Object.keys(documentTemplates).forEach(templateId => {
-                        if (savedTemplates[templateId]) {
-                            documentTemplates[templateId] = savedTemplates[templateId];
-                        }
-                    });
-                }
-                await renderTemplates();
+                // 새로 추가된 사용자 정의 템플릿들도 포함
+                Object.keys(savedTemplates).forEach(templateId => {
+                    if (!documentTemplates[templateId]) {
+                        documentTemplates[templateId] = savedTemplates[templateId];
+                    }
+                });
             }
+            renderTemplates();
         }
 
         // 템플릿 저장
-        async function saveDocumentTemplates() {
-            // 로컬스토리지에도 저장 (호환성을 위해)
+        function saveDocumentTemplates() {
             localStorage.setItem('documentTemplates', JSON.stringify(documentTemplates));
-            
-            // 데이터베이스에도 저장
-            try {
-                if (window.db) {
-                    for (const [templateId, template] of Object.entries(documentTemplates)) {
-                        await window.db.updateDocumentTemplateSettings(templateId, {
-                            template_name: template.name,
-                            is_enabled: template.enabled,
-                            company_domain: 'namkyungsteel.com'
-                        });
-                    }
-                }
-            } catch (error) {
-                console.error('데이터베이스 템플릿 저장 오류:', error);
-            }
         }
 
         // 템플릿 토글
-        async function toggleTemplate(templateId) {
+        function toggleTemplate(templateId) {
             if (documentTemplates[templateId]) {
                 documentTemplates[templateId].enabled = !documentTemplates[templateId].enabled;
-                await saveDocumentTemplates();
-                
-                // 데이터베이스에도 업데이트
-                try {
-                    if (window.db) {
-                        await window.db.updateDocumentTemplateSettings(templateId, {
-                            is_enabled: documentTemplates[templateId].enabled,
-                            company_domain: 'namkyungsteel.com'
-                        });
-                    }
-                } catch (error) {
-                    console.error('템플릿 상태 업데이트 오류:', error);
-                }
-                
-                await renderTemplates();
+                saveDocumentTemplates();
+                renderTemplates();
                 
                 const status = documentTemplates[templateId].enabled ? '활성화' : '비활성화';
                 console.log(`📄 ${documentTemplates[templateId].name} ${status}`);
@@ -3629,7 +4219,7 @@
         }
 
         // 새 템플릿 추가
-        async function addNewTemplate() {
+        function addNewTemplate() {
             const name = prompt('새 템플릿 이름을 입력하세요:');
             if (name && name.trim()) {
                 const id = 'template_' + Date.now();
@@ -3639,8 +4229,8 @@
                     enabled: true,
                     content: '새로운 템플릿 내용을 입력하세요.'
                 };
-                await saveDocumentTemplates();
-                await renderTemplates();
+                saveDocumentTemplates();
+                renderTemplates();
             }
         }
 
@@ -3656,7 +4246,7 @@
         }
 
         // 템플릿 편집 저장
-        async function saveTemplateEdit() {
+        function saveTemplateEdit() {
             if (!currentEditingTemplate) return;
 
             const name = document.getElementById('templateEditName').value.trim();
@@ -3665,8 +4255,8 @@
             if (name && content) {
                 documentTemplates[currentEditingTemplate].name = name;
                 documentTemplates[currentEditingTemplate].content = content;
-                await saveDocumentTemplates();
-                await renderTemplates();
+                saveDocumentTemplates();
+                renderTemplates();
                 closeTemplateEdit();
                 alert('템플릿이 저장되었습니다.');
             } else {
@@ -3742,7 +4332,7 @@
         });
 
         // 템플릿 삭제
-        async function deleteTemplate(templateId) {
+        function deleteTemplate(templateId) {
             if (templateId === 'career') {
                 alert('기본 경력증명서 템플릿은 삭제할 수 없습니다.');
                 return;
@@ -3751,27 +4341,18 @@
             const template = documentTemplates[templateId];
             if (confirm(`"${template.name}" 템플릿을 삭제하시겠습니까?`)) {
                 delete documentTemplates[templateId];
-                await saveDocumentTemplates();
-                await renderTemplates();
+                saveDocumentTemplates();
+                renderTemplates();
             }
         }
 
         // 템플릿 렌더링
-        async function renderTemplates() {
+        function renderTemplates() {
             const container = document.getElementById('documentTemplates');
             container.innerHTML = '';
 
-            // 최종 승인자 목록 가져오기
-            const approvers = await loadApprovers();
-            
-            // 데이터베이스에서 템플릿 설정 가져오기
-            const templateSettings = await loadDocumentTemplateSettings();
-
             Object.keys(documentTemplates).forEach(templateId => {
                 const template = documentTemplates[templateId];
-                const templateSetting = templateSettings.find(t => t.template_id === templateId);
-                const finalApproverId = templateSetting?.final_approver_id || '';
-                
                 const templateCard = document.createElement('div');
                 templateCard.className = 'template-card';
                 templateCard.setAttribute('data-template', templateId);
@@ -3790,19 +4371,10 @@
                                     <span class="toggle-slider"></span>
                                 </label>
                             </div>
-                            <div style="display: flex; align-items: center; gap: 1rem;">
-                                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                    <span style="color: #e5e7eb; font-size: 0.9rem;">최종 승인자</span>
-                                    <select id="finalApprover_${templateId}" style="padding: 0.5rem; border-radius: 4px; border: 1px solid #ccc; background: white; color: #333;" onchange="updateFinalApprover('${templateId}', this.value)">
-                                        <option value="">선택하세요</option>
-                                        ${approvers.map(approver => `<option value="${approver.id}" ${approver.id == finalApproverId ? 'selected' : ''}>${approver.name} (${approver.position})</option>`).join('')}
-                                    </select>
-                                </div>
-                                <div class="template-actions">
-                                    <button class="btn btn-small btn-danger" onclick="deleteTemplate('${templateId}')" style="padding: 0.5rem 0.75rem;">
-                                        <i class="fas fa-trash"></i> 삭제
-                                    </button>
-                                </div>
+                            <div class="template-actions">
+                                <button class="btn btn-small btn-danger" onclick="deleteTemplate('${templateId}')" style="padding: 0.5rem 0.75rem;">
+                                    <i class="fas fa-trash"></i> 삭제
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -3821,61 +4393,6 @@
                 }
             });
             return enabled;
-        }
-
-        // 최종 승인자 목록 로드
-        async function loadApprovers() {
-            try {
-                if (!window.db) {
-                    console.error('데이터베이스 연결이 필요합니다.');
-                    return [];
-                }
-                
-                // 관리자 및 매니저 권한을 가진 사용자들 조회
-                const approvers = await window.db.getUsersByRole(['company_CEO', 'company_manager', 'company_admin']);
-                return approvers;
-            } catch (error) {
-                console.error('승인자 목록 로드 오류:', error);
-                return [];
-            }
-        }
-
-        // 문서 템플릿 설정 로드
-        async function loadDocumentTemplateSettings() {
-            try {
-                if (!window.db) {
-                    console.error('데이터베이스 연결이 필요합니다.');
-                    return [];
-                }
-                
-                const settings = await window.db.getDocumentTemplatesSettings('namkyungsteel.com');
-                return settings;
-            } catch (error) {
-                console.error('문서 템플릿 설정 로드 오류:', error);
-                return [];
-            }
-        }
-
-        // 최종 승인자 업데이트
-        async function updateFinalApprover(templateId, approverId) {
-            try {
-                if (!window.db) {
-                    console.error('데이터베이스 연결이 필요합니다.');
-                    return;
-                }
-                
-                const settings = {
-                    final_approver_id: approverId ? parseInt(approverId) : null,
-                    company_domain: 'namkyungsteel.com'
-                };
-                
-                await window.db.updateDocumentTemplateSettings(templateId, settings);
-                console.log(`📄 ${templateId} 최종 승인자 업데이트 완료`);
-                alert('최종 승인자가 설정되었습니다.');
-            } catch (error) {
-                console.error('최종 승인자 업데이트 오류:', error);
-                alert('최종 승인자 설정 중 오류가 발생했습니다.');
-            }
         }
 
         // 문서 설정 저장 (기존 호환성을 위해 유지)
@@ -3909,9 +4426,22 @@
                         showSection('dashboard');
                         alert('직원 관리 권한이 없습니다.');
                     }
+                } else if (hash === 'permissions') {
+                    await loadMenuPermissions();
+                } else if (hash === 'pendingMembers') {
+                    // 가입 승인 섹션의 경우 권한 체크
+                    const user = AuthManager.getCurrentUser();
+                    if (user && canManageEmployees(user)) {
+                        loadPendingMembers();
+                    } else {
+                        // 권한 없으면 대시보드로 리다이렉트
+                        window.location.hash = '';
+                        showSection('dashboard');
+                        alert('가입 승인 권한이 없습니다.');
+                    }
                 } else if (hash === 'documents') {
                     // 문서 관리 섹션
-                    await loadDocumentTemplates();
+                    loadDocumentTemplates();
                 }
             }
         }
@@ -3926,9 +4456,6 @@
                 // 해시가 없으면 메인 대시보드 표시
                 showSection('dashboard');
             }
-            
-            // 요청 알림 체크
-            checkRequestNotifications();
         }
 
         // 이벤트 리스너 등록
@@ -3938,6 +4465,14 @@
         document.addEventListener('DOMContentLoaded', initializePage);
 
         // 전역 함수 등록
+        window.switchPermissionTab = switchPermissionTab;
+        window.savePermissions = savePermissions;
+        window.loadMenuPermissions = loadMenuPermissions;
+        window.showPendingMembers = showPendingMembers;
+        window.loadPendingMembers = loadPendingMembers;
+        window.approveMember = approveMember;
+        window.rejectMember = rejectMember;
+        window.refreshPendingMembers = refreshPendingMembers;
         window.showDocumentManagement = showDocumentManagement;
         window.saveDocumentSettings = saveDocumentSettings;
         window.handlePopState = handlePopState;
@@ -3957,77 +4492,16 @@
         function openCorporateCardManagement() {
             window.location.href = 'corporate-card.html?admin=true';
         }
-        window.openCorporateCardManagement = openCorporateCardManagement;
-        
-        // 가입 승인 페이지로 이동
-        function showPendingMembers() {
-            console.log('가입 승인 페이지로 이동');
-            window.location.href = 'pending-members.html';
-        }
-        window.showPendingMembers = showPendingMembers;
 
-        // 승인 대기 회원 수 확인
-        async function checkPendingMembers() {
-            console.log('📋 승인 대기 회원 수 확인');
+        function showCompanyInfoManagement() {
+            // 히스토리에 상태 추가 (해시 변경 없이)
+            history.pushState({ section: 'companyInfo' }, '회사정보', '#companyInfo');
             
-            if (!window.db || !window.db.client) {
-                console.log('데이터베이스 연결 대기 중...');
-                setTimeout(checkPendingMembers, 1000);
-                return;
-            }
+            // 회사정보 섹션 표시
+            showSection('companyInfo');
             
-            try {
-                // 승인 대기 중인 사용자 수 조회
-                const { count, error } = await window.db.client
-                    .from('users')
-                    .select('*', { count: 'exact', head: true })
-                    .is('role', null)
-                    .eq('is_active', true);
-                
-                if (error) {
-                    console.error('승인 대기 인원 조회 오류:', error);
-                    return;
-                }
-                
-                console.log('✅ 승인 대기 인원:', count || 0);
-                
-                // 배지 업데이트
-                const badge = document.getElementById('pendingMembersBadge');
-                if (badge) {
-                    if (count > 0) {
-                        badge.textContent = count;
-                        badge.style.display = 'block';
-                    } else {
-                        badge.style.display = 'none';
-                    }
-                }
-                
-                // 현재 사용자의 읽지 않은 알림 개수도 확인
-                const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
-                if (currentUser.id) {
-                    // 회원가입 승인 요청 알림 확인
-                    const { data: notifications, error: notifError } = await window.db.client
-                        .from('notifications')
-                        .select('*')
-                        .eq('user_id', currentUser.id)
-                        .eq('type', 'user_registration')
-                        .eq('is_read', false);
-                    
-                    if (!notifError && notifications) {
-                        console.log('📬 읽지 않은 회원가입 알림:', notifications.length);
-                        
-                        // 알림 아이콘이나 배지 업데이트
-                        const notifBadge = document.getElementById('notificationBadge');
-                        if (notifBadge && notifications.length > 0) {
-                            notifBadge.textContent = notifications.length;
-                            notifBadge.style.display = 'block';
-                        }
-                    }
-                }
-                
-            } catch (error) {
-                console.error('승인 대기 확인 오류:', error);
-            }
+            // 회사정보 데이터 로드
+            loadCompanyInfo();
         }
 
         // 관리자 알림 체크 함수
@@ -4047,57 +4521,210 @@
         }
 
         // 회사정보 관리 함수들
+        async function showCompanyInfoManagement() {
+            // 권한 체크
+            const user = AuthManager.getCurrentUser();
+            if (!user || !(await canManageEmployees(user))) {
+                alert('회사정보 관리 권한이 없습니다. 마스터, 회사대표, 관리자만 접근 가능합니다.');
+                return;
+            }
+
+            // 히스토리에 상태 추가 (해시 변경 없이)
+            history.pushState({ section: 'companyInfo' }, '회사정보 관리', '#companyInfo');
+            
+            // 회사정보 관리 섹션 표시
+            showSection('companyInfo');
+        }
+
+        async function saveCompanyInfo() {
+            console.log('💾 회사정보 저장 시작');
+            
+            try {
+                // 필수 필드 검증
+                const companyType = document.getElementById('companyType').value;
+                const companyName = document.getElementById('companyName').value;
+                const representativeName = document.getElementById('representativeName').value;
+                const businessNumber = document.getElementById('businessNumber').value;
+                
+                if (!companyType || !companyName || !representativeName || !businessNumber) {
+                    alert('필수 항목을 모두 입력해주세요. (회사구분, 회사명, 대표자명, 사업자등록번호)');
+                    return;
+                }
+                
+                // 현재 사용자 정보 가져오기
+                let currentUserId = null;
+                try {
+                    const currentUser = AuthManager.getCurrentUser();
+                    if (currentUser && currentUser.id) {
+                        // UUID 형태인지 확인하고 bigint ID로 변환
+                        const userId = currentUser.id;
+                        if (typeof userId === 'string' && userId.includes('-')) {
+                            // UUID 형태인 경우 데이터베이스에서 실제 ID 조회
+                            const { data: userRecord, error } = await window.db.client
+                                .from('users')
+                                .select('id')
+                                .eq('oauth_id', userId)
+                                .single();
+                            
+                            if (userRecord && !error) {
+                                currentUserId = userRecord.id;
+                            } else {
+                                console.warn('UUID로 사용자 ID 조회 실패:', error);
+                                currentUserId = null;
+                            }
+                        } else {
+                            // 이미 bigint 형태인 경우 그대로 사용
+                            currentUserId = userId;
+                        }
+                    }
+                } catch (error) {
+                    console.warn('현재 사용자 정보를 가져오는 중 오류:', error);
+                }
+                
+                // 회사정보 데이터 수집
+                const companyInfo = {
+                    company_type: companyType,
+                    company_name: companyName,
+                    representative_name: representativeName,
+                    business_number: businessNumber,
+                    corporate_number: document.getElementById('corporateNumber').value || null,
+                    company_phone: document.getElementById('companyPhone').value || null,
+                    company_fax: document.getElementById('companyFax').value || null,
+                    company_email: document.getElementById('companyEmail').value || null,
+                    company_address: document.getElementById('companyAddress').value || null,
+                    business_type: document.getElementById('businessType').value || null,
+                    business_category: document.getElementById('businessCategory').value || null,
+                    establishment_date: document.getElementById('establishmentDate').value || null,
+                    capital: document.getElementById('capital').value ? parseInt(document.getElementById('capital').value) : null,
+                    employee_count: document.getElementById('employeeCount').value ? parseInt(document.getElementById('employeeCount').value) : null,
+                    website: document.getElementById('website').value || null,
+                    company_notes: document.getElementById('companyNotes').value || null,
+                    company_seal_url: document.getElementById('companySealPreview').src && document.getElementById('companySealPreview').src !== window.location.href ? document.getElementById('companySealPreview').src : null,
+                    updated_at: new Date().toISOString(),
+                    updated_by: currentUserId
+                };
+                
+                console.log('📝 저장할 회사정보:', companyInfo);
+                
+                // Supabase에 저장
+                const { data, error } = await window.db.client
+                    .from('company_info')
+                    .upsert(companyInfo, { onConflict: 'business_number' });
+                
+                if (error) {
+                    console.error('❌ 회사정보 저장 오류:', error);
+                    alert('회사정보 저장에 실패했습니다: ' + error.message);
+                    return;
+                }
+                
+                console.log('✅ 회사정보 저장 완료:', data);
+                
+                alert('회사정보가 성공적으로 저장되었습니다.');
+                
+            } catch (error) {
+                console.error('❌ 회사정보 저장 중 오류:', error);
+                alert('회사정보 저장 중 오류가 발생했습니다.');
+            }
+        }
+        
+        async function loadCompanyInfo() {
+            console.log('🔄 회사정보 로딩 시작 - 데이터베이스 전용');
+            
+            try {
+                // 로컬 스토리지의 하드코딩된 데이터 제거
+                localStorage.removeItem('company_info');
+                
+                // Supabase에서 회사정보 조회 (오직 데이터베이스만 사용)
+                const { data, error } = await window.db.client
+                    .from('company_info')
+                    .select('*')
+                    .limit(1)
+                    .single();
+                
+                if (error && error.code !== 'PGRST116') { // PGRST116은 데이터가 없음을 의미
+                    console.error('❌ 회사정보 로드 오류:', error);
+                    clearCompanyInfoForm(); // 오류 시 폼 초기화
+                    return;
+                }
+                
+                if (data) {
+                    console.log('✅ 데이터베이스에서 회사정보 로드 완료:', data);
+                    populateCompanyInfoForm(data);
+                } else {
+                    console.log('ℹ️ 데이터베이스에 저장된 회사정보가 없습니다.');
+                    clearCompanyInfoForm(); // 데이터가 없으면 폼 초기화
+                }
+                
+            } catch (error) {
+                console.error('❌ 회사정보 로드 중 오류:', error);
+                clearCompanyInfoForm(); // 오류 시 폼 초기화
+            }
+        }
+        
+        // 회사정보 폼 초기화 함수
+        function clearCompanyInfoForm() {
+            console.log('🔄 회사정보 폼 초기화');
+            
+            // 모든 입력 필드 초기화
+            document.getElementById('companyType').value = '';
+            document.getElementById('companyName').value = '';
+            document.getElementById('representativeName').value = '';
+            document.getElementById('businessNumber').value = '';
+            document.getElementById('corporateNumber').value = '';
+            document.getElementById('companyPhone').value = '';
+            document.getElementById('companyFax').value = '';
+            document.getElementById('companyEmail').value = '';
+            document.getElementById('companyAddress').value = '';
+            document.getElementById('businessType').value = '';
+            document.getElementById('businessCategory').value = '';
+            document.getElementById('establishmentDate').value = '';
+            document.getElementById('capital').value = '';
+            
+            const employeeCountField = document.getElementById('employeeCount');
+            if (employeeCountField) employeeCountField.value = '';
+            
+            const websiteField = document.getElementById('website');
+            if (websiteField) websiteField.value = '';
+            
+            const companyNotesField = document.getElementById('companyNotes');
+            if (companyNotesField) companyNotesField.value = '';
+            
+            // 회사 인감 이미지 제거
+            const sealPreview = document.getElementById('companySealPreview');
+            if (sealPreview) {
+                sealPreview.style.display = 'none';
+                sealPreview.src = '';
+            }
+        }
+        
+        function populateCompanyInfoForm(data) {
+            console.log('📝 회사정보 폼 채우기:', data);
+            
+            // 각 필드에 데이터 채우기 (snake_case에서 camelCase 필드로 매핑)
+            if (data.company_type || data.companyType) document.getElementById('companyType').value = data.company_type || data.companyType;
+            if (data.company_name || data.companyName) document.getElementById('companyName').value = data.company_name || data.companyName;
+            if (data.representative_name || data.representativeName) document.getElementById('representativeName').value = data.representative_name || data.representativeName;
+            if (data.business_number || data.businessNumber) document.getElementById('businessNumber').value = data.business_number || data.businessNumber;
+            if (data.corporate_number || data.corporateNumber) document.getElementById('corporateNumber').value = data.corporate_number || data.corporateNumber;
+            if (data.company_phone || data.companyPhone) document.getElementById('companyPhone').value = data.company_phone || data.companyPhone;
+            if (data.company_fax || data.companyFax) document.getElementById('companyFax').value = data.company_fax || data.companyFax;
+            if (data.company_email || data.companyEmail) document.getElementById('companyEmail').value = data.company_email || data.companyEmail;
+            if (data.company_address || data.companyAddress) document.getElementById('companyAddress').value = data.company_address || data.companyAddress;
+            if (data.business_type || data.businessType) document.getElementById('businessType').value = data.business_type || data.businessType;
+            if (data.business_category || data.businessCategory) document.getElementById('businessCategory').value = data.business_category || data.businessCategory;
+            if (data.establishment_date || data.establishmentDate) document.getElementById('establishmentDate').value = data.establishment_date || data.establishmentDate;
+            if (data.capital) document.getElementById('capital').value = data.capital;
+            if (data.employee_count || data.employeeCount) document.getElementById('employeeCount').value = data.employee_count || data.employeeCount;
+            if (data.website) document.getElementById('website').value = data.website;
+            if (data.company_notes || data.companyNotes) document.getElementById('companyNotes').value = data.company_notes || data.companyNotes;
+            
+            // 회사 인감 이미지 표시
+            if (data.company_seal_url) {
                 const sealPreview = document.getElementById('companySealPreview');
                 if (sealPreview) {
                     sealPreview.src = data.company_seal_url;
                     sealPreview.style.display = 'block';
                 }
-            }
-        }
-        
-        // 요청 알림 체크 함수
-        async function checkRequestNotifications() {
-            try {
-                // Supabase 설정
-                const SUPABASE_URL = 'https://zgyawfmjconubxaiamod.supabase.co';
-                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpneWF3Zm1qY29udWJ4YWlhbW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NjQzNzIsImV4cCI6MjA2NzM0MDM3Mn0.shjBE2OQeILwkLLi4E6Bq0-b6YPUs-WFwquexdUiM9A';
-                
-                const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                
-                // 대기 중인 요청 수 조회
-                const [quoteResult, catalogResult, technicalResult] = await Promise.all([
-                    supabaseClient.from('quote_requests').select('id', { count: 'exact' }).eq('status', 'pending'),
-                    supabaseClient.from('catalog_requests').select('id', { count: 'exact' }).eq('status', 'pending'),
-                    supabaseClient.from('technical_support_requests').select('id', { count: 'exact' }).eq('status', 'pending')
-                ]);
-                
-                const pendingQuotes = quoteResult.count || 0;
-                const pendingCatalogs = catalogResult.count || 0;
-                const pendingTechnical = technicalResult.count || 0;
-                const totalPendingRequests = pendingQuotes + pendingCatalogs + pendingTechnical;
-                
-                console.log('📋 대기 중인 요청:', {
-                    견적: pendingQuotes,
-                    카탈로그: pendingCatalogs,
-                    기술지원: pendingTechnical,
-                    총합: totalPendingRequests
-                });
-                
-                // 견적요청 카드 배지 업데이트
-                const requestBadge = document.getElementById('requestNotificationBadge');
-                if (requestBadge) {
-                    if (totalPendingRequests > 0) {
-                        requestBadge.style.display = 'flex';
-                        requestBadge.querySelector('span').textContent = totalPendingRequests;
-                    } else {
-                        requestBadge.style.display = 'none';
-                    }
-                }
-                
-                console.log('✅ 요청 알림 체크 완료:', totalPendingRequests, '건');
-                
-            } catch (error) {
-                console.error('❌ 요청 알림 체크 오류:', error);
             }
         }
         
@@ -4157,7 +4784,43 @@
             console.log('🗑️ 회사 인감 이미지 제거 완료');
         }
 
+        // 서류 승인 페이지 열기
+        function openDocumentApproval() {
+            console.log('📋 서류 승인 페이지 열기');
+            window.open('document-approval.html', '_blank');
+        }
 
+        // 서류 승인 알림 확인
+        async function checkDocumentApprovalNotifications() {
+            try {
+                const currentUser = await getCurrentUser();
+                if (!currentUser) return;
+
+                // 현재 사용자에게 승인 요청된 서류들 조회
+                const { data: pendingDocuments, error } = await window.db.client
+                    .from('document_approvals')
+                    .select('*')
+                    .eq('current_approver_id', currentUser.id)
+                    .eq('status', 'pending');
+
+                if (error) {
+                    console.error('서류 승인 알림 조회 오류:', error);
+                    return;
+                }
+
+                const badge = document.getElementById('documentApprovalBadge');
+                if (badge) {
+                    if (pendingDocuments && pendingDocuments.length > 0) {
+                        badge.textContent = pendingDocuments.length;
+                        badge.style.display = 'flex';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                console.error('서류 승인 알림 확인 실패:', error);
+            }
+        }
 
         // 현재 사용자 정보 가져오기
         async function getCurrentUser() {

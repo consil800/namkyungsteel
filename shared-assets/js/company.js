@@ -493,20 +493,6 @@ document.head.appendChild(style);
 const CompanyManager = {
     currentCompany: null,
     
-    // Get color value from color code
-    getColorValue(colorCode) {
-        const colorMap = {
-            'red': '#e74c3c',
-            'orange': '#f39c12',
-            'yellow': '#f1c40f',
-            'green': '#27ae60',
-            'blue': '#3498db',
-            'purple': '#9b59b6',
-            'gray': '#95a5a6'
-        };
-        return colorMap[colorCode] || '#95a5a6'; // Default to gray
-    },
-    
     // Company Data
     companies: {
         1: {
@@ -748,8 +734,7 @@ const CompanyManager = {
         }
         
         // Set CSS custom property for company color
-        const colorValue = this.getColorValue(this.currentCompany.color_code);
-        document.documentElement.style.setProperty('--company-primary', colorValue);
+        document.documentElement.style.setProperty('--company-primary', this.currentCompany.color);
     },
     
     // Setup event listeners

@@ -5,10 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>연차신청서 - SteelWorks Platform</title>
     
-    <!-- Favicons -->
-    <link href="logo.jpg" rel="icon">
-    <link href="logo.jpg" rel="apple-touch-icon">
-    
     <!-- Supabase JS CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Database Manager -->
@@ -814,7 +810,6 @@
                     await updateLeaveStatus();
                     
                     alert('연차 신청이 완료되었습니다.\n승인자의 검토를 기다려주세요.');
-                    window.location.href = 'documents.html';
                 } else {
                     alert('연차 신청 저장 중 오류가 발생했습니다.');
                     console.error('저장 오류:', result.error);
@@ -830,7 +825,7 @@
             try {
                 await window.db.init();
                 
-                const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
                 if (!currentUser.id) return;
 
                 const { data: requestHistory, error } = await window.db.client
@@ -899,7 +894,7 @@
             try {
                 await window.db.init();
                 
-                const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
                 if (!currentUser.id) return;
 
                 const { data: requestHistory, error } = await window.db.client
@@ -1069,7 +1064,7 @@
                 await window.db.init();
                 
                 // localStorage에서 로그인 정보(이메일)만 가져오기
-                const loginInfo = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+                const loginInfo = JSON.parse(localStorage.getItem('currentUser') || '{}');
                 if (!loginInfo || !loginInfo.email) {
                     console.error('로그인 정보가 없습니다.');
                     return null;
