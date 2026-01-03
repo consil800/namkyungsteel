@@ -99,17 +99,43 @@ const el = {
   btnClearSelected: document.getElementById('btnClearSelected'),
 };
 
+// ===== 색상 우선순위 (빨강→주황→노랑→초록→하늘→파랑→보라→회색) =====
+const COLOR_PRIORITY = ['red', 'orange', 'yellow', 'green', 'sky', 'blue', 'purple', 'gray'];
+const colorRank = new Map(COLOR_PRIORITY.map((c, i) => [c, i]));
+
 // ===== 색상 코드 매핑 =====
 const COLOR_MAP = {
-  green: { name: '녹색', cssClass: 'green', hex: '#2e7d32' },
-  gray: { name: '회색', cssClass: 'gray', hex: '#6b7280' },
-  blue: { name: '파랑', cssClass: 'blue', hex: '#2563eb' },
-  red: { name: '빨강', cssClass: 'red', hex: '#dc2626' },
-  yellow: { name: '노랑', cssClass: 'yellow', hex: '#ca8a04' },
-  orange: { name: '주황', cssClass: 'orange', hex: '#ea580c' },
-  sky: { name: '하늘', cssClass: 'sky', hex: '#0284c7' },
-  purple: { name: '보라', cssClass: 'purple', hex: '#7c3aed' },
+  red: { name: '빨강', cssClass: 'red', hex: '#dc2626', priority: 0 },
+  orange: { name: '주황', cssClass: 'orange', hex: '#ea580c', priority: 1 },
+  yellow: { name: '노랑', cssClass: 'yellow', hex: '#ca8a04', priority: 2 },
+  green: { name: '녹색', cssClass: 'green', hex: '#2e7d32', priority: 3 },
+  sky: { name: '하늘', cssClass: 'sky', hex: '#0284c7', priority: 4 },
+  blue: { name: '파랑', cssClass: 'blue', hex: '#2563eb', priority: 5 },
+  purple: { name: '보라', cssClass: 'purple', hex: '#7c3aed', priority: 6 },
+  gray: { name: '회색', cssClass: 'gray', hex: '#6b7280', priority: 7 },
 };
+
+// ===== 업체 정렬 함수 (ChatGPT Ultra Think 설계) =====
+// 우선순위: 1) 색상 우선순위 2) 최근방문일(NULL/오래된 순) 3) 방문횟수(적은 순)
+function compareCompanies(a, b) {
+  // 1) 색상 우선순위 (빨강=0 → 회색=7, 없으면 999)
+  const ra = colorRank.get(a.color_code) ?? 999;
+  const rb = colorRank.get(b.color_code) ?? 999;
+  if (ra !== rb) return ra - rb;
+
+  // 2) last_visit_date ASC, NULL이면 최우선 (-Infinity)
+  const da = a.last_visit_date ? new Date(a.last_visit_date).getTime() : -Infinity;
+  const db = b.last_visit_date ? new Date(b.last_visit_date).getTime() : -Infinity;
+  if (da !== db) return da - db;
+
+  // 3) visit_count ASC (방문 적은 것 우선)
+  const va = Number.isFinite(a.visit_count) ? a.visit_count : 0;
+  const vb = Number.isFinite(b.visit_count) ? b.visit_count : 0;
+  if (va !== vb) return va - vb;
+
+  // 4) 최종: 업체명 가나다순
+  return (a.company_name || '').localeCompare(b.company_name || '', 'ko');
+}
 
 // ===== 하루 방문 수 옵션 =====
 const CAP_OPTIONS = {
@@ -351,9 +377,12 @@ function getFilteredCompanies() {
   });
 }
 
-// ===== 색상 칩 렌더링 =====
+// ===== 색상 칩 렌더링 (우선순위 순서: 빨강→주황→노랑→초록→하늘→파랑→보라→회색) =====
 function renderColorChips() {
-  el.colorChips.innerHTML = state.colors.map(color => {
+  // COLOR_PRIORITY 순서대로 정렬 (데이터에 있는 색상만 표시)
+  const sortedColors = COLOR_PRIORITY.filter(c => state.colors.includes(c));
+
+  el.colorChips.innerHTML = sortedColors.map(color => {
     const info = COLOR_MAP[color] || { name: color, cssClass: 'gray' };
     const isOn = state.filterColors.includes(color);
     const count = state.companies.filter(c => c.color_code === color).length;
@@ -515,7 +544,8 @@ function updateEstimate() {
   }
 }
 
-// ===== 스케줄 생성 (주소 기반 그룹핑) =====
+// ===== 스케줄 생성 (ChatGPT Ultra Think 설계) =====
+// 정렬 우선순위: 1) 색상 우선순위 2) 최근방문일(NULL/오래된 순) 3) 방문횟수(적은 순)
 function generateSchedule() {
   const startStr = el.startDate.value;
   const endStr = el.endDate.value;
@@ -543,25 +573,31 @@ function generateSchedule() {
   // 날짜 목록 생성
   const days = buildDays(startStr, endStr);
 
-  // 위치 그룹별로 업체 정렬
-  const groupedCompanies = groupCompaniesByLocation(companies);
+  // ★ 핵심: compareCompanies 함수로 업체 정렬
+  // 우선순위: 색상(빨강→회색) → 최근방문일(NULL/오래된 순) → 방문횟수(적은 순)
+  const sortedCompanies = [...companies].sort(compareCompanies);
+
+  console.log('📊 정렬 결과 (상위 10개):');
+  sortedCompanies.slice(0, 10).forEach((c, i) => {
+    console.log(`  ${i + 1}. ${c.company_name} | 색상: ${c.color_code} | 방문일: ${c.last_visit_date || 'NULL'} | 횟수: ${c.visit_count || 0}`);
+  });
 
   // 근무일에 순차 배정
   let companyIndex = 0;
   const workdays = days.filter(d => !d.isWeekend && !d.isHoliday && !d.isOff);
 
   for (const day of workdays) {
-    const remaining = groupedCompanies.length - companyIndex;
+    const remaining = sortedCompanies.length - companyIndex;
     if (remaining <= 0) break;
 
     const toAssign = Math.min(cap.target, remaining);
-    day.companies = groupedCompanies.slice(companyIndex, companyIndex + toAssign);
+    day.companies = sortedCompanies.slice(companyIndex, companyIndex + toAssign);
     companyIndex += toAssign;
   }
 
   // 미배정 업체
-  state.unassigned = companyIndex < groupedCompanies.length
-    ? groupedCompanies.slice(companyIndex)
+  state.unassigned = companyIndex < sortedCompanies.length
+    ? sortedCompanies.slice(companyIndex)
     : [];
 
   state.schedule = days;
@@ -628,26 +664,32 @@ function renderCalendar() {
     if (day.isHoliday) badges.push(`<span class="badge holiday">${day.holidayName}</span>`);
     if (day.isOff) badges.push('<span class="badge off">휴무</span>');
 
-    // 위치 그룹 표시
-    const locationGroups = new Set();
+    // 색상 분포 표시 (우선순위 순)
+    const colorCounts = {};
     day.companies.forEach(c => {
-      const subDistrict = extractSubDistrict(c.address);
-      if (subDistrict !== '기타') {
-        locationGroups.add(subDistrict);
-      }
+      const color = c.color_code || 'gray';
+      colorCounts[color] = (colorCounts[color] || 0) + 1;
     });
-    if (locationGroups.size > 0) {
-      badges.push(`<span class="badge location">${Array.from(locationGroups).join(', ')}</span>`);
-    }
+    const colorSummary = COLOR_PRIORITY
+      .filter(c => colorCounts[c])
+      .map(c => {
+        const info = COLOR_MAP[c];
+        return `<span class="dot ${info.cssClass}" title="${info.name}: ${colorCounts[c]}개"></span>`;
+      })
+      .join('');
 
     const isDisabled = day.isWeekend || day.isHoliday || day.isOff;
 
+    // 한국어 날짜 포맷 사용
+    const koreanDate = formatKoreanLabel(day.date);
+
     return `
-      <div class="day-card" data-idx="${idx}">
+      <div class="day-card ${isDisabled ? 'day-disabled' : ''}" data-idx="${idx}">
         <div class="day-hd">
           <div class="leftline">
-            <span>${day.date} (${day.dayName})</span>
+            <span class="day-date">${koreanDate}</span>
             ${badges.join('')}
+            <span class="color-dots">${colorSummary}</span>
           </div>
           <div class="day-actions">
             ${!isDisabled ? `<button class="btn-sm" data-action="off" data-idx="${idx}">휴무</button>` : ''}
@@ -683,16 +725,40 @@ function renderCalendar() {
   initSortable();
 }
 
-// ===== 업체 아이템 HTML =====
+// ===== 한국어 날짜 포맷 (ChatGPT 설계) =====
+function formatKoreanLabel(dateStr) {
+  const d = parseDate(dateStr);
+  const month = d.getMonth() + 1;
+  const day = d.getDate();
+  const dayName = getDayName(d);
+  return `${month}월 ${day}일 (${dayName})`;
+}
+
+// ===== 업체 아이템 HTML (방문횟수, 최근방문일 표시) =====
 function renderCompanyItem(company) {
-  const colorInfo = COLOR_MAP[company.color_code] || { cssClass: 'gray' };
+  const colorInfo = COLOR_MAP[company.color_code] || { cssClass: 'gray', name: '미지정' };
   const subDistrict = extractSubDistrict(company.address);
 
+  // 최근 방문일 포맷
+  let visitInfo = '';
+  if (company.last_visit_date) {
+    const lastDate = new Date(company.last_visit_date);
+    const month = lastDate.getMonth() + 1;
+    const day = lastDate.getDate();
+    visitInfo = `${month}/${day}`;
+  } else {
+    visitInfo = '미방문';
+  }
+
+  // 방문 횟수
+  const visitCount = company.visit_count || 0;
+
   return `
-    <li class="company-item" data-id="${company.id}">
+    <li class="company-item" data-id="${company.id}" title="색상: ${colorInfo.name} | 마지막방문: ${company.last_visit_date || '없음'} | 횟수: ${visitCount}회">
       <span class="dot ${colorInfo.cssClass}"></span>
       <span>${company.company_name}</span>
-      <span class="sub">${company.region || ''} ${subDistrict !== '기타' ? subDistrict : ''}</span>
+      <span class="visit-info">${visitInfo} (${visitCount}회)</span>
+      <span class="sub">${company.region || ''}</span>
     </li>
   `;
 }

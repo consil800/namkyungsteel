@@ -294,7 +294,14 @@
     }
     .company-item:active{ cursor:grabbing; }
     .company-item .sub{ font-size:11px; color:var(--muted); font-weight:700; }
+    .company-item .visit-info{ font-size:10px; color:#0284c7; font-weight:700; margin-left:auto; }
     .company-item .x{ margin-left:4px; color:#999; font-weight:900; cursor:pointer; }
+
+    /* 날짜 카드 추가 스타일 */
+    .day-date{ font-weight:900; }
+    .color-dots{ display:flex; gap:3px; margin-left:8px; }
+    .day-disabled{ opacity:0.6; }
+    .day-disabled .day-hd{ background:#f7f7f7; }
 
     .slotline{
       padding:0 12px 10px;
@@ -382,7 +389,7 @@
       <div class="brand">남경스틸 · 업체 방문 스케줄 생성</div>
       <div id="saveStatePill" class="pill" style="display:none;">저장 필요</div>
       <div class="spacer"></div>
-      <button id="btnPreview" class="btn">미리보기 생성</button>
+      <button id="btnPreview" class="btn primary">스케줄 생성</button>
       <button id="btnSave" class="btn primary">저장</button>
       <button id="btnReset" class="btn danger">초기화</button>
     </div>
@@ -443,7 +450,7 @@
             </div>
           </div>
           <div class="hint" style="margin-top:8px;">
-            자동 배정은 "<b>주소 근접 그룹</b>"을 우선으로 근무일에 순차 배정합니다.
+            자동 배정 우선순위: <b>① 색상(빨강→회색)</b> → <b>② 방문일(오래된 순)</b> → <b>③ 방문횟수(적은 순)</b>
           </div>
         </div>
 
@@ -475,8 +482,10 @@
 
         <div class="section">
           <div class="info" id="locationGroupInfo">
-            <b>주소 기반 그룹핑</b><br/>
-            같은 동/면/읍의 업체들은 같은 날 방문하도록 자동 배정됩니다.
+            <b>스케줄 자동 생성 알고리즘</b><br/>
+            ① <b style="color:#dc2626;">빨강</b> → <b style="color:#ea580c;">주황</b> → <b style="color:#ca8a04;">노랑</b> → <b style="color:#2e7d32;">녹색</b> → <b style="color:#0284c7;">하늘</b> → <b style="color:#2563eb;">파랑</b> → <b style="color:#7c3aed;">보라</b> → <b style="color:#6b7280;">회색</b> 순서<br/>
+            ② 방문 기록 없거나 오래된 업체 우선<br/>
+            ③ 방문 횟수 적은 업체 우선
           </div>
         </div>
 
