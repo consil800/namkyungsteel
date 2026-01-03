@@ -325,6 +325,131 @@ function toast(msg) {
   setTimeout(() => t.classList.remove('on'), 2500);
 }
 
+// ===== lastVisitAt 정규화 (ChatGPT 설계) =====
+// 다양한 형태의 타임스탬프를 밀리초로 변환
+function toMillis(ts) {
+  if (ts == null) return null;
+
+  // Firestore Timestamp 형태 {seconds, nanoseconds}
+  if (typeof ts === 'object' && ts.seconds != null) {
+    return Number(ts.seconds) * 1000 + Math.floor((Number(ts.nanoseconds) || 0) / 1e6);
+  }
+
+  // Date 객체
+  if (ts instanceof Date) {
+    const t = ts.getTime();
+    return Number.isFinite(t) ? t : null;
+  }
+
+  // number (밀리초)
+  if (typeof ts === 'number') {
+    return Number.isFinite(ts) ? ts : null;
+  }
+
+  // string (ISO 형식 등)
+  if (typeof ts === 'string') {
+    const t = Date.parse(ts);
+    return Number.isFinite(t) ? t : null;
+  }
+
+  return null;
+}
+
+// ===== Seed 선택: lastVisitAt이 가장 오래된 업체 (ChatGPT 설계) =====
+// 클러스터 크기나 거리와 상관없이 오직 lastVisitAt 기준
+function chooseSeed(unassignedCompanies) {
+  if (!unassignedCompanies || unassignedCompanies.length === 0) return null;
+
+  let seed = null;
+  let bestTime = Infinity; // 작을수록 오래된 방문
+
+  for (const c of unassignedCompanies) {
+    const t = toMillis(c.last_visit_date);
+    // lastVisitAt이 없으면 "미방문"으로 보고 최우선(가장 오래됨) 처리
+    const effectiveTime = (t == null) ? -Infinity : t;
+
+    if (effectiveTime < bestTime) {
+      bestTime = effectiveTime;
+      seed = c;
+    }
+  }
+
+  return seed;
+}
+
+// ===== Seed 지역 주변으로 하루 채우기 (ChatGPT 설계) =====
+// 우선순위: 1) 같은 locationGroupKey 2) 같은 region 3) 인접 지역 4) 기타
+function buildDayPlan({ unassigned, seed, visitsPerDay = 9 }) {
+  const seedKey = getLocationGroupKey(seed);
+  const seedRegion = seed.region || '기타';
+  const day = [seed];
+
+  // seed 제외한 남은 풀
+  const remaining = unassigned.filter(x => x !== seed);
+
+  // 1) 같은 locationGroupKey
+  const sameKey = [];
+  // 2) 같은 region (단, sameKey 아닌 것)
+  const sameRegion = [];
+  // 3) 인접 지역
+  const adjacentRegions = [];
+  // 4) 그 외
+  const others = [];
+
+  for (const c of remaining) {
+    const k = getLocationGroupKey(c);
+    if (k === seedKey) {
+      sameKey.push(c);
+    } else if (c.region === seedRegion) {
+      sameRegion.push(c);
+    } else {
+      // 인접 지역 체크
+      const neighbors = REGION_ADJACENCY[seedRegion] || [];
+      if (neighbors.includes(c.region)) {
+        adjacentRegions.push(c);
+      } else {
+        others.push(c);
+      }
+    }
+  }
+
+  // "Seed 주변"을 더 강하게: 같은 키/지역 내에서도 lastVisitAt 오래된 순으로 방문
+  const byOldestFirst = (a, b) => {
+    const ta = toMillis(a.last_visit_date);
+    const tb = toMillis(b.last_visit_date);
+    const ea = (ta == null) ? -Infinity : ta;
+    const eb = (tb == null) ? -Infinity : tb;
+    return ea - eb; // 오래된(작은) 먼저
+  };
+
+  sameKey.sort(byOldestFirst);
+  sameRegion.sort(byOldestFirst);
+  adjacentRegions.sort(byOldestFirst);
+  others.sort(byOldestFirst);
+
+  const pushUntil = (arr) => {
+    for (const c of arr) {
+      if (day.length >= visitsPerDay) break;
+      day.push(c);
+    }
+  };
+
+  pushUntil(sameKey);
+  pushUntil(sameRegion);
+  pushUntil(adjacentRegions);
+  // 옵션: 해당 지역/그룹 물량이 부족하면 남은 오래된 순으로 채움
+  pushUntil(others);
+
+  return day;
+}
+
+// ===== 색상 필터 적용 (필터 역할만!) =====
+function applyColorFilter(companies, selectedColors) {
+  if (!selectedColors || selectedColors.length === 0) return companies;
+  const set = new Set(selectedColors);
+  return companies.filter(c => set.has(c.color_code));
+}
+
 // ===== 주소에서 동/면/읍 추출 =====
 function extractSubDistrict(address) {
   if (!address) return '기타';
@@ -693,8 +818,9 @@ function updateEstimate() {
   }
 }
 
-// ===== 스케줄 생성 (ChatGPT + Claude 협업 설계 v2) =====
-// 새 알고리즘: Seed(기존 우선순위) + 같은 날 나머지는 지리적 근접순
+// ===== 스케줄 생성 (ChatGPT + Claude 협업 설계 v3) =====
+// ★ 새 알고리즘: Seed = lastVisitAt 가장 오래된 업체 → 그 지역 주변으로 하루 채움
+// 예: 오늘 창원 8~9군데, 내일 김해 8~9군데, 다음날 양산 8~9군데
 function generateSchedule() {
   const startStr = el.startDate.value;
   const endStr = el.endDate.value;
@@ -704,8 +830,21 @@ function generateSchedule() {
     return;
   }
 
-  // 필터링된 업체 가져오기
-  let companies = getFilteredCompanies();
+  // ★ 색상 필터 적용 (필터 역할만! 우선순위 아님)
+  let companies = applyColorFilter(state.companies, state.filterColors);
+
+  // 지역 필터 적용
+  if (state.filterRegions.length > 0) {
+    companies = companies.filter(c => state.filterRegions.includes(c.region));
+  }
+
+  // 검색 키워드 필터
+  if (state.searchKeyword) {
+    const kw = state.searchKeyword.toLowerCase();
+    companies = companies.filter(c => (c.company_name || '').toLowerCase().includes(kw));
+  }
+
+  // 선택된 업체만 필터
   if (state.selectedCompanies.length > 0) {
     companies = companies.filter(c => state.selectedCompanies.includes(c.id));
   }
@@ -722,48 +861,50 @@ function generateSchedule() {
   // 날짜 목록 생성
   const days = buildDays(startStr, endStr);
 
-  // ★ 새 알고리즘: 지역별 인덱스 빌드
-  let remaining = [...companies];
-  let index = buildGeoIndex(remaining);
+  // ★ 새 알고리즘: Seed = lastVisitAt 가장 오래된 업체
+  let pool = [...companies];
 
-  console.log('📊 새 알고리즘: Seed(우선순위) + 근접순 배정');
-  console.log(`  총 업체: ${remaining.length}개`);
-  console.log(`  인덱스 그룹: ${index.byGroupKey.size}개 groupKey, ${index.byRegion.size}개 region`);
+  console.log('📊 새 알고리즘 v3: Seed(lastVisitAt 가장 오래된) + 지역 주변 채움');
+  console.log(`  총 업체: ${pool.length}개`);
+  console.log(`  색상 필터: ${state.filterColors.length > 0 ? state.filterColors.join(', ') : '없음'} (필터 역할만!)`);
 
   // 근무일 필터링
   const workdays = days.filter(d => !d.isWeekend && !d.isHoliday && !d.isOff);
   let totalAssigned = 0;
 
-  // ★ 핵심: 각 근무일마다 Seed + 근접순으로 업체 배정
+  // ★ 핵심: 매일 Seed = lastVisitAt 가장 오래된 업체 + 그 지역 주변으로 채움
   for (const day of workdays) {
-    if (remaining.length === 0) break;
+    if (pool.length === 0) break;
 
-    // pickDayCompanies: Seed는 기존 우선순위, 나머지는 근접순
-    const dayCompanies = pickDayCompanies(remaining, cap.target, index);
+    // ✅ Seed = 남은 것 중 lastVisitAt 가장 오래된 곳
+    const seed = chooseSeed(pool);
+    if (!seed) break;
+
+    // ✅ Seed 지역/그룹 주변으로 하루 채우기
+    const dayCompanies = buildDayPlan({
+      unassigned: pool,
+      seed,
+      visitsPerDay: cap.target
+    });
+
     day.companies = dayCompanies;
     totalAssigned += dayCompanies.length;
 
-    // 배정된 업체 remaining에서 제거
-    const pickedIds = new Set(dayCompanies.map(c => c.id));
-    remaining = remaining.filter(c => !pickedIds.has(c.id));
-
-    // 인덱스 재빌드 (remaining이 변경되었으므로)
-    index = buildGeoIndex(remaining);
+    // ✅ 배정된 것들 pool에서 제거 (id 기반으로 안정적으로)
+    const assignedIds = new Set(dayCompanies.map(c => c.id));
+    pool = pool.filter(c => !assignedIds.has(c.id));
 
     // 디버그 로그 (첫 3일만)
     if (totalAssigned <= cap.target * 3) {
-      const seed = dayCompanies[0];
-      if (seed) {
-        console.log(`  ${day.dateStr}: Seed=${seed.company_name}(${seed.region}|${extractSubDistrict(seed.address)})`);
-        dayCompanies.slice(1, 4).forEach((c, i) => {
-          console.log(`    ${i + 2}. ${c.company_name} (${c.region}|${extractSubDistrict(c.address)}) 근접도:${proximityScore(seed, c)}`);
-        });
-      }
+      console.log(`  ${day.date}: Seed=${seed.company_name}(${seed.region}|${extractSubDistrict(seed.address)}) lastVisit=${seed.last_visit_date || '미방문'}`);
+      dayCompanies.slice(1, 4).forEach((c, i) => {
+        console.log(`    ${i + 2}. ${c.company_name} (${c.region}|${extractSubDistrict(c.address)})`);
+      });
     }
   }
 
   // 미배정 업체
-  state.unassigned = remaining;
+  state.unassigned = pool;
 
   state.schedule = days;
   state.isDirty = true;
