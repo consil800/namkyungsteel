@@ -5,12 +5,44 @@
  * - SortableJS 드래그 앤 드롭
  */
 
-// ===== Supabase 설정 =====
-const SUPABASE_URL = 'https://zgyawfmjconubxaiamod.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpneWF3Zm1qY29udWJ4YWlhbW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NjQzNzIsImV4cCI6MjA2NzM0MDM3Mn0.shjBE2OQeILwkLLi4E6Bq0-b6YPUs-WFwquexdUiM9A';
-const USER_ID = '3'; // 현재 사용자 (영업사원)
+// ===== Supabase 설정 (database.js 사용) =====
+let supabase = null;
+let USER_ID = null;
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// 데이터베이스 및 사용자 초기화
+async function initDatabase() {
+  // database.js가 로드될 때까지 대기
+  let retries = 0;
+  while (retries < 30) {
+    if (window.db && window.db.client) {
+      supabase = window.db.client;
+      console.log('✅ database.js 연결 확인됨');
+      break;
+    }
+    await new Promise(resolve => setTimeout(resolve, 100));
+    retries++;
+  }
+
+  if (!supabase) {
+    throw new Error('데이터베이스 연결 실패');
+  }
+
+  // 세션에서 사용자 정보 가져오기
+  const sessionUser = sessionStorage.getItem('currentUser');
+  if (sessionUser) {
+    const user = JSON.parse(sessionUser);
+    USER_ID = user.id?.toString();
+    console.log('✅ 사용자 확인:', user.name, 'ID:', USER_ID);
+  } else {
+    // 로그인 페이지로 리다이렉트
+    console.error('❌ 로그인 필요');
+    alert('로그인이 필요합니다.');
+    window.location.href = 'login.html';
+    return false;
+  }
+
+  return true;
+}
 
 // ===== 상태 관리 =====
 const state = {
@@ -910,6 +942,10 @@ async function init() {
   try {
     el.loadState.textContent = '초기화 중...';
 
+    // 데이터베이스 및 사용자 초기화
+    const dbReady = await initDatabase();
+    if (!dbReady) return;
+
     // 기본 날짜 설정 (오늘부터 30일)
     const today = new Date();
     const plus30 = new Date(today);
@@ -937,7 +973,7 @@ async function init() {
   } catch (e) {
     console.error('초기화 실패:', e);
     el.loadState.textContent = '오류';
-    alert(`초기화 실패:\n${e?.message || e}\n\n1) SUPABASE_URL / SUPABASE_ANON_KEY가 올바른지\n2) client_companies 테이블/권한이 있는지\n3) 네트워크/콘솔 오류를 확인하세요.`);
+    alert(`초기화 실패:\n${e?.message || e}\n\n로그인 후 다시 시도해주세요.`);
   }
 }
 
