@@ -24,7 +24,13 @@
   <link href="assets/vendor/swiper/swiper-bundle.min.css" rel="stylesheet">
 
   <!-- Main CSS File -->
-  <link href="assets/css/main.css" rel="stylesheet">
+  <link href="assets/css/main.css" rel="stylesheet">    <!-- Common Styles -->
+    <link href="includes/common-styles.css" rel="stylesheet">
+
+
+  
+  <!-- Font Awesome for icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   
   <style>
     body { font-family: 'Noto Sans KR', sans-serif !important; }
@@ -41,184 +47,77 @@
       background: #0052a3; 
       color: white;
     }
-    
-    /* 사용자 프로필 스타일 */
-    .user-profile {
-      margin-left: 25px;
+        /* 연락처 섹션만 왼쪽 정렬 */
+        .footer-column:last-child h4 {
+            text-align: left;
+        }
+        
+        .footer-column:last-child {
+            padding-left: 0;
+        }
+        
+        .contact-info i {
+            margin-top: 4px;
+            color: #0066cc;
+        }
+        
+        .footer-bottom {
+            background-color: #1a202c;
+            padding: 20px 0;
+        }
+        
+        .bottom-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .bottom-content p {
+            color: #a0aec0;
+            margin: 0;
+        }
+        
+        .footer-links {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .footer-links a {
+            color: #a0aec0;
+            font-size: 14px;
+            text-decoration: none;
+        }
+        
+        .footer-links a:hover {
+            color: #0066cc;
+        }
+        
+        @media (max-width: 768px) {
+            .bottom-content {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+            
+            .footer-grid {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+            
+            .contact-info {
+                text-align: left;
+            }
+        }
     }
-    
-    .profile-icon {
-      display: flex;
-      align-items: center;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      padding: 5px 10px;
-      border-radius: 25px;
-    }
-    
-    .profile-icon:hover {
-      background: rgba(255, 255, 255, 0.1);
-    }
-    
-    .profile-icon img {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 2px solid #fff;
-      margin-right: 8px;
-    }
-    
-    .profile-name {
-      color: #2c3e50;
-      font-weight: 500;
-      font-size: 14px;
-    }
-    
-    /* 🎯 NAVIGATION MENU FIXES */
-    .navmenu ul {
-      display: flex;
-      align-items: center;
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-    
-    .navmenu > ul > li {
-      white-space: nowrap;
-      padding: 15px 16px; /* 균등한 간격 */
-      position: relative;
-    }
-    
-    .navmenu a {
-      color: var(--nav-color, #2c3e50);
-      padding: 12px 0;
-      font-size: 15px;
-      font-family: var(--nav-font);
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      white-space: nowrap;
-      transition: 0.3s;
-      position: relative;
-    }
-    
-    .navmenu a i,
-    .navmenu a .bi {
-      font-size: 12px;
-      line-height: 0;
-      margin-left: 5px;
-      transition: 0.3s;
-    }
-    
-    .navmenu > ul > li > a:before {
-      content: "";
-      position: absolute;
-      width: 100%;
-      height: 2px;
-      bottom: -6px;
-      left: 0;
-      background-color: var(--nav-hover-color);
-      visibility: hidden;
-      transform: scaleX(0);
-      transition: all 0.3s ease-in-out 0s;
-    }
-    
-    .navmenu a:hover:before,
-    .navmenu li:hover > a:before,
-    .navmenu .active:before {
-      visibility: visible;
-      transform: scaleX(1);
-    }
-    
-    .navmenu a:hover,
-    .navmenu .active,
-    .navmenu .active:focus,
-    .navmenu li:hover > a {
-      color: var(--nav-hover-color);
-    }
-    
-    .navmenu .dropdown ul {
-      margin: 0;
-      padding: 10px 0;
-      background: #ffffff;
-      display: block;
-      position: absolute;
-      visibility: hidden;
-      left: 14px;
-      top: 130%;
-      opacity: 0;
-      transition: 0.3s;
-      border-radius: 4px;
-      z-index: 99;
-      box-shadow: 0px 0px 30px rgba(127, 137, 161, 0.25);
-    }
-    
-    .navmenu .dropdown ul li {
-      min-width: 200px;
-    }
-    
-    .navmenu .dropdown ul a {
-      padding: 10px 20px;
-      font-size: 15px;
-      text-transform: none;
-      color: #2c3e50;
-    }
-    
-    .navmenu .dropdown ul a i {
-      font-size: 12px;
-    }
-    
-    .navmenu .dropdown ul a:hover,
-    .navmenu .dropdown ul .active:hover,
-    .navmenu .dropdown ul li:hover > a {
-      color: #3498db;
-      background-color: #f8f9fa;
-    }
-    
-    .navmenu .dropdown:hover > ul {
-      opacity: 1;
-      top: 100%;
-      visibility: visible;
-    }
-    
-    .navmenu .dropdown .dropdown ul {
-      top: 0;
-      left: -90%;
-      visibility: hidden;
-    }
-    
-    .navmenu .dropdown .dropdown:hover > ul {
-      opacity: 1;
-      top: 0;
-      left: -100%;
-      visibility: visible;
-    }
-    
-    .navmenu .dropdown ul a:hover {
-      color: #3498db;
-      background-color: #f8f9fa;
-    }
-    
-    /* 모바일 네비게이션에서도 드롭다운 처리 */
-    @media (max-width: 1199px) {
-      .navmenu .dropdown ul {
-        position: static;
-        display: none;
-        z-index: 99;
-        padding: 10px 0;
-        margin: 10px 20px;
-        background-color: #ffffff;
-        border: 1px solid #e9ecef;
-        box-shadow: none;
-        border-radius: 6px;
-      }
-      
-      .navmenu .dropdown.active > ul {
-        display: block;
-      }
-    }
-  </style>
+  
+        /* 연락처 섹션만 왼쪽 정렬 */
+        .footer-column:last-child h4 {
+            text-align: left;
+        }
+
+        .footer-column:last-child {
+            padding-left: 0;
+        }</style>
 </head>
 
 <body class="service-details-page">
@@ -227,28 +126,56 @@
     <div class="container-fluid container-xl position-relative d-flex align-items-center">
 
       <a href="index.html" class="logo d-flex align-items-center me-auto">
-        <h1 class="sitename">남경스틸(주)</h1>
+        <img src="logo.jpg" alt="남경스틸 로고" style="height: 40px; margin-right: 10px;">
+        <h1 class="sitename" id="companyNameHeader">남경스틸(주)</h1>
       </a>
 
       <nav id="navmenu" class="navmenu">
         <ul>
-          <li><a href="index.html#hero">홈</a></li>
-          <li><a href="index.html#about">회사소개</a></li>
-          <li><a href="index.html#services">제품·서비스</a></li>
-          <li><a href="index.html#team">임직원</a></li>
-          <li class="dropdown"><a href="#"><span>고객지원</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+          <li><a href="index.html">홈</a></li>
+          <li class="dropdown"><a href="index.html#about"><span>회사소개</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
             <ul>
+              <li><a href="ceo-message.html">CEO 인사말</a></li>
+              <li><a href="company-history.html">회사연혁</a></li>
+              <li><a href="vision-mission.html">비전/미션</a></li>
+              <li><a href="organization.html">조직도</a></li>
+              <li><a href="location.html">오시는길</a></li>
+              <li><a href="certificates.html">인증서</a></li>
+            </ul>
+          </li>
+          <li class="dropdown"><a href="index.html#services"><span>제품소개</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+            <ul>
+              <li><a href="service1-details.html">열연강판</a></li>
+              <li><a href="service2-details.html">냉연강판</a></li>
+              <li><a href="service3-details.html">특수강</a></li>
+              <li><a href="service4-details.html">맞춤 가공</a></li>
+            </ul>
+          </li>
+          <li class="dropdown"><a href="#"><span>사업영역</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+            <ul>
+              <li><a href="steel-manufacturing.html">철강제조</a></li>
+              <li><a href="processing-service.html">가공서비스</a></li>
+              <li><a href="tech-research.html">기술연구</a></li>
+            </ul>
+          </li>
+          <li class="dropdown"><a href="#"><span>고객센터</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+            <ul>
+              <li><a href="quote-inquiry.html">견적문의</a></li>
+              <li><a href="catalog.html">카탈로그</a></li>
+              <li><a href="faq.html">FAQ</a></li>
               <li><a href="product-inquiry.html">제품문의</a></li>
               <li><a href="technical-support.html">기술지원</a></li>
             </ul>
           </li>
-          <li><a href="index.html#contact">문의하기</a></li>
         </ul>
-        <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
       </nav>
+      
+      <button class="mobile-nav-toggle d-xl-none" aria-label="Toggle navigation menu">
+        <i class="bi bi-list"></i>
+      </button>
 
-      <!-- 로그인 전 버튼 -->
-      <a class="login-btn" href="login.html" id="mainLoginBtn">
+      <!-- 로그인 버튼 -->
+      <a class="login-btn" href="#" onclick="showLoginModal(); return false;" id="mainLoginBtn">
         <i class="bi bi-person-circle"></i> <span id="loginBtnText">로그인</span>
       </a>
       
@@ -262,6 +189,72 @@
 
     </div>
   </header>
+
+  <!-- Mobile Drawer Menu -->
+  <div class="mobile-drawer" id="mobileDrawer">
+    <div class="mobile-drawer-header">
+      <h3>메뉴</h3>
+      <button class="mobile-drawer-close" aria-label="Close menu">
+        &times;
+      </button>
+    </div>
+    <nav class="mobile-drawer-nav">
+      <ul>
+        <li><a href="index.html">홈</a></li>
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle">
+            <span>회사소개</span>
+            <span class="dropdown-arrow">▼</span>
+          </a>
+          <ul style="display: none;">
+            <li><a href="ceo-message.html">CEO 인사말</a></li>
+            <li><a href="company-history.html">회사연혁</a></li>
+            <li><a href="vision-mission.html">비전/미션</a></li>
+            <li><a href="organization.html">조직도</a></li>
+            <li><a href="location.html">오시는길</a></li>
+            <li><a href="certificates.html">인증서</a></li>
+          </ul>
+        </li>
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle">
+            <span>제품소개</span>
+            <span class="dropdown-arrow">▼</span>
+          </a>
+          <ul style="display: none;">
+            <li><a href="service1-details.html">열연강판</a></li>
+            <li><a href="service2-details.html">냉연강판</a></li>
+            <li><a href="service3-details.html">특수강</a></li>
+            <li><a href="service4-details.html">맞춤 가공</a></li>
+          </ul>
+        </li>
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle">
+            <span>사업영역</span>
+            <span class="dropdown-arrow">▼</span>
+          </a>
+          <ul style="display: none;">
+            <li><a href="steel-manufacturing.html">철강제조</a></li>
+            <li><a href="processing-service.html">가공서비스</a></li>
+            <li><a href="tech-research.html">기술연구</a></li>
+          </ul>
+        </li>
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle">
+            <span>고객센터</span>
+            <span class="dropdown-arrow">▼</span>
+          </a>
+          <ul style="display: none;">
+            <li><a href="quote-inquiry.html">견적문의</a></li>
+            <li><a href="catalog.html">카탈로그</a></li>
+            <li><a href="faq.html">FAQ</a></li>
+            <li><a href="product-inquiry.html">제품문의</a></li>
+            <li><a href="technical-support.html">기술지원</a></li>
+          </ul>
+        </li>
+      </ul>
+    </nav>
+  </div>
+  <div class="mobile-drawer-overlay" id="mobileDrawerOverlay"></div>
 
   <main class="main">
 
@@ -363,10 +356,55 @@
 
   </main>
 
-  <!-- Footer -->
-  <footer id="footer" class="footer light-background">
-    <div class="container copyright text-center mt-4">
-      <p>&copy; 2025 <strong class="px-1 sitename">남경스틸(주)</strong> All Rights Reserved</p>
+  <footer class="footer">
+    <div class="footer-top">
+      <div class="container">
+        <div class="footer-grid">
+          <div class="footer-column">
+            <h3>남경스틸(주)</h3>
+            <p>철강산업의 리더로서 최고의 품질과 서비스를 제공합니다.</p>
+          </div>
+          <div class="footer-column">
+            <h4>빠른 링크</h4>
+            <ul>
+              <li><a href="index.html#about">회사소개</a></li>
+              <li><a href="index.html#services">제품정보</a></li>
+              <li><a href="quote-inquiry.html">견적문의</a></li>
+              <li><a href="index.html#contact">연락처</a></li>
+            </ul>
+          </div>
+          <div class="footer-column">
+            <h4>고객지원</h4>
+            <ul>
+              <li><a href="faq.html">자주묻는질문</a></li>
+              <li><a href="catalog.html">카탈로그</a></li>
+              <li><a href="technical-support.html">기술지원</a></li>
+              <li><a href="location.html">오시는길</a></li>
+            </ul>
+          </div>
+          <div class="footer-column">
+            <h4>연락처</h4>
+            <ul class="contact-info">
+              <li><i class="fas fa-map-marker-alt"></i> 부산시 사상구 낙동대로 832</li>
+              <li><i class="fas fa-phone"></i> 051-314-9701~2</li>
+              <li><i class="fas fa-fax"></i> 051-314-9703</li>
+              <li><i class="fas fa-envelope"></i> namkyungst@naver.com</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="container">
+        <div class="bottom-content">
+          <p>&copy; 2025 남경스틸(주). All rights reserved.</p>
+          <div class="footer-links">
+            <a href="#">개인정보처리방침</a>
+            <a href="#">이용약관</a>
+            <a href="#">이메일무단수집거부</a>
+          </div>
+        </div>
+      </div>
     </div>
   </footer>
 
@@ -382,6 +420,9 @@
   <!-- Main JS File -->
   <script src="assets/js/main.js"></script>
   
+  <!-- Common JavaScript -->
+  <script src="includes/common.js"></script>
+  
   <!-- Authentication Scripts -->
   <script src="shared-assets/js/auth.js"></script>
   <script src="shared-assets/js/template-login.js"></script>
@@ -394,6 +435,118 @@
         AuthManager.redirectToAppropriatePanel();
       }
     }
+    
+    // Service 페이지 전용 모바일 드로워 초기화
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('🔄 Service 페이지: 모바일 드로워 직접 초기화 시작');
+      
+      // 드로워 요소들 찾기
+      const mobileNavToggle = document.querySelector('.mobile-nav-toggle');
+      const mobileDrawer = document.getElementById('mobileDrawer');
+      const mobileDrawerOverlay = document.getElementById('mobileDrawerOverlay');
+      const mobileDrawerClose = document.querySelector('.mobile-drawer-close');
+      
+      if (!mobileNavToggle || !mobileDrawer || !mobileDrawerOverlay) {
+        console.warn('⚠️ Service 페이지: 모바일 드로워 요소를 찾을 수 없음');
+        return;
+      }
+      
+      console.log('✅ Service 페이지: 모바일 드로워 요소 발견');
+      
+      // 드로워 열기 함수
+      function openDrawer() {
+        console.log('📱 Service 페이지: 드로워 열기');
+        mobileDrawer.classList.add('active');
+        mobileDrawerOverlay.classList.add('active');
+        
+        // 햄버거 아이콘을 X로 변경
+        const icon = mobileNavToggle.querySelector('i');
+        if (icon) {
+          icon.classList.remove('bi-list');
+          icon.classList.add('bi-x');
+        }
+        
+        // body 스크롤 방지
+        document.body.style.overflow = 'hidden';
+      }
+      
+      // 드로워 닫기 함수
+      function closeDrawer() {
+        console.log('📱 Service 페이지: 드로워 닫기');
+        mobileDrawer.classList.remove('active');
+        mobileDrawerOverlay.classList.remove('active');
+        
+        // X를 햄버거 아이콘으로 변경
+        const icon = mobileNavToggle.querySelector('i');
+        if (icon) {
+          icon.classList.remove('bi-x');
+          icon.classList.add('bi-list');
+        }
+        
+        // body 스크롤 복원
+        document.body.style.overflow = '';
+      }
+      
+      // 햄버거 메뉴 클릭 이벤트
+      mobileNavToggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('🔄 Service 페이지: 햄버거 버튼 클릭됨');
+        openDrawer();
+      });
+      
+      // 오버레이 클릭 이벤트
+      mobileDrawerOverlay.addEventListener('click', function(e) {
+        e.preventDefault();
+        console.log('🔄 Service 페이지: 오버레이 클릭됨');
+        closeDrawer();
+      });
+      
+      // 닫기 버튼 클릭 이벤트
+      if (mobileDrawerClose) {
+        mobileDrawerClose.addEventListener('click', function(e) {
+          e.preventDefault();
+          console.log('🔄 Service 페이지: 닫기 버튼 클릭됨');
+          closeDrawer();
+        });
+      }
+      
+      // 드로워 내 드롭다운 메뉴 처리
+      const drawerDropdowns = mobileDrawer.querySelectorAll('.dropdown');
+      console.log('🔍 Service 페이지: 드롭다운 메뉴 발견:', drawerDropdowns.length);
+      
+      drawerDropdowns.forEach(dropdown => {
+        const toggle = dropdown.querySelector('.dropdown-toggle');
+        const subMenu = dropdown.querySelector('ul');
+        if (toggle && subMenu) {
+          toggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('🔄 Service 페이지: 드롭다운 토글 클릭됨');
+            
+            // 다른 드롭다운 닫기
+            drawerDropdowns.forEach(otherDropdown => {
+              if (otherDropdown !== dropdown) {
+                otherDropdown.classList.remove('active');
+                const otherSubMenu = otherDropdown.querySelector('ul');
+                if (otherSubMenu) {
+                  otherSubMenu.style.display = 'none';
+                }
+              }
+            });
+            
+            // 현재 드롭다운 토글
+            dropdown.classList.toggle('active');
+            if (dropdown.classList.contains('active')) {
+              subMenu.style.display = 'block';
+            } else {
+              subMenu.style.display = 'none';
+            }
+          });
+        }
+      });
+      
+      console.log('✅ Service 페이지: 모바일 드로워 초기화 완료');
+    });
   </script>
 
 </body>

@@ -15,7 +15,7 @@
 
 /* Global Colors */
 :root { 
-  --background-color: #ffffff;
+  --background-color: #fafbfc;
   --default-color: #2c3e50;
   --heading-color: #1a252f;
   --accent-color: #3498db;
@@ -49,6 +49,121 @@ a {
   transition: 0.3s;
 }
 
+/*--------------------------------------------------------------
+# Responsive Design - Mobile & Tablet
+--------------------------------------------------------------*/
+@media (max-width: 768px) {
+  body {
+    font-size: 14px;
+  }
+  
+  .container {
+    padding: 0 15px;
+  }
+  
+  h1 {
+    font-size: 1.8rem;
+  }
+  
+  h2 {
+    font-size: 1.5rem;
+  }
+  
+  h3 {
+    font-size: 1.3rem;
+  }
+  
+  .btn {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+  
+  .navbar-brand {
+    font-size: 1.2rem;
+  }
+  
+  .card {
+    margin-bottom: 15px;
+  }
+  
+  .hero-section {
+    padding: 40px 0;
+  }
+  
+  .section-padding {
+    padding: 40px 0;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .container {
+    max-width: 95%;
+  }
+  
+  h1 {
+    font-size: 2.2rem;
+  }
+  
+  h2 {
+    font-size: 1.8rem;
+  }
+  
+  .hero-section {
+    padding: 60px 0;
+  }
+  
+  .section-padding {
+    padding: 60px 0;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    font-size: 13px;
+  }
+  
+  .container {
+    padding: 0 10px;
+  }
+  
+  h1 {
+    font-size: 1.5rem;
+  }
+  
+  h2 {
+    font-size: 1.3rem;
+  }
+  
+  h3 {
+    font-size: 1.1rem;
+  }
+  
+  .btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+  
+  .navbar-brand {
+    font-size: 1rem;
+  }
+  
+  .hero-section {
+    padding: 30px 0;
+  }
+  
+  .section-padding {
+    padding: 30px 0;
+  }
+  
+  table {
+    font-size: 12px;
+  }
+  
+  .form-control {
+    font-size: 14px;
+  }
+}
+
 a:hover {
   color: color-mix(in srgb, var(--accent-color), transparent 25%);
   text-decoration: none;
@@ -73,6 +188,7 @@ h1, h2, h3, h4, h5, h6 {
   transition: all 0.5s;
   z-index: 997;
   box-shadow: 0px 0 18px rgba(44, 62, 80, 0.1);
+  position: relative;
 }
 
 .header .logo {
@@ -167,6 +283,65 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /*--------------------------------------------------------------
+# Dropdown Navigation (Desktop)
+--------------------------------------------------------------*/
+@media (min-width: 1200px) {
+  .navmenu .dropdown ul {
+    display: flex;
+    position: absolute;
+    inset: auto 0 auto 0;
+    top: 100%;
+    margin: 0;
+    padding: 10px 0;
+    z-index: 99;
+    opacity: 0;
+    visibility: hidden;
+    background: var(--nav-dropdown-background-color);
+    box-shadow: 0px 0px 30px rgba(127, 137, 161, 0.25);
+    transition: 0.3s;
+    border-radius: 4px;
+    flex-direction: column;
+  }
+
+  .navmenu .dropdown ul li {
+    min-width: 200px;
+  }
+
+  .navmenu .dropdown ul a {
+    padding: 10px 20px;
+    font-size: 15px;
+    text-transform: none;
+    color: var(--nav-dropdown-color);
+  }
+
+  .navmenu .dropdown ul a i {
+    font-size: 12px;
+  }
+
+  .navmenu .dropdown ul a:hover,
+  .navmenu .dropdown ul .active:hover,
+  .navmenu .dropdown ul li:hover > a {
+    color: var(--nav-dropdown-hover-color);
+  }
+
+  .navmenu .dropdown:hover > ul {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .navmenu .dropdown .dropdown ul {
+    top: 0;
+    left: -90%;
+  }
+
+  .navmenu .dropdown .dropdown:hover > ul {
+    opacity: 1;
+    visibility: visible;
+    left: -100%;
+  }
+}
+
+/*--------------------------------------------------------------
 # Mobile Navigation
 --------------------------------------------------------------*/
 @media (max-width: 1199px) {
@@ -177,6 +352,25 @@ h1, h2, h3, h4, h5, h6 {
     margin-right: 10px;
     cursor: pointer;
     transition: color 0.3s;
+    background: none !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    padding: 5px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  .mobile-nav-toggle:hover {
+    color: var(--nav-hover-color) !important;
+    background: none !important;
+  }
+  
+  .mobile-nav-toggle:focus {
+    outline: none !important;
+    box-shadow: none !important;
+    background: none !important;
   }
 
   .navmenu {
@@ -208,6 +402,205 @@ h1, h2, h3, h4, h5, h6 {
     justify-content: space-between;
     white-space: nowrap;
     transition: 0.3s;
+  }
+
+  /* Mobile nav active state - 더 강한 우선순위 */
+  body.mobile-nav-active .navmenu {
+    position: fixed !important;
+    overflow: hidden;
+    inset: 0;
+    background: rgba(33, 37, 41, 0.8);
+    transition: 0.3s;
+    z-index: 9999 !important;
+  }
+
+  body.mobile-nav-active .navmenu > ul {
+    display: block !important;
+    position: fixed !important;
+    top: 70px;
+    right: 10px;
+    bottom: 20px;
+    left: 10px;
+    padding: 20px 0;
+    margin: 0;
+    border-radius: 15px;
+    background-color: #fff;
+    overflow-y: auto;
+    transition: 0.3s;
+    box-shadow: 0px 10px 50px rgba(0, 0, 0, 0.3);
+    z-index: 10000 !important;
+    max-height: 80vh;
+  }
+
+  /* 추가 강제 스타일 */
+  body.mobile-nav-active .navmenu ul {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  /* 메뉴 항목들이 크게 보이도록 */
+  body.mobile-nav-active .navmenu li {
+    display: block !important;
+    width: 100% !important;
+    margin-bottom: 2px;
+  }
+
+  body.mobile-nav-active .navmenu > ul > li > a {
+    display: flex !important;
+    padding: 18px 25px !important;
+    color: #2c3e50 !important;
+    font-size: 18px !important;
+    font-weight: 500 !important;
+    border-bottom: 1px solid #f0f0f0;
+    min-height: 60px;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.3s ease;
+  }
+
+  body.mobile-nav-active .navmenu > ul > li > a:hover,
+  body.mobile-nav-active .navmenu > ul > li > a:active {
+    background-color: #f8f9fa !important;
+    color: #0066cc !important;
+    transform: translateX(5px);
+  }
+
+  /* 드롭다운 화살표 크게 */
+  body.mobile-nav-active .navmenu .toggle-dropdown {
+    font-size: 16px !important;
+    color: #666 !important;
+  }
+
+  body.mobile-nav-active .mobile-nav-toggle {
+    color: #fff !important;
+    position: fixed;
+    top: 25px;
+    right: 25px;
+    z-index: 10001 !important;
+  }
+
+  /* Dropdown navigation - 모바일에서 크게 */
+  body.mobile-nav-active .navmenu .dropdown > ul {
+    display: none !important;
+    position: static;
+    padding: 8px 0;
+    margin: 0px 15px 10px 15px;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    border-left: 4px solid #0066cc;
+    transition: all 0.3s ease-in-out;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  body.mobile-nav-active .navmenu .dropdown.active > ul {
+    display: block !important;
+    animation: slideDown 0.3s ease-out;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      max-height: 0;
+    }
+    to {
+      opacity: 1;
+      max-height: 300px;
+    }
+  }
+
+  body.mobile-nav-active .navmenu .dropdown ul a {
+    padding: 15px 25px !important;
+    font-size: 16px !important;
+    color: #555 !important;
+    font-weight: 400 !important;
+    min-height: 50px;
+    display: flex !important;
+    align-items: center;
+    border-bottom: 1px solid #e9ecef;
+    transition: all 0.2s ease;
+  }
+
+  body.mobile-nav-active .navmenu .dropdown ul li {
+    background: none;
+    margin-bottom: 0;
+  }
+
+  body.mobile-nav-active .navmenu .dropdown ul li:last-child a {
+    border-bottom: none;
+  }
+
+  body.mobile-nav-active .navmenu .dropdown ul a:hover,
+  body.mobile-nav-active .navmenu .dropdown ul .active:hover,
+  body.mobile-nav-active .navmenu .dropdown ul li:hover > a {
+    color: #0066cc !important;
+    background-color: #e3f2fd !important;
+    transform: translateX(8px);
+  }
+
+  body.mobile-nav-active .navmenu .dropdown ul a i {
+    font-size: 12px;
+  }
+
+  body.mobile-nav-active {
+    overflow: hidden !important;
+  }
+
+  body.mobile-nav-active .header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9998 !important;
+  }
+
+  /* 터치 영역 최적화 */
+  @media (max-width: 768px) {
+    body.mobile-nav-active .navmenu > ul > li > a {
+      min-height: 65px !important;
+      padding: 20px 25px !important;
+      font-size: 19px !important;
+      line-height: 1.4;
+      touch-action: manipulation;
+    }
+
+    body.mobile-nav-active .navmenu .dropdown ul a {
+      min-height: 55px !important;
+      padding: 16px 25px !important;
+      font-size: 17px !important;
+      touch-action: manipulation;
+    }
+
+    /* 햄버거 버튼도 크게 */
+    .mobile-nav-toggle {
+      font-size: 32px !important;
+      padding: 8px !important;
+      min-width: 50px !important;
+      min-height: 50px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      touch-action: manipulation;
+    }
+
+    /* 스크롤바 스타일 */
+    body.mobile-nav-active .navmenu > ul::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    body.mobile-nav-active .navmenu > ul::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 2px;
+    }
+
+    body.mobile-nav-active .navmenu > ul::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 2px;
+    }
+
+    body.mobile-nav-active .navmenu > ul::-webkit-scrollbar-thumb:hover {
+      background: #999;
+    }
   }
 }
 
@@ -546,7 +939,48 @@ section,
   .section-title h2 {
     font-size: 28px;
   }
+  
+  /* 모바일에서 터치 가능한 영역 확보 */
+  a, button, .mobile-nav-toggle {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* 네비게이션 링크 터치 영역 확대 */
+  .navmenu a {
+    padding: 15px 20px;
+  }
+  
+  /* 모바일에서 position 문제 해결 */
+  .header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+  }
+  
+  /* 헤더 높이만큼 body에 padding 추가 */
+  body {
+    padding-top: 70px;
+  }
+  
+  /* 모바일 메뉴 z-index 최적화 */
+  .mobile-nav-active .navmenu {
+    z-index: 9999;
+  }
+  
+  /* 모바일에서 overflow 처리 */
+  body.mobile-nav-active {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+  }
 }
+
 
 @media (max-width: 575px) {
   .hero h1 {
@@ -561,5 +995,14 @@ section,
 
   .section-title h2 {
     font-size: 24px;
+  }
+  
+  /* 매우 작은 화면에서 추가 최적화 */
+  .mobile-nav-toggle {
+    font-size: 24px;
+  }
+  
+  .navmenu a {
+    font-size: 16px;
   }
 }

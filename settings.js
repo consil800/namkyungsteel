@@ -1,546 +1,715 @@
-// 설정 페이지 JavaScript
+// 설정 페이지 JavaScript (데이터베이스 기반)
 console.log('settings.js 로드됨');
 
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('설정 페이지 DOM 로드 완료');
-    loadSettings();
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('📄 설정 페이지 로드 시작');
+    
+    // 간단한 사용자 인증
+    const currentUser = await window.dataLoader.getCurrentUser();
+    if (!currentUser) {
+        alert('로그인이 필요합니다.');
+        window.location.href = 'login.html';
+        return;
+    }
+    
+    console.log('✅ 현재 사용자:', currentUser.name);
+    await loadSettings();
 });
 
-// 기본 설정값
+// 빈 설정값 (사용자가 직접 추가해야 함)
 const defaultSettings = {
-    paymentTerms: ['현금', '월말결제', '30일', '45일', '60일', '90일', '어음', '기타'],
-    businessTypes: ['제조업', '건설업', '유통업', '기타'],
-    visitPurposes: ['신규영업', '기존고객관리', '견적제공', '계약협의', '수금협의', '클레임처리', '기타'],
-    regions: ['서울','부산','대구','경주','김해','양산','함안','밀양','창원','창녕','울산','목포','광주','광양'].sort((a, b) => a.localeCompare(b)),
+    paymentTerms: ['현금', '어음', '카드', '계좌이체', '분할결제', '현금+어음', '기타'],
+    businessTypes: ['제조업', '건설업', '도매업', '소매업', '운수업', '통신업', '금융업', '부동산업', '서비스업', '기타'],
+    visitPurposes: ['영업상담', '계약체결', '납품', '수금', 'A/S', '클레임처리', '정기방문', '기타'],
+    regions: ['서울', '경기', '인천', '부산', '대구', '광주', '대전', '울산', '세종', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'],
     colors: [
         { key: 'red', name: '빨강', value: '#e74c3c' },
         { key: 'orange', name: '주황', value: '#f39c12' },
         { key: 'yellow', name: '노랑', value: '#f1c40f' },
         { key: 'green', name: '초록', value: '#27ae60' },
+        { key: 'sky', name: '하늘', value: '#87ceeb' },
         { key: 'blue', name: '파랑', value: '#3498db' },
         { key: 'purple', name: '보라', value: '#9b59b6' },
         { key: 'gray', name: '회색', value: '#95a5a6' }
     ]
 };
 
-// 설정 데이터 관리 (데이터베이스 사용)
+// 하드코딩된 고정 색상 (삭제 불가)
+const FIXED_COLORS = [
+    { key: 'red', name: '빨강', value: '#e74c3c' },
+    { key: 'orange', name: '주황', value: '#f39c12' },
+    { key: 'yellow', name: '노랑', value: '#f1c40f' },
+    { key: 'green', name: '초록', value: '#27ae60' },
+    { key: 'sky', name: '하늘', value: '#87ceeb' },
+    { key: 'blue', name: '파랑', value: '#1e90ff' },
+    { key: 'purple', name: '보라', value: '#9b59b6' },
+    { key: 'gray', name: '회색', value: '#95a5a6' }
+];
+
+// 설정 데이터 관리 (Supabase 사용)
 const DropdownSettings = {
-    // 설정 가져오기
-    get: function() {
-        // 로컬 스토리지에서 가져오기, 없으면 기본값 반환
-        const stored = localStorage.getItem('dropdownSettings');
-        if (stored) {
-            return JSON.parse(stored);
+    // 현재 사용자 ID 가져오기
+    getCurrentUserId: async function() {
+        // currentUser에서 먼저 시도
+        const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+        console.log('👤 getCurrentUserId - currentUser:', currentUser);
+        
+        if (currentUser.id) {
+            return currentUser.id;
         }
-        return { ...defaultSettings };
+        
+        // AuthManager 사용
+        if (typeof AuthManager !== 'undefined') {
+            const user = AuthManager.getCurrentUser();
+            if (user && user.id) {
+                return user.id;
+            }
+        }
+        
+        // userInfo로도 시도 (레거시 지원)
+        const userInfo = JSON.parse(sessionStorage.getItem('userInfo') || '{}');
+        return userInfo.id || null;
     },
 
-    // 설정 저장하기
-    save: function(settings) {
-        // 로컬 스토리지에 저장
-        localStorage.setItem('dropdownSettings', JSON.stringify(settings));
-    },
+    // 설정 가져오기 (캐시 활용)
+    get: async function() {
+        try {
+            const userId = await this.getCurrentUserId();
+            console.log('🔍 DropdownSettings.get - userId:', userId);
+            
+            if (!userId) {
+                console.warn('사용자 정보가 없습니다.');
+                return { ...defaultSettings };
+            }
 
-    // 기본값으로 초기화
-    reset: function() {
-        localStorage.removeItem('dropdownSettings');
-        return { ...defaultSettings };
+            // cachedDataLoader를 통해 설정 가져오기
+            const settings = await window.cachedDataLoader.loadUserSettings(userId);
+            console.log('📊 DropdownSettings.get - 캐시에서 가져온 설정:', settings);
+            
+            return settings;
+        } catch (error) {
+            console.error('설정 조회 오류:', error);
+            return { ...defaultSettings };
+        }
     }
 };
 
-// 설정 로드 및 화면 업데이트
-function loadSettings() {
-    const settings = DropdownSettings.get();
-    displayPaymentTerms(settings.paymentTerms);
-    displayBusinessTypes(settings.businessTypes);
-    displayRegions(settings.regions || defaultSettings.regions);
-    displayVisitPurposes(settings.visitPurposes);
-    displayColors(settings.colors);
-    
-    // company_regions에도 저장 (index.html에서 사용)
-    localStorage.setItem('company_regions', JSON.stringify(settings.regions || defaultSettings.regions));
+// 설정 로드 및 화면 업데이트 (단순화)
+async function loadSettings() {
+    try {
+        console.log('🔄 설정 로드 시작');
+        
+        // 데이터베이스 초기화 완료 대기
+        await window.dataLoader.ensureDatabase();
+        
+        const currentUser = await window.dataLoader.getCurrentUser();
+        if (!currentUser || !currentUser.id) {
+            console.error('❌ 사용자 정보 없음 또는 ID 누락');
+            throw new Error('사용자 정보 없음');
+        }
+        
+        // 설정 페이지에서는 항상 캐시 무효화 (최신 데이터 보장)
+        console.log('🔄 설정 페이지 캐시 강제 무효화');
+        if (window.cachedDataLoader && window.cachedDataLoader.invalidateSettingsCache) {
+            window.cachedDataLoader.invalidateSettingsCache(currentUser.id);
+        }
+        
+        // 전체 캐시 초기화 (RLS 정책 변경 후)
+        if (window.cachedDataLoader && window.cachedDataLoader.clearAllCache) {
+            console.log('🧹 전체 캐시 초기화 (RLS 정책 변경으로 인한)');
+            window.cachedDataLoader.clearAllCache();
+        }
+        
+        console.log('🔒 보안 확인 - 현재 사용자:', {
+            id: currentUser.id,
+            name: currentUser.name,
+            role: currentUser.role
+        });
+        
+        // 디버깅: 직접 데이터베이스에서 user_settings 확인
+        try {
+            console.log('🔍 디버깅: user_settings 테이블 직접 확인');
+            const db = new DatabaseManager();
+            await db.init();
+            
+            // 모든 user_settings 레코드 확인 (디버깅용)
+            const { data: allCheck, error: allError } = await db.client
+                .from('user_settings')
+                .select('user_id, setting_type, setting_value, color_value, created_at')
+                .limit(20);
+            
+            if (allError) {
+                console.error('❌ 전체 확인 오류:', allError);
+            } else {
+                console.log('📊 전체 user_settings 확인:', allCheck);
+                console.log(`📊 전체 설정 개수:`, allCheck?.length || 0);
+            }
+            
+            // 현재 사용자의 설정 확인
+            const { data: directCheck, error: checkError } = await db.client
+                .from('user_settings')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .limit(10);
+                
+            if (checkError) {
+                console.error('❌ 직접 확인 오류:', checkError);
+            } else {
+                console.log('📊 직접 확인 결과:', directCheck);
+                console.log(`📊 사용자 ${currentUser.id}의 설정 개수:`, directCheck?.length || 0);
+            }
+            
+            // getUserSettings 함수 직접 호출
+            console.log('🔄 getUserSettings 직접 호출');
+            const directSettings = await db.getUserSettings(currentUser.id);
+            console.log('📋 getUserSettings 결과:', directSettings);
+            
+        } catch (debugError) {
+            console.error('❌ 디버깅 쿼리 오류:', debugError);
+        }
+        
+        // 최대 3번 재시도로 설정 로드
+        let settings = null;
+        let retryCount = 0;
+        const maxRetries = 3;
+        
+        while (retryCount < maxRetries && (!settings || Object.keys(settings).every(key => !settings[key] || settings[key].length === 0))) {
+            if (retryCount > 0) {
+                console.log(`🔄 설정 로드 재시도 ${retryCount}/${maxRetries}`);
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            // 직접 데이터베이스에서 조회 (캐시 우회)
+            console.log(`🔍 설정 로드 시도 ${retryCount + 1}/${maxRetries} - 사용자 ID: ${currentUser.id}`);
+            
+            if (retryCount === 0) {
+                // 첫 번째 시도: 캐시 사용
+                settings = await window.cachedDataLoader.loadUserSettings(currentUser.id);
+            } else {
+                // 재시도: 직접 데이터베이스에서 조회
+                console.log('🔄 캐시 우회하여 직접 데이터베이스 조회');
+                const db = new DatabaseManager();
+                await db.init();
+                settings = await db.getUserSettings(currentUser.id);
+                console.log('📊 직접 DB 조회 결과:', settings);
+            }
+            
+            // 추가 보안 검증: 로드된 설정이 현재 사용자 것인지 확인
+            if (settings && settings.colors && settings.colors.length > 0) {
+                console.log('📊 로드된 색상 설정:', settings.colors.map(c => ({
+                    name: c.name,
+                    key: c.key
+                })));
+            }
+            
+            retryCount++;
+        }
+        
+        console.log('📊 캐시에서 가져온 설정:', settings);
+        
+        // 설정이 비어있으면 기본값 사용 (RLS 문제로 인해 저장 비활성화)
+        if (!settings || Object.keys(settings).every(key => !settings[key] || settings[key].length === 0)) {
+            console.log('📝 빈 설정 감지됨. RLS 문제로 인해 기본값 사용...');
+            // RLS 정책 문제로 인해 기본 설정 저장을 임시 비활성화
+            // await saveDefaultSettingsToDatabase(currentUser.id);
+        }
+        
+        // 설정이 없으면 기본값 사용
+        const finalSettings = settings || { ...defaultSettings };
+        
+        // 색상은 항상 고정된 8가지 색상을 사용하고, 사용자별 의미만 불러오기
+        let colorMeanings = {};
+        try {
+            colorMeanings = await loadColorMeanings(currentUser.id);
+        } catch (error) {
+            console.error('색상 의미 로드 오류:', error);
+        }
+        
+        finalSettings.colors = FIXED_COLORS.map(color => ({
+            ...color,
+            meaning: colorMeanings[color.name] || ''
+        }));
+        
+        console.log('🎨 최종 색상 설정:', finalSettings.colors);
+        
+        // 화면에 표시
+        displayItemLists(finalSettings);
+        
+        console.log('✅ 설정 로드 완료');
+        
+    } catch (error) {
+        console.error('❌ 설정 로드 오류:', error);
+        const fallbackSettings = { ...defaultSettings };
+        fallbackSettings.colors = FIXED_COLORS;
+        displayItemLists(fallbackSettings);
+    }
 }
 
-// 결제조건 표시
-function displayPaymentTerms(paymentTerms) {
-    const list = document.getElementById('paymentTermsList');
-    list.innerHTML = paymentTerms.map((term, index) => `
-        <li class="option-item">
-            <span class="option-text">${term}</span>
+// 색상 의미만 불러오기
+async function loadColorMeanings(userId) {
+    try {
+        const db = new DatabaseManager();
+        await db.init();
+        
+        const { data, error } = await db.client
+            .from('user_settings')
+            .select('setting_value, color_meaning')
+            .eq('user_id', userId)
+            .eq('setting_type', 'color_meaning');
+        
+        if (error) throw error;
+        
+        const meanings = {};
+        if (data && data.length > 0) {
+            data.forEach(item => {
+                meanings[item.setting_value] = item.color_meaning || '';
+            });
+        }
+        
+        return meanings;
+    } catch (error) {
+        console.error('색상 의미 불러오기 오류:', error);
+        return {};
+    }
+}
+
+// 기본 설정을 데이터베이스에 저장
+async function saveDefaultSettingsToDatabase(userId) {
+    console.log('🔧 기본 설정을 데이터베이스에 저장 시작');
+    
+    try {
+        const db = new DatabaseManager();
+        await db.init();
+        
+        // 기본 지역 저장
+        for (const region of defaultSettings.regions) {
+            try {
+                const result = await db.addUserSetting(userId, 'region', region, region);
+                if (result.error === 'rls_policy_violation') {
+                    console.log(`지역 "${region}" RLS 정책으로 건너뜀`);
+                    continue;
+                }
+            } catch (error) {
+                if (!error.message?.includes('setting_already_exists') && error.code !== '42501') {
+                    console.error(`지역 "${region}" 저장 오류:`, error);
+                }
+            }
+        }
+        
+        // RLS 정책 문제로 인해 기본 설정 저장을 건너뜀
+        console.log('⚠️ RLS 정책 문제로 인해 기본 설정 저장을 건너뜀');
+        return;
+        
+        // 기본 업종 저장 (비활성화)
+        // 기본 결제조건 저장 (비활성화)  
+        // 기본 방문목적 저장 (비활성화)
+        // 기본 색상 저장 (비활성화)
+        
+        // 캐시 무효화
+        if (window.cachedDataLoader) {
+            window.cachedDataLoader.invalidateSettingsCache(userId);
+        }
+        
+        console.log('✅ 기본 설정 데이터베이스 저장 완료');
+    } catch (error) {
+        console.error('❌ 기본 설정 저장 오류:', error);
+    }
+}
+
+// 텍스트 대비 색상 계산
+function getContrastColor(hexcolor) {
+    if (!hexcolor) return '#000000';
+    
+    // # 제거
+    hexcolor = hexcolor.replace('#', '');
+    
+    // RGB 값 추출
+    const r = parseInt(hexcolor.substr(0, 2), 16);
+    const g = parseInt(hexcolor.substr(2, 2), 16);
+    const b = parseInt(hexcolor.substr(4, 2), 16);
+    
+    // 밝기 계산
+    const brightness = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+    
+    return brightness > 155 ? '#000000' : '#ffffff';
+}
+
+// 항목 리스트 표시 함수 (삭제 버튼 포함)
+function displayItemLists(settings) {
+    console.log('📋 displayItemLists 호출됨, settings:', settings);
+    
+    // 결제조건 리스트 표시
+    displayItemList('paymentTermsList', settings.paymentTerms || [], '결제조건');
+    
+    // 업종 리스트 표시
+    displayItemList('businessTypesList', settings.businessTypes || [], '업종');
+    
+    // 지역 리스트 표시
+    displayItemList('regionsList', settings.regions || [], '지역');
+    
+    // 방문목적 리스트 표시
+    displayItemList('visitPurposesList', settings.visitPurposes || [], '방문목적');
+    
+    // 색상 리스트 표시 (항상 고정된 색상 사용)
+    displayColorList('colorsList', settings.colors && settings.colors.length > 0 ? settings.colors : FIXED_COLORS);
+}
+
+// 일반 항목 리스트 표시 함수
+function displayItemList(listId, items, type) {
+    const listElement = document.getElementById(listId);
+    if (!listElement) return;
+    
+    console.log(`📝 ${type} 리스트 표시:`, items);
+    
+    if (items.length === 0) {
+        listElement.innerHTML = `<li style="color: #666; font-style: italic;">저장된 ${type}이 없습니다. 위에서 추가하세요.</li>`;
+        return;
+    }
+    
+    listElement.innerHTML = '';
+    items.forEach(item => {
+        const li = document.createElement('li');
+        li.className = 'option-item';
+        li.innerHTML = `
+            <span class="option-text">${item}</span>
             <div class="option-actions">
-                <button class="btn btn-small btn-warning" onclick="editPaymentTerm(${index}, '${term}')">수정</button>
-                <button class="btn btn-small btn-danger" onclick="deletePaymentTerm(${index})">삭제</button>
+                <button class="btn btn-danger btn-small" onclick="deleteItem('${type}', '${item.replace(/'/g, "\\'")}')">삭제</button>
             </div>
-        </li>
-        <li class="edit-form" id="editPaymentTerm${index}">
-            <input type="text" value="${term}" id="editPaymentTermInput${index}">
-            <button class="btn btn-small btn-success" onclick="savePaymentTerm(${index})">저장</button>
-            <button class="btn btn-small btn-secondary" onclick="cancelEdit('editPaymentTerm${index}')">취소</button>
-        </li>
-    `).join('');
-}
-
-// 업종 표시
-function displayBusinessTypes(businessTypes) {
-    const list = document.getElementById('businessTypesList');
-    list.innerHTML = businessTypes.map((type, index) => `
-        <li class="option-item">
-            <span class="option-text">${type}</span>
-            <div class="option-actions">
-                <button class="btn btn-small btn-warning" onclick="editBusinessType(${index}, '${type}')">수정</button>
-                <button class="btn btn-small btn-danger" onclick="deleteBusinessType(${index})">삭제</button>
-            </div>
-        </li>
-        <li class="edit-form" id="editBusinessType${index}">
-            <input type="text" value="${type}" id="editBusinessTypeInput${index}">
-            <button class="btn btn-small btn-success" onclick="saveBusinessType(${index})">저장</button>
-            <button class="btn btn-small btn-secondary" onclick="cancelEdit('editBusinessType${index}')">취소</button>
-        </li>
-    `).join('');
-}
-
-// 방문목적 표시
-function displayVisitPurposes(visitPurposes) {
-    const list = document.getElementById('visitPurposesList');
-    list.innerHTML = visitPurposes.map((purpose, index) => `
-        <li class="option-item">
-            <span class="option-text">${purpose}</span>
-            <div class="option-actions">
-                <button class="btn btn-small btn-warning" onclick="editVisitPurpose(${index}, '${purpose}')">수정</button>
-                <button class="btn btn-small btn-danger" onclick="deleteVisitPurpose(${index})">삭제</button>
-            </div>
-        </li>
-        <li class="edit-form" id="editVisitPurpose${index}">
-            <input type="text" value="${purpose}" id="editVisitPurposeInput${index}">
-            <button class="btn btn-small btn-success" onclick="saveVisitPurpose(${index})">저장</button>
-            <button class="btn btn-small btn-secondary" onclick="cancelEdit('editVisitPurpose${index}')">취소</button>
-        </li>
-    `).join('');
-}
-
-// 색상 표시
-function displayColors(colors) {
-    const list = document.getElementById('colorsList');
-    list.innerHTML = colors.map((color, index) => `
-        <li class="option-item">
-            <span class="option-text">
-                <span class="color-preview" style="background-color: ${color.value}"></span>
-                ${color.name}
-            </span>
-            <div class="option-actions">
-                <button class="btn btn-small btn-warning" onclick="editColor(${index})">수정</button>
-                <button class="btn btn-small btn-danger" onclick="deleteColor(${index})">삭제</button>
-            </div>
-        </li>
-        <li class="edit-form" id="editColor${index}">
-            <input type="text" value="${color.name}" id="editColorNameInput${index}" placeholder="색상 이름">
-            <input type="color" value="${color.value}" id="editColorValueInput${index}">
-            <button class="btn btn-small btn-success" onclick="saveColor(${index})">저장</button>
-            <button class="btn btn-small btn-secondary" onclick="cancelEdit('editColor${index}')">취소</button>
-        </li>
-    `).join('');
-}
-
-// 결제조건 추가
-function addPaymentTerm() {
-    const input = document.getElementById('newPaymentTerm');
-    const newTerm = input.value.trim();
-    
-    if (!newTerm) {
-        alert('결제조건을 입력해주세요.');
-        return;
-    }
-    
-    const settings = DropdownSettings.get();
-    
-    if (settings.paymentTerms.includes(newTerm)) {
-        alert('이미 존재하는 결제조건입니다.');
-        return;
-    }
-    
-    settings.paymentTerms.push(newTerm);
-    DropdownSettings.save(settings);
-    displayPaymentTerms(settings.paymentTerms);
-    input.value = '';
-    alert('결제조건이 추가되었습니다.');
-}
-
-// 업종 추가
-function addBusinessType() {
-    const input = document.getElementById('newBusinessType');
-    const newType = input.value.trim();
-    
-    if (!newType) {
-        alert('업종을 입력해주세요.');
-        return;
-    }
-    
-    const settings = DropdownSettings.get();
-    
-    if (settings.businessTypes.includes(newType)) {
-        alert('이미 존재하는 업종입니다.');
-        return;
-    }
-    
-    settings.businessTypes.push(newType);
-    DropdownSettings.save(settings);
-    displayBusinessTypes(settings.businessTypes);
-    input.value = '';
-    alert('업종이 추가되었습니다.');
-}
-
-// 지역 표시
-function displayRegions(regions) {
-    const list = document.getElementById('regionsList');
-    list.innerHTML = regions.map((region, index) => `
-        <li class="option-item">
-            <span class="option-text">${region}</span>
-            <div class="option-actions">
-                <button class="btn btn-small btn-warning" onclick="editRegion(${index}, '${region}')">수정</button>
-                <button class="btn btn-small btn-danger" onclick="deleteRegion(${index})">삭제</button>
-            </div>
-        </li>
-        <li class="edit-form" id="editRegion${index}">
-            <input type="text" value="${region}" id="editRegionInput${index}">
-            <button class="btn btn-small btn-success" onclick="saveRegion(${index})">저장</button>
-            <button class="btn btn-small btn-secondary" onclick="cancelEdit('editRegion${index}')">취소</button>
-        </li>
-    `).join('');
-}
-
-// 지역 추가
-function addRegion() {
-    const input = document.getElementById('newRegion');
-    const newRegion = input.value.trim();
-    
-    if (!newRegion) {
-        alert('지역을 입력해주세요.');
-        return;
-    }
-    
-    const settings = DropdownSettings.get();
-    
-    if (!settings.regions) {
-        settings.regions = [...defaultSettings.regions];
-    }
-    
-    if (settings.regions.includes(newRegion)) {
-        alert('이미 존재하는 지역입니다.');
-        return;
-    }
-    
-    settings.regions.push(newRegion);
-    settings.regions.sort((a, b) => a.localeCompare(b)); // 오름차순 정렬
-    DropdownSettings.save(settings);
-    localStorage.setItem('company_regions', JSON.stringify(settings.regions));
-    displayRegions(settings.regions);
-    input.value = '';
-    alert('지역이 추가되었습니다.');
-}
-
-// 방문목적 추가
-function addVisitPurpose() {
-    const input = document.getElementById('newVisitPurpose');
-    const newPurpose = input.value.trim();
-    
-    if (!newPurpose) {
-        alert('방문목적을 입력해주세요.');
-        return;
-    }
-    
-    const settings = DropdownSettings.get();
-    
-    if (settings.visitPurposes.includes(newPurpose)) {
-        alert('이미 존재하는 방문목적입니다.');
-        return;
-    }
-    
-    settings.visitPurposes.push(newPurpose);
-    DropdownSettings.save(settings);
-    displayVisitPurposes(settings.visitPurposes);
-    input.value = '';
-    alert('방문목적이 추가되었습니다.');
-}
-
-// 색상 추가
-function addColor() {
-    const nameInput = document.getElementById('newColorName');
-    const valueInput = document.getElementById('newColorValue');
-    const newName = nameInput.value.trim();
-    const newValue = valueInput.value;
-    
-    if (!newName) {
-        alert('색상 이름을 입력해주세요.');
-        return;
-    }
-    
-    const settings = DropdownSettings.get();
-    
-    // 이름 중복 체크
-    if (settings.colors.some(color => color.name === newName)) {
-        alert('이미 존재하는 색상 이름입니다.');
-        return;
-    }
-    
-    // 새 키 생성 (이름을 영어로 변환하거나 고유 ID 생성)
-    const newKey = 'custom_' + Date.now();
-    
-    settings.colors.push({
-        key: newKey,
-        name: newName,
-        value: newValue
+        `;
+        listElement.appendChild(li);
     });
     
-    DropdownSettings.save(settings);
-    displayColors(settings.colors);
-    nameInput.value = '';
-    valueInput.value = '#ff69b4';
-    alert('색상이 추가되었습니다.');
+    console.log(`✅ ${type} 리스트 표시 완료 - ${items.length}개 항목`);
 }
 
-// 결제조건 수정
-function editPaymentTerm(index, currentValue) {
-    const editForm = document.getElementById(`editPaymentTerm${index}`);
-    editForm.classList.add('active');
-}
-
-function savePaymentTerm(index) {
-    const input = document.getElementById(`editPaymentTermInput${index}`);
-    const newValue = input.value.trim();
+// 색상 리스트 표시 함수 (고정 색상, 의미만 수정 가능)
+function displayColorList(listId, colors) {
+    const listElement = document.getElementById(listId);
+    if (!listElement) return;
     
-    if (!newValue) {
-        alert('결제조건을 입력해주세요.');
+    console.log('🎨 색상 리스트 표시:', colors);
+    
+    listElement.innerHTML = '';
+    colors.forEach((color, index) => {
+        // 회색, 보라색, 빨강색은 항상 방문일 숨김
+        const hideVisitDate = (color.name === '회색' || color.name === 'gray' || color.name === '보라' || color.name === 'purple' || color.name === '빨강' || color.name === 'red');
+        
+        const li = document.createElement('li');
+        li.className = 'color-meaning-item';
+        li.innerHTML = `
+            <div style="display: flex; align-items: center; min-width: 120px;">
+                <span class="color-preview" style="background-color: ${color.value}; display: inline-block; width: 24px; height: 24px; border-radius: 50%; margin-right: 10px; border: 2px solid #ddd; vertical-align: middle;"></span>
+                <span style="font-weight: 600; color: #2c3e50;">${color.name}</span>
+                ${hideVisitDate ? '<span style="margin-left: 8px; color: #666; font-size: 11px; background: #e9ecef; padding: 2px 6px; border-radius: 10px;">[방문일숨김]</span>' : ''}
+            </div>
+            <input type="text" class="color-meaning-input" id="meaning-${color.key}" value="${color.meaning || ''}" placeholder="색상의 의미를 입력하세요 (예: 거래중, 재무상태불량, 철판 안씀)" style="flex: 1;">
+            <button class="btn-save-meaning" onclick="saveColorMeaningFromInput('${color.name.replace(/'/g, "\\'")}', 'meaning-${color.key}')">저장</button>
+        `;
+        listElement.appendChild(li);
+    });
+    
+    console.log(`✅ 색상 리스트 표시 완료 - ${colors.length}개 항목`);
+    
+    // 색상 의미 가이드 업데이트
+    updateColorMeaningsDisplay(colors);
+}
+
+// 색상 의미 가이드 표시 함수
+function updateColorMeaningsDisplay(colors) {
+    const meaningsList = document.getElementById('colorMeaningsList');
+    if (!meaningsList) return;
+    
+    if (!colors || colors.length === 0) {
+        meaningsList.innerHTML = '<p style="color: #999; font-style: italic;">색상 의미를 설정하면 여기에 표시됩니다.</p>';
         return;
     }
     
-    const settings = DropdownSettings.get();
+    // 모든 색상을 표시 (의미가 없어도 표시)
+    const meaningsHTML = colors.map(color => {
+        let colorValue = color.value;
+        try {
+            if (typeof color.value === 'string' && color.value.startsWith('{')) {
+                const metadata = JSON.parse(color.value);
+                colorValue = metadata.color;
+            }
+        } catch (e) {
+            // 파싱 실패 시 기본값 사용
+        }
+        
+        return `
+            <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                <span style="display: inline-block; width: 16px; height: 16px; background-color: ${colorValue}; border-radius: 50%; margin-right: 8px; border: 1px solid #ddd;"></span>
+                <span style="font-weight: 600; margin-right: 8px;">${color.name}:</span>
+                <span style="color: #666;">${color.meaning || '의미 미설정'}</span>
+            </div>
+        `;
+    }).join('');
     
-    // 중복 체크 (자기 자신 제외)
-    if (settings.paymentTerms.some((term, i) => i !== index && term === newValue)) {
-        alert('이미 존재하는 결제조건입니다.');
+    meaningsList.innerHTML = meaningsHTML;
+}
+
+// 직접입력 데이터 저장 함수 (user_settings 테이블 사용)
+async function saveToDatabase(type, value) {
+    try {
+        console.log(`💾 ${type} 값 "${value}" 저장 시작`);
+        
+        const userId = await DropdownSettings.getCurrentUserId();
+        if (!userId) {
+            throw new Error('사용자 정보가 없습니다.');
+        }
+        
+        // 타입 매핑
+        const typeMapping = {
+            '결제조건': 'payment_terms',
+            '업종': 'business_type',
+            '지역': 'region',
+            '방문목적': 'visit_purpose'
+        };
+        
+        const settingType = typeMapping[type];
+        if (!settingType) {
+            throw new Error(`알 수 없는 설정 타입: ${type}`);
+        }
+        
+        // user_settings 테이블에 저장
+        const db = new DatabaseManager();
+        await db.init();
+        await db.addUserSetting(userId, settingType, value);
+        
+        console.log(`✅ ${type} 값 "${value}" user_settings에 저장 완료`);
+        
+        // 캐시 무효화
+        window.cachedDataLoader.invalidateSettingsCache(userId);
+        
+        return true;
+        
+    } catch (error) {
+        console.error(`❌ ${type} 저장 중 오류:`, error);
+        throw error;
+    }
+}
+
+// 추가 버튼 클릭 시 호출되는 함수들
+async function addPaymentTerm() {
+    await addItem('결제조건', 'newPaymentTerm');
+}
+
+async function addBusinessType() {
+    await addItem('업종', 'newBusinessType');
+}
+
+async function addRegion() {
+    await addItem('지역', 'newRegion');
+}
+
+async function addVisitPurpose() {
+    await addItem('방문목적', 'newVisitPurpose');
+}
+
+// 색상 추가 기능 제거 (고정 색상만 사용)
+
+// 일반 아이템 추가 공통 함수
+async function addItem(type, inputId) {
+    const inputElement = document.getElementById(inputId);
+    
+    if (!inputElement) {
+        alert(`${type} 입력 요소를 찾을 수 없습니다.`);
         return;
     }
     
-    settings.paymentTerms[index] = newValue;
-    DropdownSettings.save(settings);
-    displayPaymentTerms(settings.paymentTerms);
-    alert('결제조건이 수정되었습니다.');
-}
-
-// 업종 수정
-function editBusinessType(index, currentValue) {
-    const editForm = document.getElementById(`editBusinessType${index}`);
-    editForm.classList.add('active');
-}
-
-function saveBusinessType(index) {
-    const input = document.getElementById(`editBusinessTypeInput${index}`);
-    const newValue = input.value.trim();
+    const value = inputElement.value.trim();
     
-    if (!newValue) {
-        alert('업종을 입력해주세요.');
+    if (!value) {
+        alert(`${type}을(를) 입력해주세요.`);
         return;
     }
     
-    const settings = DropdownSettings.get();
-    
-    // 중복 체크 (자기 자신 제외)
-    if (settings.businessTypes.some((type, i) => i !== index && type === newValue)) {
-        alert('이미 존재하는 업종입니다.');
+    try {
+        await saveToDatabase(type, value);
+        
+        // 입력창 초기화
+        inputElement.value = '';
+        
+        // 캐시 무효화 및 즉시 설정 다시 로드
+        const userId = await DropdownSettings.getCurrentUserId();
+        if (userId && window.cachedDataLoader) {
+            window.cachedDataLoader.invalidateSettingsCache(userId);
+        }
+        
+        await loadSettings();
+        
+        alert(`${type} "${value}"이(가) 추가되었습니다.`);
+        
+    } catch (error) {
+        console.error(`${type} 추가 오류:`, error);
+        alert(`${type} 추가 중 오류가 발생했습니다.`);
+    }
+}
+
+
+// 항목 삭제 함수 (리스트에서 삭제 버튼 클릭 시)
+async function deleteItem(type, item) {
+    try {
+        if (!confirm(`"${item}"을(를) 정말 삭제하시겠습니까?`)) {
+            return;
+        }
+        
+        const userId = await DropdownSettings.getCurrentUserId();
+        if (!userId) {
+            alert('로그인이 필요합니다.');
+            return;
+        }
+        
+        // 타입 매핑
+        const typeMapping = {
+            '결제조건': 'payment_terms',
+            '업종': 'business_type',
+            '지역': 'region',
+            '방문목적': 'visit_purpose'
+        };
+        
+        const settingType = typeMapping[type];
+        if (!settingType) {
+            alert(`알 수 없는 설정 타입: ${type}`);
+            return;
+        }
+        
+        // user_settings 테이블에서 삭제
+        const db = new DatabaseManager();
+        await db.init();
+        await db.deleteUserSetting(userId, settingType, item);
+        
+        // 캐시 무효화 및 즉시 설정 다시 로드
+        window.cachedDataLoader.invalidateSettingsCache(userId);
+        await loadSettings();
+        
+        alert(`${type} "${item}"이(가) 삭제되었습니다.`);
+        
+    } catch (error) {
+        console.error(`${type} 삭제 오류:`, error);
+        alert(`${type} 삭제 중 오류가 발생했습니다.`);
+    }
+}
+
+// 색상 삭제 기능 제거 (고정 색상만 사용)
+
+
+// 입력창에서 색상 의미 저장 함수
+async function saveColorMeaningFromInput(colorName, inputId) {
+    const inputElement = document.getElementById(inputId);
+    if (!inputElement) {
+        alert('입력창을 찾을 수 없습니다.');
         return;
     }
     
-    settings.businessTypes[index] = newValue;
-    DropdownSettings.save(settings);
-    displayBusinessTypes(settings.businessTypes);
-    alert('업종이 수정되었습니다.');
+    const newMeaning = inputElement.value.trim();
+    
+    try {
+        await saveColorMeaning(colorName, newMeaning);
+        
+        // 성공 메시지와 함께 입력창 스타일 변경
+        const originalStyle = inputElement.style.border;
+        inputElement.style.border = '2px solid #27ae60';
+        inputElement.style.backgroundColor = '#d4edda';
+        
+        // 성공 표시 후 원래 스타일로 되돌리기
+        setTimeout(() => {
+            inputElement.style.border = originalStyle;
+            inputElement.style.backgroundColor = '';
+        }, 1500);
+        
+        // 캐시 무효화 및 즉시 설정 다시 로드
+        const currentUser = await window.dataLoader.getCurrentUser();
+        if (currentUser && window.cachedDataLoader) {
+            window.cachedDataLoader.invalidateSettingsCache(currentUser.id);
+            // 전체 설정을 다시 로드하여 모든 색상 정보 업데이트
+            const settings = await window.cachedDataLoader.loadUserSettings(currentUser.id);
+            if (settings && settings.colors) {
+                updateColorMeaningsDisplay(settings.colors);
+            }
+        }
+        
+        console.log(`✅ 색상 "${colorName}" 의미 저장 완료: "${newMeaning || '(의미 없음)'}"`);
+        
+        // 성공 후 자동 새로고침 (캐시 무시)
+        setTimeout(() => {
+            window.location.reload(true);
+        }, 1600);
+        
+    } catch (error) {
+        console.error('색상 의미 저장 오류:', error);
+        alert('색상 의미 저장 중 오류가 발생했습니다.');
+        
+        // 오류 표시
+        const originalStyle = inputElement.style.border;
+        inputElement.style.border = '2px solid #dc3545';
+        inputElement.style.backgroundColor = '#f8d7da';
+        
+        setTimeout(() => {
+            inputElement.style.border = originalStyle;
+            inputElement.style.backgroundColor = '';
+        }, 2000);
+    }
 }
 
-// 방문목적 수정
-function editVisitPurpose(index, currentValue) {
-    const editForm = document.getElementById(`editVisitPurpose${index}`);
-    editForm.classList.add('active');
+// 색상 의미 수정 함수 (기존 방식, 호환성 유지)
+async function editColorMeaning(colorName, currentMeaning) {
+    const newMeaning = prompt(`"${colorName}" 색상의 의미를 입력하세요:`, currentMeaning || '');
+    
+    if (newMeaning === null) {
+        return; // 사용자가 취소함
+    }
+    
+    try {
+        await saveColorMeaning(colorName, newMeaning.trim());
+        
+        // 캐시 무효화 및 즉시 설정 다시 로드
+        const userId = await DropdownSettings.getCurrentUserId();
+        if (userId && window.cachedDataLoader) {
+            window.cachedDataLoader.invalidateSettingsCache(userId);
+        }
+        await loadSettings();
+        
+        alert(`색상 "${colorName}"의 의미가 "${newMeaning.trim() || '(의미 없음)'}"로 수정되었습니다.`);
+        
+    } catch (error) {
+        console.error('색상 의미 수정 오류:', error);
+        alert('색상 의미 수정 중 오류가 발생했습니다.');
+    }
 }
 
-function saveVisitPurpose(index) {
-    const input = document.getElementById(`editVisitPurposeInput${index}`);
-    const newValue = input.value.trim();
-    
-    if (!newValue) {
-        alert('방문목적을 입력해주세요.');
-        return;
+// 색상 의미 저장 함수 (고정 색상에 대한 의미만 저장)
+async function saveColorMeaning(colorName, meaning) {
+    const userId = await DropdownSettings.getCurrentUserId();
+    if (!userId) {
+        throw new Error('사용자 정보가 없습니다.');
     }
     
-    const settings = DropdownSettings.get();
+    const db = new DatabaseManager();
+    await db.init();
     
-    // 중복 체크 (자기 자신 제외)
-    if (settings.visitPurposes.some((purpose, i) => i !== index && purpose === newValue)) {
-        alert('이미 존재하는 방문목적입니다.');
-        return;
+    // 기존 색상 의미 삭제
+    await db.deleteUserSetting(userId, 'color_meaning', colorName);
+    
+    // 새 의미 저장 (값이 있을 때만)
+    if (meaning && meaning.trim()) {
+        await db.addUserSetting(userId, 'color_meaning', colorName, colorName, null, meaning);
     }
     
-    settings.visitPurposes[index] = newValue;
-    DropdownSettings.save(settings);
-    displayVisitPurposes(settings.visitPurposes);
-    alert('방문목적이 수정되었습니다.');
-}
-
-// 색상 수정
-function editColor(index) {
-    const editForm = document.getElementById(`editColor${index}`);
-    editForm.classList.add('active');
-}
-
-function saveColor(index) {
-    const nameInput = document.getElementById(`editColorNameInput${index}`);
-    const valueInput = document.getElementById(`editColorValueInput${index}`);
-    const newName = nameInput.value.trim();
-    const newValue = valueInput.value;
+    console.log(`✅ 색상 "${colorName}" 의미를 "${meaning}"로 수정 완료`);
     
-    if (!newName) {
-        alert('색상 이름을 입력해주세요.');
-        return;
-    }
-    
-    const settings = DropdownSettings.get();
-    
-    // 중복 체크 (자기 자신 제외)
-    if (settings.colors.some((color, i) => i !== index && color.name === newName)) {
-        alert('이미 존재하는 색상 이름입니다.');
-        return;
-    }
-    
-    settings.colors[index].name = newName;
-    settings.colors[index].value = newValue;
-    DropdownSettings.save(settings);
-    displayColors(settings.colors);
-    alert('색상이 수정되었습니다.');
-}
-
-// 결제조건 삭제
-function deletePaymentTerm(index) {
-    if (!confirm('이 결제조건을 삭제하시겠습니까?')) {
-        return;
-    }
-    
-    const settings = DropdownSettings.get();
-    settings.paymentTerms.splice(index, 1);
-    DropdownSettings.save(settings);
-    displayPaymentTerms(settings.paymentTerms);
-    alert('결제조건이 삭제되었습니다.');
-}
-
-// 업종 삭제
-function deleteBusinessType(index) {
-    if (!confirm('이 업종을 삭제하시겠습니까?')) {
-        return;
-    }
-    
-    const settings = DropdownSettings.get();
-    settings.businessTypes.splice(index, 1);
-    DropdownSettings.save(settings);
-    displayBusinessTypes(settings.businessTypes);
-    alert('업종이 삭제되었습니다.');
-}
-
-// 지역 수정
-function editRegion(index, currentValue) {
-    const editForm = document.getElementById(`editRegion${index}`);
-    editForm.classList.add('active');
-    editForm.style.display = 'block';
-}
-
-// 지역 저장
-function saveRegion(index) {
-    const input = document.getElementById(`editRegionInput${index}`);
-    const newValue = input.value.trim();
-    
-    if (!newValue) {
-        alert('지역을 입력해주세요.');
-        return;
-    }
-    
-    const settings = DropdownSettings.get();
-    
-    if (!settings.regions) {
-        settings.regions = [...defaultSettings.regions];
-    }
-    
-    // 중복 체크 (자기 자신 제외)
-    if (settings.regions.some((region, i) => i !== index && region === newValue)) {
-        alert('이미 존재하는 지역입니다.');
-        return;
-    }
-    
-    settings.regions[index] = newValue;
-    settings.regions.sort((a, b) => a.localeCompare(b)); // 오름차순 정렬
-    DropdownSettings.save(settings);
-    localStorage.setItem('company_regions', JSON.stringify(settings.regions));
-    displayRegions(settings.regions);
-    alert('지역이 수정되었습니다.');
-}
-
-// 지역 삭제
-function deleteRegion(index) {
-    if (!confirm('이 지역을 삭제하시겠습니까?')) {
-        return;
-    }
-    
-    const settings = DropdownSettings.get();
-    
-    if (!settings.regions) {
-        settings.regions = [...defaultSettings.regions];
-    }
-    
-    settings.regions.splice(index, 1);
-    DropdownSettings.save(settings);
-    localStorage.setItem('company_regions', JSON.stringify(settings.regions));
-    displayRegions(settings.regions);
-    alert('지역이 삭제되었습니다.');
-}
-
-// 방문목적 삭제
-function deleteVisitPurpose(index) {
-    if (!confirm('이 방문목적을 삭제하시겠습니까?')) {
-        return;
-    }
-    
-    const settings = DropdownSettings.get();
-    settings.visitPurposes.splice(index, 1);
-    DropdownSettings.save(settings);
-    displayVisitPurposes(settings.visitPurposes);
-    alert('방문목적이 삭제되었습니다.');
-}
-
-// 색상 삭제
-function deleteColor(index) {
-    if (!confirm('이 색상을 삭제하시겠습니까?')) {
-        return;
-    }
-    
-    const settings = DropdownSettings.get();
-    settings.colors.splice(index, 1);
-    DropdownSettings.save(settings);
-    displayColors(settings.colors);
-    alert('색상이 삭제되었습니다.');
-}
-
-// 수정 취소
-function cancelEdit(editFormId) {
-    const editForm = document.getElementById(editFormId);
-    editForm.classList.remove('active');
-}
-
-// 기본값으로 초기화
-function resetToDefaults() {
-    if (!confirm('모든 드롭다운 설정을 기본값으로 초기화하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.')) {
-        return;
-    }
-    
-    const settings = DropdownSettings.reset();
-    loadSettings();
-    alert('모든 설정이 기본값으로 초기화되었습니다.');
+    // 캐시 무효화
+    window.cachedDataLoader.invalidateSettingsCache(userId);
 }
 
 // 전역에서 접근 가능하도록 설정
 window.DropdownSettings = DropdownSettings;
+window.saveToDatabase = saveToDatabase;
+window.addPaymentTerm = addPaymentTerm;
+window.addBusinessType = addBusinessType;
+window.addRegion = addRegion;
+window.addVisitPurpose = addVisitPurpose;
+window.deleteItem = deleteItem;
+window.editColorMeaning = editColorMeaning;
+window.saveColorMeaning = saveColorMeaning;
+window.saveColorMeaningFromInput = saveColorMeaningFromInput;

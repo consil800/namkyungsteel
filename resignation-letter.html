@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>사직서 - SteelWorks Platform</title>
+    <!-- Favicons -->
+    <link href="logo.jpg" rel="icon">
+    <link href="logo.jpg" rel="apple-touch-icon">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="database.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -99,7 +102,7 @@
 
         .form-row {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(4, 1fr);
             gap: 1.5rem;
             margin-bottom: 1.5rem;
         }
@@ -619,7 +622,7 @@
                             const companyHTML = `
                                 <strong>${companyInfo.company_name || '회사명 없음'}</strong><br>
                                 대표이사 ${companyInfo.representative_name || '대표자명 없음'}<br>
-                                ${companyInfo.company_address || '주소 없음'}<br>
+                                ${companyInfo.address || companyInfo.company_address || '주소 없음'}<br>
                                 사업자등록번호: ${companyInfo.business_number || '사업자번호 없음'}
                             `;
                             
@@ -838,6 +841,7 @@
                 if (result.success) {
                     alert('사직서 승인 요청이 완료되었습니다.\n승인자의 검토를 기다려주세요.');
                     resetForm();
+                    window.location.href = 'documents.html';
                 } else {
                     alert('사직서 제출 중 오류가 발생했습니다.');
                     console.error('저장 오류:', result.error);
@@ -915,26 +919,45 @@
             try {
                 await window.db.init();
                 
-                // localStorage에서 로그인 정보(이메일)만 가져오기
-                const loginInfo = JSON.parse(localStorage.getItem('currentUser') || '{}');
-                if (!loginInfo || !loginInfo.email) {
+                // sessionStorage에서 로그인 정보 가져오기
+                const loginInfo = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+                console.log('📋 세션 스토리지 로그인 정보:', loginInfo);
+                
+                if (!loginInfo || (!loginInfo.email && !loginInfo.id)) {
                     console.error('로그인 정보가 없습니다.');
                     return null;
                 }
 
-                // Supabase users 테이블에서 최신 사용자 정보 조회
-                const { data: user, error } = await window.db.client
-                    .from('users')
-                    .select('*')
-                    .eq('email', loginInfo.email)
-                    .eq('is_active', true)
-                    .single();
+                // Supabase users 테이블에서 최신 사용자 정보 조회 (이메일 또는 ID로)
+                let user, error;
+                if (loginInfo.email && loginInfo.email !== 'null') {
+                    // 이메일로 조회 (Google 로그인)
+                    console.log('🔍 이메일로 사용자 조회:', loginInfo.email);
+                    const result = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .eq('email', loginInfo.email)
+                        .single();
+                    user = result.data;
+                    error = result.error;
+                } else if (loginInfo.id) {
+                    // ID로 조회 (카카오 로그인에서 이메일이 없는 경우)
+                    console.log('🔍 ID로 사용자 조회:', loginInfo.id);
+                    const result = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .eq('id', loginInfo.id)
+                        .single();
+                    user = result.data;
+                    error = result.error;
+                }
 
                 if (error) {
                     console.error('사용자 정보 조회 오류:', error);
                     return null;
                 }
 
+                console.log('✅ 사용자 정보 조회 성공:', user);
                 return user;
             } catch (error) {
                 console.error('getCurrentUser 오류:', error);

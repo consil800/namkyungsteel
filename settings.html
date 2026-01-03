@@ -4,11 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>설정 - 철강영업 업무일지</title>
+    <!-- Favicons -->
+    <link href="logo.jpg" rel="icon">
+    <link href="logo.jpg" rel="apple-touch-icon">
     
     <!-- Supabase JS CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Database Manager -->
-    <script src="database.js"></script>
+    <script src="database.js?v=20250121009"></script>
+    <!-- Data Cache Scripts -->
     
     <link rel="stylesheet" href="styles.css">
     <style>
@@ -95,6 +99,48 @@
             align-items: center;
         }
         
+        .color-meaning-item {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto;
+            gap: 15px;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .color-meaning-input {
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+            min-width: 200px;
+        }
+        
+        .color-meaning-input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.25);
+        }
+        
+        .btn-save-meaning {
+            background: linear-gradient(135deg, #27ae60, #229954);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            min-width: 60px;
+        }
+        
+        .btn-save-meaning:hover {
+            background: linear-gradient(135deg, #229954, #1e8449);
+            transform: translateY(-1px);
+        }
+        
         .edit-form {
             display: none;
             background: #fff;
@@ -116,6 +162,49 @@
             border: 1px solid #ddd;
             border-radius: 3px;
         }
+
+        /* 모바일 반응형 스타일 */
+        @media (max-width: 768px) {
+            .color-meaning-item {
+                grid-template-columns: 1fr;
+                gap: 10px;
+                padding: 12px;
+            }
+            
+            .color-meaning-input {
+                min-width: 100%;
+                width: 100%;
+                box-sizing: border-box;
+            }
+            
+            .btn-save-meaning {
+                width: 100%;
+                padding: 10px;
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .settings-section {
+                padding: 15px;
+                margin: 10px 0;
+            }
+            
+            .color-meaning-item {
+                padding: 10px;
+                gap: 8px;
+            }
+            
+            .color-meaning-input {
+                font-size: 16px; /* iOS zoom 방지 */
+                padding: 10px;
+            }
+            
+            .btn-save-meaning {
+                padding: 12px;
+                font-size: 16px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -123,7 +212,7 @@
         <header>
             <h1>설정</h1>
             <nav>
-                <a href="worklog.html" class="btn btn-cyan">이전으로</a>
+                <a href="javascript:history.back()" class="btn btn-cyan">이전으로</a>
             </nav>
         </header>
 
@@ -135,7 +224,7 @@
                     <!-- 동적으로 생성됩니다 -->
                 </ul>
                 <div class="add-option-form">
-                    <input type="text" id="newPaymentTerm" placeholder="새 결제조건 입력 (예: 120일)">
+                    <input type="text" id="newPaymentTerm" placeholder="새 결제조건 입력 (예: 120일)" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                     <button class="btn btn-primary" onclick="addPaymentTerm()">추가</button>
                 </div>
             </div>
@@ -147,7 +236,7 @@
                     <!-- 동적으로 생성됩니다 -->
                 </ul>
                 <div class="add-option-form">
-                    <input type="text" id="newBusinessType" placeholder="새 업종 입력 (예: 서비스업)">
+                    <input type="text" id="newBusinessType" placeholder="새 업종 입력 (예: 서비스업)" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                     <button class="btn btn-primary" onclick="addBusinessType()">추가</button>
                 </div>
             </div>
@@ -159,7 +248,7 @@
                     <!-- 동적으로 생성됩니다 -->
                 </ul>
                 <div class="add-option-form">
-                    <input type="text" id="newRegion" placeholder="새 지역 입력 (예: 진주)">
+                    <input type="text" id="newRegion" placeholder="새 지역 입력 (예: 진주)" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                     <button class="btn btn-primary" onclick="addRegion()">추가</button>
                 </div>
             </div>
@@ -171,34 +260,38 @@
                     <!-- 동적으로 생성됩니다 -->
                 </ul>
                 <div class="add-option-form">
-                    <input type="text" id="newVisitPurpose" placeholder="새 방문목적 입력 (예: 제품소개)">
+                    <input type="text" id="newVisitPurpose" placeholder="새 방문목적 입력 (예: 제품소개)" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                     <button class="btn btn-primary" onclick="addVisitPurpose()">추가</button>
                 </div>
             </div>
 
             <!-- 색상 설정 -->
             <div class="settings-section">
-                <h3>색상 관리</h3>
+                <h3>색상 의미 관리</h3>
+                <p style="font-size: 14px; color: #666; margin-bottom: 20px;">각 색상별로 의미를 설정할 수 있습니다. (색상은 고정되어 있습니다)</p>
                 <ul class="option-list" id="colorsList">
                     <!-- 동적으로 생성됩니다 -->
                 </ul>
-                <div class="add-option-form color-option-form">
-                    <input type="text" id="newColorName" placeholder="색상 이름 (예: 분홍)">
-                    <input type="color" id="newColorValue" value="#ff69b4">
-                    <button class="btn btn-primary" onclick="addColor()">추가</button>
+            </div>
+
+            <!-- 색상 의미 안내 -->
+            <div class="settings-section" id="colorMeaningsSection" style="background: #f8f9fa; border-left: 4px solid #3498db;">
+                <h4 style="color: #2c3e50; font-size: 16px; margin-bottom: 15px; display: flex; align-items: center;">
+                    <span style="margin-right: 8px;">🎨</span> 색상 의미 가이드
+                </h4>
+                <div id="colorMeaningsList" style="font-size: 13px; color: #555; line-height: 1.6;">
+                    <!-- 색상 의미가 동적으로 표시됩니다 -->
+                    <p style="color: #999; font-style: italic;">색상 의미를 설정하면 여기에 표시됩니다.</p>
                 </div>
             </div>
 
-            <!-- 초기화 버튼 -->
-            <div class="settings-section">
-                <h3>설정 초기화</h3>
-                <p>모든 드롭다운 옵션을 기본값으로 복원합니다.</p>
-                <button class="btn btn-warning" onclick="resetToDefaults()">기본값으로 초기화</button>
-            </div>
         </main>
     </div>
 
     <script src="shared-assets/js/auth.js"></script>
-    <script src="settings.js"></script>
+    <script src="data-loader.js"></script>
+    <script src="data-cache.js?v=20250909001"></script>
+    <script src="dropdown-loader.js"></script>
+    <script src="settings.js?v=20250111010"></script>
 </body>
 </html>

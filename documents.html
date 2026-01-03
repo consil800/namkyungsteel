@@ -251,6 +251,8 @@
             }
         }
     </style>
+  <!-- Mobile CSS File -->
+  <link href="shared-assets/css/mobile.css" rel="stylesheet">
 </head>
 <body>
     <header class="header">
@@ -395,6 +397,68 @@
             });
         }
 
+        // 데이터베이스에서 현재 사용자 정보 가져오기
+        async function getCurrentUserFromDB() {
+            try {
+                console.log('현재 사용자 정보 가져오기 시도...');
+                
+                if (!window.db) {
+                    console.warn('데이터베이스가 초기화되지 않음');
+                    return null;
+                }
+                
+                await window.db.init();
+                
+                // sessionStorage에서 로그인 정보 가져오기
+                const loginInfo = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+                console.log('sessionStorage 로그인 정보:', loginInfo);
+                
+                if (!loginInfo || (!loginInfo.email && !loginInfo.id)) {
+                    console.error('로그인 정보가 없습니다.');
+                    return null;
+                }
+                
+                // Supabase users 테이블에서 최신 사용자 정보 조회
+                let user, error;
+                if (loginInfo.email && loginInfo.email !== 'null') {
+                    console.log('이메일로 사용자 조회:', loginInfo.email);
+                    const result = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .eq('email', loginInfo.email)
+                        .single();
+                    user = result.data;
+                    error = result.error;
+                } else if (loginInfo.id) {
+                    console.log('ID로 사용자 조회:', loginInfo.id);
+                    const result = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .eq('id', loginInfo.id)
+                        .single();
+                    user = result.data;
+                    error = result.error;
+                }
+                
+                if (error) {
+                    console.error('사용자 정보 조회 오류:', error);
+                    return null;
+                }
+                
+                if (!user) {
+                    console.error('사용자를 찾을 수 없습니다');
+                    return null;
+                }
+                
+                console.log('사용자 정보 조회 성공:', user);
+                return user;
+                
+            } catch (error) {
+                console.error('getCurrentUserFromDB 오류:', error);
+                return null;
+            }
+        }
+        
         // 최근 작성한 서류 로드
         async function loadRecentDocuments() {
             try {
@@ -402,18 +466,31 @@
                 
                 const recentList = document.getElementById('recentDocuments');
                 
-                // 현재 로그인 사용자 정보 가져오기
-                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-                if (!currentUser.id) {
-                    recentList.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.7);">로그인이 필요합니다.</p>';
+                // 현재 로그인 사용자 정보를 데이터베이스에서 가져오기
+                const currentUser = await getCurrentUserFromDB();
+                if (!currentUser || !currentUser.id) {
+                    console.log('데이터베이스에서 사용자 정보를 가져올 수 없음');
+                    recentList.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.7);">사용자 정보를 불러오는 중...</p>';
                     return;
                 }
+                
+                console.log('현재 사용자 (DB에서):', currentUser);
 
-                // 데이터베이스에서 최근 활동 가져오기 (getRecentActivities 메서드 사용)
-                const activities = await window.db.getRecentActivities(
-                    window.db.getCurrentDomain() || 'namkyungsteel.com', 
-                    5
-                );
+                // 데이터베이스에서 현재 사용자의 최근 서류 요청 가져오기
+                const { data: documents, error } = await window.db.client
+                    .from('document_requests')
+                    .select('*')
+                    .eq('requester_id', currentUser.id)
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+                
+                if (error) {
+                    console.error('서류 조회 오류:', error);
+                    recentList.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.7);">서류 정보를 불러오는 중 오류가 발생했습니다.</p>';
+                    return;
+                }
+                
+                const activities = documents || [];
 
                 if (!activities || activities.length === 0) {
                     recentList.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.7);">최근 작성한 서류가 없습니다.</p>';
@@ -442,22 +519,22 @@
                     'leave': '연차신청서'
                 };
 
-                recentList.innerHTML = activities.map(activity => `
+                recentList.innerHTML = activities.map(doc => `
                     <div class="recent-item">
                         <div class="recent-info">
                             <div class="recent-icon">
-                                <i class="${typeIcons[activity.document_type] || 'fas fa-file'}"></i>
+                                <i class="${typeIcons[doc.document_type] || 'fas fa-file'}"></i>
                             </div>
                             <div class="recent-details">
-                                <h4>${typeNames[activity.document_type] || activity.document_type}</h4>
-                                <p>${activity.title}</p>
+                                <h4>${typeNames[doc.document_type] || doc.document_type}</h4>
+                                <p>${doc.title || '제목 없음'}</p>
                                 <p style="font-size: 0.7rem; margin-top: 0.2rem;">
-                                    ${activity.requester_name} - ${activity.status_text}
+                                    ${doc.status || 'pending'} 상태
                                 </p>
                             </div>
                         </div>
                         <div class="recent-date">
-                            ${formatDate(activity.created_at)}
+                            ${formatDate(doc.created_at)}
                         </div>
                     </div>
                 `).join('');
@@ -470,6 +547,71 @@
         }
 
         // 날짜 포맷팅
+        // 데이터베이스에서 현재 사용자 정보 가져오기
+        async function getCurrentUserFromDB() {
+            try {
+                console.log('getCurrentUserFromDB 시작');
+                
+                if (!window.db) {
+                    console.warn('데이터베이스가 초기화되지 않음');
+                    return null;
+                }
+                
+                await window.db.init();
+                console.log('데이터베이스 초기화 완료');
+                
+                // sessionStorage에서 로그인 정보 가져오기
+                const loginInfo = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+                console.log('sessionStorage 로그인 정보:', loginInfo);
+                
+                if (!loginInfo || (!loginInfo.email && !loginInfo.id)) {
+                    console.error('로그인 정보가 없습니다.');
+                    return null;
+                }
+                
+                // Supabase users 테이블에서 최신 사용자 정보 조회
+                let user, error;
+                if (loginInfo.email && loginInfo.email !== 'null') {
+                    console.log('이메일로 사용자 조회:', loginInfo.email);
+                    const result = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .eq('email', loginInfo.email)
+                        .single();
+                    user = result.data;
+                    error = result.error;
+                    console.log('이메일 조회 결과:', { user, error });
+                } else if (loginInfo.id) {
+                    console.log('ID로 사용자 조회:', loginInfo.id);
+                    const result = await window.db.client
+                        .from('users')
+                        .select('*')
+                        .eq('id', loginInfo.id)
+                        .single();
+                    user = result.data;
+                    error = result.error;
+                    console.log('ID 조회 결과:', { user, error });
+                }
+                
+                if (error) {
+                    console.error('사용자 정보 조회 오류:', error);
+                    return null;
+                }
+                
+                if (!user) {
+                    console.error('사용자를 찾을 수 없습니다');
+                    return null;
+                }
+                
+                console.log('사용자 정보 조회 성공:', user);
+                return user;
+                
+            } catch (error) {
+                console.error('getCurrentUserFromDB 오류:', error);
+                return null;
+            }
+        }
+        
         function formatDate(dateString) {
             const date = new Date(dateString);
             const now = new Date();

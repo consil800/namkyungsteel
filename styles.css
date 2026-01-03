@@ -158,41 +158,21 @@ nav {
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
-/* 업체 색상별 스타일 */
-.company-card.color-red {
-    border-left: 5px solid #e74c3c;
-    background-color: #fdf2f2;
-}
+/* 
+   업체 색상별 스타일 - 데이터베이스 기반 동적 생성으로 대체됨
+   기존 하드코딩된 색상들(.company-card.color-red 등)은 
+   main.js에서 user_settings의 실제 색상값을 기반으로 동적 생성됩니다.
+*/
 
-.company-card.color-orange {
-    border-left: 5px solid #f39c12;
-    background-color: #fef9f3;
-}
-
-.company-card.color-yellow {
-    border-left: 5px solid #f1c40f;
-    background-color: #fffef3;
-}
-
-.company-card.color-green {
-    border-left: 5px solid #27ae60;
-    background-color: #f2f8f4;
-}
-
-.company-card.color-blue {
-    border-left: 5px solid #3498db;
-    background-color: #f2f7fb;
-}
-
-.company-card.color-purple {
-    border-left: 5px solid #9b59b6;
-    background-color: #f7f4f9;
-}
-
-.company-card.color-gray {
-    border-left: 5px solid #95a5a6;
-    background-color: #f6f7f7;
-}
+/* 
+   기본 색상 스타일 - 데이터베이스 기반 동적 생성으로 대체됨
+   하드코딩된 색상 대신 user_settings 테이블의 실제 색상값 + 70% 밝기 사용
+   
+   아래 스타일들은 이제 main.js에서 동적으로 생성됩니다:
+   - tr.company-row.color-빨강, .color-파랑 등
+   - 실제 데이터베이스 색상: {"color":"#ff0000","hideVisitDate":false}
+   - 적용: lightenColor(#ff0000, 0.7) → 70% 밝기의 배경색
+*/
 
 .company-card h3 {
     color: #2c3e50;
@@ -422,6 +402,38 @@ nav {
     flex-wrap: wrap;
 }
 
+/* 업체 목록 테이블 스타일 - 글자 크기 조정 */
+.company-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    font-size: 13px; /* 기본 14px에서 1px 줄임 */
+}
+
+.company-table th,
+.company-table td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    font-size: 13px; /* 기본 14px에서 1px 줄임 */
+}
+
+.company-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 13px; /* 헤더도 동일하게 적용 */
+}
+
+.company-table tbody tr:hover {
+    background-color: #f5f5f5;
+}
+
+.table-container {
+    overflow-x: auto;
+    margin: 20px 0;
+}
+
 @media (max-width: 768px) {
     .container {
         padding: 10px;
@@ -464,5 +476,45 @@ nav {
     .modal-content {
         width: 95%;
         margin: 10% auto;
+    }
+    
+    /* 모바일 체크박스 스타일 개선 */
+    input[type="checkbox"] {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        width: 16px !important;
+        height: 16px !important;
+        min-width: 16px !important;
+        min-height: 16px !important;
+        border: 2px solid #ccc;
+        border-radius: 3px;
+        background-color: white;
+        cursor: pointer;
+        position: relative;
+        display: inline-block;
+        vertical-align: middle;
+        flex-shrink: 0;
+    }
+    
+    input[type="checkbox"]:checked {
+        background-color: #2196F3;
+        border-color: #2196F3;
+    }
+    
+    input[type="checkbox"]:checked::after {
+        content: '✓';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        font-size: 12px;
+        font-weight: bold;
+    }
+    
+    input[type="checkbox"]:focus {
+        outline: 2px solid #2196F3;
+        outline-offset: 2px;
     }
 }

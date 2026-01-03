@@ -3,20 +3,17 @@
 let currentUser = null;
 
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('업체 등록 페이지 로드 시작');
+    console.log('📄 업체 등록 페이지 로드 시작');
     
-    // 데이터베이스 초기화 대기
-    await waitForDatabase();
-    
-    // 로그인 확인
-    currentUser = AuthManager.getCurrentUser();
+    // 간단한 사용자 인증
+    currentUser = await window.dataLoader.getCurrentUser();
     if (!currentUser) {
         alert('로그인이 필요합니다.');
         window.location.href = 'login.html';
         return;
     }
 
-    console.log('현재 사용자:', currentUser);
+    console.log('✅ 현재 사용자:', currentUser.name);
 
     // 드롭다운 옵션 로드
     await loadDropdownOptions();
@@ -45,7 +42,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             products: formData.get('products').trim(),
             usage_items: formData.get('usageItems').trim(),
             notes: formData.get('notes').trim(),
-            company_color: formData.get('companyColor') || '',
+            color_code: formData.get('companyColor') || '',
             visit_count: 0,
             last_visit_date: null,
             user_id: currentUser.id,
@@ -71,22 +68,25 @@ document.addEventListener('DOMContentLoaded', async function() {
             submitBtn.disabled = true;
             submitBtn.textContent = '등록 중...';
 
-            console.log('데이터베이스 저장 시작');
+            console.log('📝 업체 등록 시작');
             
-            // 데이터베이스에 저장 (개인 업체로)
-            if (window.db && window.db.client) {
-                const result = await window.db.createClientCompany(companyData);
-                console.log('저장 결과:', result);
+            // 간단한 업체 등록
+            const result = await window.dataLoader.createCompany(companyData, currentUser.id);
+            
+            if (result.success) {
+                alert('업체가 성공적으로 등록되었습니다.');
                 
-                if (result.success) {
-                    alert('업체가 성공적으로 등록되었습니다.');
-                    // worklog.html로 돌아가기
-                    window.location.href = 'worklog.html';
-                } else {
-                    throw new Error('업체 등록에 실패했습니다.');
+                // 데이터 변경 알림 (자동 캐시 무효화 및 새로고침 포함)
+                if (currentUser.id && window.dataChangeManager) {
+                    window.dataChangeManager.notifyChange(currentUser.id, 'create');
                 }
+                
+                // worklog.html로 이동하여 새로 등록된 업체 확인
+                setTimeout(() => {
+                    window.location.href = 'worklog.html';
+                }, 200);
             } else {
-                throw new Error('데이터베이스 연결이 필요합니다.');
+                throw new Error('업체 등록에 실패했습니다.');
             }
 
         } catch (error) {
@@ -108,91 +108,39 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 });
 
-// 데이터베이스 초기화 대기
-async function waitForDatabase() {
-    let retryCount = 0;
-    while ((!window.db || !window.db.client) && retryCount < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        retryCount++;
-    }
-    console.log('데이터베이스 초기화 상태:', !!window.db, !!window.db?.client);
-}
+// 제거됨 - data-loader.js에서 처리
 
 // 드롭다운 옵션 로드
 async function loadDropdownOptions() {
     console.log('드롭다운 옵션 로드 시작');
     
     try {
-        // 로컬 스토리지에서 설정 가져오기
-        const storedSettings = localStorage.getItem('dropdownSettings');
-        let settings;
-        
-        if (storedSettings) {
-            settings = JSON.parse(storedSettings);
-        } else {
-            // 기본값 설정
-            settings = {
-                paymentTerms: ['현금', '월말결제', '30일', '45일', '60일', '90일', '어음', '기타'],
-                businessTypes: ['제조업', '건설업', '유통업', '기타'],
-                regions: ['서울','부산','대구','경주','김해','양산','함안','밀양','창원','창녕','울산','목포','광주','광양'].sort((a, b) => a.localeCompare(b)),
-                colors: [
-                    { key: 'red', name: '빨강', value: '#e74c3c' },
-                    { key: 'orange', name: '주황', value: '#f39c12' },
-                    { key: 'yellow', name: '노랑', value: '#f1c40f' },
-                    { key: 'green', name: '초록', value: '#27ae60' },
-                    { key: 'blue', name: '파랑', value: '#3498db' },
-                    { key: 'purple', name: '보라', value: '#9b59b6' },
-                    { key: 'gray', name: '회색', value: '#95a5a6' }
-                ]
-            };
+        // 데이터베이스 초기화 대기
+        if (!window.DropdownLoader) {
+            console.error('DropdownLoader가 로드되지 않았습니다.');
+            loadBasicOptions();
+            return;
         }
 
-        console.log('드롭다운 설정:', settings);
-
-        // 지역 드롭다운 로드
+        // 각 드롭다운 로드 (직접입력 옵션 없이)
         const regionSelect = document.getElementById('region');
-        if (regionSelect && settings.regions) {
-            settings.regions.forEach(region => {
-                const option = document.createElement('option');
-                option.value = region;
-                option.textContent = region;
-                regionSelect.appendChild(option);
-            });
+        if (regionSelect) {
+            await DropdownLoader.loadRegionsOnly(regionSelect);
         }
 
-        // 결제조건 드롭다운 로드
         const paymentTermsSelect = document.getElementById('paymentTerms');
-        if (paymentTermsSelect && settings.paymentTerms) {
-            settings.paymentTerms.forEach(term => {
-                const option = document.createElement('option');
-                option.value = term;
-                option.textContent = term;
-                paymentTermsSelect.appendChild(option);
-            });
+        if (paymentTermsSelect) {
+            await DropdownLoader.loadPaymentTermsOnly(paymentTermsSelect);
         }
 
-        // 업종 드롭다운 로드
         const businessTypeSelect = document.getElementById('businessType');
-        if (businessTypeSelect && settings.businessTypes) {
-            settings.businessTypes.forEach(type => {
-                const option = document.createElement('option');
-                option.value = type;
-                option.textContent = type;
-                businessTypeSelect.appendChild(option);
-            });
+        if (businessTypeSelect) {
+            await DropdownLoader.loadBusinessTypesOnly(businessTypeSelect);
         }
 
-        // 색상 드롭다운 로드
         const colorSelect = document.getElementById('companyColor');
-        if (colorSelect && settings.colors) {
-            settings.colors.forEach(color => {
-                const option = document.createElement('option');
-                option.value = color.key;
-                option.textContent = color.name;
-                option.style.backgroundColor = color.value;
-                option.style.color = getContrastColor(color.value);
-                colorSelect.appendChild(option);
-            });
+        if (colorSelect) {
+            await DropdownLoader.loadColorsOnly(colorSelect);
         }
 
         console.log('드롭다운 옵션 로드 완료');
@@ -205,66 +153,29 @@ async function loadDropdownOptions() {
     }
 }
 
-// 기본 옵션 로드 (오류 시 백업)
+// 빈 옵션 로드 (오류 시 백업)
 function loadBasicOptions() {
-    console.log('기본 옵션 로드');
+    console.log('빈 옵션 로드 - 사용자가 설정 페이지에서 항목을 추가해야 합니다.');
     
-    // 기본 지역
-    const regions = ['서울','부산','대구','경주','김해','양산','함안','밀양','창원','창녕','울산','목포','광주','광양'];
+    // 드롭다운에는 기본 선택 옵션만 남겨두고 직접입력 옵션은 제거
     const regionSelect = document.getElementById('region');
-    if (regionSelect) {
-        regions.forEach(region => {
-            const option = document.createElement('option');
-            option.value = region;
-            option.textContent = region;
-            regionSelect.appendChild(option);
-        });
+    if (regionSelect && regionSelect.options.length <= 1) {
+        console.log('지역 드롭다운이 비어있습니다. 설정 페이지에서 항목을 추가하세요.');
     }
 
-    // 기본 결제조건
-    const paymentTerms = ['현금', '월말결제', '30일', '45일', '60일', '90일', '어음', '기타'];
     const paymentTermsSelect = document.getElementById('paymentTerms');
-    if (paymentTermsSelect) {
-        paymentTerms.forEach(term => {
-            const option = document.createElement('option');
-            option.value = term;
-            option.textContent = term;
-            paymentTermsSelect.appendChild(option);
-        });
+    if (paymentTermsSelect && paymentTermsSelect.options.length <= 1) {
+        console.log('결제조건 드롭다운이 비어있습니다. 설정 페이지에서 항목을 추가하세요.');
     }
 
-    // 기본 업종
-    const businessTypes = ['제조업', '건설업', '유통업', '기타'];
     const businessTypeSelect = document.getElementById('businessType');
-    if (businessTypeSelect) {
-        businessTypes.forEach(type => {
-            const option = document.createElement('option');
-            option.value = type;
-            option.textContent = type;
-            businessTypeSelect.appendChild(option);
-        });
+    if (businessTypeSelect && businessTypeSelect.options.length <= 1) {
+        console.log('업종 드롭다운이 비어있습니다. 설정 페이지에서 항목을 추가하세요.');
     }
 
-    // 기본 색상
-    const colors = [
-        { key: 'red', name: '빨강', value: '#e74c3c' },
-        { key: 'orange', name: '주황', value: '#f39c12' },
-        { key: 'yellow', name: '노랑', value: '#f1c40f' },
-        { key: 'green', name: '초록', value: '#27ae60' },
-        { key: 'blue', name: '파랑', value: '#3498db' },
-        { key: 'purple', name: '보라', value: '#9b59b6' },
-        { key: 'gray', name: '회색', value: '#95a5a6' }
-    ];
     const colorSelect = document.getElementById('companyColor');
-    if (colorSelect) {
-        colors.forEach(color => {
-            const option = document.createElement('option');
-            option.value = color.key;
-            option.textContent = color.name;
-            option.style.backgroundColor = color.value;
-            option.style.color = getContrastColor(color.value);
-            colorSelect.appendChild(option);
-        });
+    if (colorSelect && colorSelect.options.length <= 1) {
+        console.log('색상 드롭다운이 비어있습니다. 설정 페이지에서 항목을 추가하세요.');
     }
 }
 

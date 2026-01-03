@@ -27,6 +27,8 @@
 
   <!-- Main CSS File -->
   <link href="assets/css/main.css" rel="stylesheet">
+  <!-- Mobile CSS File -->
+  <link href="shared-assets/css/mobile.css" rel="stylesheet">
   
   <!-- Supabase JS CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -220,16 +222,174 @@
       grid-template-columns: 1fr;
     }
 
+    /* 태블릿 반응형 */
+    @media (min-width: 577px) and (max-width: 1024px) {
+      .login-container {
+        max-width: 450px;
+        padding: 35px;
+      }
+      
+      .login-header h2 {
+        font-size: 1.75rem;
+      }
+      
+      .form-control {
+        font-size: 15px;
+        padding: 11px 14px;
+      }
+      
+      .btn-login {
+        padding: 11px 25px;
+        font-size: 15px;
+      }
+    }
+    
+    /* 모바일 반응형 */
     @media (max-width: 576px) {
+      body {
+        padding: 20px 0;
+      }
+      
+      .login-container {
+        padding: 25px 20px;
+        margin: 10px;
+        max-width: calc(100% - 20px);
+        border-radius: 15px;
+      }
+      
+      .login-header {
+        margin-bottom: 20px;
+      }
+      
+      .login-header h2 {
+        font-size: 1.5rem;
+      }
+      
+      .logo {
+        width: 50px;
+        height: 50px;
+        margin-bottom: 15px;
+      }
+      
+      .logo i {
+        font-size: 20px;
+      }
+      
+      .auth-tabs {
+        margin-bottom: 20px;
+      }
+      
+      .auth-tab {
+        padding: 10px;
+        font-size: 14px;
+      }
+      
       .form-row {
         grid-template-columns: 1fr;
         gap: 15px;
       }
       
+      .form-section {
+        padding: 15px;
+        margin-bottom: 20px;
+      }
+      
+      .section-title {
+        font-size: 14px;
+        margin-bottom: 10px;
+      }
+      
+      .form-label {
+        font-size: 12px;
+      }
+      
+      .form-control {
+        font-size: 16px; /* iOS 줄 방지 */
+        padding: 10px 12px;
+      }
+      
+      .btn-login {
+        padding: 12px 20px;
+        font-size: 15px;
+      }
+      
+      .btn-google,
+      .btn-kakao {
+        padding: 11px 16px;
+        font-size: 13px;
+        gap: 8px;
+      }
+      
+      .btn-google svg,
+      .btn-kakao svg {
+        width: 16px;
+        height: 16px;
+      }
+      
+      .divider {
+        margin: 15px 0;
+      }
+      
+      .divider span {
+        font-size: 12px;
+        padding: 0 10px;
+      }
+      
+      .back-link {
+        margin-top: 15px;
+        font-size: 14px;
+      }
+      
+      .error-message,
+      .success-message {
+        font-size: 13px;
+        margin-top: 8px;
+      }
+    }
+    
+    /* 매우 작은 화면 (400px 이하) */
+    @media (max-width: 400px) {
       .login-container {
-        padding: 30px 20px;
-        margin: 10px;
-        max-width: 100%;
+        padding: 20px 15px;
+        margin: 5px;
+      }
+      
+      .login-header h2 {
+        font-size: 1.35rem;
+      }
+      
+      .form-section {
+        padding: 12px;
+      }
+      
+      .form-control {
+        padding: 9px 10px;
+      }
+      
+      .btn-login {
+        padding: 10px 15px;
+        font-size: 14px;
+      }
+    }
+    
+    /* 가로 모드 최적화 */
+    @media (max-width: 768px) and (orientation: landscape) {
+      body {
+        padding: 10px 0;
+      }
+      
+      .login-container {
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+      
+      .login-header {
+        margin-bottom: 15px;
+      }
+      
+      .form-section {
+        padding: 12px;
+        margin-bottom: 15px;
       }
     }
 
@@ -919,9 +1079,6 @@
       }
     });
   </script>
-  
-  <!-- Auth Manager -->
-  <script src="shared-assets/js/auth.js"></script>
 </body>
 
 </html>
