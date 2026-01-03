@@ -22,7 +22,8 @@ const ROUTE_OPTIMIZER_CONFIG = {
   CACHE_EXPIRY_MS: 30 * 24 * 60 * 60 * 1000,
 
   // API 호출 지연 (rate limit 대응, 밀리초)
-  API_DELAY_MS: 200,
+  // Nominatim은 1초에 1회 제한이므로 1000ms 이상 필요
+  API_DELAY_MS: 1100,
 
   // 2-opt 최대 반복 횟수
   TWO_OPT_MAX_ITERATIONS: 100,
@@ -84,6 +85,46 @@ function calculateAngle(depot, point) {
 // ===== 지오코딩 (주소 → 좌표) =====
 
 /**
+ * localStorage 기반 지오코드 캐시 (주소 → 좌표)
+ * API 호출 최소화를 위해 결과를 로컬에 저장
+ */
+const GeoCodeCache = {
+  KEY: 'route_optimizer_geocode_cache',
+
+  get(address) {
+    try {
+      const cache = JSON.parse(localStorage.getItem(this.KEY) || '{}');
+      const entry = cache[address];
+
+      if (entry && Date.now() - entry.updatedAt < ROUTE_OPTIMIZER_CONFIG.CACHE_EXPIRY_MS) {
+        return entry.geo;
+      }
+      return null;
+    } catch (e) {
+      console.warn('지오코드 캐시 읽기 실패:', e);
+      return null;
+    }
+  },
+
+  set(address, geo) {
+    try {
+      const cache = JSON.parse(localStorage.getItem(this.KEY) || '{}');
+      cache[address] = {
+        geo,
+        updatedAt: Date.now()
+      };
+      localStorage.setItem(this.KEY, JSON.stringify(cache));
+    } catch (e) {
+      console.warn('지오코드 캐시 저장 실패:', e);
+    }
+  },
+
+  clear() {
+    localStorage.removeItem(this.KEY);
+  }
+};
+
+/**
  * localStorage 기반 거리 캐시
  */
 const DistanceCache = {
@@ -126,61 +167,91 @@ const DistanceCache = {
 };
 
 /**
- * Google Geocoding API로 주소를 좌표로 변환
+ * 주소를 좌표로 변환 (Google API 또는 Nominatim fallback)
  * @param {string} address - 주소
  * @returns {Promise<{lat: number, lng: number, placeId: string} | null>}
  */
 async function geocodeAddress(address) {
-  if (!ROUTE_OPTIMIZER_CONFIG.GOOGLE_MAPS_API_KEY) {
-    console.error('Google Maps API 키가 설정되지 않았습니다.');
-    return null;
+  // 1. 캐시 확인
+  const cached = GeoCodeCache.get(address);
+  if (cached) {
+    return cached;
   }
 
-  try {
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${ROUTE_OPTIMIZER_CONFIG.GOOGLE_MAPS_API_KEY}&language=ko`;
+  // 2. Google Maps API 사용 (키가 있는 경우)
+  if (ROUTE_OPTIMIZER_CONFIG.GOOGLE_MAPS_API_KEY) {
+    try {
+      const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${ROUTE_OPTIMIZER_CONFIG.GOOGLE_MAPS_API_KEY}&language=ko`;
 
-    const response = await fetch(url);
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.status === 'OK' && data.results.length > 0) {
+        const result = data.results[0];
+        const geo = {
+          lat: result.geometry.location.lat,
+          lng: result.geometry.location.lng,
+          placeId: result.place_id
+        };
+        GeoCodeCache.set(address, geo);
+        return geo;
+      }
+    } catch (e) {
+      console.warn(`Google 지오코딩 실패 (${address}):`, e);
+    }
+  }
+
+  // 3. Nominatim fallback (무료, API 키 불필요)
+  // OpenStreetMap 기반, 한국 주소 지원
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&countrycodes=kr&limit=1`;
+
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'NamkyungSteel-ScheduleGenerator/1.0 (schedule optimization)',
+        'Accept-Language': 'ko'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
     const data = await response.json();
 
-    if (data.status === 'OK' && data.results.length > 0) {
-      const result = data.results[0];
-      return {
-        lat: result.geometry.location.lat,
-        lng: result.geometry.location.lng,
-        placeId: result.place_id
+    if (data.length > 0) {
+      const geo = {
+        lat: parseFloat(data[0].lat),
+        lng: parseFloat(data[0].lon),
+        placeId: `nominatim_${data[0].place_id}`
       };
+      GeoCodeCache.set(address, geo);
+      console.log(`✅ Nominatim 지오코딩 성공: ${address}`);
+      return geo;
     } else {
-      console.warn(`지오코딩 실패 (${address}):`, data.status);
+      console.warn(`Nominatim 결과 없음: ${address}`);
       return null;
     }
   } catch (e) {
-    console.error(`지오코딩 오류 (${address}):`, e);
+    console.error(`Nominatim 지오코딩 오류 (${address}):`, e);
     return null;
   }
 }
 
 /**
- * 모든 업체의 좌표를 확보 (캐시 우선, 없으면 API 호출)
- * @param {Array} companies - 업체 목록 [{id, address, geo_lat, geo_lng, ...}]
+ * 모든 업체의 좌표를 확보 (localStorage 캐시 우선, 없으면 Nominatim API 호출)
+ * @param {Array} companies - 업체 목록 [{id, address, ...}]
  * @returns {Promise<Array>} 좌표가 추가된 업체 목록
  */
 async function ensureGeocoded(companies) {
-  const supabase = getSupabase();
   const results = [];
   let geocodedCount = 0;
+  let cachedCount = 0;
 
   console.log(`📍 지오코딩 시작: ${companies.length}개 업체`);
+  console.log(`   (Nominatim API 사용 - 1초당 1회 제한으로 시간이 걸릴 수 있습니다)`);
 
   for (const company of companies) {
-    // 이미 좌표가 있는 경우 스킵
-    if (company.geo_lat && company.geo_lng) {
-      results.push({
-        ...company,
-        geo: { lat: company.geo_lat, lng: company.geo_lng }
-      });
-      continue;
-    }
-
     // 주소가 없는 경우 스킵
     if (!company.address) {
       console.warn(`주소 없음: ${company.company_name}`);
@@ -188,45 +259,38 @@ async function ensureGeocoded(companies) {
       continue;
     }
 
-    // API 호출로 좌표 획득
+    // 캐시 확인 (geocodeAddress 내부에서도 확인하지만, 진행률 표시용)
+    const cachedGeo = GeoCodeCache.get(company.address);
+    if (cachedGeo) {
+      cachedCount++;
+      results.push({
+        ...company,
+        geo: cachedGeo
+      });
+      continue;
+    }
+
+    // API 호출로 좌표 획득 (rate limit 대응 지연)
     await delay(ROUTE_OPTIMIZER_CONFIG.API_DELAY_MS);
     const geo = await geocodeAddress(company.address);
 
     if (geo) {
       geocodedCount++;
-
-      // Supabase에 좌표 저장
-      try {
-        await supabase
-          .from('client_companies')
-          .update({
-            geo_lat: geo.lat,
-            geo_lng: geo.lng,
-            geo_place_id: geo.placeId,
-            geocoded_at: new Date().toISOString()
-          })
-          .eq('id', company.id);
-      } catch (e) {
-        console.warn(`좌표 저장 실패 (${company.company_name}):`, e);
-      }
-
       results.push({
         ...company,
-        geo_lat: geo.lat,
-        geo_lng: geo.lng,
         geo: { lat: geo.lat, lng: geo.lng }
       });
+
+      // 진행률 로그 (10개마다)
+      if (geocodedCount % 10 === 0) {
+        console.log(`  지오코딩 진행: ${geocodedCount}개 완료`);
+      }
     } else {
       results.push(company);
     }
-
-    // 진행률 로그
-    if (geocodedCount % 10 === 0) {
-      console.log(`  지오코딩 진행: ${geocodedCount}개 완료`);
-    }
   }
 
-  console.log(`📍 지오코딩 완료: ${geocodedCount}개 신규 변환`);
+  console.log(`📍 지오코딩 완료: 캐시 ${cachedCount}개, 신규 ${geocodedCount}개`);
   return results;
 }
 
