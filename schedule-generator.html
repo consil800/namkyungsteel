@@ -536,8 +536,9 @@
 
   <div id="toast" class="toast">-</div>
 
-  <!-- database.js 먼저 로드 (세션 인증용) -->
-  <script src="database.js?v=20260103"></script>
-  <script type="module" src="schedule-generator.js?v=20260103"></script>
+  <!-- 인증 및 데이터베이스 로드 -->
+  <script src="shared-assets/js/auth.js?v=20260103b"></script>
+  <script src="database.js?v=20260103b"></script>
+  <script type="module" src="schedule-generator.js?v=20260103b"></script>
 </body>
 </html>

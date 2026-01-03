@@ -28,11 +28,24 @@ async function initDatabase() {
   }
 
   // 세션에서 사용자 정보 가져오기
+  let user = null;
   const sessionUser = sessionStorage.getItem('currentUser');
   if (sessionUser) {
-    const user = JSON.parse(sessionUser);
+    user = JSON.parse(sessionUser);
+    console.log('✅ sessionStorage에서 사용자 확인:', user.name);
+  } else if (window.AuthManager && window.AuthManager.getCurrentUser) {
+    // AuthManager 폴백
+    user = window.AuthManager.getCurrentUser();
+    if (user) {
+      console.log('✅ AuthManager에서 사용자 확인:', user.name);
+      // sessionStorage에도 저장
+      sessionStorage.setItem('currentUser', JSON.stringify(user));
+    }
+  }
+
+  if (user) {
     USER_ID = user.id?.toString();
-    console.log('✅ 사용자 확인:', user.name, 'ID:', USER_ID);
+    console.log('✅ 사용자 ID:', USER_ID);
   } else {
     // 로그인 페이지로 리다이렉트
     console.error('❌ 로그인 필요');
