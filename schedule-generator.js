@@ -1157,49 +1157,102 @@ async function generateSchedule() {
     return;
   }
 
-  // ★ 기본 알고리즘: Seed = lastVisitAt 가장 오래된 업체
+  // ★ 2026-01-04 ChatGPT Ultra Think + Claude 협업: 지역 블록 단위 배정 알고리즘 v4
+  // 핵심: "1~3" = 하드 제약(반드시 지켜야 함), "목표 2" = 소프트(선호)
+  // 우선순위: 1. 지역 혼합 금지 → 2. 같은 지역은 한 날/연속된 날 → 3. 목표에 가깝게
   let pool = [...companies];
 
-  console.log('📊 새 알고리즘 v3: Seed(lastVisitAt 가장 오래된) + 지역 주변 채움');
+  console.log('📊 지역 블록 단위 알고리즘 v4: ChatGPT Ultra Think + Claude 협업');
   console.log(`  총 업체: ${pool.length}개`);
+  console.log(`  옵션: min=${cap.min}, max=${cap.max}, target=${cap.target}`);
   console.log(`  색상 필터: ${state.filterColors.length > 0 ? state.filterColors.join(', ') : '없음'} (필터 역할만!)`);
 
   // 근무일 필터링
   const workdays = days.filter(d => !d.isWeekend && !d.isHoliday && !d.isOff);
   let totalAssigned = 0;
 
-  // ★ 핵심: 매일 Seed = lastVisitAt 가장 오래된 업체 + 그 지역 주변으로 채움
-  for (const day of workdays) {
-    if (pool.length === 0) break;
+  // ★ Step 1: 업체를 지역별로 그룹화
+  const regionGroups = new Map();
+  pool.forEach(c => {
+    const region = c.region || '기타';
+    if (!regionGroups.has(region)) {
+      regionGroups.set(region, []);
+    }
+    regionGroups.get(region).push(c);
+  });
 
-    // ✅ Seed = 남은 것 중 lastVisitAt 가장 오래된 곳
-    const seed = chooseSeed(pool);
-    if (!seed) break;
-
-    // ✅ Seed 지역/그룹 주변으로 하루 채우기
-    // 2026-01-04 ChatGPT+Claude 협업: 거리 기반 알고리즘 적용
-    // buildDayPlanDistanceFirst는 geo 데이터 없으면 자동으로 buildDayPlan 폴백
-    const dayCompanies = buildDayPlanDistanceFirst({
-      unassigned: pool,
-      seed,
-      visitsPerDay: cap.target
+  // ★ Step 2: 각 지역 그룹 내에서 방문 우선순위 정렬 (오래된 것 먼저)
+  regionGroups.forEach((companies, region) => {
+    companies.sort((a, b) => {
+      const aDate = a.last_visit_date ? new Date(a.last_visit_date) : new Date(0);
+      const bDate = b.last_visit_date ? new Date(b.last_visit_date) : new Date(0);
+      return aDate - bDate; // 오래된 것 먼저
     });
+  });
 
-    day.companies = dayCompanies;
-    totalAssigned += dayCompanies.length;
+  // ★ Step 3: 지역 그룹들을 우선순위순으로 정렬 (가장 오래된 업체가 있는 지역 먼저)
+  const sortedRegions = Array.from(regionGroups.entries()).sort((a, b) => {
+    const aOldest = a[1][0]?.last_visit_date ? new Date(a[1][0].last_visit_date) : new Date(0);
+    const bOldest = b[1][0]?.last_visit_date ? new Date(b[1][0].last_visit_date) : new Date(0);
+    return aOldest - bOldest;
+  });
 
-    // ✅ 배정된 것들 pool에서 제거 (id 기반으로 안정적으로)
-    const assignedIds = new Set(dayCompanies.map(c => c.id));
-    pool = pool.filter(c => !assignedIds.has(c.id));
+  console.log(`  지역 그룹 수: ${sortedRegions.length}개`);
+  sortedRegions.slice(0, 3).forEach(([region, comps]) => {
+    console.log(`    - ${region}: ${comps.length}개 업체`);
+  });
 
-    // 디버그 로그 (첫 3일만)
-    if (totalAssigned <= cap.target * 3) {
-      console.log(`  ${day.date}: Seed=${seed.company_name}(${seed.region}|${extractSubDistrict(seed.address)}) lastVisit=${seed.last_visit_date || '미방문'}`);
-      dayCompanies.slice(1, 4).forEach((c, i) => {
-        console.log(`    ${i + 2}. ${c.company_name} (${c.region}|${extractSubDistrict(c.address)})`);
-      });
+  // ★ Step 4: 지역 블록 단위로 날짜에 배정
+  // 핵심: N ≤ max면 한 날에 모두 배정 (지역 혼합 금지)
+  let workdayIdx = 0;
+
+  for (const [region, regionCompanies] of sortedRegions) {
+    if (regionCompanies.length === 0) continue;
+
+    let remaining = [...regionCompanies];
+
+    while (remaining.length > 0 && workdayIdx < workdays.length) {
+      const day = workdays[workdayIdx];
+
+      // ★ 핵심 로직: N ≤ max면 한 날에 모두 배정
+      let assignCount;
+      if (remaining.length <= cap.max) {
+        // 남은 업체가 max 이하면 모두 한 날에 배정 (목표 2 깨는 게 맞음)
+        assignCount = remaining.length;
+      } else {
+        // max 초과면 max개씩 배정 (또는 target에 가깝게)
+        assignCount = Math.min(cap.max, remaining.length);
+      }
+
+      const dayCompanies = remaining.slice(0, assignCount);
+      day.companies = dayCompanies;
+      totalAssigned += dayCompanies.length;
+
+      // 배정된 업체 제거
+      remaining = remaining.slice(assignCount);
+
+      // 디버그 로그
+      if (totalAssigned <= cap.max * 5) {
+        console.log(`  ${day.date}: ${region} ${dayCompanies.length}개 배정 (남은: ${remaining.length}개)`);
+      }
+
+      workdayIdx++;
+    }
+
+    // 이 지역에서 배정 못한 업체가 있으면 미배정으로
+    if (remaining.length > 0) {
+      console.log(`  ⚠️ ${region}: ${remaining.length}개 미배정 (근무일 부족)`);
     }
   }
+
+  // pool 업데이트 (배정된 업체 제거)
+  const assignedIds = new Set();
+  workdays.forEach(day => {
+    if (day.companies) {
+      day.companies.forEach(c => assignedIds.add(c.id));
+    }
+  });
+  pool = pool.filter(c => !assignedIds.has(c.id));
 
   // 미배정 업체
   state.unassigned = pool;
