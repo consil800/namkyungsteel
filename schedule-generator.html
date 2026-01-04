@@ -479,6 +479,30 @@
           </div>
         </div>
 
+        <!-- 좌표 관리 섹션 (2026-01-04 추가) -->
+        <div class="section" id="geocodeSection">
+          <label>📍 업체 좌표 관리</label>
+          <div class="info" id="geocodeStats" style="margin-bottom:10px;">
+            좌표 통계 로딩 중...
+          </div>
+          <div class="selbar">
+            <button class="mini" id="btnBatchGeocode" style="background:#2563eb;color:#fff;">
+              일괄 지오코딩 실행
+            </button>
+            <button class="mini" id="btnRefreshGeoStats">통계 새로고침</button>
+          </div>
+          <div id="geocodeProgress" style="display:none;margin-top:10px;">
+            <div style="background:#e5e7eb;border-radius:8px;overflow:hidden;">
+              <div id="geocodeProgressBar" style="background:#2563eb;height:8px;width:0%;transition:width 0.3s;"></div>
+            </div>
+            <div id="geocodeProgressText" class="hint" style="margin-top:6px;"></div>
+          </div>
+          <div class="hint" style="margin-top:8px;">
+            카카오맵 API로 주소→좌표 변환 후 Supabase에 저장합니다.<br/>
+            좌표가 있어야 "가장 가까운 업체" 경로 최적화가 가능합니다.
+          </div>
+        </div>
+
         <div class="section">
           <label>색상 필터 (멀티)</label>
           <div class="chiprow" id="colorChips"></div>

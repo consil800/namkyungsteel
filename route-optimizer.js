@@ -818,6 +818,235 @@ function clearDistanceCache() {
   console.log('✅ 거리 캐시 초기화됨');
 }
 
+// ===== Supabase PostGIS 연동 (2026-01-04 추가) =====
+
+/**
+ * 업체 좌표를 Supabase에 저장 (PostGIS geo 컬럼 자동 동기화)
+ * @param {number} companyId - 업체 ID
+ * @param {number} lat - 위도
+ * @param {number} lng - 경도
+ * @returns {Promise<boolean>} 성공 여부
+ */
+async function saveGeoToSupabase(companyId, lat, lng) {
+  try {
+    const supabase = getSupabase();
+
+    // PostGIS: geo 컬럼은 WKT 형식으로 저장 (POINT(lng lat) 순서!)
+    // Supabase는 geography 타입에 EWKT 문자열 직접 저장 가능
+    const geoWKT = `SRID=4326;POINT(${lng} ${lat})`;
+
+    const { error } = await supabase
+      .from('client_companies')
+      .update({
+        lat: lat,
+        lng: lng,
+        geocoded_at: new Date().toISOString(),
+        geo: geoWKT
+      })
+      .eq('id', companyId);
+
+    if (error) {
+      console.error(`❌ Supabase 좌표 저장 실패 (ID: ${companyId}):`, error);
+      return false;
+    }
+
+    console.log(`✅ Supabase 좌표 저장 성공 (ID: ${companyId}): ${lat}, ${lng}`);
+    return true;
+  } catch (e) {
+    console.error(`❌ Supabase 좌표 저장 오류 (ID: ${companyId}):`, e);
+    return false;
+  }
+}
+
+/**
+ * 일괄 지오코딩 및 Supabase 저장
+ * @param {Array} companies - 업체 목록 [{id, address, lat, lng, ...}]
+ * @param {Function} progressCallback - 진행 상태 콜백 (current, total, company)
+ * @returns {Promise<{success: number, failed: number, skipped: number}>}
+ */
+async function batchGeocodeAndSave(companies, progressCallback = null) {
+  const result = { success: 0, failed: 0, skipped: 0 };
+
+  console.log('');
+  console.log('═══════════════════════════════════════════');
+  console.log(`📍 일괄 지오코딩 시작: ${companies.length}개 업체`);
+  console.log('═══════════════════════════════════════════');
+
+  for (let i = 0; i < companies.length; i++) {
+    const company = companies[i];
+
+    // 진행 상태 콜백
+    if (progressCallback) {
+      progressCallback(i + 1, companies.length, company);
+    }
+
+    // 이미 좌표가 있는 경우 스킵
+    if (company.lat && company.lng && company.geocoded_at) {
+      result.skipped++;
+      continue;
+    }
+
+    // 주소가 없는 경우 스킵
+    if (!company.address) {
+      console.warn(`⚠️ 주소 없음: ${company.company_name} (ID: ${company.id})`);
+      result.failed++;
+      continue;
+    }
+
+    // 카카오 API로 지오코딩
+    const geo = await geocodeAddress(company.address);
+
+    if (geo) {
+      // Supabase에 저장
+      const saved = await saveGeoToSupabase(company.id, geo.lat, geo.lng);
+
+      if (saved) {
+        result.success++;
+      } else {
+        result.failed++;
+      }
+    } else {
+      console.warn(`⚠️ 지오코딩 실패: ${company.company_name} (${company.address})`);
+      result.failed++;
+    }
+
+    // API rate limit 대응 지연
+    await delay(ROUTE_OPTIMIZER_CONFIG.API_DELAY_MS);
+
+    // 10개마다 진행 로그
+    if ((i + 1) % 10 === 0) {
+      console.log(`  진행: ${i + 1}/${companies.length} (성공: ${result.success}, 실패: ${result.failed})`);
+    }
+  }
+
+  console.log('');
+  console.log('═══════════════════════════════════════════');
+  console.log(`📍 일괄 지오코딩 완료`);
+  console.log(`   성공: ${result.success}개`);
+  console.log(`   실패: ${result.failed}개`);
+  console.log(`   스킵(이미 있음): ${result.skipped}개`);
+  console.log('═══════════════════════════════════════════');
+
+  return result;
+}
+
+/**
+ * Supabase에서 좌표 없는 업체 목록 조회
+ * @returns {Promise<Array>} 좌표 없는 업체 목록
+ */
+async function getCompaniesWithoutGeo() {
+  try {
+    const supabase = getSupabase();
+
+    const { data, error } = await supabase
+      .from('client_companies')
+      .select('id, company_name, address, region, lat, lng, geocoded_at')
+      .or('lat.is.null,lng.is.null,geocoded_at.is.null')
+      .not('address', 'is', null)
+      .order('id');
+
+    if (error) throw error;
+
+    console.log(`📍 좌표 없는 업체: ${data.length}개`);
+    return data || [];
+  } catch (e) {
+    console.error('❌ 좌표 없는 업체 조회 실패:', e);
+    return [];
+  }
+}
+
+/**
+ * Supabase PostGIS RPC로 가장 가까운 업체 조회
+ * @param {number} originId - 기준 업체 ID
+ * @param {number} k - 조회할 개수 (기본 10)
+ * @returns {Promise<Array>} 가까운 업체 목록 [{id, company_name, address, region, lat, lng, dist_m}]
+ */
+async function findNearestCompanies(originId, k = 10) {
+  try {
+    const supabase = getSupabase();
+
+    const { data, error } = await supabase
+      .rpc('nearest_companies', {
+        origin_id: originId,
+        k: k
+      });
+
+    if (error) throw error;
+
+    console.log(`📍 가장 가까운 ${k}개 업체 (기준 ID: ${originId}):`, data);
+    return data || [];
+  } catch (e) {
+    console.error('❌ 근접 업체 조회 실패:', e);
+    return [];
+  }
+}
+
+/**
+ * 좌표 기준으로 가장 가까운 업체 조회 (PostGIS RPC)
+ * @param {number} lat - 위도
+ * @param {number} lng - 경도
+ * @param {number} k - 조회할 개수 (기본 10)
+ * @returns {Promise<Array>} 가까운 업체 목록
+ */
+async function findNearestCompaniesByCoords(lat, lng, k = 10) {
+  try {
+    const supabase = getSupabase();
+
+    const { data, error } = await supabase
+      .rpc('nearest_companies_by_coords', {
+        origin_lat: lat,
+        origin_lng: lng,
+        k: k
+      });
+
+    if (error) throw error;
+
+    console.log(`📍 좌표 (${lat}, ${lng}) 기준 가장 가까운 ${k}개 업체:`, data);
+    return data || [];
+  } catch (e) {
+    console.error('❌ 좌표 기준 근접 업체 조회 실패:', e);
+    return [];
+  }
+}
+
+/**
+ * 모든 업체의 지오코딩 상태 통계
+ * @returns {Promise<{total: number, geocoded: number, pending: number}>}
+ */
+async function getGeocodingStats() {
+  try {
+    const supabase = getSupabase();
+
+    // 전체 업체 수
+    const { count: total, error: totalError } = await supabase
+      .from('client_companies')
+      .select('*', { count: 'exact', head: true });
+
+    if (totalError) throw totalError;
+
+    // 지오코딩 완료 업체 수
+    const { count: geocoded, error: geoError } = await supabase
+      .from('client_companies')
+      .select('*', { count: 'exact', head: true })
+      .not('lat', 'is', null)
+      .not('lng', 'is', null);
+
+    if (geoError) throw geoError;
+
+    const stats = {
+      total: total || 0,
+      geocoded: geocoded || 0,
+      pending: (total || 0) - (geocoded || 0)
+    };
+
+    console.log(`📊 지오코딩 통계: 전체 ${stats.total}개, 완료 ${stats.geocoded}개, 대기 ${stats.pending}개`);
+    return stats;
+  } catch (e) {
+    console.error('❌ 지오코딩 통계 조회 실패:', e);
+    return { total: 0, geocoded: 0, pending: 0 };
+  }
+}
+
 // ===== 전역 export =====
 window.RouteOptimizer = {
   // 설정
@@ -846,7 +1075,18 @@ window.RouteOptimizer = {
 
   // 캐시 객체
   GeoCodeCache,
-  DistanceCache
+  DistanceCache,
+
+  // Supabase PostGIS 연동 (2026-01-04 추가)
+  saveGeoToSupabase,
+  batchGeocodeAndSave,
+  getCompaniesWithoutGeo,
+  findNearestCompanies,
+  findNearestCompaniesByCoords,
+  getGeocodingStats,
+
+  // 지오코딩 함수 export
+  geocodeAddress
 };
 
 console.log('✅ RouteOptimizer 모듈 로드됨 (카카오맵 API)');

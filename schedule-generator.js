@@ -101,6 +101,14 @@ const el = {
   // 경로 최적화 관련
   apiKeySection: document.getElementById('apiKeySection'),
   kakaoApiKey: document.getElementById('kakaoApiKey'),
+  // 좌표 관리 관련 (2026-01-04 추가)
+  geocodeSection: document.getElementById('geocodeSection'),
+  geocodeStats: document.getElementById('geocodeStats'),
+  btnBatchGeocode: document.getElementById('btnBatchGeocode'),
+  btnRefreshGeoStats: document.getElementById('btnRefreshGeoStats'),
+  geocodeProgress: document.getElementById('geocodeProgress'),
+  geocodeProgressBar: document.getElementById('geocodeProgressBar'),
+  geocodeProgressText: document.getElementById('geocodeProgressText'),
 };
 
 // ===== 색상 우선순위 (빨강→주황→노랑→초록→하늘→파랑→보라→회색) =====
@@ -1698,6 +1706,111 @@ function bindEvents() {
 
   // 초기화
   el.btnReset.addEventListener('click', resetAll);
+
+  // 좌표 관리 이벤트 (2026-01-04 추가)
+  if (el.btnBatchGeocode) {
+    el.btnBatchGeocode.addEventListener('click', runBatchGeocode);
+  }
+  if (el.btnRefreshGeoStats) {
+    el.btnRefreshGeoStats.addEventListener('click', refreshGeoStats);
+  }
+}
+
+// ===== 좌표 관리 함수 (2026-01-04 추가) =====
+
+/**
+ * 지오코딩 통계 새로고침
+ */
+async function refreshGeoStats() {
+  if (!el.geocodeStats) return;
+
+  el.geocodeStats.innerHTML = '통계 로딩 중...';
+
+  try {
+    // RouteOptimizer가 로드되어 있는지 확인
+    if (!window.RouteOptimizer || !window.RouteOptimizer.getGeocodingStats) {
+      el.geocodeStats.innerHTML = '⚠️ RouteOptimizer 모듈이 로드되지 않았습니다.';
+      return;
+    }
+
+    const stats = await window.RouteOptimizer.getGeocodingStats();
+
+    const pct = stats.total > 0 ? Math.round((stats.geocoded / stats.total) * 100) : 0;
+    el.geocodeStats.innerHTML = `
+      <b>전체:</b> ${stats.total}개 업체<br/>
+      <b>좌표 완료:</b> ${stats.geocoded}개 (${pct}%)<br/>
+      <b>좌표 미등록:</b> <span style="color:#dc2626;">${stats.pending}개</span>
+    `;
+  } catch (e) {
+    console.error('지오코딩 통계 로드 실패:', e);
+    el.geocodeStats.innerHTML = '⚠️ 통계 로드 실패';
+  }
+}
+
+/**
+ * 일괄 지오코딩 실행
+ */
+async function runBatchGeocode() {
+  if (!window.RouteOptimizer || !window.RouteOptimizer.getCompaniesWithoutGeo) {
+    alert('RouteOptimizer 모듈이 로드되지 않았습니다.');
+    return;
+  }
+
+  // 확인 대화상자
+  const companies = await window.RouteOptimizer.getCompaniesWithoutGeo();
+  if (companies.length === 0) {
+    alert('✅ 모든 업체에 좌표가 등록되어 있습니다.');
+    return;
+  }
+
+  const confirm = window.confirm(
+    `좌표 미등록 업체 ${companies.length}개를 지오코딩하시겠습니까?\n\n` +
+    `카카오맵 API를 사용하여 주소→좌표 변환 후 저장합니다.\n` +
+    `예상 소요 시간: 약 ${Math.ceil(companies.length * 0.25)}초`
+  );
+
+  if (!confirm) return;
+
+  // 진행 상태 UI 표시
+  if (el.geocodeProgress) el.geocodeProgress.style.display = 'block';
+  if (el.btnBatchGeocode) el.btnBatchGeocode.disabled = true;
+
+  try {
+    const result = await window.RouteOptimizer.batchGeocodeAndSave(
+      companies,
+      (current, total, company) => {
+        // 진행 상태 업데이트
+        const pct = Math.round((current / total) * 100);
+        if (el.geocodeProgressBar) el.geocodeProgressBar.style.width = pct + '%';
+        if (el.geocodeProgressText) {
+          el.geocodeProgressText.textContent = `${current}/${total} 처리 중: ${company.company_name}`;
+        }
+      }
+    );
+
+    // 완료 메시지
+    alert(
+      `📍 일괄 지오코딩 완료\n\n` +
+      `성공: ${result.success}개\n` +
+      `실패: ${result.failed}개\n` +
+      `스킵(이미 있음): ${result.skipped}개`
+    );
+
+    // 통계 새로고침
+    await refreshGeoStats();
+
+    // 업체 목록 다시 로드 (좌표 업데이트 반영)
+    await loadCompanies();
+
+  } catch (e) {
+    console.error('일괄 지오코딩 실패:', e);
+    alert('일괄 지오코딩 실패: ' + (e.message || e));
+  } finally {
+    // UI 원복
+    if (el.geocodeProgress) el.geocodeProgress.style.display = 'none';
+    if (el.btnBatchGeocode) el.btnBatchGeocode.disabled = false;
+    if (el.geocodeProgressBar) el.geocodeProgressBar.style.width = '0%';
+  }
 }
 
 // ===== 초기화 실행 =====
@@ -1728,6 +1841,9 @@ async function init() {
 
     // 알고리즘 선택 섹션 초기화
     toggleApiKeySection();
+
+    // 좌표 통계 로드 (2026-01-04 추가)
+    await refreshGeoStats();
 
     // 초기 range 반영
     updateWorkdayCountUI();
