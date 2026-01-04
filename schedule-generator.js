@@ -72,6 +72,7 @@ const state = {
   filterRegions: [],       // 선택된 지역 필터
   searchKeyword: '',       // 검색 키워드
   isDirty: false,          // 변경 여부
+  excludedIds: [],         // Pre-flight에서 제외할 업체 ID 목록 (2026-01-04 추가)
 };
 
 // ===== DOM 요소 =====
@@ -1128,6 +1129,14 @@ async function generateSchedule() {
   // ★ 색상 필터 적용 (필터 역할만! 우선순위 아님)
   let companies = applyColorFilter(state.companies, state.filterColors);
 
+  // ★ Pre-flight 제외 업체 필터링 (2026-01-04 추가)
+  if (state.excludedIds.length > 0) {
+    const excludedSet = new Set(state.excludedIds);
+    const beforeCount = companies.length;
+    companies = companies.filter(c => !excludedSet.has(c.id));
+    console.log(`📌 Pre-flight 제외: ${beforeCount}개 → ${companies.length}개 (${state.excludedIds.length}개 제외)`);
+  }
+
   // 지역 필터 적용
   if (state.filterRegions.length > 0) {
     companies = companies.filter(c => state.filterRegions.includes(c.region));
@@ -2061,18 +2070,27 @@ async function refreshPreflightData() {
 
 /**
  * Pre-flight: 제외하고 생성
+ * - 좌표 미등록 업체를 state.excludedIds에 저장
+ * - generateSchedule()에서 해당 업체들 자동 제외
  */
-function preflightSkipAndGenerate() {
-  const pendingIds = new Set(preflightState.pendingCompanies.map(c => c.id));
-  const pendingCount = pendingIds.size;
+async function preflightSkipAndGenerate() {
+  const pendingIds = preflightState.pendingCompanies.map(c => c.id);
+  const pendingCount = pendingIds.length;
 
   console.log(`⚠️ ${pendingCount}개 업체 제외하고 스케줄 생성`);
+  console.log(`  제외 업체 ID: ${pendingIds.slice(0, 5).join(', ')}${pendingCount > 5 ? ' ...' : ''}`);
+
+  // ★ 제외할 업체 ID를 state에 저장 (generateSchedule에서 사용)
+  state.excludedIds = pendingIds;
 
   // 모달 닫기
   closePreflightModal();
 
-  // generateSchedule 호출 (내부에서 좌표 없는 업체는 자동 제외됨)
-  generateSchedule();
+  // generateSchedule 호출 (state.excludedIds 사용하여 제외)
+  await generateSchedule();
+
+  // 생성 완료 후 excludedIds 초기화 (다음 생성에 영향 안 주도록)
+  state.excludedIds = [];
 
   toast(`${pendingCount}개 업체를 제외하고 스케줄 생성`);
 }
