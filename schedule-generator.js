@@ -1869,8 +1869,19 @@ async function showPreflightCheck() {
     return;
   }
 
-  // 좌표 미등록 업체 필터링 (좌표는 geo.lat, geo.lng에 저장됨)
-  const pending = companies.filter(c => !c.geo?.lat || !c.geo?.lng);
+  // Supabase에서 좌표 미등록 업체 목록 가져오기 (RouteOptimizer 사용)
+  let pendingFromDB = [];
+  if (window.RouteOptimizer && window.RouteOptimizer.getCompaniesWithoutGeo) {
+    try {
+      pendingFromDB = await window.RouteOptimizer.getCompaniesWithoutGeo();
+    } catch (e) {
+      console.warn('좌표 미등록 업체 조회 실패:', e);
+    }
+  }
+
+  // 현재 필터링된 업체 중 좌표 미등록 업체만 추출
+  const pendingIds = new Set(pendingFromDB.map(c => c.id));
+  const pending = companies.filter(c => pendingIds.has(c.id));
   const ready = companies.length - pending.length;
 
   // 좌표 미등록 업체가 없으면 바로 스케줄 생성
@@ -2025,8 +2036,19 @@ async function refreshPreflightData() {
     companies = companies.filter(c => state.selectedCompanies.includes(c.id));
   }
 
-  // 좌표 미등록 업체 재계산 (좌표는 geo.lat, geo.lng에 저장됨)
-  const pending = companies.filter(c => !c.geo?.lat || !c.geo?.lng);
+  // Supabase에서 좌표 미등록 업체 목록 가져오기 (RouteOptimizer 사용)
+  let pendingFromDB = [];
+  if (window.RouteOptimizer && window.RouteOptimizer.getCompaniesWithoutGeo) {
+    try {
+      pendingFromDB = await window.RouteOptimizer.getCompaniesWithoutGeo();
+    } catch (e) {
+      console.warn('좌표 미등록 업체 조회 실패:', e);
+    }
+  }
+
+  // 현재 필터링된 업체 중 좌표 미등록 업체만 추출
+  const pendingIds = new Set(pendingFromDB.map(c => c.id));
+  const pending = companies.filter(c => pendingIds.has(c.id));
 
   preflightState.filterCompanies = companies;
   preflightState.pendingCompanies = pending;
