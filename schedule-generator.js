@@ -1114,6 +1114,45 @@ async function generateScheduleOptimal(companies, days, cap) {
   }
 }
 
+// ===== 소수 지역 병합용 헬퍼 함수 (2026-01-04 ChatGPT + Claude) =====
+
+/**
+ * 지역 centroid (중심점) 계산
+ * @param {Array} companies - 업체 배열
+ * @returns {Object|null} - { lat, lng } 또는 null
+ */
+function calculateRegionCentroid(companies) {
+  const validCoords = companies.filter(c => c.latitude && c.longitude);
+  if (validCoords.length === 0) return null;
+
+  const sumLat = validCoords.reduce((sum, c) => sum + parseFloat(c.latitude), 0);
+  const sumLng = validCoords.reduce((sum, c) => sum + parseFloat(c.longitude), 0);
+
+  return {
+    lat: sumLat / validCoords.length,
+    lng: sumLng / validCoords.length
+  };
+}
+
+/**
+ * Haversine 공식으로 두 좌표 간 거리 계산 (km)
+ * @param {number} lat1 - 위도1
+ * @param {number} lng1 - 경도1
+ * @param {number} lat2 - 위도2
+ * @param {number} lng2 - 경도2
+ * @returns {number} - 거리 (km)
+ */
+function haversineDistance(lat1, lng1, lat2, lng2) {
+  const R = 6371; // 지구 반경 (km)
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 // ===== 스케줄 생성 (ChatGPT + Claude 협업 설계 v3) =====
 // ★ 기본 알고리즘: Seed = lastVisitAt 가장 오래된 업체 → 그 지역 주변으로 하루 채움
 // 예: 오늘 창원 8~9군데, 내일 김해 8~9군데, 다음날 양산 8~9군데
@@ -1207,6 +1246,65 @@ async function generateSchedule() {
     });
   });
 
+  // ★ Step 2.5: 소수 지역 병합 (2026-01-04 ChatGPT + Claude Ultra Think)
+  // 핵심: 업체 수 < min인 지역은 인접 지역에 흡수 (경산 1개 → 대구/영천에 병합)
+  const MIN_REGION_SIZE = cap.min; // 최소 지역 크기 (기본: min=3)
+  const smallRegions = [];
+  const normalRegions = [];
+
+  regionGroups.forEach((companies, region) => {
+    if (companies.length < MIN_REGION_SIZE) {
+      smallRegions.push({ region, companies });
+    } else {
+      normalRegions.push({ region, companies });
+    }
+  });
+
+  if (smallRegions.length > 0) {
+    console.log(`  📍 소수 지역 병합: ${smallRegions.length}개 지역 (${smallRegions.map(r => `${r.region}:${r.companies.length}개`).join(', ')})`);
+
+    // 소수 지역 업체를 가장 가까운 일반 지역에 병합
+    for (const smallRegion of smallRegions) {
+      if (normalRegions.length === 0) {
+        // 일반 지역이 없으면 소수 지역끼리 합침
+        console.log(`    ⚠️ ${smallRegion.region}: 병합할 일반 지역 없음 - 유지`);
+        continue;
+      }
+
+      // 좌표 기반 가장 가까운 지역 찾기
+      let bestTarget = null;
+      let bestDistance = Infinity;
+
+      // 소수 지역의 centroid 계산
+      const smallCentroid = calculateRegionCentroid(smallRegion.companies);
+
+      if (smallCentroid) {
+        for (const normalRegion of normalRegions) {
+          const normalCentroid = calculateRegionCentroid(normalRegion.companies);
+          if (normalCentroid) {
+            const dist = haversineDistance(smallCentroid.lat, smallCentroid.lng, normalCentroid.lat, normalCentroid.lng);
+            if (dist < bestDistance) {
+              bestDistance = dist;
+              bestTarget = normalRegion;
+            }
+          }
+        }
+      }
+
+      // 좌표가 없으면 첫 번째 일반 지역에 병합
+      if (!bestTarget) {
+        bestTarget = normalRegions[0];
+      }
+
+      // 병합 실행
+      console.log(`    🔗 ${smallRegion.region}(${smallRegion.companies.length}개) → ${bestTarget.region}에 병합 (거리: ${Math.round(bestDistance)}km)`);
+      bestTarget.companies.push(...smallRegion.companies);
+
+      // 원래 그룹에서 제거
+      regionGroups.delete(smallRegion.region);
+    }
+  }
+
   // ★ Step 3: 지역 그룹들을 우선순위순으로 정렬 (가장 오래된 업체가 있는 지역 먼저)
   const sortedRegions = Array.from(regionGroups.entries()).sort((a, b) => {
     const aOldest = a[1][0]?.last_visit_date ? new Date(a[1][0].last_visit_date) : new Date(0);
@@ -1219,27 +1317,91 @@ async function generateSchedule() {
     console.log(`    - ${region}: ${comps.length}개 업체`);
   });
 
+  // ★ Step 3.5: 베이스캠프 좌표 설정 (2026-01-04 ChatGPT + Claude)
+  // 부산광역시 사상구 낙동대로 832 (남경철강 본사)
+  const BASECAMP = {
+    lat: 35.1547,
+    lng: 128.9914,
+    name: '부산 사상구'
+  };
+
   // ★ Step 4: 지역 블록 단위로 날짜에 배정
-  // 핵심: N ≤ max면 한 날에 모두 배정 (지역 혼합 금지)
+  // ★ 2026-01-04 ChatGPT + Claude Ultra Think: 잔여 페널티 + 균등 분배 + 거리 기반 조정
+  // 핵심: 마지막에 min 미만 남지 않도록 균등 분배 (5+5+1 → 6+5)
   let workdayIdx = 0;
 
   for (const [region, regionCompanies] of sortedRegions) {
     if (regionCompanies.length === 0) continue;
 
+    const totalInRegion = regionCompanies.length;
     let remaining = [...regionCompanies];
 
-    while (remaining.length > 0 && workdayIdx < workdays.length) {
-      const day = workdays[workdayIdx];
+    // ★ 베이스캠프 거리 기반 max 조정 (2026-01-04 ChatGPT + Claude Ultra Think)
+    // 먼 지역은 이동 시간이 길어 하루 방문 수를 줄여야 함
+    const regionCentroid = calculateRegionCentroid(regionCompanies);
+    let adjustedMax = cap.max;
 
-      // ★ 핵심 로직: N ≤ max면 한 날에 모두 배정
-      let assignCount;
-      if (remaining.length <= cap.max) {
-        // 남은 업체가 max 이하면 모두 한 날에 배정 (목표 2 깨는 게 맞음)
-        assignCount = remaining.length;
-      } else {
-        // max 초과면 max개씩 배정 (또는 target에 가깝게)
-        assignCount = Math.min(cap.max, remaining.length);
+    if (regionCentroid) {
+      const distFromBase = haversineDistance(BASECAMP.lat, BASECAMP.lng, regionCentroid.lat, regionCentroid.lng);
+
+      // 거리에 따른 max 조정
+      // < 50km: 그대로 (김해, 양산)
+      // 50-100km: max - 1 (창원, 밀양)
+      // > 100km: max - 2 (포항, 경주, 대구 외곽)
+      if (distFromBase > 100) {
+        adjustedMax = Math.max(cap.min, cap.max - 2);
+        console.log(`  🚗 ${region}: 베이스캠프에서 ${Math.round(distFromBase)}km → max ${cap.max} → ${adjustedMax}로 조정`);
+      } else if (distFromBase > 50) {
+        adjustedMax = Math.max(cap.min, cap.max - 1);
+        console.log(`  🚗 ${region}: 베이스캠프에서 ${Math.round(distFromBase)}km → max ${cap.max} → ${adjustedMax}로 조정`);
       }
+    }
+
+    // ★ 잔여 페널티: 균등 분배로 1~2개짜리 하루 방지
+    // 예: 11개, min=3, max=5 → 5+5+1(나쁨) → 6+5(좋음)
+    let neededDays;
+    let perDayDistribution = [];
+
+    if (totalInRegion <= adjustedMax) {
+      // 한 날에 모두 가능
+      neededDays = 1;
+      perDayDistribution = [totalInRegion];
+    } else {
+      // 2일 이상 필요 - 균등 분배 계산
+      neededDays = Math.ceil(totalInRegion / adjustedMax);
+
+      // 마지막 날에 min 미만이 남는지 확인
+      const lastDayCount = totalInRegion - (neededDays - 1) * adjustedMax;
+
+      if (lastDayCount < cap.min && neededDays > 1) {
+        // ★ 잔여 페널티 발동: 일수를 줄이고 균등 분배
+        // 예: 11개, 3일 → 마지막 1개 < min=3 → 2일로 줄임 → 6+5
+        neededDays = neededDays - 1;
+        console.log(`  📊 ${region}: 잔여 페널티 발동 (${lastDayCount}개 < min=${cap.min}) → ${neededDays}일로 조정`);
+      }
+
+      // 균등 분배 계산
+      const baseCount = Math.floor(totalInRegion / neededDays);
+      const extraCount = totalInRegion % neededDays;
+
+      // 앞에서부터 +1씩 분배 (예: 11개/2일 → [6, 5])
+      for (let i = 0; i < neededDays; i++) {
+        const count = baseCount + (i < extraCount ? 1 : 0);
+        perDayDistribution.push(count);
+      }
+
+      console.log(`  📊 ${region}: ${totalInRegion}개 → ${neededDays}일 분배 [${perDayDistribution.join(', ')}]`);
+    }
+
+    // 계산된 분배대로 날짜에 배정
+    for (let dayOffset = 0; dayOffset < perDayDistribution.length; dayOffset++) {
+      if (workdayIdx >= workdays.length) {
+        console.log(`  ⚠️ ${region}: 근무일 부족 - ${remaining.length}개 미배정`);
+        break;
+      }
+
+      const day = workdays[workdayIdx];
+      const assignCount = Math.min(perDayDistribution[dayOffset], remaining.length);
 
       const dayCompanies = remaining.slice(0, assignCount);
       day.companies = dayCompanies;
@@ -1250,7 +1412,7 @@ async function generateSchedule() {
 
       // 디버그 로그
       if (totalAssigned <= cap.max * 5) {
-        console.log(`  ${day.date}: ${region} ${dayCompanies.length}개 배정 (남은: ${remaining.length}개)`);
+        console.log(`  ${day.date}: ${region} ${dayCompanies.length}개 배정`);
       }
 
       workdayIdx++;
