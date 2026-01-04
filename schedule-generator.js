@@ -299,8 +299,14 @@ const CAP_OPTIONS = {
 };
 
 // ===== 유틸리티 함수 =====
+// 🔧 2026-01-04: UTC→로컬 시간대 버그 수정
+// 문제: toISOString()은 UTC 기준이라 한국(UTC+9)에서 하루 전 날짜 반환
+// 해결: 로컬 시간 기준으로 포맷
 function formatDate(date) {
-  return date.toISOString().split('T')[0];
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 function parseDate(str) {
