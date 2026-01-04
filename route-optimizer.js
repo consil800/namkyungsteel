@@ -1009,6 +1009,164 @@ async function findNearestCompaniesByCoords(lat, lng, k = 10) {
   }
 }
 
+// ===== PostGIS 기반 경로 최적화 (2026-01-04 추가) =====
+
+/**
+ * PostGIS RPC를 사용한 Nearest Neighbor 경로 생성
+ * 카카오 API 호출 없이 DB에서 직접 거리 계산 (빠름)
+ *
+ * @param {Object} startCoord - 시작 좌표 {lat, lng}
+ * @param {Array} companies - 방문할 업체 목록 [{id, company_name, lat, lng, ...}]
+ * @returns {Promise<Array>} 정렬된 업체 목록
+ */
+async function buildRoutePostGIS(startCoord, companies) {
+  if (companies.length === 0) return [];
+  if (companies.length === 1) return companies;
+
+  const remaining = new Map(companies.map(c => [c.id, c]));
+  const ordered = [];
+  let currentLat = startCoord.lat;
+  let currentLng = startCoord.lng;
+
+  console.log(`🗄️ PostGIS Nearest Neighbor 경로 생성: ${companies.length}개 업체`);
+
+  while (remaining.size > 0) {
+    // PostGIS RPC로 가장 가까운 업체 조회
+    const nearestList = await findNearestCompaniesByCoords(
+      currentLat,
+      currentLng,
+      remaining.size // 남은 전체에서 검색
+    );
+
+    // remaining에 있는 업체 중 가장 가까운 것 선택
+    let nearest = null;
+    for (const n of nearestList) {
+      if (remaining.has(n.id)) {
+        nearest = remaining.get(n.id);
+        // dist_m 정보 추가
+        nearest.dist_m = n.dist_m;
+        break;
+      }
+    }
+
+    if (nearest) {
+      ordered.push(nearest);
+      remaining.delete(nearest.id);
+      currentLat = nearest.lat || nearest.geo?.lat;
+      currentLng = nearest.lng || nearest.geo?.lng;
+    } else {
+      // Fallback: 남은 업체 그대로 추가
+      ordered.push(...remaining.values());
+      break;
+    }
+  }
+
+  console.log(`🗄️ PostGIS NN 경로 완료: ${ordered.length}개 업체`);
+  return ordered;
+}
+
+/**
+ * PostGIS 기반 전체 경로 최적화
+ * API 호출 없이 빠르게 경로 생성
+ *
+ * @param {Array} companies - 업체 목록
+ * @param {Object} startPoint - 시작 좌표 {lat, lng} (선택)
+ * @param {number} dayCapacity - 하루 방문 업체 수
+ * @returns {Promise<Array>} 날짜별 경로
+ */
+async function generateOptimalRoutesPostGIS(companies, startPoint = null, dayCapacity = 9) {
+  console.log('');
+  console.log('═══════════════════════════════════════════');
+  console.log('🗄️ PostGIS 경로 최적화 시작 (빠른 모드)');
+  console.log(`   업체 수: ${companies.length}개`);
+  console.log(`   하루 방문: ${dayCapacity}개`);
+  console.log(`   예상 일수: ${Math.ceil(companies.length / dayCapacity)}일`);
+  console.log('═══════════════════════════════════════════');
+  console.log('');
+
+  const startTime = Date.now();
+
+  // 좌표 있는 업체만 필터
+  const withGeo = companies.filter(c =>
+    (c.lat && c.lng) || (c.geo && c.geo.lat && c.geo.lng)
+  );
+
+  // 좌표 정규화
+  const normalized = withGeo.map(c => ({
+    ...c,
+    lat: c.lat || c.geo?.lat,
+    lng: c.lng || c.geo?.lng
+  }));
+
+  if (normalized.length === 0) {
+    console.error('좌표가 있는 업체가 없습니다.');
+    return [];
+  }
+
+  console.log(`📍 좌표 보유 업체: ${normalized.length}개`);
+
+  // 시작점 결정
+  let depot = startPoint;
+  if (!depot) {
+    depot = { lat: normalized[0].lat, lng: normalized[0].lng };
+  }
+
+  // Sweep 알고리즘으로 날짜별 분할
+  const geoForSweep = normalized.map(c => ({
+    ...c,
+    geo: { lat: c.lat, lng: c.lng }
+  }));
+  const dayBuckets = partitionBySweep(geoForSweep, depot, dayCapacity);
+
+  // 각 날짜별 경로 최적화
+  const results = [];
+  let currentDepot = depot;
+
+  for (let day = 0; day < dayBuckets.length; day++) {
+    const bucket = dayBuckets[day];
+    console.log(`\n📆 Day ${day + 1}: ${bucket.length}개 업체`);
+
+    // PostGIS Nearest Neighbor
+    let route = await buildRoutePostGIS(currentDepot, bucket);
+
+    // 2-opt 개선 (Haversine 기반)
+    route = twoOptImprove(route.map(c => ({
+      ...c,
+      geo: { lat: c.lat, lng: c.lng }
+    })));
+
+    // 총 거리 계산
+    let totalDistanceM = 0;
+    for (let i = 0; i < route.length - 1; i++) {
+      const from = route[i].geo || { lat: route[i].lat, lng: route[i].lng };
+      const to = route[i + 1].geo || { lat: route[i + 1].lat, lng: route[i + 1].lng };
+      totalDistanceM += haversineDistance(from.lat, from.lng, to.lat, to.lng);
+    }
+    const totalDistanceKm = totalDistanceM / 1000;
+
+    results.push({
+      day: day + 1,
+      route: route,
+      totalDistanceKm: Math.round(totalDistanceKm * 10) / 10
+    });
+
+    // 다음 날 시작점 = 오늘 마지막 지점
+    if (route.length > 0) {
+      const last = route[route.length - 1];
+      currentDepot = { lat: last.lat || last.geo?.lat, lng: last.lng || last.geo?.lng };
+    }
+  }
+
+  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+  console.log('');
+  console.log('═══════════════════════════════════════════');
+  console.log(`🗄️ PostGIS 경로 최적화 완료: ${elapsed}초`);
+  console.log(`   총 ${results.length}일`);
+  console.log('═══════════════════════════════════════════');
+
+  return results;
+}
+
 /**
  * 모든 업체의 지오코딩 상태 통계
  * @returns {Promise<{total: number, geocoded: number, pending: number}>}
@@ -1084,6 +1242,10 @@ window.RouteOptimizer = {
   findNearestCompanies,
   findNearestCompaniesByCoords,
   getGeocodingStats,
+
+  // PostGIS 기반 경로 최적화 (2026-01-04 추가)
+  buildRoutePostGIS,
+  generateOptimalRoutesPostGIS,
 
   // 지오코딩 함수 export
   geocodeAddress
