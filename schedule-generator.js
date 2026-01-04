@@ -1869,8 +1869,8 @@ async function showPreflightCheck() {
     return;
   }
 
-  // 좌표 미등록 업체 필터링
-  const pending = companies.filter(c => !c.lat || !c.lng);
+  // 좌표 미등록 업체 필터링 (좌표는 geo.lat, geo.lng에 저장됨)
+  const pending = companies.filter(c => !c.geo?.lat || !c.geo?.lng);
   const ready = companies.length - pending.length;
 
   // 좌표 미등록 업체가 없으면 바로 스케줄 생성
@@ -2025,8 +2025,8 @@ async function refreshPreflightData() {
     companies = companies.filter(c => state.selectedCompanies.includes(c.id));
   }
 
-  // 좌표 미등록 업체 재계산
-  const pending = companies.filter(c => !c.lat || !c.lng);
+  // 좌표 미등록 업체 재계산 (좌표는 geo.lat, geo.lng에 저장됨)
+  const pending = companies.filter(c => !c.geo?.lat || !c.geo?.lng);
 
   preflightState.filterCompanies = companies;
   preflightState.pendingCompanies = pending;
