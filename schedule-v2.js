@@ -100,7 +100,7 @@ const el = {
   btnClearSelected: document.getElementById('btnClearSelected'),
   // 경로 최적화 관련
   apiKeySection: document.getElementById('apiKeySection'),
-  googleMapsApiKey: document.getElementById('googleMapsApiKey'),
+  kakaoApiKey: document.getElementById('kakaoApiKey'),
 };
 
 // ===== 색상 우선순위 (빨강→주황→노랑→초록→하늘→파랑→보라→회색) =====
@@ -1376,12 +1376,12 @@ function bindEvents() {
     radio.addEventListener('change', toggleApiKeySection);
   });
 
-  // API 키 입력 시 RouteOptimizer에 설정
-  if (el.googleMapsApiKey) {
-    el.googleMapsApiKey.addEventListener('change', () => {
-      const key = el.googleMapsApiKey.value.trim();
+  // 카카오 API 키 입력 시 RouteOptimizer에 설정
+  if (el.kakaoApiKey) {
+    el.kakaoApiKey.addEventListener('change', () => {
+      const key = el.kakaoApiKey.value.trim();
       if (key && window.RouteOptimizer) {
-        window.RouteOptimizer.setGoogleMapsApiKey(key);
+        window.RouteOptimizer.setKakaoApiKey(key);
       }
     });
   }

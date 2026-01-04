@@ -237,6 +237,74 @@ console.log(window.db?.client);
 console.log(window.dataStability?.cache);
 ```
 
+## 🔒 보안 설정
+
+### 인증 및 권한 (Kakao OAuth 2.0)
+```javascript
+// 안전한 세션 관리
+sessionStorage.setItem('kakaoToken', authObj.access_token); // OK
+// localStorage 사용 금지 - 보안 위험
+```
+
+### Row Level Security (RLS)
+```sql
+-- 사용자별 데이터 격리
+CREATE POLICY "Users can only access their own companies"
+ON client_companies FOR ALL
+USING (user_id = auth.uid()::integer);
+
+-- RLS 활성화 필수
+ALTER TABLE client_companies ENABLE ROW LEVEL SECURITY;
+```
+
+### XSS 방지
+```javascript
+// HTML 이스케이프 필수
+function escapeHtml(unsafe) {
+    return unsafe.replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+// innerHTML 대신 textContent 사용 권장
+```
+
+### 파일 업로드 검증
+- **PDF 전용**: `file.type === 'application/pdf'`
+- **크기 제한**: 50MB 이하
+- **파일명**: 영문/숫자만 허용
+
+## 🚀 배포 가이드
+
+### GitHub Pages 배포 (권장)
+```bash
+# 1. 저장소 푸시
+git add . && git commit -m "Deploy" && git push origin main
+
+# 2. GitHub 설정
+# Settings → Pages → Source: main / (root)
+
+# 3. 커스텀 도메인 (선택)
+echo "namkyungsteel.com" > CNAME
+```
+
+### DNS 설정 (커스텀 도메인)
+```
+Type: A     → 185.199.108.153, 185.199.109.153
+Type: CNAME → www → username.github.io
+```
+
+### 배포 전 체크리스트
+- [ ] Supabase URL/Key 프로덕션용 확인
+- [ ] 디버그 코드 제거 (`console.log` 정리)
+- [ ] RLS 정책 활성화 확인
+- [ ] HTTPS 강제 설정
+- [ ] 캐시 버스팅 쿼리 추가 (`?v=버전`)
+
+### 배포 후 검증
+- [ ] 로그인 기능 테스트
+- [ ] 데이터베이스 연결 확인
+- [ ] 파일 업로드 테스트
+- [ ] 모바일 반응형 확인
+
 ## 📚 추가 학습 자료
 
 ### 공식 문서
@@ -244,11 +312,11 @@ console.log(window.dataStability?.cache);
 - [MDN Web Docs](https://developer.mozilla.org/)
 - [JavaScript 가이드](https://javascript.info/)
 
-### 프로젝트별 문서
-- [시스템 아키텍처](SYSTEM_ARCHITECTURE.md)
+### 프로젝트 문서
+- [프로젝트 개요](PROJECT_DOCUMENTATION.md)
 - [데이터베이스 설계](DATABASE_DESIGN.md)
-- [API 문서](API_DOCUMENTATION.md)
-- [배포 가이드](DEPLOYMENT_GUIDE.md)
+- [사용자 가이드](USER_GUIDE.md)
+- [변경 이력](CHANGELOG.md)
 
 ---
-*개발 환경 설정에 문제가 있으면 문서를 확인하거나 이슈를 등록하세요.*
+*개발/보안/배포 관련 문의는 이슈를 등록하세요.*

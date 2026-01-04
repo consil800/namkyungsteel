@@ -462,19 +462,20 @@
             </div>
             <div class="row">
               <input type="radio" name="algorithm" value="optimal" />
-              <div><b>최적 경로</b> <span class="muted small">(Google Maps 거리 기반)</span></div>
+              <div><b>최적 경로</b> <span class="muted small">(카카오맵 거리 기반)</span></div>
             </div>
           </div>
           <div class="hint" style="margin-top:8px;">
-            <b>최적 경로</b>: 실제 주행거리 기반, 업체 순서대로 1→2→3→... 가장 가까운 곳으로 이동 (시간 소요)
+            <b>최적 경로</b>: 한국 주소 인식률 높은 카카오맵 API 사용, 업체 순서대로 1→2→3→... 가장 가까운 곳으로 이동 (시간 소요)
           </div>
         </div>
 
         <div class="section" id="apiKeySection" style="display:none;">
-          <label>Google Maps API 키</label>
-          <input type="password" id="googleMapsApiKey" placeholder="API 키 입력 (선택사항)" />
+          <label>카카오 REST API 키</label>
+          <input type="password" id="kakaoApiKey" placeholder="카카오 REST API 키 입력 (선택사항)" />
           <div class="hint" style="margin-top:8px;">
-            API 키 없으면 직선거리 기반으로 계산됩니다.
+            API 키 없으면 직선거리 기반으로 계산됩니다.<br/>
+            <a href="https://developers.kakao.com/console/app" target="_blank" style="color:#2563eb;">카카오 개발자 콘솔에서 발급</a>
           </div>
         </div>
 
@@ -570,10 +571,10 @@
   <div id="toast" class="toast">-</div>
 
   <!-- 인증 및 데이터베이스 로드 -->
-  <!-- ★ ChatGPT 리뷰: 캐시 버스팅 - 버전 형식 변경 (20260103e_1) -->
-  <script src="shared-assets/js/auth.js?v=20260103h"></script>
-  <script src="database.js?v=20260103h"></script>
-  <script src="route-optimizer.js?v=20260103h"></script>
-  <script src="schedule-generator.js?v=20260103h"></script>
+  <!-- ★ 카카오맵 API 전환 (2026-01-04) -->
+  <script src="shared-assets/js/auth.js?v=20260104a"></script>
+  <script src="database.js?v=20260104a"></script>
+  <script src="route-optimizer.js?v=20260104a"></script>
+  <script src="schedule-generator.js?v=20260104a"></script>
 </body>
 </html>
