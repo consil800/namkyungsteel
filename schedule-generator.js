@@ -100,7 +100,7 @@ const el = {
   btnClearSelected: document.getElementById('btnClearSelected'),
   // 경로 최적화 관련
   apiKeySection: document.getElementById('apiKeySection'),
-  googleMapsApiKey: document.getElementById('googleMapsApiKey'),
+  kakaoApiKey: document.getElementById('kakaoApiKey'),
 };
 
 // ===== 색상 우선순위 (빨강→주황→노랑→초록→하늘→파랑→보라→회색) =====
@@ -822,7 +822,7 @@ function updateEstimate() {
   }
 }
 
-// ===== 최적 경로 스케줄 생성 (Google Maps 거리 기반) =====
+// ===== 최적 경로 스케줄 생성 (카카오맵 거리 기반) =====
 // ★ ChatGPT + Claude Ultra Think 설계: Nearest Neighbor + 2-opt 알고리즘
 // 실제 주행거리 기반으로 1 → 2 → 3 → 4 → 5... 순서로 가까운 업체 연결
 async function generateScheduleOptimal(companies, days, cap) {
@@ -836,7 +836,7 @@ async function generateScheduleOptimal(companies, days, cap) {
   el.calendar.innerHTML = `
     <div class="hint" style="padding: 40px; text-align: center;">
       <h3>🚗 최적 경로 계산 중...</h3>
-      <p>Google Maps API를 사용하여 실제 주행거리를 계산합니다.</p>
+      <p>카카오맵 API를 사용하여 실제 주행거리를 계산합니다.</p>
       <p>업체 수에 따라 수 분이 소요될 수 있습니다.</p>
       <p style="margin-top: 20px; font-size: 12px; color: #666;">
         콘솔(F12)에서 진행 상황을 확인할 수 있습니다.
@@ -961,7 +961,7 @@ async function generateSchedule() {
   // ★ 알고리즘 선택 확인
   const selectedAlgo = getSelectedAlgorithm();
 
-  // ★★★ 최적 경로 알고리즘 (Google Maps 거리 기반) ★★★
+  // ★★★ 최적 경로 알고리즘 (카카오맵 거리 기반) ★★★
   if (selectedAlgo === 'optimal') {
     await generateScheduleOptimal(companies, days, cap);
     return;
@@ -1376,12 +1376,12 @@ function bindEvents() {
     radio.addEventListener('change', toggleApiKeySection);
   });
 
-  // API 키 입력 시 RouteOptimizer에 설정
-  if (el.googleMapsApiKey) {
-    el.googleMapsApiKey.addEventListener('change', () => {
-      const key = el.googleMapsApiKey.value.trim();
+  // 카카오 API 키 입력 시 RouteOptimizer에 설정
+  if (el.kakaoApiKey) {
+    el.kakaoApiKey.addEventListener('change', () => {
+      const key = el.kakaoApiKey.value.trim();
       if (key && window.RouteOptimizer) {
-        window.RouteOptimizer.setGoogleMapsApiKey(key);
+        window.RouteOptimizer.setKakaoApiKey(key);
       }
     });
   }

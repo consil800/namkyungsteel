@@ -1,19 +1,24 @@
 /**
  * 영업사원 경로 최적화 모듈
  * ChatGPT + Claude 협업 설계 (2026-01-03)
+ * 카카오맵 API 전환 (2026-01-04)
  *
  * 핵심 알고리즘:
- * 1. Geocoding API: 주소 → 좌표 변환 (캐시 적용)
+ * 1. 카카오 Local API: 주소 → 좌표 변환 (캐시 적용)
  * 2. Haversine: 직선거리로 후보 K개 필터링
- * 3. Routes API: 실제 주행거리 계산
+ * 3. 카카오 Mobility API: 실제 주행거리 계산 (선택)
  * 4. Nearest Neighbor + 2-opt: 경로 최적화
  * 5. Sweep 알고리즘: 날짜별 분할
  */
 
 // ===== 설정 =====
 const ROUTE_OPTIMIZER_CONFIG = {
-  // Google Maps API 키 (별도 설정 필요)
-  GOOGLE_MAPS_API_KEY: '', // 사용자가 설정해야 함
+  // 카카오 REST API 키 (카카오 개발자 콘솔에서 발급)
+  // https://developers.kakao.com/console/app → 앱 선택 → 앱 키 → REST API 키
+  KAKAO_REST_API_KEY: 'da89fd9f40b0afa12377c726eef8bbfc',
+
+  // 카카오 Mobility API 사용 여부 (false면 Haversine 사용)
+  USE_KAKAO_MOBILITY: false,
 
   // Haversine 프리필터 후보 수
   CANDIDATE_K: 20,
@@ -22,8 +27,8 @@ const ROUTE_OPTIMIZER_CONFIG = {
   CACHE_EXPIRY_MS: 30 * 24 * 60 * 60 * 1000,
 
   // API 호출 지연 (rate limit 대응, 밀리초)
-  // Nominatim은 1초에 1회 제한이므로 1000ms 이상 필요
-  API_DELAY_MS: 1100,
+  // 카카오 API는 초당 10회까지 허용하지만 안전하게 200ms
+  API_DELAY_MS: 200,
 
   // 2-opt 최대 반복 횟수
   TWO_OPT_MAX_ITERATIONS: 100,
@@ -167,7 +172,45 @@ const DistanceCache = {
 };
 
 /**
- * 주소를 좌표로 변환 (Google API 또는 Nominatim fallback)
+ * 카카오 API fetch 헬퍼 (429 rate limit 재시도 포함)
+ * ★ ChatGPT Ultra Think 검증 반영: 429 에러 시 지수 백오프 재시도
+ * @param {string} url - API URL
+ * @param {number} maxRetries - 최대 재시도 횟수
+ * @returns {Promise<Object>} JSON 응답
+ */
+async function fetchKakaoJson(url, maxRetries = 3) {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `KakaoAK ${ROUTE_OPTIMIZER_CONFIG.KAKAO_REST_API_KEY}`
+      }
+    });
+
+    if (response.ok) {
+      return await response.json();
+    }
+
+    // 429 Too Many Requests: 지수 백오프 후 재시도
+    if (response.status === 429 && attempt < maxRetries - 1) {
+      const backoffMs = Math.pow(2, attempt) * 1000; // 1초, 2초, 4초...
+      console.warn(`⚠️ 카카오 API rate limit (429), ${backoffMs}ms 후 재시도...`);
+      await delay(backoffMs);
+      continue;
+    }
+
+    throw new Error(`HTTP ${response.status}`);
+  }
+}
+
+/**
+ * 주소를 좌표로 변환 (카카오 Local API 사용)
+ * 카카오맵은 한국 주소 인식률이 매우 높음
+ *
+ * ★ ChatGPT Ultra Think 검증 반영:
+ * - NaN 좌표 검증 추가
+ * - placeId 형식 개선 (좌표 기반으로 충돌 방지)
+ * - 429 rate limit 재시도 로직 추가
+ *
  * @param {string} address - 주소
  * @returns {Promise<{lat: number, lng: number, placeId: string} | null>}
  */
@@ -178,31 +221,70 @@ async function geocodeAddress(address) {
     return cached;
   }
 
-  // 2. Google Maps API 사용 (키가 있는 경우)
-  if (ROUTE_OPTIMIZER_CONFIG.GOOGLE_MAPS_API_KEY) {
+  // 2. 카카오 Local API 사용 (키가 있는 경우)
+  if (ROUTE_OPTIMIZER_CONFIG.KAKAO_REST_API_KEY) {
     try {
-      const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${ROUTE_OPTIMIZER_CONFIG.GOOGLE_MAPS_API_KEY}&language=ko`;
+      // 주소 검색 API 사용
+      const url = `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(address)}`;
 
-      const response = await fetch(url);
-      const data = await response.json();
+      const data = await fetchKakaoJson(url);
 
-      if (data.status === 'OK' && data.results.length > 0) {
-        const result = data.results[0];
+      if (data.documents && data.documents.length > 0) {
+        const result = data.documents[0];
+        const lat = parseFloat(result.y); // 카카오는 y가 위도
+        const lng = parseFloat(result.x); // 카카오는 x가 경도
+
+        // ★ ChatGPT 검증 반영: NaN 좌표 검증
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+          console.warn(`카카오 좌표 파싱 실패 (NaN): ${address}`);
+          return null;
+        }
+
         const geo = {
-          lat: result.geometry.location.lat,
-          lng: result.geometry.location.lng,
-          placeId: result.place_id
+          lat,
+          lng,
+          // ★ ChatGPT 검증 반영: 좌표 기반 placeId로 충돌 방지
+          placeId: `kakao_addr_${result.x}_${result.y}`
         };
         GeoCodeCache.set(address, geo);
+        console.log(`✅ 카카오 지오코딩 성공: ${address}`);
         return geo;
       }
+
+      // 주소 검색 실패 시 키워드 검색으로 재시도
+      const keywordUrl = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(address)}`;
+      const keywordData = await fetchKakaoJson(keywordUrl);
+
+      if (keywordData.documents && keywordData.documents.length > 0) {
+        const result = keywordData.documents[0];
+        const lat = parseFloat(result.y);
+        const lng = parseFloat(result.x);
+
+        // ★ ChatGPT 검증 반영: NaN 좌표 검증
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+          console.warn(`카카오 키워드 좌표 파싱 실패 (NaN): ${address}`);
+          return null;
+        }
+
+        const geo = {
+          lat,
+          lng,
+          // ★ ChatGPT 검증 반영: 좌표 기반 placeId로 충돌 방지
+          placeId: `kakao_keyword_${result.x}_${result.y}`
+        };
+        GeoCodeCache.set(address, geo);
+        console.log(`✅ 카카오 키워드 검색 성공: ${address} → ${result.place_name}`);
+        return geo;
+      }
+
+      console.warn(`카카오 지오코딩 결과 없음: ${address}`);
+      return null;
     } catch (e) {
-      console.warn(`Google 지오코딩 실패 (${address}):`, e);
+      console.error(`카카오 지오코딩 오류 (${address}):`, e);
     }
   }
 
-  // 3. Nominatim fallback (무료, API 키 불필요)
-  // OpenStreetMap 기반, 한국 주소 지원
+  // 3. API 키 없는 경우 Nominatim fallback (무료)
   try {
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&countrycodes=kr&limit=1`;
 
@@ -220,9 +302,18 @@ async function geocodeAddress(address) {
     const data = await response.json();
 
     if (data.length > 0) {
+      const lat = parseFloat(data[0].lat);
+      const lng = parseFloat(data[0].lon);
+
+      // ★ ChatGPT 검증 반영: NaN 좌표 검증
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        console.warn(`Nominatim 좌표 파싱 실패 (NaN): ${address}`);
+        return null;
+      }
+
       const geo = {
-        lat: parseFloat(data[0].lat),
-        lng: parseFloat(data[0].lon),
+        lat,
+        lng,
         placeId: `nominatim_${data[0].place_id}`
       };
       GeoCodeCache.set(address, geo);
@@ -239,7 +330,7 @@ async function geocodeAddress(address) {
 }
 
 /**
- * 모든 업체의 좌표를 확보 (localStorage 캐시 우선, 없으면 Nominatim API 호출)
+ * 모든 업체의 좌표를 확보 (localStorage 캐시 우선, 없으면 카카오 API 호출)
  * @param {Array} companies - 업체 목록 [{id, address, ...}]
  * @returns {Promise<Array>} 좌표가 추가된 업체 목록
  */
@@ -248,8 +339,9 @@ async function ensureGeocoded(companies) {
   let geocodedCount = 0;
   let cachedCount = 0;
 
+  const apiName = ROUTE_OPTIMIZER_CONFIG.KAKAO_REST_API_KEY ? '카카오 Local' : 'Nominatim';
   console.log(`📍 지오코딩 시작: ${companies.length}개 업체`);
-  console.log(`   (Nominatim API 사용 - 1초당 1회 제한으로 시간이 걸릴 수 있습니다)`);
+  console.log(`   (${apiName} API 사용)`);
 
   for (const company of companies) {
     // 주소가 없는 경우 스킵
@@ -315,28 +407,13 @@ function topKByHaversine(current, candidates, k = ROUTE_OPTIMIZER_CONFIG.CANDIDA
 }
 
 /**
- * Google Routes API로 실제 주행거리/시간 조회 (1:N)
+ * 카카오 Mobility API 또는 Haversine으로 주행거리/시간 조회 (1:N)
+ * 카카오 Mobility API는 유료 플랜이 필요할 수 있어 기본은 Haversine 사용
  * @param {Object} origin - 출발지 {lat, lng}
  * @param {Array} destinations - 도착지 목록 [{id, geo: {lat, lng}}]
  * @returns {Promise<Object>} {id: {durationSec, distanceM}}
  */
 async function fetchRouteMatrix(origin, destinations) {
-  if (!ROUTE_OPTIMIZER_CONFIG.GOOGLE_MAPS_API_KEY) {
-    // API 키 없으면 Haversine 기반 추정치 반환
-    console.warn('API 키 없음: Haversine 거리로 대체');
-    const result = {};
-    for (const dest of destinations) {
-      if (dest.geo) {
-        const distKm = haversineDistance(origin.lat, origin.lng, dest.geo.lat, dest.geo.lng);
-        result[dest.id] = {
-          durationSec: Math.round(distKm / 40 * 3600), // 평균 40km/h 가정
-          distanceM: Math.round(distKm * 1000)
-        };
-      }
-    }
-    return result;
-  }
-
   const result = {};
 
   // 캐시 확인
@@ -354,43 +431,62 @@ async function fetchRouteMatrix(origin, destinations) {
     return result;
   }
 
-  // Routes API 호출 (Distance Matrix 대신 Routes API 권장되지만,
-  // 브라우저에서는 Distance Matrix가 더 쉬움)
-  try {
-    const originsParam = `${origin.lat},${origin.lng}`;
-    const destsParam = uncached.map(d => `${d.geo.lat},${d.geo.lng}`).join('|');
+  // 카카오 Mobility API 사용 설정이 있고 API 키가 있는 경우
+  if (ROUTE_OPTIMIZER_CONFIG.USE_KAKAO_MOBILITY && ROUTE_OPTIMIZER_CONFIG.KAKAO_REST_API_KEY) {
+    try {
+      // 카카오 길찾기 API (1:1 요청이므로 순차 호출)
+      for (const dest of uncached) {
+        if (!dest.geo) continue;
 
-    const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${originsParam}&destinations=${destsParam}&mode=driving&language=ko&key=${ROUTE_OPTIMIZER_CONFIG.GOOGLE_MAPS_API_KEY}`;
+        await delay(ROUTE_OPTIMIZER_CONFIG.API_DELAY_MS);
 
-    const response = await fetch(url);
-    const data = await response.json();
+        const url = `https://apis-navi.kakaomobility.com/v1/directions?origin=${origin.lng},${origin.lat}&destination=${dest.geo.lng},${dest.geo.lat}&priority=RECOMMEND`;
 
-    if (data.status === 'OK' && data.rows && data.rows[0]) {
-      const elements = data.rows[0].elements;
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `KakaoAK ${ROUTE_OPTIMIZER_CONFIG.KAKAO_REST_API_KEY}`
+          }
+        });
 
-      for (let i = 0; i < uncached.length; i++) {
-        const el = elements[i];
-        if (el.status === 'OK') {
-          const durationSec = el.duration.value;
-          const distanceM = el.distance.value;
+        if (response.ok) {
+          const data = await response.json();
+          if (data.routes && data.routes.length > 0 && data.routes[0].summary) {
+            const summary = data.routes[0].summary;
+            const durationSec = summary.duration; // 초 단위
+            const distanceM = summary.distance; // 미터 단위
 
-          result[uncached[i].id] = { durationSec, distanceM };
-          DistanceCache.set('current', uncached[i].id, durationSec, distanceM);
+            result[dest.id] = { durationSec, distanceM };
+            DistanceCache.set('current', dest.id, durationSec, distanceM);
+            continue;
+          }
         }
-      }
-    }
-  } catch (e) {
-    console.error('Routes API 호출 실패:', e);
 
-    // Fallback: Haversine
-    for (const dest of uncached) {
-      if (dest.geo && !result[dest.id]) {
+        // API 실패 시 Haversine fallback
         const distKm = haversineDistance(origin.lat, origin.lng, dest.geo.lat, dest.geo.lng);
         result[dest.id] = {
           durationSec: Math.round(distKm / 40 * 3600),
           distanceM: Math.round(distKm * 1000)
         };
       }
+
+      return result;
+    } catch (e) {
+      console.warn('카카오 Mobility API 호출 실패, Haversine fallback:', e);
+    }
+  }
+
+  // Haversine 기반 추정치 반환 (기본값)
+  // 한국 도로 환경 고려: 평균 40km/h 가정 (시내 도로 많음)
+  for (const dest of uncached) {
+    if (dest.geo) {
+      const distKm = haversineDistance(origin.lat, origin.lng, dest.geo.lat, dest.geo.lng);
+      // 도로 우회 계수 1.3 적용 (직선거리 대비 실제 도로는 약 30% 더 김)
+      const adjustedDistKm = distKm * 1.3;
+      result[dest.id] = {
+        durationSec: Math.round(adjustedDistKm / 40 * 3600), // 평균 40km/h 가정
+        distanceM: Math.round(adjustedDistKm * 1000)
+      };
+      DistanceCache.set('current', dest.id, result[dest.id].durationSec, result[dest.id].distanceM);
     }
   }
 
@@ -681,12 +777,21 @@ async function generateOptimalRoutes(companies, startPoint = null, dayCapacity =
 // ===== API 키 설정 함수 =====
 
 /**
- * Google Maps API 키 설정
- * @param {string} apiKey - Google Maps API 키
+ * 카카오 REST API 키 설정
+ * @param {string} apiKey - 카카오 REST API 키
  */
-function setGoogleMapsApiKey(apiKey) {
-  ROUTE_OPTIMIZER_CONFIG.GOOGLE_MAPS_API_KEY = apiKey;
-  console.log('✅ Google Maps API 키 설정됨');
+function setKakaoApiKey(apiKey) {
+  ROUTE_OPTIMIZER_CONFIG.KAKAO_REST_API_KEY = apiKey;
+  console.log('✅ 카카오 REST API 키 설정됨');
+}
+
+/**
+ * 카카오 Mobility API 사용 설정
+ * @param {boolean} enabled - true면 실제 주행거리 사용, false면 Haversine
+ */
+function setUseMobility(enabled) {
+  ROUTE_OPTIMIZER_CONFIG.USE_KAKAO_MOBILITY = enabled;
+  console.log(`✅ 카카오 Mobility API: ${enabled ? '사용' : '미사용 (Haversine)'}`);
 }
 
 /**
@@ -694,15 +799,36 @@ function setGoogleMapsApiKey(apiKey) {
  * @returns {boolean}
  */
 function isApiKeySet() {
-  return !!ROUTE_OPTIMIZER_CONFIG.GOOGLE_MAPS_API_KEY;
+  return !!ROUTE_OPTIMIZER_CONFIG.KAKAO_REST_API_KEY;
+}
+
+/**
+ * 지오코드 캐시 초기화
+ */
+function clearGeoCache() {
+  GeoCodeCache.clear();
+  console.log('✅ 지오코드 캐시 초기화됨');
+}
+
+/**
+ * 거리 캐시 초기화
+ */
+function clearDistanceCache() {
+  DistanceCache.clear();
+  console.log('✅ 거리 캐시 초기화됨');
 }
 
 // ===== 전역 export =====
 window.RouteOptimizer = {
   // 설정
-  setGoogleMapsApiKey,
+  setKakaoApiKey,
+  setUseMobility,
   isApiKeySet,
   config: ROUTE_OPTIMIZER_CONFIG,
+
+  // 캐시 관리
+  clearGeoCache,
+  clearDistanceCache,
 
   // 핵심 함수
   generateOptimalRoutes,
@@ -718,10 +844,12 @@ window.RouteOptimizer = {
   twoOptImprove,
   partitionBySweep,
 
-  // 캐시
+  // 캐시 객체
+  GeoCodeCache,
   DistanceCache
 };
 
-console.log('✅ RouteOptimizer 모듈 로드됨');
-console.log('   사용법: RouteOptimizer.setGoogleMapsApiKey("YOUR_API_KEY")');
+console.log('✅ RouteOptimizer 모듈 로드됨 (카카오맵 API)');
+console.log('   설정: RouteOptimizer.setKakaoApiKey("YOUR_KAKAO_REST_API_KEY")');
 console.log('   실행: RouteOptimizer.generateOptimalRoutes(companies, startPoint, dayCapacity)');
+console.log('   (카카오 개발자 콘솔: https://developers.kakao.com/console/app)');
