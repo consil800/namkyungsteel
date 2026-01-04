@@ -1946,13 +1946,26 @@ function renderPreflightList() {
     const item = document.createElement('div');
     item.className = 'preflight-item';
 
-    const address = c.address || '주소 없음';
-    const statusClass = !c.address ? 'error' : 'pending';
-    const statusText = !c.address ? '주소 없음' : '좌표 없음';
+    const address = c.address || '';
+
+    // 상태 결정: 주소 없음 / 지오코딩 실패 원인 분석
+    let statusClass = 'pending';
+    let statusText = '지오코딩 필요';
+
+    if (!address) {
+      statusClass = 'error';
+      statusText = '주소 없음';
+    } else if (address.includes('산') && /산\d/.test(address)) {
+      statusText = '산 주소 (수동 입력 필요)';
+    } else if (address.includes('외 ') && address.includes('필지')) {
+      statusText = '필지 포함 (주소 정리 필요)';
+    } else if (address.includes('번지') && !address.includes('로') && !address.includes('길')) {
+      statusText = '지번 주소 (도로명 변환 권장)';
+    }
 
     item.innerHTML = `
       <div class="name">${c.company_name || '이름 없음'}</div>
-      <div class="address">${address}</div>
+      <div class="address">${address || '주소 없음'}</div>
       <span class="status ${statusClass}">${statusText}</span>
     `;
     list.appendChild(item);
