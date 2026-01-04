@@ -453,6 +453,143 @@ function buildDayPlan({ unassigned, seed, visitsPerDay = 9 }) {
   return day;
 }
 
+// ===== 거리 기반 Seed 주변 업체 선택 (ChatGPT + Claude 협업 2026-01-04) =====
+// 문제: 기존 buildDayPlan은 region 이름으로만 그룹핑하여 김제(전북)와 김해(경남)가 같은 날 배정됨
+// 해결: Haversine 거리 기반 + 반경 가드로 실제 가까운 업체만 배정
+
+/**
+ * 두 업체 간 직선거리 계산 (km)
+ * route-optimizer.js의 haversineDistance 재사용
+ */
+function getDistanceKm(companyA, companyB) {
+  // geo 필드가 없으면 null 반환
+  if (!companyA.geo?.lat || !companyA.geo?.lng ||
+      !companyB.geo?.lat || !companyB.geo?.lng) {
+    return null;
+  }
+
+  // route-optimizer.js의 haversineDistance 사용 (전역)
+  if (typeof haversineDistance === 'function') {
+    return haversineDistance(
+      companyA.geo.lat, companyA.geo.lng,
+      companyB.geo.lat, companyB.geo.lng
+    );
+  }
+
+  // fallback: 직접 계산
+  const R = 6371; // 지구 반지름 (km)
+  const dLat = (companyB.geo.lat - companyA.geo.lat) * Math.PI / 180;
+  const dLng = (companyB.geo.lng - companyA.geo.lng) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(companyA.geo.lat * Math.PI / 180) *
+            Math.cos(companyB.geo.lat * Math.PI / 180) *
+            Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+/**
+ * 방문일로부터 경과 일수 계산
+ */
+function daysSinceLastVisit(company) {
+  const t = company.last_visit_date ? Date.parse(company.last_visit_date) : NaN;
+  if (!Number.isFinite(t)) return 99999; // 방문 기록 없으면 최우선
+  return Math.floor((Date.now() - t) / (24 * 60 * 60 * 1000));
+}
+
+/**
+ * 후보 업체 점수 계산 (낮을수록 우선)
+ * - wDist: 거리 가중치 (1.0)
+ * - wAge: 오래된 방문일 보너스 (0.15)
+ */
+function scoreCandidate({ current, candidate, wDist = 1.0, wAge = 0.15 }) {
+  const km = getDistanceKm(current, candidate);
+  if (km === null) return Number.POSITIVE_INFINITY; // 좌표 없으면 최후순위
+
+  const age = daysSinceLastVisit(candidate);
+  // 거리는 가까울수록, 오래됐을수록 점수가 낮아짐 (우선순위 높음)
+  return (wDist * km) - (wAge * age);
+}
+
+/**
+ * 거리 기반 하루 업체 배정 (Nearest Neighbor + 반경 가드)
+ * ★ ChatGPT Ultra Think 설계:
+ * 1. Seed는 방문한지 가장 오래된 업체
+ * 2. 반경을 단계적으로 확장 (20→40→80→150km)하며 가까운 업체 우선 선택
+ * 3. 김제-김해 같은 200km 장거리 혼합 방지
+ */
+function buildDayPlanDistanceFirst({
+  unassigned,
+  seed,
+  visitsPerDay = 9,
+  radiusStepsKm = [20, 40, 80, 150], // 반경 확장 단계
+  wDist = 1.0,
+  wAge = 0.15
+}) {
+  const day = [seed];
+  const remaining = unassigned.filter(x => x !== seed);
+  let current = seed;
+
+  // Seed에 좌표가 없으면 기존 region 기반 로직으로 폴백
+  if (!seed.geo?.lat || !seed.geo?.lng) {
+    console.warn('⚠️ Seed에 좌표 없음, region 기반 폴백:', seed.company_name);
+    return buildDayPlan({ unassigned, seed, visitsPerDay });
+  }
+
+  while (day.length < visitsPerDay && remaining.length > 0) {
+    let pickedIndex = -1;
+
+    // 반경을 단계적으로 확장하며 최적 후보 찾기
+    for (const radiusKm of radiusStepsKm) {
+      let bestScore = Number.POSITIVE_INFINITY;
+      let bestIdx = -1;
+
+      for (let i = 0; i < remaining.length; i++) {
+        const c = remaining[i];
+        const km = getDistanceKm(current, c);
+
+        if (km === null) continue; // 좌표 없으면 스킵
+        if (km > radiusKm) continue; // 반경 밖은 스킵
+
+        const score = scoreCandidate({ current, candidate: c, wDist, wAge });
+        if (score < bestScore) {
+          bestScore = score;
+          bestIdx = i;
+        }
+      }
+
+      if (bestIdx !== -1) {
+        pickedIndex = bestIdx;
+        break; // 이 반경에서 찾았으면 확장 중단
+      }
+    }
+
+    // 반경 내에서 못 찾았으면 fallback: 좌표 있는 후보 중 최선
+    if (pickedIndex === -1) {
+      let bestScore = Number.POSITIVE_INFINITY;
+      let bestIdx = -1;
+
+      for (let i = 0; i < remaining.length; i++) {
+        const c = remaining[i];
+        const score = scoreCandidate({ current, candidate: c, wDist, wAge });
+        if (score < bestScore) {
+          bestScore = score;
+          bestIdx = i;
+        }
+      }
+
+      if (bestIdx === -1) break; // 더 이상 배정 불가
+      pickedIndex = bestIdx;
+    }
+
+    // 선택된 업체를 day에 추가하고 remaining에서 제거
+    const next = remaining.splice(pickedIndex, 1)[0];
+    day.push(next);
+    current = next;
+  }
+
+  return day;
+}
+
 // ===== 색상 필터 적용 (필터 역할만!) =====
 function applyColorFilter(companies, selectedColors) {
   if (!selectedColors || selectedColors.length === 0) return companies;
@@ -574,6 +711,49 @@ async function loadHolidaysForRange(startStr, endStr) {
 }
 
 // ===== 업체 데이터 로드 =====
+// ===== 업체별 좌표 데이터 로딩 (ChatGPT + Claude 협업 2026-01-04) =====
+// route-optimizer.js의 GeoCodeCache 및 geocodeAddress 사용
+async function loadCompanyGeoData(companies) {
+  if (!companies || companies.length === 0) return;
+
+  const maxPerRun = 30; // 한 번에 최대 30개 지오코딩 (API 부하 방지)
+  const delayMs = 150; // API 호출 간 딜레이
+  let geocodedCount = 0;
+
+  for (const c of companies) {
+    // 1. localStorage 캐시에서 geo 확인 (GeoCodeCache)
+    if (typeof GeoCodeCache !== 'undefined' && c.address) {
+      const cached = GeoCodeCache.get(c.address);
+      if (cached && cached.lat && cached.lng) {
+        c.geo = cached;
+        continue;
+      }
+    }
+
+    // 2. 캐시에 없으면 geocodeAddress로 지오코딩 (최대 maxPerRun개)
+    if (geocodedCount < maxPerRun && c.address && typeof geocodeAddress === 'function') {
+      try {
+        const geo = await geocodeAddress(c.address);
+        if (geo && geo.lat && geo.lng) {
+          c.geo = geo;
+          geocodedCount++;
+
+          // API 호출 간 딜레이
+          if (delayMs > 0) {
+            await new Promise(r => setTimeout(r, delayMs));
+          }
+        }
+      } catch (e) {
+        console.warn('[loadCompanyGeoData] 지오코딩 실패:', c.company_name, e);
+      }
+    }
+  }
+
+  // 지오코딩 결과 로그
+  const withGeo = companies.filter(c => c.geo?.lat && c.geo?.lng).length;
+  console.log(`[loadCompanyGeoData] ${withGeo}/${companies.length} 업체 좌표 로딩 완료 (신규 ${geocodedCount}개)`);
+}
+
 async function loadCompanies() {
   el.loadState.textContent = '업체 로딩 중...';
 
@@ -588,6 +768,10 @@ async function loadCompanies() {
     if (error) throw error;
 
     state.companies = data || [];
+
+    // 거리 기반 스케줄링을 위한 geo 데이터 로딩 (2026-01-04 ChatGPT+Claude 협업)
+    // route-optimizer.js의 GeoCodeCache 및 geocodeAddress 사용
+    await loadCompanyGeoData(state.companies);
 
     // 색상 및 지역 목록 추출
     const colorSet = new Set();
@@ -993,7 +1177,9 @@ async function generateSchedule() {
     if (!seed) break;
 
     // ✅ Seed 지역/그룹 주변으로 하루 채우기
-    const dayCompanies = buildDayPlan({
+    // 2026-01-04 ChatGPT+Claude 협업: 거리 기반 알고리즘 적용
+    // buildDayPlanDistanceFirst는 geo 데이터 없으면 자동으로 buildDayPlan 폴백
+    const dayCompanies = buildDayPlanDistanceFirst({
       unassigned: pool,
       seed,
       visitsPerDay: cap.target
