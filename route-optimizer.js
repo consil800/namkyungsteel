@@ -938,10 +938,11 @@ async function getCompaniesWithoutGeo() {
   try {
     const supabase = getSupabase();
 
+    // lat 또는 lng가 없는 업체만 조회 (geocoded_at은 무시)
     const { data, error } = await supabase
       .from('client_companies')
       .select('id, company_name, address, region, lat, lng, geocoded_at')
-      .or('lat.is.null,lng.is.null,geocoded_at.is.null')
+      .or('lat.is.null,lng.is.null')
       .not('address', 'is', null)
       .order('id');
 
