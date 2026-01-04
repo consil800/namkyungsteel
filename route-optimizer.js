@@ -1135,14 +1135,20 @@ async function generateOptimalRoutesPostGIS(companies, startPoint = null, dayCap
       geo: { lat: c.lat, lng: c.lng }
     })));
 
-    // 총 거리 계산
-    let totalDistanceM = 0;
+    // 총 거리 계산 (haversineDistance는 km 반환)
+    let totalDistanceKm = 0;
     for (let i = 0; i < route.length - 1; i++) {
-      const from = route[i].geo || { lat: route[i].lat, lng: route[i].lng };
-      const to = route[i + 1].geo || { lat: route[i + 1].lat, lng: route[i + 1].lng };
-      totalDistanceM += haversineDistance(from.lat, from.lng, to.lat, to.lng);
+      const from = route[i];
+      const to = route[i + 1];
+      const fromLat = from.geo?.lat ?? from.lat;
+      const fromLng = from.geo?.lng ?? from.lng;
+      const toLat = to.geo?.lat ?? to.lat;
+      const toLng = to.geo?.lng ?? to.lng;
+
+      if (fromLat && fromLng && toLat && toLng) {
+        totalDistanceKm += haversineDistance(fromLat, fromLng, toLat, toLng);
+      }
     }
-    const totalDistanceKm = totalDistanceM / 1000;
 
     results.push({
       day: day + 1,
