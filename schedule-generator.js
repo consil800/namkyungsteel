@@ -1698,8 +1698,8 @@ function bindEvents() {
     toast('선택 업체 비움');
   });
 
-  // 미리보기 생성
-  el.btnPreview.addEventListener('click', generateSchedule);
+  // 미리보기 생성 (Pre-flight 점검 후 생성)
+  el.btnPreview.addEventListener('click', showPreflightCheck);
 
   // 저장
   el.btnSave.addEventListener('click', saveSchedule);
@@ -1813,6 +1813,278 @@ async function runBatchGeocode() {
   }
 }
 
+// ===== Pre-flight 점검 시스템 (2026-01-04 ChatGPT + Claude 협업) =====
+
+// Pre-flight 상태
+const preflightState = {
+  pendingCompanies: [],
+  filterCompanies: [],  // 현재 필터된 업체 중 좌표 미등록
+  isOpen: false
+};
+
+// Pre-flight 모달 요소
+const pfEl = {
+  get overlay() { return document.getElementById('preflightOverlay'); },
+  get total() { return document.getElementById('pfTotal'); },
+  get ready() { return document.getElementById('pfReady'); },
+  get pending() { return document.getElementById('pfPending'); },
+  get list() { return document.getElementById('pfList'); },
+  get progress() { return document.getElementById('pfProgress'); },
+  get progressFill() { return document.getElementById('pfProgressFill'); },
+  get progressText() { return document.getElementById('pfProgressText'); },
+  get btnRetry() { return document.getElementById('pfRetryGeocode'); },
+  get btnRefresh() { return document.getElementById('pfRefresh'); },
+  get btnSkip() { return document.getElementById('pfSkip'); },
+  get btnGenerate() { return document.getElementById('pfGenerate'); },
+  get btnClose() { return document.getElementById('preflightClose'); }
+};
+
+/**
+ * Pre-flight 점검 화면 표시
+ */
+async function showPreflightCheck() {
+  const startStr = el.startDate.value;
+  const endStr = el.endDate.value;
+
+  if (!startStr || !endStr) {
+    toast('시작일과 종료일을 선택하세요.');
+    return;
+  }
+
+  // 현재 필터 적용된 업체 가져오기
+  let companies = applyColorFilter(state.companies, state.filterColors);
+  if (state.filterRegions.length > 0) {
+    companies = companies.filter(c => state.filterRegions.includes(c.region));
+  }
+  if (state.searchKeyword) {
+    const kw = state.searchKeyword.toLowerCase();
+    companies = companies.filter(c => (c.company_name || '').toLowerCase().includes(kw));
+  }
+  if (state.selectedCompanies.length > 0) {
+    companies = companies.filter(c => state.selectedCompanies.includes(c.id));
+  }
+
+  if (companies.length === 0) {
+    toast('배정할 업체가 없습니다.');
+    return;
+  }
+
+  // 좌표 미등록 업체 필터링
+  const pending = companies.filter(c => !c.lat || !c.lng);
+  const ready = companies.length - pending.length;
+
+  // 좌표 미등록 업체가 없으면 바로 스케줄 생성
+  if (pending.length === 0) {
+    console.log('✅ 모든 업체에 좌표가 있습니다. 스케줄 생성 진행.');
+    generateSchedule();
+    return;
+  }
+
+  // Pre-flight 상태 업데이트
+  preflightState.filterCompanies = companies;
+  preflightState.pendingCompanies = pending;
+
+  // 모달 업데이트
+  updatePreflightModal();
+
+  // 모달 표시
+  pfEl.overlay.classList.add('show');
+  preflightState.isOpen = true;
+
+  console.log(`⚠️ Pre-flight 점검: ${pending.length}개 업체 좌표 미등록`);
+}
+
+/**
+ * Pre-flight 모달 업데이트
+ */
+function updatePreflightModal() {
+  const total = preflightState.filterCompanies.length;
+  const pending = preflightState.pendingCompanies.length;
+  const ready = total - pending;
+
+  // 통계 업데이트
+  pfEl.total.textContent = total;
+  pfEl.ready.textContent = ready;
+  pfEl.pending.textContent = pending;
+
+  // 업체 목록 렌더링
+  renderPreflightList();
+
+  // 버튼 상태
+  pfEl.btnGenerate.disabled = true;  // 좌표 미등록 있으면 비활성화
+  pfEl.btnSkip.textContent = `${pending}개 제외하고 생성`;
+}
+
+/**
+ * Pre-flight 업체 목록 렌더링
+ */
+function renderPreflightList() {
+  const list = pfEl.list;
+  list.innerHTML = '';
+
+  preflightState.pendingCompanies.forEach(c => {
+    const item = document.createElement('div');
+    item.className = 'preflight-item';
+
+    const address = c.address || '주소 없음';
+    const statusClass = !c.address ? 'error' : 'pending';
+    const statusText = !c.address ? '주소 없음' : '좌표 없음';
+
+    item.innerHTML = `
+      <div class="name">${c.company_name || '이름 없음'}</div>
+      <div class="address">${address}</div>
+      <span class="status ${statusClass}">${statusText}</span>
+    `;
+    list.appendChild(item);
+  });
+
+  if (preflightState.pendingCompanies.length === 0) {
+    list.innerHTML = '<div style="padding:20px; text-align:center; color:#16a34a;">✅ 모든 업체에 좌표가 등록되어 있습니다.</div>';
+    pfEl.btnGenerate.disabled = false;
+  }
+}
+
+/**
+ * Pre-flight 모달 닫기
+ */
+function closePreflightModal() {
+  pfEl.overlay.classList.remove('show');
+  preflightState.isOpen = false;
+}
+
+/**
+ * Pre-flight: 자동 지오코딩 재시도
+ */
+async function preflightRetryGeocode() {
+  const pending = preflightState.pendingCompanies.filter(c => c.address);
+
+  if (pending.length === 0) {
+    toast('지오코딩할 업체가 없습니다. (주소 없음)');
+    return;
+  }
+
+  if (!window.RouteOptimizer || !window.RouteOptimizer.batchGeocodeAndSave) {
+    toast('RouteOptimizer 모듈이 로드되지 않았습니다.');
+    return;
+  }
+
+  // 진행 표시
+  pfEl.progress.classList.add('show');
+  pfEl.btnRetry.disabled = true;
+  pfEl.progressFill.style.width = '0%';
+  pfEl.progressText.textContent = '지오코딩 준비 중...';
+
+  try {
+    const result = await window.RouteOptimizer.batchGeocodeAndSave(
+      pending,
+      (current, total, company) => {
+        const pct = Math.round((current / total) * 100);
+        pfEl.progressFill.style.width = pct + '%';
+        pfEl.progressText.textContent = `${current}/${total}: ${company.company_name}`;
+      }
+    );
+
+    pfEl.progressText.textContent = `완료! 성공: ${result.success}, 실패: ${result.failed}`;
+
+    // 업체 목록 다시 로드
+    await loadCompanies();
+
+    // 필터 다시 적용하여 pending 업데이트
+    await refreshPreflightData();
+
+    toast(`지오코딩 완료: 성공 ${result.success}개, 실패 ${result.failed}개`);
+
+  } catch (e) {
+    console.error('지오코딩 실패:', e);
+    pfEl.progressText.textContent = '❌ 지오코딩 실패: ' + e.message;
+  } finally {
+    pfEl.btnRetry.disabled = false;
+    setTimeout(() => {
+      pfEl.progress.classList.remove('show');
+    }, 2000);
+  }
+}
+
+/**
+ * Pre-flight 데이터 새로고침
+ */
+async function refreshPreflightData() {
+  // 업체 목록 다시 로드
+  await loadCompanies();
+
+  // 필터 재적용
+  let companies = applyColorFilter(state.companies, state.filterColors);
+  if (state.filterRegions.length > 0) {
+    companies = companies.filter(c => state.filterRegions.includes(c.region));
+  }
+  if (state.searchKeyword) {
+    const kw = state.searchKeyword.toLowerCase();
+    companies = companies.filter(c => (c.company_name || '').toLowerCase().includes(kw));
+  }
+  if (state.selectedCompanies.length > 0) {
+    companies = companies.filter(c => state.selectedCompanies.includes(c.id));
+  }
+
+  // 좌표 미등록 업체 재계산
+  const pending = companies.filter(c => !c.lat || !c.lng);
+
+  preflightState.filterCompanies = companies;
+  preflightState.pendingCompanies = pending;
+
+  updatePreflightModal();
+  await refreshGeoStats();
+
+  toast('데이터 새로고침 완료');
+}
+
+/**
+ * Pre-flight: 제외하고 생성
+ */
+function preflightSkipAndGenerate() {
+  const pendingIds = new Set(preflightState.pendingCompanies.map(c => c.id));
+  const pendingCount = pendingIds.size;
+
+  console.log(`⚠️ ${pendingCount}개 업체 제외하고 스케줄 생성`);
+
+  // 모달 닫기
+  closePreflightModal();
+
+  // generateSchedule 호출 (내부에서 좌표 없는 업체는 자동 제외됨)
+  generateSchedule();
+
+  toast(`${pendingCount}개 업체를 제외하고 스케줄 생성`);
+}
+
+/**
+ * Pre-flight 이벤트 리스너 등록
+ */
+function initPreflightEvents() {
+  // 닫기 버튼
+  pfEl.btnClose?.addEventListener('click', closePreflightModal);
+
+  // 오버레이 클릭으로 닫기
+  pfEl.overlay?.addEventListener('click', (e) => {
+    if (e.target === pfEl.overlay) closePreflightModal();
+  });
+
+  // 자동 지오코딩 재시도
+  pfEl.btnRetry?.addEventListener('click', preflightRetryGeocode);
+
+  // 새로고침
+  pfEl.btnRefresh?.addEventListener('click', refreshPreflightData);
+
+  // 제외하고 생성
+  pfEl.btnSkip?.addEventListener('click', preflightSkipAndGenerate);
+
+  // 스케줄 생성 (좌표 모두 있을 때)
+  pfEl.btnGenerate?.addEventListener('click', () => {
+    closePreflightModal();
+    generateSchedule();
+  });
+
+  console.log('✅ Pre-flight 이벤트 리스너 등록 완료');
+}
+
 // ===== 초기화 실행 =====
 async function init() {
   try {
@@ -1838,6 +2110,9 @@ async function init() {
 
     // 이벤트 바인딩
     bindEvents();
+
+    // Pre-flight 점검 이벤트 바인딩 (2026-01-04 추가)
+    initPreflightEvents();
 
     // 알고리즘 선택 섹션 초기화
     toggleApiKeySection();

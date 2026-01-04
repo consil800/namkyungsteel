@@ -381,6 +381,170 @@
 
     .muted{ color:var(--muted); }
     .small{ font-size:12px; }
+
+    /* ===== Pre-flight 점검 모달 (2026-01-04 ChatGPT + Claude 협업) ===== */
+    .preflight-overlay{
+      position:fixed; inset:0;
+      background:rgba(0,0,0,.5);
+      z-index:100;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+    .preflight-overlay.show{ display:flex; }
+    .preflight-modal{
+      background:#fff;
+      border-radius:16px;
+      max-width:700px;
+      width:100%;
+      max-height:85vh;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      box-shadow:0 20px 50px rgba(0,0,0,.2);
+    }
+    .preflight-header{
+      padding:16px 20px;
+      border-bottom:1px solid var(--line);
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+    .preflight-header .icon{
+      width:40px; height:40px;
+      background:#fef3c7;
+      border-radius:10px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:20px;
+    }
+    .preflight-header .title{ font-weight:800; font-size:16px; }
+    .preflight-header .subtitle{ font-size:13px; color:var(--muted); }
+    .preflight-header .close-btn{
+      margin-left:auto;
+      background:none;
+      border:none;
+      font-size:24px;
+      cursor:pointer;
+      color:#999;
+      padding:4px;
+    }
+    .preflight-header .close-btn:hover{ color:#333; }
+    .preflight-body{
+      padding:16px 20px;
+      overflow-y:auto;
+      flex:1;
+    }
+    .preflight-stats{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:12px;
+      margin-bottom:16px;
+    }
+    .preflight-stat{
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px;
+      text-align:center;
+    }
+    .preflight-stat .num{
+      font-size:24px;
+      font-weight:900;
+    }
+    .preflight-stat .label{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:4px;
+    }
+    .preflight-stat.warning{ border-color:#fbbf24; background:#fffbeb; }
+    .preflight-stat.warning .num{ color:#d97706; }
+    .preflight-actions{
+      display:flex;
+      gap:10px;
+      margin-bottom:16px;
+    }
+    .preflight-actions .btn{
+      flex:1;
+      text-align:center;
+      padding:12px;
+    }
+    .preflight-actions .btn.secondary{
+      background:#f3f4f6;
+      border-color:#e5e7eb;
+    }
+    .preflight-list{
+      border:1px solid var(--line);
+      border-radius:12px;
+      max-height:250px;
+      overflow-y:auto;
+    }
+    .preflight-item{
+      padding:10px 14px;
+      border-bottom:1px solid var(--line);
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+    .preflight-item:last-child{ border-bottom:none; }
+    .preflight-item .name{
+      font-weight:600;
+      flex:1;
+    }
+    .preflight-item .address{
+      font-size:12px;
+      color:var(--muted);
+      flex:2;
+    }
+    .preflight-item .status{
+      font-size:11px;
+      padding:4px 8px;
+      border-radius:999px;
+    }
+    .preflight-item .status.error{
+      background:#fee2e2;
+      color:#dc2626;
+    }
+    .preflight-item .status.pending{
+      background:#fef3c7;
+      color:#d97706;
+    }
+    .preflight-item .status.success{
+      background:#dcfce7;
+      color:#16a34a;
+    }
+    .preflight-footer{
+      padding:14px 20px;
+      border-top:1px solid var(--line);
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+      background:#fafafa;
+    }
+    .preflight-progress{
+      margin:12px 0;
+      display:none;
+    }
+    .preflight-progress.show{ display:block; }
+    .preflight-progress .bar{
+      height:8px;
+      background:#e5e7eb;
+      border-radius:999px;
+      overflow:hidden;
+    }
+    .preflight-progress .fill{
+      height:100%;
+      background:#2563eb;
+      border-radius:999px;
+      transition:width .3s;
+    }
+    .preflight-progress .text{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:6px;
+      text-align:center;
+    }
   </style>
 </head>
 
@@ -394,6 +558,61 @@
       <button id="btnPreview" class="btn primary">스케줄 생성</button>
       <button id="btnSave" class="btn primary">저장</button>
       <button id="btnReset" class="btn danger">초기화</button>
+    </div>
+  </div>
+
+  <!-- ===== Pre-flight 점검 모달 (2026-01-04 ChatGPT + Claude 협업) ===== -->
+  <div id="preflightOverlay" class="preflight-overlay">
+    <div class="preflight-modal">
+      <div class="preflight-header">
+        <div class="icon">⚠️</div>
+        <div>
+          <div class="title">스케줄 생성 전 점검</div>
+          <div class="subtitle">좌표 미등록 업체가 있습니다</div>
+        </div>
+        <button class="close-btn" id="preflightClose">&times;</button>
+      </div>
+      <div class="preflight-body">
+        <div class="preflight-stats">
+          <div class="preflight-stat">
+            <div class="num" id="pfTotal">0</div>
+            <div class="label">전체 업체</div>
+          </div>
+          <div class="preflight-stat">
+            <div class="num" id="pfReady">0</div>
+            <div class="label">좌표 완료</div>
+          </div>
+          <div class="preflight-stat warning">
+            <div class="num" id="pfPending">0</div>
+            <div class="label">좌표 미등록</div>
+          </div>
+        </div>
+
+        <div class="preflight-actions">
+          <button class="btn secondary" id="pfRetryGeocode">
+            🔄 자동 지오코딩 재시도
+          </button>
+          <button class="btn secondary" id="pfRefresh">
+            🔃 새로고침
+          </button>
+        </div>
+
+        <div class="preflight-progress" id="pfProgress">
+          <div class="bar"><div class="fill" id="pfProgressFill" style="width:0%"></div></div>
+          <div class="text" id="pfProgressText">처리 중...</div>
+        </div>
+
+        <div style="font-size:13px; margin-bottom:10px; color:var(--muted);">
+          <b>좌표 미등록 업체 목록</b> (주소 오류 또는 빈칸)
+        </div>
+        <div class="preflight-list" id="pfList">
+          <!-- 업체 목록이 여기에 동적으로 추가됨 -->
+        </div>
+      </div>
+      <div class="preflight-footer">
+        <button class="btn" id="pfSkip">제외하고 생성</button>
+        <button class="btn primary" id="pfGenerate" disabled>스케줄 생성</button>
+      </div>
     </div>
   </div>
 
@@ -599,6 +818,6 @@
   <script src="shared-assets/js/auth.js?v=20260104d"></script>
   <script src="database.js?v=20260104d"></script>
   <script src="route-optimizer.js?v=20260104g"></script>
-  <script src="schedule-generator.js?v=20260104e"></script>
+  <script src="schedule-generator.js?v=20260104h"></script>
 </body>
 </html>
