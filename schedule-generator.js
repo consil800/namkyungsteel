@@ -551,17 +551,9 @@ async function generateScheduleV6() {
       return;
     }
 
-    // ===== 2. 날짜 범위 생성 =====
-    const workdays = [];
-    let d = new Date(startStr + 'T00:00:00');
-    const end = new Date(endStr + 'T00:00:00');
-    while (d <= end) {
-      const dayOfWeek = d.getDay();
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-        workdays.push(new Date(d));
-      }
-      d.setDate(d.getDate() + 1);
-    }
+    // ===== 2. 날짜 범위 생성 (buildDays 형식 사용) =====
+    const allDays = buildDays(startStr, endStr);
+    const workdays = allDays.filter(d => !d.isWeekend && !d.isHoliday && !d.isOff);
 
     if (workdays.length === 0) {
       toast('선택된 기간에 평일이 없습니다.');
@@ -580,13 +572,13 @@ async function generateScheduleV6() {
     console.log(`🎯 방문 범위: min=${min}, max=${max}, target=${target}`);
 
     // ===== 4. 상태 초기화 =====
-    state.schedule = {};
+    state.schedule = allDays;  // buildDays 배열 그대로 사용
     state.regionCooldown = new Map();
     state.monthlyVisits = new Map();
-    workdays.forEach(wd => {
-      const dateKey = formatDate(wd);
-      state.schedule[dateKey] = [];
-    });
+
+    // 날짜 키로 빠르게 day 객체를 찾기 위한 맵
+    const dayMap = new Map();
+    allDays.forEach(day => dayMap.set(day.date, day));
 
     // 남은 업체 풀
     let remainingPool = [...companiesWithCoords];
@@ -595,8 +587,8 @@ async function generateScheduleV6() {
 
     // ===== 5. 날짜별 배정 루프 =====
     for (let dayIdx = 0; dayIdx < workdays.length; dayIdx++) {
-      const currentDate = workdays[dayIdx];
-      const dateKey = formatDate(currentDate);
+      const currentDay = workdays[dayIdx];  // day 객체
+      const dateKey = currentDay.date;      // 'YYYY-MM-DD' 문자열
       const monthKey = dateKey.substring(0, 7); // 'YYYY-MM'
 
       console.log(`\n📆 Day ${dayIdx + 1}: ${dateKey}`);
@@ -620,6 +612,7 @@ async function generateScheduleV6() {
         }
 
         // Top-N 후보 추출 (Soft 점수 기반)
+        const currentDate = new Date(currentDay.date + 'T00:00:00');  // day 객체의 date 문자열 → Date 객체
         candidates = extractTopNCandidates(afterHard, dayIdx, currentDate, monthKey, target, relaxLevel);
 
         if (candidates.length >= min) {
@@ -744,7 +737,11 @@ async function generateScheduleV6() {
       });
 
       // ===== 5.5 상태 업데이트 =====
-      state.schedule[dateKey] = todayAssigned;
+      // dayMap을 통해 해당 날짜의 day 객체를 찾아 companies에 할당
+      const dayObj = dayMap.get(dateKey);
+      if (dayObj) {
+        dayObj.companies = todayAssigned;
+      }
 
       // 지역 쿨다운 갱신
       const regionsToday = new Set(todayAssigned.map(c => c.region || '기타'));
