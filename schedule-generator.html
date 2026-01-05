@@ -298,6 +298,20 @@
     .company-item .sub{ font-size:11px; color:var(--muted); font-weight:700; }
     .company-item .visit-info{ font-size:10px; color:#0284c7; font-weight:700; margin-left:auto; }
     .company-item .x{ margin-left:4px; color:#999; font-weight:900; cursor:pointer; }
+    /* v5.1: 순번 표시 스타일 */
+    .company-item .order-num{
+      background:#2563eb; color:#fff;
+      font-size:10px; font-weight:700;
+      min-width:18px; height:18px;
+      border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      flex-shrink:0;
+    }
+    /* v5.1: 이전 업체와의 거리 표시 */
+    .company-item .distance-info{
+      font-size:9px; color:#059669; font-weight:600;
+      background:#d1fae5; padding:2px 6px; border-radius:8px;
+    }
 
     /* 날짜 카드 추가 스타일 */
     .day-date{ font-weight:900; }
@@ -689,15 +703,6 @@
           </div>
         </div>
 
-        <div class="section" id="apiKeySection" style="display:none;">
-          <label>카카오 REST API 키</label>
-          <input type="password" id="kakaoApiKey" placeholder="카카오 REST API 키 입력 (선택사항)" />
-          <div class="hint" style="margin-top:8px;">
-            API 키 없으면 직선거리 기반으로 계산됩니다.<br/>
-            <a href="https://developers.kakao.com/console/app" target="_blank" style="color:#2563eb;">카카오 개발자 콘솔에서 발급</a>
-          </div>
-        </div>
-
         <!-- 좌표 관리 섹션 (2026-01-04 추가) -->
         <div class="section" id="geocodeSection">
           <label>📍 업체 좌표 관리</label>
@@ -745,15 +750,6 @@
           </div>
           <div class="hint" style="margin-top:8px;">
             "선택 업체 수"가 0이면, 미리보기 생성 시 "현재 필터 결과 전체"를 사용합니다.
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="info" id="locationGroupInfo">
-            <b>스케줄 자동 생성 알고리즘</b><br/>
-            ① <b style="color:#dc2626;">빨강</b> → <b style="color:#ea580c;">주황</b> → <b style="color:#ca8a04;">노랑</b> → <b style="color:#2e7d32;">녹색</b> → <b style="color:#0284c7;">하늘</b> → <b style="color:#2563eb;">파랑</b> → <b style="color:#7c3aed;">보라</b> → <b style="color:#6b7280;">회색</b> 순서<br/>
-            ② 방문 기록 없거나 오래된 업체 우선<br/>
-            ③ 방문 횟수 적은 업체 우선
           </div>
         </div>
 
