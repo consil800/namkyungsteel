@@ -571,7 +571,7 @@ async function generateScheduleV6() {
     console.log(`📅 평일 수: ${workdays.length}일`);
 
     // ===== 3. 옵션 파싱 =====
-    const rangeStr = el.visitRange.value || '4-5';
+    const rangeStr = document.querySelector('input[name="cap"]:checked')?.value || '4-5';
     const [minStr, maxStr] = rangeStr.split('-');
     const min = parseInt(minStr) || 4;
     const max = parseInt(maxStr) || 5;
