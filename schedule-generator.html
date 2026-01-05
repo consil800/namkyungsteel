@@ -559,6 +559,60 @@
       margin-top:6px;
       text-align:center;
     }
+
+    /* ===== 스케줄 불러오기 아이템 스타일 ===== */
+    .schedule-load-item{
+      padding:14px 16px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      cursor:pointer;
+      transition:all .15s;
+      display:flex;
+      align-items:center;
+      gap:14px;
+    }
+    .schedule-load-item:hover{
+      border-color:#2563eb;
+      background:#f0f7ff;
+    }
+    .schedule-load-item.selected{
+      border-color:#2563eb;
+      background:#eff6ff;
+      box-shadow:0 0 0 2px rgba(37,99,235,.2);
+    }
+    .schedule-load-item .info{ flex:1; }
+    .schedule-load-item .plan-name{
+      font-weight:700;
+      font-size:15px;
+      margin-bottom:4px;
+    }
+    .schedule-load-item .plan-meta{
+      font-size:13px;
+      color:var(--muted);
+      display:flex;
+      gap:12px;
+    }
+    .schedule-load-item .plan-date{
+      font-size:12px;
+      color:#999;
+      margin-top:4px;
+    }
+    .schedule-load-item .check-icon{
+      width:24px;
+      height:24px;
+      border:2px solid #ddd;
+      border-radius:50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:transparent;
+      font-size:14px;
+    }
+    .schedule-load-item.selected .check-icon{
+      border-color:#2563eb;
+      background:#2563eb;
+      color:#fff;
+    }
   </style>
 </head>
 
@@ -571,6 +625,7 @@
       <div class="spacer"></div>
       <button id="btnPreview" class="btn primary">스케줄 생성</button>
       <button id="btnSave" class="btn primary">저장</button>
+      <button id="btnLoad" class="btn">불러오기</button>
       <button id="btnReset" class="btn danger">초기화</button>
     </div>
   </div>
@@ -626,6 +681,34 @@
       <div class="preflight-footer">
         <button class="btn" id="pfSkip">제외하고 생성</button>
         <button class="btn primary" id="pfGenerate" disabled>스케줄 생성</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 스케줄 불러오기 모달 ===== -->
+  <div id="loadScheduleOverlay" class="preflight-overlay">
+    <div class="preflight-modal" style="max-width:500px;">
+      <div class="preflight-header">
+        <div class="icon">📋</div>
+        <div>
+          <div class="title">저장된 스케줄 불러오기</div>
+          <div class="desc">불러올 스케줄을 선택하세요</div>
+        </div>
+      </div>
+      <div class="preflight-body" style="max-height:400px; overflow-y:auto;">
+        <div id="loadScheduleList" style="display:flex; flex-direction:column; gap:8px;">
+          <!-- 스케줄 목록이 여기에 동적으로 추가됨 -->
+        </div>
+        <div id="loadScheduleEmpty" style="display:none; text-align:center; padding:40px 20px; color:var(--muted);">
+          저장된 스케줄이 없습니다.
+        </div>
+        <div id="loadScheduleLoading" style="text-align:center; padding:40px 20px; color:var(--muted);">
+          불러오는 중...
+        </div>
+      </div>
+      <div class="preflight-footer">
+        <button class="btn" id="loadScheduleCancel">취소</button>
+        <button class="btn danger" id="loadScheduleDelete" style="display:none;">삭제</button>
       </div>
     </div>
   </div>
@@ -808,6 +891,6 @@
   <script src="shared-assets/js/auth.js?v=20260104d"></script>
   <script src="database.js?v=20260104d"></script>
   <script src="route-optimizer.js?v=20260104k"></script>
-  <script src="schedule-generator.js?v=20260105-v62"></script>
+  <script src="schedule-generator.js?v=20260105-v63"></script>
 </body>
 </html>

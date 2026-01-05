@@ -110,6 +110,14 @@ const el = {
   geocodeProgress: document.getElementById('geocodeProgress'),
   geocodeProgressBar: document.getElementById('geocodeProgressBar'),
   geocodeProgressText: document.getElementById('geocodeProgressText'),
+  // 불러오기 관련 (2026-01-05 추가)
+  btnLoad: document.getElementById('btnLoad'),
+  loadScheduleOverlay: document.getElementById('loadScheduleOverlay'),
+  loadScheduleList: document.getElementById('loadScheduleList'),
+  loadScheduleEmpty: document.getElementById('loadScheduleEmpty'),
+  loadScheduleLoading: document.getElementById('loadScheduleLoading'),
+  loadScheduleCancel: document.getElementById('loadScheduleCancel'),
+  loadScheduleDelete: document.getElementById('loadScheduleDelete'),
 };
 
 // ===== 색상 우선순위 (빨강→주황→노랑→초록→하늘→파랑→보라→회색) =====
@@ -2722,6 +2730,263 @@ async function saveSchedule() {
   }
 }
 
+// ===== 불러오기 (2026-01-05 추가) =====
+let selectedPlanId = null;  // 선택된 스케줄 ID
+
+// 불러오기 모달 열기
+async function openLoadScheduleModal() {
+  if (!USER_ID) {
+    toast('로그인이 필요합니다.');
+    return;
+  }
+
+  // 모달 표시
+  el.loadScheduleOverlay.classList.add('show');
+  el.loadScheduleList.innerHTML = '';
+  el.loadScheduleEmpty.style.display = 'none';
+  el.loadScheduleLoading.style.display = 'block';
+  el.loadScheduleDelete.style.display = 'none';
+  selectedPlanId = null;
+
+  try {
+    // 저장된 스케줄 목록 조회
+    const { data: plans, error } = await supabaseDB
+      .from('visit_schedule_plans')
+      .select('id, plan_name, start_date, end_date, total_days, total_companies, created_at, updated_at')
+      .eq('user_id', parseInt(USER_ID))
+      .order('updated_at', { ascending: false });
+
+    el.loadScheduleLoading.style.display = 'none';
+
+    if (error) {
+      console.error('❌ 스케줄 목록 조회 실패:', error);
+      toast('스케줄 목록을 불러올 수 없습니다.');
+      el.loadScheduleEmpty.textContent = '오류가 발생했습니다.';
+      el.loadScheduleEmpty.style.display = 'block';
+      return;
+    }
+
+    if (!plans || plans.length === 0) {
+      el.loadScheduleEmpty.style.display = 'block';
+      return;
+    }
+
+    // 스케줄 목록 렌더링
+    plans.forEach(plan => {
+      const item = document.createElement('div');
+      item.className = 'schedule-load-item';
+      item.dataset.planId = plan.id;
+
+      const updatedDate = new Date(plan.updated_at).toLocaleDateString('ko-KR', {
+        year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+      });
+
+      item.innerHTML = `
+        <div class="info">
+          <div class="plan-name">${escapeHtml(plan.plan_name)}</div>
+          <div class="plan-meta">
+            <span>📅 ${plan.start_date} ~ ${plan.end_date}</span>
+            <span>📊 ${plan.total_days}일, ${plan.total_companies}개 업체</span>
+          </div>
+          <div class="plan-date">마지막 수정: ${updatedDate}</div>
+        </div>
+        <div class="check-icon">✓</div>
+      `;
+
+      // 클릭 이벤트 - 선택/해제
+      item.addEventListener('click', () => {
+        // 기존 선택 해제
+        el.loadScheduleList.querySelectorAll('.schedule-load-item').forEach(el => {
+          el.classList.remove('selected');
+        });
+
+        // 선택 토글
+        if (selectedPlanId === plan.id) {
+          selectedPlanId = null;
+          el.loadScheduleDelete.style.display = 'none';
+        } else {
+          selectedPlanId = plan.id;
+          item.classList.add('selected');
+          el.loadScheduleDelete.style.display = 'inline-block';
+        }
+      });
+
+      // 더블클릭 - 바로 불러오기
+      item.addEventListener('dblclick', () => {
+        selectedPlanId = plan.id;
+        loadSelectedSchedule();
+      });
+
+      el.loadScheduleList.appendChild(item);
+    });
+
+    console.log(`📋 저장된 스케줄 ${plans.length}개 로드됨`);
+
+  } catch (error) {
+    console.error('❌ 스케줄 목록 조회 실패:', error);
+    el.loadScheduleLoading.style.display = 'none';
+    el.loadScheduleEmpty.textContent = '오류가 발생했습니다.';
+    el.loadScheduleEmpty.style.display = 'block';
+  }
+}
+
+// 불러오기 모달 닫기
+function closeLoadScheduleModal() {
+  el.loadScheduleOverlay.classList.remove('show');
+  selectedPlanId = null;
+}
+
+// 선택한 스케줄 불러오기
+async function loadSelectedSchedule() {
+  if (!selectedPlanId) {
+    toast('불러올 스케줄을 선택하세요.');
+    return;
+  }
+
+  try {
+    // 스케줄 데이터 조회
+    const { data: plan, error } = await supabaseDB
+      .from('visit_schedule_plans')
+      .select('*')
+      .eq('id', selectedPlanId)
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    if (!plan || !plan.schedule_data) {
+      toast('스케줄 데이터가 없습니다.');
+      return;
+    }
+
+    // 현재 스케줄이 있으면 확인
+    if (state.schedule.length > 0) {
+      if (!confirm('현재 스케줄이 있습니다. 덮어쓰시겠습니까?')) {
+        return;
+      }
+    }
+
+    // 스케줄 데이터 적용
+    applyLoadedSchedule(plan);
+
+    // 모달 닫기
+    closeLoadScheduleModal();
+
+    toast(`✅ "${plan.plan_name}" 스케줄을 불러왔습니다.`);
+    console.log('✅ 스케줄 불러오기 완료:', plan.plan_name);
+
+  } catch (error) {
+    console.error('❌ 스케줄 불러오기 실패:', error);
+    toast(`불러오기 실패: ${error.message || '알 수 없는 오류'}`);
+  }
+}
+
+// 불러온 스케줄 데이터를 state에 적용
+function applyLoadedSchedule(plan) {
+  const scheduleData = plan.schedule_data;
+
+  // 날짜 범위 설정
+  el.startDate.value = plan.start_date;
+  el.endDate.value = plan.end_date;
+
+  // 스케줄 데이터 적용 (업체 정보 보강)
+  state.schedule = scheduleData.map(day => {
+    // 저장된 업체 ID로 현재 업체 데이터 매칭
+    const companies = (day.companies ?? []).map(savedCompany => {
+      // 현재 state.companies에서 매칭되는 업체 찾기
+      const fullCompany = state.companies.find(c => c.id === savedCompany.id);
+      if (fullCompany) {
+        // 최신 업체 정보 사용 (좌표 등 포함)
+        return {
+          ...fullCompany,
+          distance_km: savedCompany.distance_km ?? fullCompany.distance_km ?? null
+        };
+      }
+      // 매칭 안되면 저장된 정보 그대로 사용
+      return savedCompany;
+    });
+
+    return {
+      date: day.date,
+      isOff: day.isOff || false,
+      isWeekend: day.isWeekend || false,
+      isHoliday: day.isHoliday || false,
+      holidayName: day.holidayName ?? null,
+      companies: companies
+    };
+  });
+
+  // 미배정 업체 계산 (스케줄에 배정된 업체 제외)
+  const assignedIds = new Set();
+  state.schedule.forEach(day => {
+    (day.companies ?? []).forEach(c => assignedIds.add(c.id));
+  });
+
+  // 필터링된 업체 중 미배정 업체
+  const filteredCompanies = getFilteredCompanies();
+  state.unassigned = filteredCompanies.filter(c => !assignedIds.has(c.id));
+
+  // 선택된 업체 목록 업데이트
+  state.selectedCompanies = [...assignedIds];
+
+  // UI 업데이트
+  renderCalendar();
+  renderUnassigned();
+  updateSelectedCount();
+  updateWorkdayCountUI();
+  updateEstimate();
+
+  // 변경 상태 초기화 (방금 불러왔으므로)
+  state.isDirty = false;
+  updateDirtyState();
+}
+
+// 선택한 스케줄 삭제
+async function deleteSelectedSchedule() {
+  if (!selectedPlanId) {
+    toast('삭제할 스케줄을 선택하세요.');
+    return;
+  }
+
+  if (!confirm('선택한 스케줄을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
+    return;
+  }
+
+  try {
+    const { error } = await supabaseDB
+      .from('visit_schedule_plans')
+      .delete()
+      .eq('id', selectedPlanId);
+
+    if (error) {
+      throw error;
+    }
+
+    toast('✅ 스케줄이 삭제되었습니다.');
+    console.log('🗑️ 스케줄 삭제 완료:', selectedPlanId);
+
+    // 목록 새로고침
+    openLoadScheduleModal();
+
+  } catch (error) {
+    console.error('❌ 스케줄 삭제 실패:', error);
+    toast(`삭제 실패: ${error.message || '알 수 없는 오류'}`);
+  }
+}
+
+// HTML 이스케이프 헬퍼
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>"']/g, char => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  }[char]));
+}
+
 // ===== 초기화 =====
 function resetAll() {
   if (!confirm('모든 설정과 스케줄을 초기화하시겠습니까?')) return;
@@ -2822,6 +3087,25 @@ function bindEvents() {
 
   // 저장
   el.btnSave.addEventListener('click', saveSchedule);
+
+  // 불러오기 (2026-01-05 추가)
+  if (el.btnLoad) {
+    el.btnLoad.addEventListener('click', openLoadScheduleModal);
+  }
+  if (el.loadScheduleCancel) {
+    el.loadScheduleCancel.addEventListener('click', closeLoadScheduleModal);
+  }
+  if (el.loadScheduleDelete) {
+    el.loadScheduleDelete.addEventListener('click', deleteSelectedSchedule);
+  }
+  // 모달 오버레이 클릭 시 닫기
+  if (el.loadScheduleOverlay) {
+    el.loadScheduleOverlay.addEventListener('click', (e) => {
+      if (e.target === el.loadScheduleOverlay) {
+        closeLoadScheduleModal();
+      }
+    });
+  }
 
   // 초기화
   el.btnReset.addEventListener('click', resetAll);
