@@ -687,19 +687,12 @@
         </div>
 
         <div class="section">
-          <label>경로 알고리즘 선택</label>
-          <div class="listbox" style="max-height:none;">
-            <div class="row">
-              <input type="radio" name="algorithm" value="basic" checked />
-              <div><b>기본</b> <span class="muted small">(지역 그룹핑)</span></div>
-            </div>
-            <div class="row">
-              <input type="radio" name="algorithm" value="optimal" />
-              <div><b>최적 경로</b> <span class="muted small">(카카오맵 거리 기반)</span></div>
-            </div>
-          </div>
-          <div class="hint" style="margin-top:8px;">
-            <b>최적 경로</b>: 한국 주소 인식률 높은 카카오맵 API 사용, 업체 순서대로 1→2→3→... 가장 가까운 곳으로 이동 (시간 소요)
+          <label>v6.0 통합 알고리즘</label>
+          <div class="hint">
+            <b>거리 최적화</b>: Nearest Neighbor + 2-opt로 최단 경로 계산<br/>
+            <b>지역 쿨다운</b>: 같은 지역 3~4일 연속 방문 억제<br/>
+            <b>월 2회 제한</b>: 월 3회 이상 방문 자동 차단<br/>
+            <b>희소성 보너스</b>: 이번 달 미방문 업체 우선
           </div>
         </div>
 

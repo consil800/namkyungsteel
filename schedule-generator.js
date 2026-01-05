@@ -165,8 +165,50 @@ const REGION_ADJACENCY = {
   '고성': ['창원', '진주', '사천'],
 };
 
-// ===== v5.1 상수 (2026-01-05 ChatGPT + Claude Ultra Think 협업) =====
-// 지역 쿨다운: 같은 지역 연속 배정 방지 (3~4일 간격 권장)
+// ===== v6.0 통합 알고리즘 상수 (2026-01-05 ChatGPT + Claude Ultra Think 협업) =====
+// 거리 기반 최적 경로 + v5.1 제약조건 통합
+const V6_CONFIG = {
+  // ===== Hard 제약 (절대 위반 금지) =====
+  MONTHLY_VISIT_HARD_CAP: 3,   // 월 3회 초과 절대 금지
+
+  // ===== Soft 제약: 지역 쿨다운 (ChatGPT 추천: 더 세분화) =====
+  REGION_COOLDOWN_TIERS: [
+    { days: 3, penalty: 120 },   // 3일 미만: 120점
+    { days: 4, penalty: 60 },    // 3~4일: 60점
+    { days: 6, penalty: 20 },    // 4~6일: 20점
+    // 6일 이상: 0점
+  ],
+
+  // ===== Soft 제약: 월간 방문 제한 =====
+  MONTHLY_VISIT_CAP: 2,          // 월 2회까지 권장
+  MONTHLY_PENALTY_TIERS: [
+    { count: 2, penalty: 40 },   // 2회째: 40점 (가급적 피함)
+    { count: 3, penalty: 120 },  // 3회째: 120점 (거의 금지)
+  ],
+
+  // ===== Soft 제약: 월/금 근거리 선호 (비용 함수 가중치) =====
+  NEARBY_REGIONS: ['부산', '김해', '양산', '밀양', '창원'],
+  MON_FRI_NEARBY_BONUS: 15,      // 선호 지역 보너스 (점수 감소)
+  MON_FRI_FAR_PENALTY: 10,       // 비선호 지역 페널티 (점수 증가)
+
+  // ===== 희소성 보너스 (그리디가 미래 망치는 것 방지) =====
+  SCARCITY_BONUS_ZERO_VISIT: 30, // 이번 달 0회 방문 업체 보너스
+  STALE_BONUS_MAX: 20,           // 오래된 업체 보너스 최대치
+  STALE_BONUS_DAYS_SCALE: 30,    // N일 이상이면 최대 보너스
+
+  // ===== Top-N 후보 추출 (API 호출량 절감) =====
+  TOP_N_MULTIPLIER: 8,           // 하루 방문수 × 8배로 후보 제한
+
+  // ===== 단계적 완화 (Relaxation Ladder) =====
+  RELAXATION_LEVELS: [
+    { name: 'Level 1', monthlyPenaltyMult: 1.0, cooldownPenaltyMult: 1.0 },
+    { name: 'Level 2', monthlyPenaltyMult: 0.5, cooldownPenaltyMult: 0.7 },
+    { name: 'Level 3', monthlyPenaltyMult: 0.2, cooldownPenaltyMult: 0.4 },
+    { name: 'Level 4 (Emergency)', monthlyPenaltyMult: 0, cooldownPenaltyMult: 0 },
+  ],
+};
+
+// ===== v5.1 레거시 상수 (하위 호환용) =====
 const V5_CONFIG = {
   // 지역 쿨다운 (soft constraint)
   REGION_COOLDOWN_MIN: 3,      // 최소 쿨다운 일수
@@ -272,6 +314,477 @@ function getMondayFridayNearbyBonus(date, region) {
  */
 function getMonthKey(dateStr) {
   return dateStr.substring(0, 7); // "2026-01-15" -> "2026-01"
+}
+
+// ===== v6.0 헬퍼 함수 (ChatGPT + Claude Ultra Think 협업 2026-01-05) =====
+
+/**
+ * [Hard 제약] 월 3회 초과 여부 확인
+ * @param {number} companyId - 업체 ID
+ * @param {string} monthKey - 월 키 (YYYY-MM)
+ * @returns {boolean} - true면 배정 금지
+ */
+function isHardCapExceeded(companyId, monthKey) {
+  const count = getMonthlyVisitCount(companyId, monthKey);
+  return count >= V6_CONFIG.MONTHLY_VISIT_HARD_CAP;
+}
+
+/**
+ * [Soft 제약] v6.0 쿨다운 페널티 (더 세분화된 티어)
+ * @param {string} region - 지역명
+ * @param {number} currentDayIdx - 현재 날짜 인덱스
+ * @returns {number} - 페널티 점수 (0~120)
+ */
+function getRegionCooldownPenaltyV6(region, currentDayIdx) {
+  const lastAssigned = state.regionCooldown.get(region);
+  if (lastAssigned === undefined) return 0;
+
+  const daysSince = currentDayIdx - lastAssigned;
+
+  // 티어별 페널티 적용 (역순으로 체크)
+  for (const tier of V6_CONFIG.REGION_COOLDOWN_TIERS) {
+    if (daysSince < tier.days) {
+      return tier.penalty;
+    }
+  }
+  return 0; // 6일 이상: 페널티 없음
+}
+
+/**
+ * [Soft 제약] v6.0 월간 방문 페널티 (더 세분화된 티어)
+ * @param {number} companyId - 업체 ID
+ * @param {string} monthKey - 월 키 (YYYY-MM)
+ * @returns {number} - 페널티 점수 (0~120)
+ */
+function getMonthlyVisitPenaltyV6(companyId, monthKey) {
+  const count = getMonthlyVisitCount(companyId, monthKey);
+
+  for (const tier of V6_CONFIG.MONTHLY_PENALTY_TIERS) {
+    if (count >= tier.count) {
+      return tier.penalty;
+    }
+  }
+  return 0; // 1회 이하: 페널티 없음
+}
+
+/**
+ * [Soft 제약] 월/금 근거리 선호 (보너스/페널티)
+ * @param {Date} date - 날짜
+ * @param {string} region - 지역명
+ * @returns {number} - 점수 조정 (음수=좋음, 양수=나쁨)
+ */
+function getMonFriPreferenceV6(date, region) {
+  const dayOfWeek = date.getDay();
+  const isMonOrFri = (dayOfWeek === 1 || dayOfWeek === 5);
+
+  if (!isMonOrFri) return 0;
+
+  const isNearby = V6_CONFIG.NEARBY_REGIONS.includes(region);
+  return isNearby ? -V6_CONFIG.MON_FRI_NEARBY_BONUS : V6_CONFIG.MON_FRI_FAR_PENALTY;
+}
+
+/**
+ * [희소성 보너스] 이번 달 0회 방문 업체 우선
+ * @param {number} companyId - 업체 ID
+ * @param {string} monthKey - 월 키 (YYYY-MM)
+ * @returns {number} - 보너스 점수 (음수=우선순위 높음)
+ */
+function getScarcityBonus(companyId, monthKey) {
+  const count = getMonthlyVisitCount(companyId, monthKey);
+  return count === 0 ? -V6_CONFIG.SCARCITY_BONUS_ZERO_VISIT : 0;
+}
+
+/**
+ * [Stale 보너스] 오래된 업체 우선 (방문 기록 기반)
+ * @param {Object} company - 업체 객체
+ * @param {string} todayStr - 오늘 날짜 (YYYY-MM-DD)
+ * @returns {number} - 보너스 점수 (음수=우선순위 높음)
+ */
+function getStaleBonus(company, todayStr) {
+  if (!company.last_visit_date) {
+    // 방문 기록 없으면 중립 (ChatGPT 지적: 최대 보너스는 데이터 결손이 보상되는 위험)
+    // 희소성 보너스(scarcityBonus)가 이미 0회 방문 업체를 우대하므로 여기서는 중립
+    return 0;
+  }
+
+  const lastVisit = new Date(company.last_visit_date);
+  const today = new Date(todayStr);
+  const daysSince = Math.floor((today - lastVisit) / (1000 * 60 * 60 * 24));
+
+  // 오래될수록 보너스 증가 (최대 STALE_BONUS_MAX)
+  const bonus = Math.min(V6_CONFIG.STALE_BONUS_MAX,
+    (daysSince / V6_CONFIG.STALE_BONUS_DAYS_SCALE) * V6_CONFIG.STALE_BONUS_MAX);
+  return -bonus;
+}
+
+/**
+ * [v6.0 통합 점수] 업체별 종합 점수 계산 (낮을수록 좋음)
+ * @param {Object} company - 업체 객체
+ * @param {number} dayIdx - 날짜 인덱스
+ * @param {Date} date - 날짜 객체
+ * @param {string} monthKey - 월 키 (YYYY-MM)
+ * @param {number} relaxLevel - 완화 레벨 (0~3)
+ * @returns {number} - 종합 점수
+ */
+function calculateCompanyScoreV6(company, dayIdx, date, monthKey, relaxLevel = 0) {
+  const relax = V6_CONFIG.RELAXATION_LEVELS[relaxLevel] || V6_CONFIG.RELAXATION_LEVELS[0];
+  const region = company.region || '기타';
+  const dateStr = date.toISOString().split('T')[0];
+
+  // Soft 제약 점수 (완화 레벨 적용)
+  const cooldownPenalty = getRegionCooldownPenaltyV6(region, dayIdx) * relax.cooldownPenaltyMult;
+  const monthlyPenalty = getMonthlyVisitPenaltyV6(company.id, monthKey) * relax.monthlyPenaltyMult;
+  const monFriPref = getMonFriPreferenceV6(date, region);
+
+  // 희소성/Stale 보너스 (완화 레벨과 무관)
+  const scarcityBonus = getScarcityBonus(company.id, monthKey);
+  const staleBonus = getStaleBonus(company, dateStr);
+
+  return cooldownPenalty + monthlyPenalty + monFriPref + scarcityBonus + staleBonus;
+}
+
+/**
+ * [v6.0 Hard 필터] 배정 가능 업체만 필터링
+ * @param {Array} companies - 전체 업체 배열
+ * @param {string} monthKey - 월 키 (YYYY-MM)
+ * @param {Set} assignedToday - 오늘 이미 배정된 업체 ID
+ * @returns {Array} - 배정 가능한 업체 배열
+ */
+function filterByHardConstraints(companies, monthKey, assignedToday) {
+  return companies.filter(c => {
+    // 1. 오늘 이미 배정됨
+    if (assignedToday.has(c.id)) return false;
+
+    // 2. 월 3회 초과
+    if (isHardCapExceeded(c.id, monthKey)) return false;
+
+    // 3. 좌표 없음 (거리 계산 불가)
+    if (!c.latitude || !c.longitude) return false;
+
+    return true;
+  });
+}
+
+/**
+ * [v6.0 Top-N 추출] 점수 기반 상위 후보 추출
+ * @param {Array} companies - 후보 업체 배열
+ * @param {number} dayIdx - 날짜 인덱스
+ * @param {Date} date - 날짜 객체
+ * @param {string} monthKey - 월 키 (YYYY-MM)
+ * @param {number} targetCount - 하루 목표 방문 수
+ * @param {number} relaxLevel - 완화 레벨
+ * @returns {Array} - 상위 N개 후보
+ */
+function extractTopNCandidates(companies, dayIdx, date, monthKey, targetCount, relaxLevel = 0) {
+  // 점수 계산
+  const scored = companies.map(c => ({
+    ...c,
+    _v6Score: calculateCompanyScoreV6(c, dayIdx, date, monthKey, relaxLevel)
+  }));
+
+  // 점수순 정렬 (낮을수록 좋음)
+  scored.sort((a, b) => a._v6Score - b._v6Score);
+
+  // Top-N 추출
+  const topN = targetCount * V6_CONFIG.TOP_N_MULTIPLIER;
+  return scored.slice(0, topN);
+}
+
+// ===== v6.0 통합 알고리즘 (ChatGPT + Claude 교차 검증) =====
+// 최적 경로(거리 기반) + v5.1 제약(쿨다운, 월2회) + 희소성/stale 보너스
+async function generateScheduleV6() {
+  console.log('');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('🚀 v6.0 통합 알고리즘 시작 (ChatGPT + Claude 협업)');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('');
+
+  const startStr = el.startDate.value;
+  const endStr = el.endDate.value;
+
+  if (!startStr || !endStr) {
+    toast('시작일과 종료일을 선택하세요.');
+    return;
+  }
+
+  try {
+    // ===== 1. 업체 필터링 =====
+    let companies = applyColorFilter(state.companies, state.filterColors);
+
+    // Pre-flight 제외
+    if (state.excludedIds.length > 0) {
+      const excludedSet = new Set(state.excludedIds);
+      companies = companies.filter(c => !excludedSet.has(c.id));
+    }
+
+    // 지역 필터
+    if (state.filterRegions.length > 0) {
+      companies = companies.filter(c => state.filterRegions.includes(c.region));
+    }
+
+    // 검색 키워드 필터
+    if (state.searchKeyword) {
+      const kw = state.searchKeyword.toLowerCase();
+      companies = companies.filter(c => (c.company_name || '').toLowerCase().includes(kw));
+    }
+
+    // 선택된 업체만 필터
+    if (state.selectedCompanies.length > 0) {
+      companies = companies.filter(c => state.selectedCompanies.includes(c.id));
+    }
+
+    if (companies.length === 0) {
+      toast('필터에 해당하는 업체가 없습니다.');
+      el.calendar.innerHTML = '<div class="hint">업체가 없습니다.</div>';
+      return;
+    }
+
+    console.log(`📊 필터 후 업체 수: ${companies.length}개`);
+
+    // 좌표 있는 업체만 (경로 계산용)
+    const companiesWithCoords = companies.filter(c => c.latitude && c.longitude);
+    console.log(`📍 좌표 있는 업체: ${companiesWithCoords.length}개`);
+
+    if (companiesWithCoords.length === 0) {
+      toast('좌표가 있는 업체가 없습니다.');
+      el.calendar.innerHTML = '<div class="hint">좌표가 있는 업체가 없습니다.</div>';
+      return;
+    }
+
+    // ===== 2. 날짜 범위 생성 =====
+    const workdays = [];
+    let d = new Date(startStr + 'T00:00:00');
+    const end = new Date(endStr + 'T00:00:00');
+    while (d <= end) {
+      const dayOfWeek = d.getDay();
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        workdays.push(new Date(d));
+      }
+      d.setDate(d.getDate() + 1);
+    }
+
+    if (workdays.length === 0) {
+      toast('선택된 기간에 평일이 없습니다.');
+      return;
+    }
+
+    console.log(`📅 평일 수: ${workdays.length}일`);
+
+    // ===== 3. 옵션 파싱 =====
+    const rangeStr = el.visitRange.value || '4-5';
+    const [minStr, maxStr] = rangeStr.split('-');
+    const min = parseInt(minStr) || 4;
+    const max = parseInt(maxStr) || 5;
+    const target = Math.floor((min + max) / 2);
+
+    console.log(`🎯 방문 범위: min=${min}, max=${max}, target=${target}`);
+
+    // ===== 4. 상태 초기화 =====
+    state.schedule = {};
+    state.regionCooldown = new Map();
+    state.monthlyVisits = new Map();
+    workdays.forEach(wd => {
+      const dateKey = formatDate(wd);
+      state.schedule[dateKey] = [];
+    });
+
+    // 남은 업체 풀
+    let remainingPool = [...companiesWithCoords];
+    const assignedIds = new Set();
+    let totalAssigned = 0;
+
+    // ===== 5. 날짜별 배정 루프 =====
+    for (let dayIdx = 0; dayIdx < workdays.length; dayIdx++) {
+      const currentDate = workdays[dayIdx];
+      const dateKey = formatDate(currentDate);
+      const monthKey = dateKey.substring(0, 7); // 'YYYY-MM'
+
+      console.log(`\n📆 Day ${dayIdx + 1}: ${dateKey}`);
+
+      // 오늘 배정할 목록
+      const todayAssigned = [];
+
+      // ===== 5.1 단계적 완화 (Relaxation Ladder) =====
+      let relaxLevel = 0;
+      let candidates = [];
+
+      while (relaxLevel < V6_CONFIG.RELAXATION_LEVELS.length) {
+        // Hard 제약 필터 (todayAssigned 배열 → Set 변환)
+        const todayIds = new Set(todayAssigned.map(c => c.id));
+        const afterHard = filterByHardConstraints(remainingPool, monthKey, todayIds);
+
+        if (afterHard.length === 0 && relaxLevel < V6_CONFIG.RELAXATION_LEVELS.length - 1) {
+          console.log(`  ⚠️ Level ${relaxLevel}: Hard 필터 후 0개 → 완화 시도`);
+          relaxLevel++;
+          continue;
+        }
+
+        // Top-N 후보 추출 (Soft 점수 기반)
+        candidates = extractTopNCandidates(afterHard, dayIdx, currentDate, monthKey, target, relaxLevel);
+
+        if (candidates.length >= min) {
+          console.log(`  ✅ Level ${relaxLevel}: 후보 ${candidates.length}개 확보`);
+          break;
+        }
+
+        if (relaxLevel < V6_CONFIG.RELAXATION_LEVELS.length - 1) {
+          console.log(`  ⚠️ Level ${relaxLevel}: 후보 ${candidates.length}개 < min(${min}) → 완화 시도`);
+          relaxLevel++;
+        } else {
+          console.log(`  ⚠️ 최종 Level: 후보 ${candidates.length}개 (부족해도 진행)`);
+          break;
+        }
+      }
+
+      if (candidates.length === 0) {
+        console.log(`  ❌ 후보 없음 → 스킵`);
+        continue;
+      }
+
+      // ===== 5.2 Nearest Neighbor + 2-opt (거리 + v6 점수 통합) =====
+      // Seed 선택: v6 점수가 가장 낮은 업체
+      candidates.sort((a, b) => a._v6Score - b._v6Score);
+      const seed = candidates[0];
+      todayAssigned.push(seed);
+      assignedIds.add(seed.id);
+
+      // Nearest Neighbor로 나머지 채우기
+      let remaining = candidates.filter(c => c.id !== seed.id);
+      let current = seed;
+
+      while (todayAssigned.length < max && remaining.length > 0) {
+        // 거리 + v6 점수를 결합한 effectiveCost 계산
+        let bestIdx = 0;
+        let bestCost = Infinity;
+
+        for (let i = 0; i < remaining.length; i++) {
+          const cand = remaining[i];
+          const dist = haversineDistance(
+            parseFloat(current.latitude), parseFloat(current.longitude),
+            parseFloat(cand.latitude), parseFloat(cand.longitude)
+          );
+          // effectiveCost = 거리(km) + v6점수 * 가중치
+          const effectiveCost = dist + (cand._v6Score * 0.5);
+          if (effectiveCost < bestCost) {
+            bestCost = effectiveCost;
+            bestIdx = i;
+          }
+        }
+
+        const next = remaining[bestIdx];
+        todayAssigned.push(next);
+        assignedIds.add(next.id);
+        remaining.splice(bestIdx, 1);
+        current = next;
+      }
+
+      // ===== 5.3 2-opt 개선 (선택적) =====
+      if (todayAssigned.length >= 3) {
+        let improved = true;
+        let iterations = 0;
+        const maxIterations = 100;
+
+        while (improved && iterations < maxIterations) {
+          improved = false;
+          iterations++;
+
+          for (let i = 0; i < todayAssigned.length - 1; i++) {
+            for (let j = i + 2; j < todayAssigned.length; j++) {
+              const a = todayAssigned[i];
+              const b = todayAssigned[i + 1];
+              const c = todayAssigned[j];
+              const d = todayAssigned[(j + 1) % todayAssigned.length] || todayAssigned[0];
+
+              const currentDist = haversineDistance(
+                parseFloat(a.latitude), parseFloat(a.longitude),
+                parseFloat(b.latitude), parseFloat(b.longitude)
+              ) + haversineDistance(
+                parseFloat(c.latitude), parseFloat(c.longitude),
+                parseFloat(d.latitude), parseFloat(d.longitude)
+              );
+
+              const newDist = haversineDistance(
+                parseFloat(a.latitude), parseFloat(a.longitude),
+                parseFloat(c.latitude), parseFloat(c.longitude)
+              ) + haversineDistance(
+                parseFloat(b.latitude), parseFloat(b.longitude),
+                parseFloat(d.latitude), parseFloat(d.longitude)
+              );
+
+              if (newDist < currentDist - 0.1) {
+                // Reverse segment [i+1, j]
+                const segment = todayAssigned.splice(i + 1, j - i);
+                segment.reverse();
+                todayAssigned.splice(i + 1, 0, ...segment);
+                improved = true;
+                break;
+              }
+            }
+            if (improved) break;
+          }
+        }
+
+        if (iterations > 1) {
+          console.log(`  🔄 2-opt: ${iterations}회 반복 개선`);
+        }
+      }
+
+      // ===== 5.4 순번 및 거리 표시 추가 =====
+      todayAssigned.forEach((comp, idx) => {
+        comp._orderNum = idx + 1;
+        if (idx > 0) {
+          const prev = todayAssigned[idx - 1];
+          comp._distFromPrev = haversineDistance(
+            parseFloat(prev.latitude), parseFloat(prev.longitude),
+            parseFloat(comp.latitude), parseFloat(comp.longitude)
+          );
+        } else {
+          comp._distFromPrev = null;
+        }
+      });
+
+      // ===== 5.5 상태 업데이트 =====
+      state.schedule[dateKey] = todayAssigned;
+
+      // 지역 쿨다운 갱신
+      const regionsToday = new Set(todayAssigned.map(c => c.region || '기타'));
+      regionsToday.forEach(r => state.regionCooldown.set(r, dayIdx));
+
+      // 월간 방문 횟수 갱신 (키 형식: companyId-YYYY-MM)
+      todayAssigned.forEach(c => {
+        const key = `${c.id}-${monthKey}`;
+        const prev = state.monthlyVisits.get(key) || 0;
+        state.monthlyVisits.set(key, prev + 1);
+      });
+
+      // 남은 풀에서 제거
+      remainingPool = remainingPool.filter(c => !assignedIds.has(c.id));
+      totalAssigned += todayAssigned.length;
+
+      console.log(`  ✅ 배정: ${todayAssigned.length}개, 지역: [${[...regionsToday].join(', ')}]`);
+    }
+
+    // ===== 6. 미배정 처리 =====
+    state.unassigned = remainingPool;
+
+    // ===== 7. 렌더링 =====
+    renderCalendar();
+    renderUnassigned();
+    updateDirtyState();
+
+    const unassignedCount = state.unassigned.length;
+    toast(`🚀 v6.0 스케줄 생성 완료! 배정: ${totalAssigned}개, 미배정: ${unassignedCount}개`);
+
+    console.log('');
+    console.log('🎉🎉🎉 v6.0 통합 알고리즘 완료 🎉🎉🎉');
+    console.log(`총 배정: ${totalAssigned}개, 미배정: ${unassignedCount}개`);
+    console.log('');
+
+  } catch (e) {
+    console.error('v6.0 알고리즘 오류:', e);
+    toast('v6.0 오류: ' + e.message);
+    el.calendar.innerHTML = `<div class="hint" style="color: red;">오류: ${e.message}</div>`;
+  }
 }
 
 // ===== 근접성 점수 계산 (ChatGPT + Claude 협업 설계) =====
@@ -1313,16 +1826,12 @@ async function generateSchedule() {
   // 날짜 목록 생성
   const days = buildDays(startStr, endStr);
 
-  // ★ 알고리즘 선택 확인
-  const selectedAlgo = getSelectedAlgorithm();
+  // ★★★ v6.0 통합 알고리즘 (ChatGPT + Claude 교차 검증) ★★★
+  // 거리 기반 최적 경로 + v5.1 제약 (쿨다운, 월2회) + 희소성/stale 보너스
+  await generateScheduleV6();
+  return;
 
-  // ★★★ 최적 경로 알고리즘 (카카오맵 거리 기반) ★★★
-  if (selectedAlgo === 'optimal') {
-    await generateScheduleOptimal(companies, days, cap);
-    return;
-  }
-
-  // ===== v5.1 알고리즘 (2026-01-05 ChatGPT + Claude Ultra Think 협업) =====
+  // ===== [레거시] v5.1 알고리즘 - v6.0으로 통합됨 =====
   // 핵심: 지역 쿨다운 3~4일 + 월 2회 방문 제한 + 월/금 근거리 약한 선호
   // 우선순위: A.하드(공휴일, 하루 방문 수) → B.소프트(쿨다운, 월 2회) → C.약(월금 근거리)
   let pool = [...companies];
