@@ -1357,6 +1357,8 @@ async function loadCompanyGeoData(companies) {
       const cached = GeoCodeCache.get(c.address);
       if (cached && cached.lat && cached.lng) {
         c.geo = cached;
+        c.latitude = cached.lat;   // v6.0 호환
+        c.longitude = cached.lng;  // v6.0 호환
         continue;
       }
     }
@@ -1367,6 +1369,8 @@ async function loadCompanyGeoData(companies) {
         const geo = await geocodeAddress(c.address);
         if (geo && geo.lat && geo.lng) {
           c.geo = geo;
+          c.latitude = geo.lat;   // v6.0 호환
+          c.longitude = geo.lng;  // v6.0 호환
           geocodedCount++;
 
           // API 호출 간 딜레이
@@ -1391,7 +1395,7 @@ async function loadCompanies() {
   try {
     const { data, error } = await supabaseDB
       .from('client_companies')
-      .select('id, company_name, region, address, color_code, visit_count, last_visit_date')
+      .select('id, company_name, region, address, color_code, visit_count, last_visit_date, latitude, longitude')
       .eq('user_id', USER_ID)
       .order('region')
       .order('company_name');
