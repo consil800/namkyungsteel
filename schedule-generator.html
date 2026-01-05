@@ -687,12 +687,13 @@
         </div>
 
         <div class="section">
-          <label>v6.0 통합 알고리즘</label>
+          <label>v6.1 통합 알고리즘 (ChatGPT 협업)</label>
           <div class="hint">
             <b>거리 최적화</b>: Nearest Neighbor + 2-opt로 최단 경로 계산<br/>
             <b>지역 쿨다운</b>: 같은 지역 3~4일 연속 방문 억제<br/>
             <b>월 2회 제한</b>: 월 3회 이상 방문 자동 차단<br/>
-            <b>희소성 보너스</b>: 이번 달 미방문 업체 우선
+            <b>월/금 근거리</b>: 월요일/금요일은 본사 가까운 지역 우선<br/>
+            <b>이동비용 고려</b>: 먼 업체일수록 배정 우선순위 낮음
           </div>
         </div>
 
@@ -807,6 +808,6 @@
   <script src="shared-assets/js/auth.js?v=20260104d"></script>
   <script src="database.js?v=20260104d"></script>
   <script src="route-optimizer.js?v=20260104k"></script>
-  <script src="schedule-generator.js?v=20260105-v60e"></script>
+  <script src="schedule-generator.js?v=20260105-v61"></script>
 </body>
 </html>

@@ -168,6 +168,10 @@ const REGION_ADJACENCY = {
 // ===== v6.0 통합 알고리즘 상수 (2026-01-05 ChatGPT + Claude Ultra Think 협업) =====
 // 거리 기반 최적 경로 + v5.1 제약조건 통합
 const V6_CONFIG = {
+  // ===== 본사 위치 (부산광역시 사상구) =====
+  BASE_LAT: 35.1547,
+  BASE_LNG: 128.9914,
+
   // ===== Hard 제약 (절대 위반 금지) =====
   MONTHLY_VISIT_HARD_CAP: 3,   // 월 3회 초과 절대 금지
 
@@ -186,15 +190,22 @@ const V6_CONFIG = {
     { count: 3, penalty: 120 },  // 3회째: 120점 (거의 금지)
   ],
 
-  // ===== Soft 제약: 월/금 근거리 선호 (비용 함수 가중치) =====
-  NEARBY_REGIONS: ['부산', '김해', '양산', '밀양', '창원'],
-  MON_FRI_NEARBY_BONUS: 15,      // 선호 지역 보너스 (점수 감소)
-  MON_FRI_FAR_PENALTY: 10,       // 비선호 지역 페널티 (점수 증가)
+  // ===== Soft 제약: 월/금 근거리 선호 (ChatGPT 추천: 거리 기반) =====
+  // 2026-01-05: 지역명 리스트 대신 거리 기반 연속 보너스로 변경
+  MON_FRI_DISTANCE_THRESHOLD: 60,  // 근거리 기준 (km) - 울산까지
+  MON_FRI_BONUS_MAX: 20,           // 최대 보너스 (부산=+20, 울산=+0)
+
+  // ===== Soft 제약: 이동비용 페널티 (ChatGPT 추천) =====
+  // 후보 선정 단계에서 먼 업체 약하게 억제
+  TRAVEL_PENALTY_SCALE: 60,        // 정규화 기준 (km)
+  TRAVEL_PENALTY_WEIGHT: 3,        // 가중치 (점수 +3 per 60km)
 
   // ===== 희소성 보너스 (그리디가 미래 망치는 것 방지) =====
   SCARCITY_BONUS_ZERO_VISIT: 30, // 이번 달 0회 방문 업체 보너스
-  STALE_BONUS_MAX: 20,           // 오래된 업체 보너스 최대치
-  STALE_BONUS_DAYS_SCALE: 30,    // N일 이상이면 최대 보너스
+
+  // ===== Stale 보너스 (ChatGPT 추천: 정규화/클리핑) =====
+  STALE_DAYS_CAP: 30,              // 30일 이상은 동일 취급
+  STALE_BONUS_WEIGHT: 10,          // 정규화 후 가중치 (0~1 → 0~10)
 
   // ===== Top-N 후보 추출 (API 호출량 절감) =====
   TOP_N_MULTIPLIER: 8,           // 하루 방문수 × 8배로 후보 제한
@@ -368,19 +379,34 @@ function getMonthlyVisitPenaltyV6(companyId, monthKey) {
 }
 
 /**
- * [Soft 제약] 월/금 근거리 선호 (보너스/페널티)
+ * [Soft 제약] 월/금 근거리 선호 (ChatGPT 추천: 거리 기반 연속 보너스)
+ * 2026-01-05: 지역명 리스트 대신 본사로부터의 거리 기반으로 변경
  * @param {Date} date - 날짜
- * @param {string} region - 지역명
- * @returns {number} - 점수 조정 (음수=좋음, 양수=나쁨)
+ * @param {Object} company - 업체 객체 (latitude, longitude 필요)
+ * @returns {number} - 점수 조정 (음수=좋음)
  */
-function getMonFriPreferenceV6(date, region) {
+function getMonFriPreferenceV6(date, company) {
   const dayOfWeek = date.getDay();
   const isMonOrFri = (dayOfWeek === 1 || dayOfWeek === 5);
 
   if (!isMonOrFri) return 0;
 
-  const isNearby = V6_CONFIG.NEARBY_REGIONS.includes(region);
-  return isNearby ? -V6_CONFIG.MON_FRI_NEARBY_BONUS : V6_CONFIG.MON_FRI_FAR_PENALTY;
+  // 좌표 없으면 보너스 없음
+  if (!company.latitude || !company.longitude) return 0;
+
+  // 본사로부터의 거리 계산
+  const distKm = haversineDistance(
+    V6_CONFIG.BASE_LAT, V6_CONFIG.BASE_LNG,
+    parseFloat(company.latitude), parseFloat(company.longitude)
+  );
+
+  // 거리 기반 연속 보너스: 0~threshold km 구간에서 선형 감소
+  // 부산(0km)=+20, 김해(20km)=+13, 양산(25km)=+12, 창원(40km)=+7, 울산(60km)=0
+  const threshold = V6_CONFIG.MON_FRI_DISTANCE_THRESHOLD;
+  const bonusMax = V6_CONFIG.MON_FRI_BONUS_MAX;
+  const bonus = Math.max(0, (threshold - distKm) / threshold) * bonusMax;
+
+  return -bonus; // 음수 = 점수 낮음 = 우선순위 높음
 }
 
 /**
@@ -395,15 +421,15 @@ function getScarcityBonus(companyId, monthKey) {
 }
 
 /**
- * [Stale 보너스] 오래된 업체 우선 (방문 기록 기반)
+ * [Stale 보너스] 오래된 업체 우선 (ChatGPT 추천: 정규화/클리핑)
+ * 2026-01-05: staleDays를 0~1로 정규화 후 가중치 적용
  * @param {Object} company - 업체 객체
  * @param {string} todayStr - 오늘 날짜 (YYYY-MM-DD)
  * @returns {number} - 보너스 점수 (음수=우선순위 높음)
  */
 function getStaleBonus(company, todayStr) {
   if (!company.last_visit_date) {
-    // 방문 기록 없으면 중립 (ChatGPT 지적: 최대 보너스는 데이터 결손이 보상되는 위험)
-    // 희소성 보너스(scarcityBonus)가 이미 0회 방문 업체를 우대하므로 여기서는 중립
+    // 방문 기록 없으면 중립 (희소성 보너스가 0회 방문 업체를 우대함)
     return 0;
   }
 
@@ -411,14 +437,19 @@ function getStaleBonus(company, todayStr) {
   const today = new Date(todayStr);
   const daysSince = Math.floor((today - lastVisit) / (1000 * 60 * 60 * 24));
 
-  // 오래될수록 보너스 증가 (최대 STALE_BONUS_MAX)
-  const bonus = Math.min(V6_CONFIG.STALE_BONUS_MAX,
-    (daysSince / V6_CONFIG.STALE_BONUS_DAYS_SCALE) * V6_CONFIG.STALE_BONUS_MAX);
-  return -bonus;
+  // ChatGPT 추천: 정규화/클리핑 (30일 이상은 동일 취급)
+  // staleDays: 0~30 → stale: 0~1
+  const staleDaysCapped = Math.min(daysSince, V6_CONFIG.STALE_DAYS_CAP);
+  const staleNormalized = staleDaysCapped / V6_CONFIG.STALE_DAYS_CAP; // 0~1
+
+  // 가중치 적용: 0~1 → 0~10
+  const bonus = staleNormalized * V6_CONFIG.STALE_BONUS_WEIGHT;
+  return -bonus; // 음수 = 점수 낮음 = 우선순위 높음
 }
 
 /**
  * [v6.0 통합 점수] 업체별 종합 점수 계산 (낮을수록 좋음)
+ * 2026-01-05: ChatGPT 추천 - 이동비용 페널티 추가, 월/금 함수 시그니처 변경
  * @param {Object} company - 업체 객체
  * @param {number} dayIdx - 날짜 인덱스
  * @param {Date} date - 날짜 객체
@@ -434,13 +465,26 @@ function calculateCompanyScoreV6(company, dayIdx, date, monthKey, relaxLevel = 0
   // Soft 제약 점수 (완화 레벨 적용)
   const cooldownPenalty = getRegionCooldownPenaltyV6(region, dayIdx) * relax.cooldownPenaltyMult;
   const monthlyPenalty = getMonthlyVisitPenaltyV6(company.id, monthKey) * relax.monthlyPenaltyMult;
-  const monFriPref = getMonFriPreferenceV6(date, region);
+  const monFriPref = getMonFriPreferenceV6(date, company); // 2026-01-05: company 객체 전달
 
   // 희소성/Stale 보너스 (완화 레벨과 무관)
   const scarcityBonus = getScarcityBonus(company.id, monthKey);
   const staleBonus = getStaleBonus(company, dateStr);
 
-  return cooldownPenalty + monthlyPenalty + monFriPref + scarcityBonus + staleBonus;
+  // ChatGPT 추천: 이동비용 페널티 (본사 기준 거리)
+  // 후보 선정 단계에서 먼 업체를 약하게 억제
+  let travelPenalty = 0;
+  if (company.latitude && company.longitude) {
+    const distFromBase = haversineDistance(
+      V6_CONFIG.BASE_LAT, V6_CONFIG.BASE_LNG,
+      parseFloat(company.latitude), parseFloat(company.longitude)
+    );
+    // 정규화: distKm / 60 → 0~1+ (60km 이상도 가능)
+    // 가중치: +3점 per 60km
+    travelPenalty = (distFromBase / V6_CONFIG.TRAVEL_PENALTY_SCALE) * V6_CONFIG.TRAVEL_PENALTY_WEIGHT;
+  }
+
+  return cooldownPenalty + monthlyPenalty + monFriPref + scarcityBonus + staleBonus + travelPenalty;
 }
 
 /**
