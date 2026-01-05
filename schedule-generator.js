@@ -192,13 +192,23 @@ const V6_CONFIG = {
 
   // ===== Soft 제약: 월/금 근거리 선호 (ChatGPT 추천: 거리 기반) =====
   // 2026-01-05: 지역명 리스트 대신 거리 기반 연속 보너스로 변경
+  // 2026-01-05 v6.1: 보너스 5배 상향 (ChatGPT + Claude 협업 검증)
   MON_FRI_DISTANCE_THRESHOLD: 60,  // 근거리 기준 (km) - 울산까지
-  MON_FRI_BONUS_MAX: 20,           // 최대 보너스 (부산=+20, 울산=+0)
+  MON_FRI_BONUS_MAX: 100,          // 최대 보너스 (20→100, 5배 상향)
+
+  // ===== Hard 제약: 월/금 거리 제한 (2026-01-05 신규) =====
+  // 월/금에 본사 기준 일정 거리 초과 업체 배제
+  MON_FRI_HARD_LIMITS: [80, 100, 120],  // 단계별 완화: 80km → 100km → 120km
+
+  // ===== Soft 제약: 지역 전환 패널티 (2026-01-05 신규) =====
+  // 하루 내 다른 지역으로 이동 시 페널티
+  REGION_SWITCH_PENALTY: 30,       // 지역 전환 1회당 30점 페널티
 
   // ===== Soft 제약: 이동비용 페널티 (ChatGPT 추천) =====
   // 후보 선정 단계에서 먼 업체 약하게 억제
+  // 2026-01-05 v6.1: 페널티 5배 상향 (ChatGPT + Claude 협업 검증)
   TRAVEL_PENALTY_SCALE: 60,        // 정규화 기준 (km)
-  TRAVEL_PENALTY_WEIGHT: 3,        // 가중치 (점수 +3 per 60km)
+  TRAVEL_PENALTY_WEIGHT: 15,       // 가중치 (3→15, 5배 상향)
 
   // ===== 희소성 보너스 (그리디가 미래 망치는 것 방지) =====
   SCARCITY_BONUS_ZERO_VISIT: 30, // 이번 달 0회 방문 업체 보너스
@@ -489,12 +499,24 @@ function calculateCompanyScoreV6(company, dayIdx, date, monthKey, relaxLevel = 0
 
 /**
  * [v6.0 Hard 필터] 배정 가능 업체만 필터링
+ * 2026-01-05 v6.1: 월/금 거리 하드제약 추가 (ChatGPT + Claude 협업 검증)
  * @param {Array} companies - 전체 업체 배열
  * @param {string} monthKey - 월 키 (YYYY-MM)
  * @param {Set} assignedToday - 오늘 이미 배정된 업체 ID
+ * @param {Date} date - 현재 날짜 (월/금 판단용)
+ * @param {number} relaxLevel - 완화 레벨 (0~2, 월/금 거리 제한 완화용)
  * @returns {Array} - 배정 가능한 업체 배열
  */
-function filterByHardConstraints(companies, monthKey, assignedToday) {
+function filterByHardConstraints(companies, monthKey, assignedToday, date = null, relaxLevel = 0) {
+  // 월/금 판단
+  const dayOfWeek = date ? date.getDay() : -1;
+  const isMonOrFri = (dayOfWeek === 1 || dayOfWeek === 5);
+
+  // 월/금 거리 제한 (단계별 완화)
+  const monFriLimit = isMonOrFri
+    ? (V6_CONFIG.MON_FRI_HARD_LIMITS[Math.min(relaxLevel, V6_CONFIG.MON_FRI_HARD_LIMITS.length - 1)])
+    : Infinity;
+
   return companies.filter(c => {
     // 1. 오늘 이미 배정됨
     if (assignedToday.has(c.id)) return false;
@@ -504,6 +526,17 @@ function filterByHardConstraints(companies, monthKey, assignedToday) {
 
     // 3. 좌표 없음 (거리 계산 불가)
     if (!c.latitude || !c.longitude) return false;
+
+    // 4. [v6.1 신규] 월/금 거리 하드제약
+    if (isMonOrFri) {
+      const distFromHQ = haversineDistance(
+        V6_CONFIG.BASE_LAT, V6_CONFIG.BASE_LNG,
+        parseFloat(c.latitude), parseFloat(c.longitude)
+      );
+      if (distFromHQ > monFriLimit) {
+        return false;
+      }
+    }
 
     return true;
   });
@@ -532,6 +565,91 @@ function extractTopNCandidates(companies, dayIdx, date, monthKey, targetCount, r
   // Top-N 추출
   const topN = targetCount * V6_CONFIG.TOP_N_MULTIPLIER;
   return scored.slice(0, topN);
+}
+
+/**
+ * [v6.1 신규] 지역 클러스터링 - 업체를 시/군(region) 기준으로 그룹화
+ * 2026-01-05: ChatGPT + Claude 협업 설계
+ * @param {Array} companies - 업체 배열
+ * @returns {Map} - 지역 → 업체 배열
+ */
+function clusterByRegion(companies) {
+  const clusters = new Map();
+  companies.forEach(c => {
+    const region = c.region || '기타';
+    if (!clusters.has(region)) clusters.set(region, []);
+    clusters.get(region).push(c);
+  });
+  return clusters;
+}
+
+/**
+ * [v6.1 신규] 클러스터 우선 후보 선택 - 같은 지역 업체를 우선 배정
+ * 2026-01-05: ChatGPT 권장 - "지역 클러스터 단위로 날짜에 배정"
+ * @param {Array} candidates - 점수 계산된 후보 배열 (_v6Score 포함)
+ * @param {number} maxCount - 최대 선택 개수
+ * @returns {Array} - 클러스터 우선 정렬된 후보 배열
+ */
+function selectByClusterPriority(candidates, maxCount) {
+  if (candidates.length === 0) return [];
+
+  // 1. 지역별 클러스터 생성
+  const clusters = clusterByRegion(candidates);
+
+  // 2. 클러스터를 크기순 정렬 (같은 지역 업체 많은 순)
+  const sortedClusters = Array.from(clusters.entries())
+    .sort((a, b) => b[1].length - a[1].length);
+
+  // 3. 가장 큰 클러스터의 대표 지역 선택
+  const primaryRegion = sortedClusters[0][0];
+  const primaryCluster = sortedClusters[0][1];
+
+  // 4. 1순위: 대표 지역 업체 (점수순)
+  primaryCluster.sort((a, b) => a._v6Score - b._v6Score);
+  const selected = [...primaryCluster];
+
+  // 5. 2순위: 인접 지역 업체 (부족할 경우)
+  if (selected.length < maxCount) {
+    // 대표 지역 업체의 centroid 계산
+    const centroidLat = primaryCluster.reduce((sum, c) => sum + parseFloat(c.latitude), 0) / primaryCluster.length;
+    const centroidLng = primaryCluster.reduce((sum, c) => sum + parseFloat(c.longitude), 0) / primaryCluster.length;
+
+    // 다른 클러스터의 업체들을 centroid와의 거리순 정렬
+    const otherCandidates = candidates
+      .filter(c => c.region !== primaryRegion)
+      .map(c => ({
+        ...c,
+        _distFromCentroid: haversineDistance(centroidLat, centroidLng, parseFloat(c.latitude), parseFloat(c.longitude))
+      }))
+      .sort((a, b) => a._distFromCentroid - b._distFromCentroid);
+
+    // 부족한 만큼 채우기
+    const remaining = maxCount - selected.length;
+    selected.push(...otherCandidates.slice(0, remaining));
+  }
+
+  // v6.1: 실제 선택된 개수로 로그 출력 (maxCount 제한 반영)
+  const finalSelected = selected.slice(0, maxCount);
+  const primaryCount = Math.min(primaryCluster.length, maxCount);
+  const adjacentCount = finalSelected.length - primaryCount;
+  console.log(`    📍 클러스터 선택: ${primaryRegion} ${primaryCount}개 + 인접 ${Math.max(0, adjacentCount)}개`);
+
+  return finalSelected;
+}
+
+/**
+ * [v6.1 신규] 지역 전환 횟수 계산 - 2-opt 비용 함수에 사용
+ * @param {Array} route - 방문 순서 배열
+ * @returns {number} - 지역 전환 횟수
+ */
+function countRegionSwitches(route) {
+  let switches = 0;
+  for (let i = 1; i < route.length; i++) {
+    if (route[i].region !== route[i - 1].region) {
+      switches++;
+    }
+  }
+  return switches;
 }
 
 // ===== v6.0 통합 알고리즘 (ChatGPT + Claude 교차 검증) =====
@@ -640,23 +758,34 @@ async function generateScheduleV6() {
       // 오늘 배정할 목록
       const todayAssigned = [];
 
+      // v6.1: 현재 날짜 객체 (월/금 판단용)
+      const currentDate = new Date(currentDay.date + 'T00:00:00');
+      const dayOfWeek = currentDate.getDay();
+      const isMonOrFri = (dayOfWeek === 1 || dayOfWeek === 5);
+      const dayName = ['일', '월', '화', '수', '목', '금', '토'][dayOfWeek];
+
+      if (isMonOrFri) {
+        console.log(`  📍 ${dayName}요일 - 근거리(${V6_CONFIG.MON_FRI_HARD_LIMITS[0]}km) 우선 모드`);
+      }
+
       // ===== 5.1 단계적 완화 (Relaxation Ladder) =====
       let relaxLevel = 0;
       let candidates = [];
 
       while (relaxLevel < V6_CONFIG.RELAXATION_LEVELS.length) {
         // Hard 제약 필터 (todayAssigned 배열 → Set 변환)
+        // v6.1: 월/금 거리 하드제약 적용 (currentDate, relaxLevel 전달)
         const todayIds = new Set(todayAssigned.map(c => c.id));
-        const afterHard = filterByHardConstraints(remainingPool, monthKey, todayIds);
+        const afterHard = filterByHardConstraints(remainingPool, monthKey, todayIds, currentDate, relaxLevel);
 
         if (afterHard.length === 0 && relaxLevel < V6_CONFIG.RELAXATION_LEVELS.length - 1) {
-          console.log(`  ⚠️ Level ${relaxLevel}: Hard 필터 후 0개 → 완화 시도`);
+          const limitKm = isMonOrFri ? V6_CONFIG.MON_FRI_HARD_LIMITS[Math.min(relaxLevel, 2)] : '∞';
+          console.log(`  ⚠️ Level ${relaxLevel}: Hard 필터 후 0개 (거리제한: ${limitKm}km) → 완화 시도`);
           relaxLevel++;
           continue;
         }
 
         // Top-N 후보 추출 (Soft 점수 기반)
-        const currentDate = new Date(currentDay.date + 'T00:00:00');  // day 객체의 date 문자열 → Date 객체
         candidates = extractTopNCandidates(afterHard, dayIdx, currentDate, monthKey, target, relaxLevel);
 
         if (candidates.length >= min) {
@@ -678,15 +807,18 @@ async function generateScheduleV6() {
         continue;
       }
 
-      // ===== 5.2 Nearest Neighbor + 2-opt (거리 + v6 점수 통합) =====
-      // Seed 선택: v6 점수가 가장 낮은 업체
-      candidates.sort((a, b) => a._v6Score - b._v6Score);
-      const seed = candidates[0];
+      // ===== 5.2 클러스터 우선 선택 + Nearest Neighbor + 2-opt =====
+      // v6.1: 같은 지역 업체 우선 배정 (ChatGPT 권장)
+      const clusteredCandidates = selectByClusterPriority(candidates, max);
+
+      // Seed 선택: 클러스터 우선 후보 중 v6 점수가 가장 낮은 업체
+      clusteredCandidates.sort((a, b) => a._v6Score - b._v6Score);
+      const seed = clusteredCandidates[0];
       todayAssigned.push(seed);
       assignedIds.add(seed.id);
 
-      // Nearest Neighbor로 나머지 채우기
-      let remaining = candidates.filter(c => c.id !== seed.id);
+      // Nearest Neighbor로 나머지 채우기 (클러스터 우선 후보에서)
+      let remaining = clusteredCandidates.filter(c => c.id !== seed.id);
       let current = seed;
 
       while (todayAssigned.length < max && remaining.length > 0) {
@@ -715,11 +847,15 @@ async function generateScheduleV6() {
         current = next;
       }
 
-      // ===== 5.3 2-opt 개선 (선택적) =====
+      // ===== 5.3 2-opt 개선 + 지역 전환 패널티 (v6.1) =====
       if (todayAssigned.length >= 3) {
         let improved = true;
         let iterations = 0;
         const maxIterations = 100;
+
+        // v6.1: 초기 지역 전환 횟수 로그
+        const initialSwitches = countRegionSwitches(todayAssigned);
+        console.log(`    🔄 2-opt 시작: 초기 지역 전환 ${initialSwitches}회`);
 
         while (improved && iterations < maxIterations) {
           improved = false;
@@ -732,6 +868,7 @@ async function generateScheduleV6() {
               const c = todayAssigned[j];
               const d = todayAssigned[(j + 1) % todayAssigned.length] || todayAssigned[0];
 
+              // v6.1: 거리 + 지역 전환 패널티 통합 비용
               const currentDist = haversineDistance(
                 parseFloat(a.latitude), parseFloat(a.longitude),
                 parseFloat(b.latitude), parseFloat(b.longitude)
@@ -739,6 +876,11 @@ async function generateScheduleV6() {
                 parseFloat(c.latitude), parseFloat(c.longitude),
                 parseFloat(d.latitude), parseFloat(d.longitude)
               );
+
+              // 현재 경로의 지역 전환 패널티
+              const currentSwitchPenalty =
+                (a.region !== b.region ? V6_CONFIG.REGION_SWITCH_PENALTY : 0) +
+                (c.region !== d.region ? V6_CONFIG.REGION_SWITCH_PENALTY : 0);
 
               const newDist = haversineDistance(
                 parseFloat(a.latitude), parseFloat(a.longitude),
@@ -748,7 +890,16 @@ async function generateScheduleV6() {
                 parseFloat(d.latitude), parseFloat(d.longitude)
               );
 
-              if (newDist < currentDist - 0.1) {
+              // 새 경로의 지역 전환 패널티
+              const newSwitchPenalty =
+                (a.region !== c.region ? V6_CONFIG.REGION_SWITCH_PENALTY : 0) +
+                (b.region !== d.region ? V6_CONFIG.REGION_SWITCH_PENALTY : 0);
+
+              // v6.1: 거리 + 지역 전환 패널티 합산 비교
+              const currentCost = currentDist + currentSwitchPenalty;
+              const newCost = newDist + newSwitchPenalty;
+
+              if (newCost < currentCost - 0.1) {
                 // Reverse segment [i+1, j]
                 const segment = todayAssigned.splice(i + 1, j - i);
                 segment.reverse();
@@ -761,8 +912,10 @@ async function generateScheduleV6() {
           }
         }
 
-        if (iterations > 1) {
-          console.log(`  🔄 2-opt: ${iterations}회 반복 개선`);
+        // v6.1: 최종 지역 전환 횟수 계산
+        const finalSwitches = countRegionSwitches(todayAssigned);
+        if (iterations > 1 || initialSwitches !== finalSwitches) {
+          console.log(`  🔄 2-opt: ${iterations}회 반복, 지역 전환 ${initialSwitches}→${finalSwitches}회`);
         }
       }
 
@@ -2436,12 +2589,137 @@ async function saveSchedule() {
     return;
   }
 
-  // TODO: Supabase에 저장 구현
-  // visit_schedule_plans 테이블 생성 필요
+  if (!USER_ID) {
+    toast('로그인이 필요합니다.');
+    return;
+  }
 
-  toast('저장 기능은 준비 중입니다.');
-  state.isDirty = false;
-  updateDirtyState();
+  // 날짜 범위 추출
+  const workdays = state.schedule.filter(d => !d.isOff && !d.isWeekend && !d.isHoliday);
+  if (workdays.length === 0) {
+    toast('저장할 근무일이 없습니다.');
+    return;
+  }
+
+  const startDate = state.schedule[0].date;
+  const endDate = state.schedule[state.schedule.length - 1].date;
+
+  // 저장 확인 (ChatGPT 검증 반영: 방어적 코딩)
+  const totalCompanies = state.schedule.reduce((sum, d) => sum + (d.companies ?? []).length, 0);
+  const confirmMsg = `스케줄을 저장하시겠습니까?\n\n` +
+    `📅 기간: ${startDate} ~ ${endDate}\n` +
+    `📊 총 ${workdays.length}일, ${totalCompanies}개 업체`;
+
+  if (!confirm(confirmMsg)) {
+    return;
+  }
+
+  try {
+    // 로딩 표시 (ChatGPT 검증 반영: 옵셔널 체이닝으로 방어)
+    if (el?.btnSave) {
+      el.btnSave.disabled = true;
+      el.btnSave.textContent = '저장 중...';
+    }
+
+    // 스케줄 데이터 정리 (필요한 필드만 저장)
+    // ChatGPT 검증 반영: || null → ?? null (0 값 보존), day.companies ?? [] (방어적 코딩)
+    const scheduleData = state.schedule.map(day => ({
+      date: day.date,
+      isOff: day.isOff || false,
+      isWeekend: day.isWeekend || false,
+      isHoliday: day.isHoliday || false,
+      holidayName: day.holidayName ?? null,
+      companies: (day.companies ?? []).map(c => ({
+        id: c.id,
+        name: c.name,
+        region: c.region ?? null,
+        address: c.address ?? null,
+        color: c.color ?? null,
+        distance_km: c.distance_km ?? null  // 0km도 유효한 값이므로 ?? 사용
+      }))
+    }));
+
+    // 플랜 이름 생성 (년-월 형식)
+    const planName = `${startDate.substring(0, 7)} 방문 스케줄`;
+
+    // 기존 동일 기간 플랜 확인
+    const { data: existingPlan, error: checkError } = await supabaseDB
+      .from('visit_schedule_plans')
+      .select('id')
+      .eq('user_id', parseInt(USER_ID))
+      .eq('start_date', startDate)
+      .eq('end_date', endDate)
+      .maybeSingle();
+
+    if (checkError) {
+      console.error('❌ 기존 플랜 확인 실패:', checkError);
+      // 테이블이 없으면 생성 안내
+      if (checkError.code === '42P01') {
+        toast('테이블이 없습니다. 관리자에게 문의하세요.');
+        return;
+      }
+      // PGRST116: "The result contains 0 rows" 에러는 무시 (기존 플랜 없음)
+      if (checkError.code !== 'PGRST116') {
+        throw checkError;
+      }
+    }
+
+    let result;
+    if (existingPlan) {
+      // 기존 플랜 업데이트
+      result = await supabaseDB
+        .from('visit_schedule_plans')
+        .update({
+          plan_name: planName,
+          schedule_data: scheduleData,
+          total_days: workdays.length,
+          total_companies: totalCompanies,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingPlan.id)
+        .select()
+        .single();
+
+      console.log('📝 스케줄 업데이트:', result);
+    } else {
+      // 새 플랜 생성
+      result = await supabaseDB
+        .from('visit_schedule_plans')
+        .insert({
+          user_id: parseInt(USER_ID),
+          plan_name: planName,
+          start_date: startDate,
+          end_date: endDate,
+          schedule_data: scheduleData,
+          total_days: workdays.length,
+          total_companies: totalCompanies,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      console.log('✅ 새 스케줄 저장:', result);
+    }
+
+    if (result.error) {
+      throw result.error;
+    }
+
+    toast(`✅ 스케줄이 저장되었습니다. (${totalCompanies}개 업체)`);
+    state.isDirty = false;
+    updateDirtyState();
+
+  } catch (error) {
+    console.error('❌ 저장 실패:', error);
+    toast(`저장 실패: ${error.message || '알 수 없는 오류'}`);
+  } finally {
+    // 버튼 복원 (ChatGPT 검증 반영: 옵셔널 체이닝으로 방어)
+    if (el?.btnSave) {
+      el.btnSave.disabled = false;
+      el.btnSave.textContent = '저장';
+    }
+  }
 }
 
 // ===== 초기화 =====
