@@ -1395,7 +1395,7 @@ async function loadCompanies() {
   try {
     const { data, error } = await supabaseDB
       .from('client_companies')
-      .select('id, company_name, region, address, color_code, visit_count, last_visit_date, latitude, longitude')
+      .select('id, company_name, region, address, color_code, visit_count, last_visit_date')
       .eq('user_id', USER_ID)
       .order('region')
       .order('company_name');
