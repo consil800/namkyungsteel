@@ -311,7 +311,8 @@ function parseCretopPdf(text) {
         /기업명\s+([가-힣A-Za-z0-9\(\)]+?)(?:\s+영문기업명|\s+사업자번호)/,  // 뒤에 영문기업명이나 사업자번호가 오는 경우
         /-\s*기업명\s*:\s*([가-힣A-Za-z0-9\(\)]+)/,  // "- 기업명 : (주)하이진"
         /기업명\s*:\s*([가-힣A-Za-z0-9\(\)]+)/,
-        /상호\s*:?\s*([가-힣A-Za-z0-9\(\)]+)/
+        /상호\s*:?\s*([가-힣A-Za-z0-9\(\)]+)/,
+        /(\([주유]\)[가-힣]+)/  // 마지막 fallback: "(주)하이진" 직접 패턴
     ];
     for (const pattern of companyPatterns) {
         const match = text.match(pattern);
