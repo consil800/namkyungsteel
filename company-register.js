@@ -332,10 +332,12 @@ function parseCretopPdf(text) {
 
     // 주소 추출 - CRETOP 페이지2 형식: "주소 (50801)경남김해시생림면생림대로491(나전리)"
     const addressPatterns = [
-        /주소\s+\((\d{5})\)([가-힣0-9\-\(\)]+)/,  // "주소 (50801)경남김해시..."
-        /주소\s+([가-힣][가-힣0-9\s\-\(\)]+?)(?=\s+표준산업분류|\s+전화번호|\s+홈페이지|$)/,  // 주소 뒤에 다른 필드가 오는 경우
+        /주소\s*\((\d{5})\)([가-힣0-9\-\(\)]+)/,  // "주소(50801)경남김해시..." 또는 "주소 (50801)..."
+        /주소\s+(\d{5})([가-힣][가-힣0-9\-\(\)]+)/,  // "주소 50801경남김해시..."
+        /주소\s+([가-힣][가-힣0-9\s\-\(\)]+?)(?=\s+표준산업분류|\s+전화번호|\s+홈페이지|$)/,
         /-\s*주소\s*:\s*([가-힣0-9\s\-\(\)]+)/,
-        /본점.*주소[:\s]*([가-힣][가-힣0-9\s\-\(\)]+)/
+        /본점.*주소[:\s]*([가-힣][가-힣0-9\s\-\(\)]+)/,
+        /\((\d{5})\)([가-힣][가-힣0-9\-\(\)]+[시군구])/  // 우편번호로 시작하는 패턴
     ];
     for (const pattern of addressPatterns) {
         const match = text.match(pattern);
@@ -350,6 +352,8 @@ function parseCretopPdf(text) {
             result.address = result.address.replace(/\s+/g, ' ');
             // 끝에 괄호로 싸인 동/리 이름 제거: "(나전리)" -> ""
             result.address = result.address.replace(/\([가-힣]+[동리]\)$/, '');
+            // 앞에 우편번호가 있으면 제거
+            result.address = result.address.replace(/^\d{5}/, '');
             if (result.address.length > 100) {
                 result.address = result.address.substring(0, 100);
             }
@@ -360,12 +364,12 @@ function parseCretopPdf(text) {
         }
     }
 
-    // 지역 추출 (주소에서 시/군 이름 추출, "시" 제거)
+    // 지역 추출 (주소에서 시/군 이름 추출, "시" 또는 "군" 제거)
     if (result.address) {
-        // 패턴: "경남김해시" -> "김해", "경기수원시" -> "수원"
-        const cityMatch = result.address.match(/(?:서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주)?([가-힣]{2,4})시/);
+        // 패턴: "경남김해시" -> "김해", "충남홍성군" -> "홍성"
+        const cityMatch = result.address.match(/(?:서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주)?([가-힣]{2,4})[시군]/);
         if (cityMatch && cityMatch[1]) {
-            result.region = cityMatch[1];  // "김해시"에서 "김해"만 추출
+            result.region = cityMatch[1];  // "김해시"에서 "김해"만, "홍성군"에서 "홍성"만 추출
             console.log('지역 추출:', result.region);
         }
     }
