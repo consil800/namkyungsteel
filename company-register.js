@@ -254,35 +254,12 @@ function parseCretopPdf(text) {
     console.log(text);
     console.log('========================');
 
-    // 업체명 추출 - CRETOP 형식: "- 기업명 : (주)회사명" 또는 "기업명 (주)회사명"
-    const companyPatterns = [
-        /-\s*기업명\s*:\s*([^\s-]+(?:\s*[^\s-]+)*?)(?=\s+-\s|$)/,  // "- 기업명 : (주)하이진"
-        /기업명\s+(\([주유]\)[^\s]+)/,  // "기업명 (주)하이진"
-        /기업명\s*:\s*([^\s]+(?:\s*[^\s]+)*?)(?=\s+[-사업]|$)/,  // "기업명: 회사명"
-        /회사명\s*:\s*([^\s]+)/,
-        /상호\s*:\s*([^\s]+)/
-    ];
-    for (const pattern of companyPatterns) {
-        const match = text.match(pattern);
-        if (match && match[1]) {
-            // 회사명 정리: 불필요한 문자 제거
-            let companyName = match[1].trim();
-            // 뒤에 붙는 날짜나 숫자 제거
-            companyName = companyName.replace(/\s*\d{4}[-\/]\d{2}[-\/]\d{2}.*$/, '');
-            companyName = companyName.replace(/\s*\(\d+\).*$/, '');
-            result.companyName = companyName;
-            console.log('업체명 추출:', result.companyName);
-            break;
-        }
-    }
-
-    // 사업자번호 추출 - CRETOP 형식: "- 사업자번호 : 719-86-02498" 또는 "사업자번호 719-86-02498"
+    // 사업자번호 먼저 추출 (가장 신뢰할 수 있는 패턴)
     const businessNoPatterns = [
-        /-\s*사업자번호\s*:\s*([\d-]+)/,  // "- 사업자번호 : 719-86-02498"
+        /(\d{3}-\d{2}-\d{5})/,  // 직접 패턴 매칭 (가장 우선)
         /사업자번호\s+([\d-]+)/,  // "사업자번호 719-86-02498"
-        /사업자[등록]*번호\s*:\s*([\d-]+)/,
-        /(\d{3}-\d{2}-\d{5})/,  // 직접 패턴 매칭
-        /(\d{10})/  // 하이픈 없는 10자리
+        /-\s*사업자번호\s*:\s*([\d-]+)/,  // "- 사업자번호 : 719-86-02498"
+        /사업자[등록]*번호\s*:?\s*([\d-]+)/
     ];
     for (const pattern of businessNoPatterns) {
         const match = text.match(pattern);
@@ -296,13 +273,34 @@ function parseCretopPdf(text) {
         }
     }
 
-    // 주소 추출 - CRETOP 형식: "주소 (50801)경남김해시..." 또는 "- 주소 : ..."
+    // 업체명 추출 - CRETOP 페이지2 테이블 형식 우선: "기업명 (주)하이진 영문기업명"
+    const companyPatterns = [
+        /기업명\s+(\([주유]\)[가-힣A-Za-z0-9]+)/,  // "기업명 (주)하이진" - 테이블 형식
+        /기업명\s+([가-힣A-Za-z0-9\(\)]+?)(?:\s+영문기업명|\s+사업자번호)/,  // 뒤에 영문기업명이나 사업자번호가 오는 경우
+        /-\s*기업명\s*:\s*([가-힣A-Za-z0-9\(\)]+)/,  // "- 기업명 : (주)하이진"
+        /기업명\s*:\s*([가-힣A-Za-z0-9\(\)]+)/,
+        /상호\s*:?\s*([가-힣A-Za-z0-9\(\)]+)/
+    ];
+    for (const pattern of companyPatterns) {
+        const match = text.match(pattern);
+        if (match && match[1]) {
+            let companyName = match[1].trim();
+            // 불필요한 문자 제거
+            companyName = companyName.replace(/\s*\d{4}[-\/]\d{2}[-\/]\d{2}.*$/, '');
+            if (companyName.length > 1) {
+                result.companyName = companyName;
+                console.log('업체명 추출:', result.companyName);
+                break;
+            }
+        }
+    }
+
+    // 주소 추출 - CRETOP 페이지2 형식: "주소 (50801)경남김해시생림면생림대로491(나전리)"
     const addressPatterns = [
-        /-\s*주소\s*:\s*(.+?)(?=\s+-\s|$)/,  // "- 주소 : ..."
-        /주소\s+\((\d{5})\)([^\s]+(?:\s*[^\s]+)*?)(?=\s+[대전설업기]|$)/,  // "주소 (50801)경남..."
-        /주소\s+([가-힣\d\(\)]+(?:\s*[가-힣\d\-\(\)]+)*)/,  // "주소 경남김해시..."
-        /소재지\s*:\s*(.+?)(?=\s+-|$)/,
-        /본점[소재지]*\s*:\s*(.+?)(?=\s+-|$)/
+        /주소\s+\((\d{5})\)([가-힣0-9\-\(\)]+)/,  // "주소 (50801)경남김해시..."
+        /주소\s+([가-힣][가-힣0-9\s\-\(\)]+?)(?=\s+표준산업분류|\s+전화번호|\s+홈페이지|$)/,  // 주소 뒤에 다른 필드가 오는 경우
+        /-\s*주소\s*:\s*([가-힣0-9\s\-\(\)]+)/,
+        /본점.*주소[:\s]*([가-힣][가-힣0-9\s\-\(\)]+)/
     ];
     for (const pattern of addressPatterns) {
         const match = text.match(pattern);
@@ -310,21 +308,23 @@ function parseCretopPdf(text) {
             if (match[2]) {
                 // 우편번호 포함 패턴
                 result.address = `(${match[1]})${match[2]}`.trim();
-            } else {
+            } else if (match[1]) {
                 result.address = match[1].trim();
             }
-            // 주소 정리: 너무 긴 경우 자르기
+            // 주소 정리
+            result.address = result.address.replace(/\s+/g, ' ');
             if (result.address.length > 100) {
                 result.address = result.address.substring(0, 100);
             }
-            console.log('주소 추출:', result.address);
-            break;
+            if (result.address.length > 5) {
+                console.log('주소 추출:', result.address);
+                break;
+            }
         }
     }
 
     // 지역 추출 (주소에서)
     if (result.address) {
-        // 우편번호 뒤의 지역명 추출
         const regionMatch = result.address.match(/\)?(서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주)/);
         if (regionMatch) {
             result.region = regionMatch[1];
@@ -332,20 +332,24 @@ function parseCretopPdf(text) {
         }
     }
 
-    // 전화번호 추출 - CRETOP 형식: "- 대표전화 : 055-..." 또는 "대표전화 055-..."
+    // 전화번호 추출
     const phonePatterns = [
-        /-\s*대표전화\s*:\s*([\d\-]+)/,  // "- 대표전화 : 055-..."
-        /대표전화\s+([\d\-]+)/,  // "대표전화 055-..."
-        /전화[번호]*\s*:\s*([\d\-]+)/,
+        /전화번호\s+([\d\-]+)/,  // 테이블 형식
+        /대표전화\s+([\d\-]+)/,
+        /-\s*대표전화\s*:\s*([\d\-]+)/,
         /TEL\s*:?\s*([\d\-]+)/i,
-        /(\d{2,3}-\d{3,4}-\d{4})/  // 직접 전화번호 패턴
+        /(\d{2,4}-\d{3,4}-\d{4})/  // 직접 전화번호 패턴
     ];
     for (const pattern of phonePatterns) {
         const match = text.match(pattern);
         if (match && match[1]) {
-            result.phone = match[1].trim();
-            console.log('전화번호 추출:', result.phone);
-            break;
+            const phone = match[1].trim();
+            // 유효한 전화번호인지 확인 (최소 7자리)
+            if (phone.replace(/-/g, '').length >= 7) {
+                result.phone = phone;
+                console.log('전화번호 추출:', result.phone);
+                break;
+            }
         }
     }
 
