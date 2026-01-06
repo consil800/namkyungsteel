@@ -320,6 +320,8 @@ function parseCretopPdf(text) {
             let companyName = match[1].trim();
             // 불필요한 문자 제거
             companyName = companyName.replace(/\s*\d{4}[-\/]\d{2}[-\/]\d{2}.*$/, '');
+            // (주), (유) 제거
+            companyName = companyName.replace(/^\([주유]\)/, '');
             if (companyName.length > 1) {
                 result.companyName = companyName;
                 console.log('업체명 추출:', result.companyName);
@@ -339,13 +341,15 @@ function parseCretopPdf(text) {
         const match = text.match(pattern);
         if (match) {
             if (match[2]) {
-                // 우편번호 포함 패턴
-                result.address = `(${match[1]})${match[2]}`.trim();
+                // 우편번호 제외하고 주소만 사용
+                result.address = match[2].trim();
             } else if (match[1]) {
                 result.address = match[1].trim();
             }
             // 주소 정리
             result.address = result.address.replace(/\s+/g, ' ');
+            // 끝에 괄호로 싸인 동/리 이름 제거: "(나전리)" -> ""
+            result.address = result.address.replace(/\([가-힣]+[동리]\)$/, '');
             if (result.address.length > 100) {
                 result.address = result.address.substring(0, 100);
             }
@@ -356,11 +360,12 @@ function parseCretopPdf(text) {
         }
     }
 
-    // 지역 추출 (주소에서)
+    // 지역 추출 (주소에서 시/군 이름 추출, "시" 제거)
     if (result.address) {
-        const regionMatch = result.address.match(/\)?(서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주)/);
-        if (regionMatch) {
-            result.region = regionMatch[1];
+        // 패턴: "경남김해시" -> "김해", "경기수원시" -> "수원"
+        const cityMatch = result.address.match(/(?:서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주)?([가-힣]{2,4})시/);
+        if (cityMatch && cityMatch[1]) {
+            result.region = cityMatch[1];  // "김해시"에서 "김해"만 추출
             console.log('지역 추출:', result.region);
         }
     }
@@ -415,6 +420,12 @@ function fillFormWithParsedData(parsed) {
     }
     if (parsed.phone) {
         document.getElementById('phone').value = parsed.phone;
+    }
+
+    // 기본 색상을 green으로 설정
+    const colorSelect = document.getElementById('companyColor');
+    if (colorSelect) {
+        colorSelect.value = 'green';
     }
 }
 
