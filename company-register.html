@@ -8,6 +8,100 @@
     <link href="logo.jpg" rel="icon">
     <link href="logo.jpg" rel="apple-touch-icon">
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* PDF 드래그 앤 드롭 영역 */
+        .pdf-dropzone {
+            border: 2px dashed #007bff;
+            border-radius: 8px;
+            padding: 30px 20px;
+            text-align: center;
+            background-color: #f8f9ff;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .pdf-dropzone:hover {
+            border-color: #0056b3;
+            background-color: #e8f0ff;
+        }
+        .pdf-dropzone.drag-over {
+            border-color: #28a745;
+            background-color: #e8f5e9;
+            border-style: solid;
+        }
+        .pdf-dropzone-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .pdf-dropzone-text {
+            color: #666;
+            font-size: 14px;
+        }
+        .pdf-dropzone-text strong {
+            color: #007bff;
+        }
+
+        /* 파싱 결과 미리보기 */
+        .parse-preview {
+            display: none;
+            background: #fff;
+            border: 1px solid #28a745;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .parse-preview.show {
+            display: block;
+        }
+        .parse-preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .parse-preview-header h4 {
+            margin: 0;
+            color: #28a745;
+            font-size: 14px;
+        }
+        .parse-preview-clear {
+            background: none;
+            border: none;
+            color: #dc3545;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .parse-preview-item {
+            display: flex;
+            margin: 8px 0;
+            font-size: 13px;
+        }
+        .parse-preview-item label {
+            min-width: 80px;
+            font-weight: bold;
+            color: #333;
+        }
+        .parse-preview-item span {
+            color: #666;
+        }
+
+        /* 사업자번호 중복 체크 상태 */
+        .business-no-status {
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        .business-no-status.checking {
+            color: #ffc107;
+        }
+        .business-no-status.valid {
+            color: #28a745;
+        }
+        .business-no-status.duplicate {
+            color: #dc3545;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -20,9 +114,36 @@
 
         <main>
             <form id="companyForm" class="form-container">
+                <!-- PDF 드래그 앤 드롭 영역 -->
+                <div id="pdfDropzone" class="pdf-dropzone">
+                    <div class="pdf-dropzone-icon">📄</div>
+                    <div class="pdf-dropzone-text">
+                        <strong>CRETOP PDF</strong>를 여기에 드래그하거나 클릭하여 업로드<br>
+                        <small>(업체 정보가 자동으로 입력됩니다)</small>
+                    </div>
+                    <input type="file" id="pdfFileInput" accept=".pdf" style="display: none;">
+                </div>
+
+                <!-- 파싱 결과 미리보기 -->
+                <div id="parsePreview" class="parse-preview">
+                    <div class="parse-preview-header">
+                        <h4>PDF 파싱 결과</h4>
+                        <button type="button" class="parse-preview-clear" id="clearParseBtn">초기화</button>
+                    </div>
+                    <div id="parsePreviewContent">
+                        <!-- 파싱 결과가 여기에 표시됩니다 -->
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label for="companyName">업체명 *</label>
                     <input type="text" id="companyName" name="companyName" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="businessNo">사업자번호</label>
+                    <input type="text" id="businessNo" name="businessNo" placeholder="000-00-00000" maxlength="12">
+                    <div id="businessNoStatus" class="business-no-status"></div>
                 </div>
 
                 <div class="form-group">
@@ -112,6 +233,12 @@
 
     <!-- Supabase JS CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- PDF.js CDN for PDF text extraction -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        // PDF.js worker 설정
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
     <!-- Database Scripts -->
     <script src="database.js"></script>
     <!-- Data Cache Scripts -->
@@ -119,6 +246,6 @@
     <script src="shared-assets/js/auth.js"></script>
     <script src="data-loader.js"></script>
     <script src="dropdown-loader.js"></script>
-    <script src="company-register.js?v=20250909001"></script>
+    <script src="company-register.js?v=20260106001"></script>
 </body>
 </html>

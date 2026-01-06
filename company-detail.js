@@ -366,6 +366,10 @@ async function displayCompanyDetails(company) {
             <span>${company.company_name || '-'}</span>
         </div>
         <div class="info-item">
+            <label>사업자번호:</label>
+            <span>${company.business_no || '-'}</span>
+        </div>
+        <div class="info-item">
             <label>지역:</label>
             <span>${company.region || '-'}</span>
         </div>
@@ -789,6 +793,7 @@ async function populateEditForm(company) {
     console.log('🔍 populateEditForm - 전체 업체 정보:', company);
     
     document.getElementById('editCompanyName').value = company.company_name || '';
+    document.getElementById('editBusinessNo').value = company.business_no || '';
     document.getElementById('editRegion').value = company.region || '';
     document.getElementById('editAddress').value = company.address || '';
     document.getElementById('editPhone').value = company.phone || '';
@@ -898,6 +903,7 @@ async function updateCompany() {
         const formData = new FormData(document.getElementById('editCompanyForm'));
         const updateData = {
             company_name: formData.get('editCompanyName').trim(),
+            business_no: formData.get('editBusinessNo')?.trim() || null,
             region: formData.get('editRegion').trim(),
             address: formData.get('editAddress').trim(),
             phone: formData.get('editPhone').trim(),

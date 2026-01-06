@@ -1205,7 +1205,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // XLSX 데이터 준비 - 헤더 행 (첫 번째 행)
             const worksheet_data = [
-                ['업체명', '지역', '주소', '전화번호', '담당자', '휴대폰', '이메일', '결제조건', '채권금액', '업종', '제조품', '사용품목', '메모', '색상']
+                ['업체명', '사업자번호', '지역', '주소', '전화번호', '담당자', '휴대폰', '이메일', '결제조건', '채권금액', '업종', '제조품', '사용품목', '메모', '색상']
             ];
 
             // 업체 데이터가 있는 경우에만 추가
@@ -1213,6 +1213,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 companies.forEach(company => {
                     worksheet_data.push([
                         company.company_name || '',
+                        company.business_no || '',
                         company.region || '',
                         company.address || '',
                         company.phone || '',
@@ -1236,7 +1237,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // 컬럼 너비 설정
             const wscols = [
                 {wch: 20}, // 업체명
-                {wch: 15}, // 지역  
+                {wch: 14}, // 사업자번호
+                {wch: 15}, // 지역
                 {wch: 30}, // 주소
                 {wch: 15}, // 전화번호
                 {wch: 15}, // 담당자
@@ -1337,19 +1339,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (row[0] && row[0].toString().trim()) {
                         const companyData = {
                             company_name: row[0] ? row[0].toString().trim() : '',
-                            region: row[1] ? row[1].toString().trim() : '',
-                            address: row[2] ? row[2].toString().trim() : '',
-                            phone: row[3] ? row[3].toString().trim() : '',
-                            contact_person: row[4] ? row[4].toString().trim() : '',
-                            mobile: row[5] ? row[5].toString().trim() : '',
-                            email: row[6] ? row[6].toString().trim() : '',
-                            payment_terms: row[7] ? row[7].toString().trim() : '',
-                            debt_amount: row[8] ? row[8].toString().trim() : '',
-                            business_type: row[9] ? row[9].toString().trim() : '',
-                            products: row[10] ? row[10].toString().trim() : '',
-                            usage_items: row[11] ? row[11].toString().trim() : '',
-                            notes: row[12] ? row[12].toString().trim() : '',
-                            color_code: row[13] ? row[13].toString().trim() : '',
+                            business_no: row[1] ? row[1].toString().trim() : '',
+                            region: row[2] ? row[2].toString().trim() : '',
+                            address: row[3] ? row[3].toString().trim() : '',
+                            phone: row[4] ? row[4].toString().trim() : '',
+                            contact_person: row[5] ? row[5].toString().trim() : '',
+                            mobile: row[6] ? row[6].toString().trim() : '',
+                            email: row[7] ? row[7].toString().trim() : '',
+                            payment_terms: row[8] ? row[8].toString().trim() : '',
+                            debt_amount: row[9] ? row[9].toString().trim() : '',
+                            business_type: row[10] ? row[10].toString().trim() : '',
+                            products: row[11] ? row[11].toString().trim() : '',
+                            usage_items: row[12] ? row[12].toString().trim() : '',
+                            notes: row[13] ? row[13].toString().trim() : '',
+                            color_code: row[14] ? row[14].toString().trim() : '',
                             visit_count: 0,
                             last_visit_date: null
                         };
