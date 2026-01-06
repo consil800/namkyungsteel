@@ -249,10 +249,38 @@ function parseCretopPdf(text) {
         phone: ''
     };
 
-    // 디버깅: 추출된 텍스트 확인
-    console.log('=== PDF 추출 텍스트 ===');
-    console.log(text);
+    // 디버깅: 추출된 원본 텍스트
+    console.log('=== PDF 원본 텍스트 ===');
+    console.log(text.substring(0, 500));
+
+    // PDF.js가 문자 사이에 공백을 넣어서 추출하는 경우 정규화
+    // "기 업   종 합   보 고 서" -> "기업종합보고서"
+    // "( 주 ) 하 이 진" -> "(주)하이진"
+    // "7 1 9 - 8 6 - 0 2 4 9 8" -> "719-86-02498"
+    let normalizedText = text
+        // 한글 문자 사이의 단일 공백 제거: "기 업" -> "기업"
+        .replace(/([가-힣])\s+([가-힣])/g, '$1$2')
+        // 여러 번 적용 (연속된 문자들 처리)
+        .replace(/([가-힣])\s+([가-힣])/g, '$1$2')
+        .replace(/([가-힣])\s+([가-힣])/g, '$1$2')
+        // 괄호와 한글 사이 공백 제거: "( 주 )" -> "(주)"
+        .replace(/\(\s+/g, '(')
+        .replace(/\s+\)/g, ')')
+        // 숫자 사이의 공백 제거: "7 1 9" -> "719"
+        .replace(/(\d)\s+(\d)/g, '$1$2')
+        .replace(/(\d)\s+(\d)/g, '$1$2')
+        .replace(/(\d)\s+(\d)/g, '$1$2')
+        // 숫자와 하이픈 사이 공백 제거: "719 - 86" -> "719-86"
+        .replace(/(\d)\s*-\s*(\d)/g, '$1-$2')
+        // 연속 공백을 단일 공백으로
+        .replace(/\s{2,}/g, ' ');
+
+    console.log('=== 정규화된 텍스트 ===');
+    console.log(normalizedText.substring(0, 500));
     console.log('========================');
+
+    // 이후 파싱은 정규화된 텍스트 사용
+    text = normalizedText;
 
     // 사업자번호 먼저 추출 (가장 신뢰할 수 있는 패턴)
     const businessNoPatterns = [
