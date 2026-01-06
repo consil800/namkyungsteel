@@ -239,6 +239,35 @@ async function extractTextFromPdf(file) {
     return fullText;
 }
 
+// 주소 형식화 함수: "경남김해시생림면생림대로491(나전리)" -> "경남 김해시생림면 생림대로 491"
+function formatAddress(rawAddress) {
+    let addr = rawAddress;
+
+    // 1. 앞에 우편번호가 있으면 제거
+    addr = addr.replace(/^\d{5}/, '');
+
+    // 2. 끝에 괄호로 싸인 동/리 이름 제거: "(나전리)" -> ""
+    addr = addr.replace(/\([가-힣]+[동리]\)$/, '');
+
+    // 3. 도/광역시 뒤에 공백 추가
+    const provinces = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종', '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'];
+    for (const prov of provinces) {
+        if (addr.startsWith(prov) && !addr.startsWith(prov + ' ')) {
+            addr = prov + ' ' + addr.substring(prov.length);
+            break;
+        }
+    }
+
+    // 4. 시/군/구/읍/면 뒤에 도로명(대로/로/길) 앞에 공백 추가
+    // "김해시생림면생림대로" -> "김해시생림면 생림대로"
+    addr = addr.replace(/([시군구읍면])([가-힣]+(대로|로|길))/, '$1 $2');
+
+    // 5. 도로명과 번호 사이에 공백 추가: "생림대로491" -> "생림대로 491"
+    addr = addr.replace(/(대로|로|길)(\d+)/, '$1 $2');
+
+    return addr.trim();
+}
+
 // CRETOP PDF 파싱
 function parseCretopPdf(text) {
     const result = {
@@ -348,12 +377,8 @@ function parseCretopPdf(text) {
             } else if (match[1]) {
                 result.address = match[1].trim();
             }
-            // 주소 정리
-            result.address = result.address.replace(/\s+/g, ' ');
-            // 끝에 괄호로 싸인 동/리 이름 제거: "(나전리)" -> ""
-            result.address = result.address.replace(/\([가-힣]+[동리]\)$/, '');
-            // 앞에 우편번호가 있으면 제거
-            result.address = result.address.replace(/^\d{5}/, '');
+            // 주소 형식화 함수 적용
+            result.address = formatAddress(result.address);
             if (result.address.length > 100) {
                 result.address = result.address.substring(0, 100);
             }
@@ -374,18 +399,27 @@ function parseCretopPdf(text) {
         }
     }
 
-    // 전화번호 추출
+    // 전화번호 추출 - CRETOP 페이지2 형식: "전화번호 055-329-8863"
     const phonePatterns = [
-        /전화번호\s+([\d\-]+)/,  // 테이블 형식
-        /대표전화\s+([\d\-]+)/,
+        /전화번호\s*([\d\-]+)/,  // 테이블 형식 (공백 선택적)
+        /전화\s*([\d\-]+)/,  // "전화" 키워드
+        /대표전화\s*([\d\-]+)/,
         /-\s*대표전화\s*:\s*([\d\-]+)/,
         /TEL\s*:?\s*([\d\-]+)/i,
-        /(\d{2,4}-\d{3,4}-\d{4})/  // 직접 전화번호 패턴
+        /(\d{2,4}-\d{3,4}-\d{4})/  // 직접 전화번호 패턴: 055-329-8863
     ];
     for (const pattern of phonePatterns) {
         const match = text.match(pattern);
         if (match && match[1]) {
-            const phone = match[1].trim();
+            let phone = match[1].trim();
+            // 하이픈이 없으면 추가: 0553298863 -> 055-329-8863
+            if (!phone.includes('-') && phone.length >= 9) {
+                if (phone.startsWith('02')) {
+                    phone = phone.substring(0, 2) + '-' + phone.substring(2, 6) + '-' + phone.substring(6);
+                } else {
+                    phone = phone.substring(0, 3) + '-' + phone.substring(3, 6) + '-' + phone.substring(6);
+                }
+            }
             // 유효한 전화번호인지 확인 (최소 7자리)
             if (phone.replace(/-/g, '').length >= 7) {
                 result.phone = phone;
