@@ -101,6 +101,37 @@
         .business-no-status.duplicate {
             color: #dc3545;
         }
+
+        /* PDF 드래그 앤 드롭 + 등록 버튼 가로 배치 */
+        .pdf-register-row {
+            display: flex;
+            gap: 15px;
+            align-items: stretch;
+            margin-bottom: 20px;
+        }
+        .pdf-register-row .pdf-dropzone {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        .btn-register-top {
+            min-width: 100px;
+            height: auto;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 20px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        @media (max-width: 600px) {
+            .pdf-register-row {
+                flex-direction: column;
+            }
+            .btn-register-top {
+                width: 100%;
+                padding: 15px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -114,14 +145,17 @@
 
         <main>
             <form id="companyForm" class="form-container">
-                <!-- PDF 드래그 앤 드롭 영역 -->
-                <div id="pdfDropzone" class="pdf-dropzone">
-                    <div class="pdf-dropzone-icon">📄</div>
-                    <div class="pdf-dropzone-text">
-                        <strong>CRETOP PDF</strong>를 여기에 드래그하거나 클릭하여 업로드<br>
-                        <small>(업체 정보가 자동으로 입력됩니다)</small>
+                <!-- PDF 드래그 앤 드롭 + 등록 버튼 영역 -->
+                <div class="pdf-register-row">
+                    <div id="pdfDropzone" class="pdf-dropzone">
+                        <div class="pdf-dropzone-icon">📄</div>
+                        <div class="pdf-dropzone-text">
+                            <strong>CRETOP PDF</strong>를 여기에 드래그하거나 클릭하여 업로드<br>
+                            <small>(업체 정보가 자동으로 입력됩니다)</small>
+                        </div>
+                        <input type="file" id="pdfFileInput" accept=".pdf" style="display: none;">
                     </div>
-                    <input type="file" id="pdfFileInput" accept=".pdf" style="display: none;">
+                    <button type="submit" id="submitBtnTop" class="btn btn-primary btn-register-top">등록</button>
                 </div>
 
                 <!-- 파싱 결과 미리보기 -->
@@ -246,6 +280,6 @@
     <script src="shared-assets/js/auth.js"></script>
     <script src="data-loader.js"></script>
     <script src="dropdown-loader.js"></script>
-    <script src="company-register.js?v=20260106010"></script>
+    <script src="company-register.js?v=20260106011"></script>
 </body>
 </html>
