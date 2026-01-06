@@ -422,10 +422,16 @@ function fillFormWithParsedData(parsed) {
         document.getElementById('phone').value = parsed.phone;
     }
 
-    // 기본 색상을 green으로 설정
+    // 기본 색상을 초록(green)으로 설정
     const colorSelect = document.getElementById('companyColor');
     if (colorSelect) {
-        colorSelect.value = 'green';
+        // 옵션 value가 한글인 경우와 영어인 경우 모두 처리
+        for (let option of colorSelect.options) {
+            if (option.value === 'green' || option.text === '초록' || option.value === '초록') {
+                colorSelect.value = option.value;
+                break;
+            }
+        }
     }
 }
 
