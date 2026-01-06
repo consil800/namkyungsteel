@@ -249,71 +249,107 @@ function parseCretopPdf(text) {
         phone: ''
     };
 
-    // 업체명 추출 - "기업명" 또는 "회사명" 뒤의 텍스트
+    // 디버깅: 추출된 텍스트 확인
+    console.log('=== PDF 추출 텍스트 ===');
+    console.log(text);
+    console.log('========================');
+
+    // 업체명 추출 - CRETOP 형식: "- 기업명 : (주)회사명" 또는 "기업명 (주)회사명"
     const companyPatterns = [
-        /기업명[:\s]+([^\n\r]+)/,
-        /회사명[:\s]+([^\n\r]+)/,
-        /상호[:\s]+([^\n\r]+)/,
-        /업체명[:\s]+([^\n\r]+)/
+        /-\s*기업명\s*:\s*([^\s-]+(?:\s*[^\s-]+)*?)(?=\s+-\s|$)/,  // "- 기업명 : (주)하이진"
+        /기업명\s+(\([주유]\)[^\s]+)/,  // "기업명 (주)하이진"
+        /기업명\s*:\s*([^\s]+(?:\s*[^\s]+)*?)(?=\s+[-사업]|$)/,  // "기업명: 회사명"
+        /회사명\s*:\s*([^\s]+)/,
+        /상호\s*:\s*([^\s]+)/
     ];
     for (const pattern of companyPatterns) {
         const match = text.match(pattern);
-        if (match) {
-            result.companyName = match[1].trim().split(/\s{2,}/)[0];
+        if (match && match[1]) {
+            // 회사명 정리: 불필요한 문자 제거
+            let companyName = match[1].trim();
+            // 뒤에 붙는 날짜나 숫자 제거
+            companyName = companyName.replace(/\s*\d{4}[-\/]\d{2}[-\/]\d{2}.*$/, '');
+            companyName = companyName.replace(/\s*\(\d+\).*$/, '');
+            result.companyName = companyName;
+            console.log('업체명 추출:', result.companyName);
             break;
         }
     }
 
-    // 사업자번호 추출 - 000-00-00000 형식
+    // 사업자번호 추출 - CRETOP 형식: "- 사업자번호 : 719-86-02498" 또는 "사업자번호 719-86-02498"
     const businessNoPatterns = [
-        /사업자[등록]*번호[:\s]*([\d-]+)/,
-        /(\d{3}-\d{2}-\d{5})/,
+        /-\s*사업자번호\s*:\s*([\d-]+)/,  // "- 사업자번호 : 719-86-02498"
+        /사업자번호\s+([\d-]+)/,  // "사업자번호 719-86-02498"
+        /사업자[등록]*번호\s*:\s*([\d-]+)/,
+        /(\d{3}-\d{2}-\d{5})/,  // 직접 패턴 매칭
         /(\d{10})/  // 하이픈 없는 10자리
     ];
     for (const pattern of businessNoPatterns) {
         const match = text.match(pattern);
-        if (match) {
-            result.businessNo = normalizeBusinessNo(match[1]);
-            break;
+        if (match && match[1]) {
+            const normalized = normalizeBusinessNo(match[1]);
+            if (normalized && normalized.length >= 10) {
+                result.businessNo = normalized;
+                console.log('사업자번호 추출:', result.businessNo);
+                break;
+            }
         }
     }
 
-    // 주소 추출
+    // 주소 추출 - CRETOP 형식: "주소 (50801)경남김해시..." 또는 "- 주소 : ..."
     const addressPatterns = [
-        /주소[:\s]+([^\n\r]+)/,
-        /소재지[:\s]+([^\n\r]+)/,
-        /본점[소재지]*[:\s]+([^\n\r]+)/
+        /-\s*주소\s*:\s*(.+?)(?=\s+-\s|$)/,  // "- 주소 : ..."
+        /주소\s+\((\d{5})\)([^\s]+(?:\s*[^\s]+)*?)(?=\s+[대전설업기]|$)/,  // "주소 (50801)경남..."
+        /주소\s+([가-힣\d\(\)]+(?:\s*[가-힣\d\-\(\)]+)*)/,  // "주소 경남김해시..."
+        /소재지\s*:\s*(.+?)(?=\s+-|$)/,
+        /본점[소재지]*\s*:\s*(.+?)(?=\s+-|$)/
     ];
     for (const pattern of addressPatterns) {
         const match = text.match(pattern);
         if (match) {
-            result.address = match[1].trim();
+            if (match[2]) {
+                // 우편번호 포함 패턴
+                result.address = `(${match[1]})${match[2]}`.trim();
+            } else {
+                result.address = match[1].trim();
+            }
+            // 주소 정리: 너무 긴 경우 자르기
+            if (result.address.length > 100) {
+                result.address = result.address.substring(0, 100);
+            }
+            console.log('주소 추출:', result.address);
             break;
         }
     }
 
-    // 지역 추출 (주소에서 첫 번째 단어)
+    // 지역 추출 (주소에서)
     if (result.address) {
-        const regionMatch = result.address.match(/^(서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주)/);
+        // 우편번호 뒤의 지역명 추출
+        const regionMatch = result.address.match(/\)?(서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주)/);
         if (regionMatch) {
             result.region = regionMatch[1];
+            console.log('지역 추출:', result.region);
         }
     }
 
-    // 전화번호 추출
+    // 전화번호 추출 - CRETOP 형식: "- 대표전화 : 055-..." 또는 "대표전화 055-..."
     const phonePatterns = [
-        /전화[번호]*[:\s]*([\d\-]+)/,
-        /TEL[:\s]*([\d\-]+)/i,
-        /대표[전화]*[:\s]*([\d\-]+)/
+        /-\s*대표전화\s*:\s*([\d\-]+)/,  // "- 대표전화 : 055-..."
+        /대표전화\s+([\d\-]+)/,  // "대표전화 055-..."
+        /전화[번호]*\s*:\s*([\d\-]+)/,
+        /TEL\s*:?\s*([\d\-]+)/i,
+        /(\d{2,3}-\d{3,4}-\d{4})/  // 직접 전화번호 패턴
     ];
     for (const pattern of phonePatterns) {
         const match = text.match(pattern);
-        if (match) {
+        if (match && match[1]) {
             result.phone = match[1].trim();
+            console.log('전화번호 추출:', result.phone);
             break;
         }
     }
 
+    console.log('=== 파싱 결과 ===', result);
     return result;
 }
 
