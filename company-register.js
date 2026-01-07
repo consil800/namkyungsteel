@@ -221,22 +221,106 @@ async function handlePdfFile(file) {
     }
 }
 
-// PDF 텍스트 추출 (PDF.js 사용)
+// PDF 텍스트 추출 (PDF.js 사용) - 2026-01-07 개선: ChatGPT Ultra Think 분석 반영
+// 문제: 일부 PDF에서 텍스트 추출이 빈 문자열로 나오는 현상
+// 원인: CMap 폰트 미지원, XFA 폼, ToUnicode 매핑 불량 등
+// 해결: cMapUrl, enableXfa, stopAtErrors 옵션 추가 + 텍스트 있는 페이지 자동 탐색
 async function extractTextFromPdf(file) {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const data = new Uint8Array(await file.arrayBuffer());
 
+    // PDF.js 로딩 옵션 - 폰트/CMap/XFA 지원 강화
+    const loadingTask = pdfjsLib.getDocument({
+        data: data,
+        // CID 폰트 지원 (CMap 설정) - unpkg CDN 사용 (cdnjs에 cmaps 디렉토리 없음)
+        cMapUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/cmaps/',
+        cMapPacked: true,
+        // XFA 폼 지원
+        enableXfa: true,
+        // 조용히 실패하는 것 방지 (에러 노출)
+        stopAtErrors: false,  // true로 하면 일부 PDF에서 완전 실패할 수 있음
+        // 표준 폰트 데이터 - unpkg CDN 사용 (cdnjs에 standard_fonts 디렉토리 없음)
+        standardFontDataUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/standard_fonts/'
+    });
+
+    const pdf = await loadingTask.promise;
+    console.log('📄 PDF 로드 완료, 총 페이지:', pdf.numPages);
+
+    // 1단계: 텍스트가 있는 페이지 찾기 (앞 10페이지 스캔)
+    const scanPages = Math.min(pdf.numPages, 10);
+    let pagesToRead = [];
+
+    for (let p = 1; p <= scanPages; p++) {
+        const page = await pdf.getPage(p);
+        const diagnosis = await diagnosePage(page, p);
+
+        console.log(`📄 페이지 ${p} 진단:`, diagnosis);
+
+        // 텍스트가 있는 페이지 발견 (ChatGPT 검증: isPureXfa, itemCount 조건 추가)
+        // - isPureXfa: XFA 기반 PDF면 nonEmpty=0이어도 텍스트 있을 수 있음
+        // - itemCount > 0: ToUnicode 매핑 문제로 str이 비어있을 수 있지만 아이템 존재
+        if (diagnosis.isPureXfa || diagnosis.nonEmpty > 0 || diagnosis.itemCount > 0) {
+            // 해당 페이지와 다음 페이지를 추출 대상으로 설정
+            pagesToRead = [p, Math.min(p + 1, pdf.numPages)];
+            console.log(`✅ 텍스트 발견! 페이지 ${p}부터 추출 (isPureXfa: ${diagnosis.isPureXfa}, itemCount: ${diagnosis.itemCount})`);
+            break;
+        }
+    }
+
+    // 텍스트 있는 페이지를 못 찾으면 기본값 (1, 2페이지)
+    if (pagesToRead.length === 0) {
+        pagesToRead = [1, Math.min(2, pdf.numPages)];
+        console.log('⚠️ 텍스트 있는 페이지를 찾지 못함, 기본값 사용');
+    }
+
+    // 2단계: 실제 텍스트 추출
     let fullText = '';
-    const maxPages = Math.min(pdf.numPages, 2);  // 처음 2페이지만 추출
+    for (const p of pagesToRead) {
+        const page = await pdf.getPage(p);
+        const textContent = await page.getTextContent({
+            includeMarkedContent: true,  // Marked Content 포함
+            disableNormalization: false   // 정규화 사용
+        });
 
-    for (let i = 1; i <= maxPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items.map(item => item.str).join(' ');
+        // 텍스트 아이템 결합 (줄바꿈 처리 포함)
+        const pageText = textContent.items
+            .map(item => (item.str || '') + (item.hasEOL ? '\n' : ' '))
+            .join('')
+            .replace(/[ \t]+\n/g, '\n')  // 줄 끝 공백 제거
+            .replace(/\n{3,}/g, '\n\n')  // 과도한 줄바꿈 정리
+            .trim();
+
         fullText += pageText + '\n';
+        console.log(`📄 페이지 ${p} 추출 완료, 길이: ${pageText.length}자`);
     }
 
     return fullText;
+}
+
+// 페이지 진단 함수 - 텍스트 존재 여부 확인
+async function diagnosePage(page, pageNum) {
+    try {
+        const tc = await page.getTextContent();
+        const itemCount = tc.items.length;
+        const nonEmpty = tc.items.filter(it => (it.str || '').trim().length > 0).length;
+
+        return {
+            pageNum,
+            itemCount,
+            nonEmpty,
+            isPureXfa: !!page.isPureXfa,
+            hasText: nonEmpty > 0
+        };
+    } catch (error) {
+        console.error(`페이지 ${pageNum} 진단 오류:`, error);
+        return {
+            pageNum,
+            itemCount: 0,
+            nonEmpty: 0,
+            isPureXfa: false,
+            hasText: false,
+            error: error.message
+        };
+    }
 }
 
 // 주소 형식화 함수: "경남김해시생림면생림대로491(나전리)" -> "경남 김해시생림면 생림대로 491"
