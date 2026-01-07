@@ -291,6 +291,10 @@ function parseCretopPdf(text) {
     // "( 주 ) 하 이 진" -> "(주)하이진"
     // "7 1 9 - 8 6 - 0 2 4 9 8" -> "719-86-02498"
     let normalizedText = text
+        // NBSP(No-Break Space) 제거 - PDF 텍스트에서 자주 발생
+        .replace(/\u00A0/g, ' ')
+        // 캐리지 리턴 제거
+        .replace(/\r/g, '')
         // 한글 문자 사이의 단일 공백 제거: "기 업" -> "기업"
         .replace(/([가-힣])\s+([가-힣])/g, '$1$2')
         // 여러 번 적용 (연속된 문자들 처리)
@@ -324,7 +328,11 @@ function parseCretopPdf(text) {
 
     // 사업자번호 먼저 추출 (가장 신뢰할 수 있는 패턴)
     const businessNoPatterns = [
-        /(\d{3}-\d{2}-\d{5})/,  // 직접 패턴 매칭 (가장 우선)
+        // (A) 테이블형: "사업자번호 000-00-00000 설립일"에서 정확히 추출 (lookahead)
+        /사업자번호\s*([0-9]{3}-[0-9]{2}-[0-9]{5})(?=\s*(?:설립일|주소|전화번호|대표자|업종|$))/,
+        // (B) 대시가 없는 경우(10자리) - 테이블형
+        /사업자번호\s*([0-9]{10})(?=\s*(?:설립일|주소|전화번호|대표자|업종|$))/,
+        /(\d{3}-\d{2}-\d{5})/,  // 직접 패턴 매칭
         /사업자번호\s+([\d-]+)/,  // "사업자번호 719-86-02498"
         /-\s*사업자번호\s*:\s*([\d-]+)/,  // "- 사업자번호 : 719-86-02498"
         /사업자[등록]*번호\s*:?\s*([\d-]+)/
@@ -343,6 +351,12 @@ function parseCretopPdf(text) {
 
     // 업체명 추출 - CRETOP 페이지2 테이블 형식 우선: "기업명 (주)하이진 영문기업명"
     const companyPatterns = [
+        // (A) 테이블형: "기업명 ... 영문기업명" 사이만 추출 (최우선 - lookahead)
+        /기업명\s*([^\r\n]+?)(?=\s*영문기업명)/,
+        // (B) 영문기업명이 없거나 깨질 때: 다음 라벨 전까지
+        /기업명\s*([^\r\n]+?)(?=\s*(?:사업자번호|설립일|주소|전화번호|대표자|업종|$))/,
+        // (C) ㈜ 포함 강제 매칭 버전
+        /기업명\s*((?:\(\s*[주유]\s*\)|㈜)\s*[가-힣A-Za-z0-9·&().,\- ]+?)(?=\s*(?:영문기업명|사업자번호|설립일|$))/,
         /기업명\s+(\([주유]\)[가-힣A-Za-z0-9]+)/,  // "기업명 (주)하이진" - 테이블 형식
         /기업명\s+([가-힣A-Za-z0-9\(\)]+?)(?:\s+영문기업명|\s+사업자번호)/,  // 뒤에 영문기업명이나 사업자번호가 오는 경우
         /-\s*기업명\s*:\s*([가-힣A-Za-z0-9\(\)]+)/,  // "- 기업명 : (주)하이진"
@@ -356,8 +370,16 @@ function parseCretopPdf(text) {
             let companyName = match[1].trim();
             // 불필요한 문자 제거
             companyName = companyName.replace(/\s*\d{4}[-\/]\d{2}[-\/]\d{2}.*$/, '');
-            // (주), (유) 제거
-            companyName = companyName.replace(/^\([주유]\)/, '');
+            // 공백 정리: 연속 공백을 단일 공백으로
+            companyName = companyName.replace(/\s+/g, ' ');
+            // 괄호 안 공백 정리: "( 주 )" -> "(주)"
+            companyName = companyName.replace(/\(\s*주\s*\)/g, '(주)');
+            companyName = companyName.replace(/\(\s*유\s*\)/g, '(유)');
+            // ㈜ 뒤 공백 제거
+            companyName = companyName.replace(/㈜\s*/g, '㈜');
+            // (주), (유), ㈜ 제거
+            companyName = companyName.replace(/^(\([주유]\)|㈜)/, '');
+            companyName = companyName.trim();
             if (companyName.length > 1) {
                 result.companyName = companyName;
                 console.log('업체명 추출:', result.companyName);
@@ -396,13 +418,23 @@ function parseCretopPdf(text) {
         }
     }
 
-    // 지역 추출 (주소에서 시/군 이름 추출, "시" 또는 "군" 제거)
+    // 지역 추출 (주소에서 시/군 이름 추출)
+    // 2026-01-07 개선: 광역시는 광역시명을, 도 지역은 시/군명 추출
     if (result.address) {
-        // 패턴: "경남김해시" -> "김해", "충남홍성군" -> "홍성"
-        const cityMatch = result.address.match(/(?:서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주)?([가-힣]{2,4})[시군]/);
-        if (cityMatch && cityMatch[1]) {
-            result.region = cityMatch[1];  // "김해시"에서 "김해"만, "홍성군"에서 "홍성"만 추출
-            console.log('지역 추출:', result.region);
+        // 1단계: 광역시/특별시 체크 (서울, 부산, 대구, 인천, 광주, 대전, 울산, 세종)
+        // "부산 강서구..." → "부산", "서울 강남구..." → "서울"
+        const metroMatch = result.address.match(/^[\s\(\d\)]*?(서울|부산|대구|인천|광주|대전|울산|세종)/);
+        if (metroMatch && metroMatch[1]) {
+            result.region = metroMatch[1];
+            console.log('지역 추출 (광역시):', result.region);
+        } else {
+            // 2단계: 도 지역에서 시/군 추출
+            // "경남 김해시..." → "김해", "충남 홍성군..." → "홍성"
+            const cityMatch = result.address.match(/(?:경기|강원|충북|충남|전북|전남|경북|경남|제주)\s*([가-힣]{2,4})[시군]/);
+            if (cityMatch && cityMatch[1]) {
+                result.region = cityMatch[1];
+                console.log('지역 추출 (시/군):', result.region);
+            }
         }
     }
 
