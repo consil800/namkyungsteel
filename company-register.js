@@ -688,7 +688,7 @@ async function checkBusinessNoDuplicate(businessNo) {
 
         // Supabase에서 동일 사업자번호 검색
         const { data, error } = await window.db.client
-            .from('companies')
+            .from('client_companies')
             .select('id, company_name')
             .eq('business_no', normalized)
             .limit(1);
@@ -771,17 +771,24 @@ async function uploadPdfFile(companyId, file) {
             .from('company-pdfs')
             .getPublicUrl(fileName).data.publicUrl;
 
-        // companies 테이블의 pdf_files 필드 업데이트
-        await window.db.client
-            .from('companies')
+        // client_companies 테이블의 pdf_files 필드 업데이트
+        const { error: updateError } = await window.db.client
+            .from('client_companies')
             .update({
                 pdf_files: [{
-                    name: file.name,
+                    filename: file.name,
                     url: publicUrl,
-                    uploaded_at: new Date().toISOString()
+                    uploadedAt: new Date().toISOString()
                 }]
             })
             .eq('id', companyId);
+
+        if (updateError) {
+            console.error('❌ PDF 파일 정보 저장 오류:', updateError);
+            console.error('❌ companyId:', companyId, 'typeof:', typeof companyId);
+        } else {
+            console.log('✅ PDF 파일 정보 저장 완료');
+        }
 
         console.log('📎 PDF 업로드 완료:', publicUrl);
         return publicUrl;
