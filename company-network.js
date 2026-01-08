@@ -983,101 +983,164 @@ function exportToImage() {
     showToast('이미지 내보내기 기능은 준비 중입니다.', 'info');
 }
 
-// 네트워크 저장 (캐시 무효화 포함)
+// 네트워크 저장 (V2 통합 관계도 - 2026-01-08)
 async function saveNetwork() {
     try {
-        console.log('💾 네트워크 저장 시작');
-        
-        // 네트워크 데이터 준비
+        console.log('💾 [V2] 통합 네트워크 저장 시작');
+
+        // V2 형식으로 네트워크 데이터 준비
         const networkToSave = {
-            center_company_id: centerCompany.id,
-            center_company_name: centerCompany.name,
             nodes: networkData.nodes.map(node => ({
                 id: node.id,
                 name: node.name,
+                isRegistered: node.isRegistered !== false && node.type !== 'unregistered',
+                companyId: node.companyId || null,
                 type: node.type,
                 color: node.color,
-                size: node.size,
-                isRegistered: node.isRegistered,
-                companyId: node.companyId,
-                x: node.x,
-                y: node.y
+                size: node.size
             })),
             links: networkData.links.map(link => ({
                 source: typeof link.source === 'object' ? link.source.id : link.source,
                 target: typeof link.target === 'object' ? link.target.id : link.target,
-                type: link.type,
-                label: link.label
+                type: link.type || link.label || '협력',
+                directed: link.directed !== false, // 기본값 true (방향)
+                strength: link.strength || 3,
+                properties: link.properties || {},
+                fromPosition: link.source?.x && link.source?.y ? { x: link.source.x, y: link.source.y } : null,
+                toPosition: link.target?.x && link.target?.y ? { x: link.target.x, y: link.target.y } : null
             }))
         };
-        
-        // 데이터베이스에 저장
-        const result = await window.db.saveCompanyNetwork(
+
+        console.log('📊 저장할 데이터:', {
+            nodesCount: networkToSave.nodes.length,
+            linksCount: networkToSave.links.length
+        });
+
+        // V2 데이터베이스에 저장
+        const result = await window.db.saveCompanyNetworkV2(
             currentUser.id,
-            centerCompany.id,
-            centerCompany.name,
             networkToSave
         );
-        
+
         if (result.success) {
             // 네트워크 캐시 무효화
             if (window.dataChangeManager) {
                 window.dataChangeManager.notifyChange(currentUser.id, 'network_save');
             }
-            
-            showToast('네트워크가 성공적으로 저장되었습니다.', 'success');
+
+            showToast(`저장 완료! (노드 ${result.nodesCount}개, 관계 ${result.edgesCount}개)`, 'success');
+            console.log('✅ [V2] 저장 완료:', result);
         } else {
             throw new Error('저장 실패');
         }
-        
+
     } catch (error) {
-        console.error('❌ 네트워크 저장 오류:', error);
-        showToast('네트워크 저장 중 오류가 발생했습니다.', 'error');
+        console.error('❌ [V2] 네트워크 저장 오류:', error);
+        showToast('네트워크 저장 중 오류가 발생했습니다: ' + error.message, 'error');
     }
 }
 
-// 기존 네트워크 로드 (캐시 활용)
+// 기존 네트워크 로드 (V2 통합 관계도 - 2026-01-08)
 async function loadExistingNetwork() {
     try {
-        console.log('📊 기존 네트워크 로드 시도 (현재 비활성화)');
-        
-        // 기존 네트워크 로드 기능은 현재 비활성화됨
-        // TODO: 향후 네트워크 저장/로드 기능 구현 시 활성화
-        console.log('ℹ️ 기존 네트워크 로드 기능 비활성화 - 새로운 네트워크로 시작');
-        return;
-        
-        // 아래 코드는 향후 구현을 위해 보관
-        /*
-        const existingNetwork = await window.DataCache.getNetworks(currentUser.id);
-        
-        // 현재 중심 업체의 네트워크 찾기
-        const networkForCenter = existingNetwork.find(net => 
-            net.center_company_id === centerCompany.id
-        );
-        
-        if (networkForCenter && networkForCenter.network_data) {
-            const networkInfo = networkForCenter.network_data;
-            
-            // 기존 노드와 링크 로드
-            if (networkInfo.nodes && networkInfo.nodes.length > 0) {
-                // 중심 업체 제외하고 다른 노드들 추가
-                const otherNodes = networkInfo.nodes.filter(node => node.type !== 'center');
-                networkData.nodes.push(...otherNodes);
-            }
-            
-            if (networkInfo.links && networkInfo.links.length > 0) {
-                networkData.links.push(...networkInfo.links);
-            }
-            
-            updateChart();
-            showToast('기존 관계도가 로드되었습니다.', 'success');
-            console.log('✅ 기존 네트워크 캐시 로드 완료');
+        console.log('📊 [V2] 통합 관계도 로드 시작');
+
+        if (!centerCompany || !centerCompany.id) {
+            console.log('ℹ️ 중심 업체 정보 없음 - 새로운 네트워크로 시작');
+            return;
         }
-        */
-        
+
+        // 등록 업체인지 확인 (URL에서 id 파라미터가 있으면 등록 업체)
+        const isRegistered = !!centerCompany.id;
+
+        // V2 RPC 함수 호출하여 그래프 데이터 조회
+        const graphData = await window.db.getCompanyGraphV2(
+            isRegistered,                    // centerIsRegistered
+            isRegistered ? centerCompany.id : null,  // centerCompanyId
+            !isRegistered ? centerCompany.name : null, // centerCompanyName
+            false,                           // includeInactive
+            1                                // hopLevel (1-hop)
+        );
+
+        if (!graphData || !graphData.nodes || graphData.nodes.length === 0) {
+            console.log('ℹ️ 기존 관계도 데이터 없음 - 새로운 네트워크로 시작');
+            return;
+        }
+
+        console.log('📊 [V2] 로드된 데이터:', {
+            centerNodeId: graphData.centerNodeId,
+            nodesCount: graphData.nodes.length,
+            linksCount: graphData.links.length
+        });
+
+        // 기존 networkData 초기화 (중심 노드만 유지)
+        const centerNode = networkData.nodes.find(n => n.type === 'center');
+        networkData.nodes = centerNode ? [centerNode] : [];
+        networkData.links = [];
+
+        // 로드된 노드 추가 (중심 노드 제외)
+        for (const node of graphData.nodes) {
+            if (node.isCenter) {
+                // 중심 노드는 기존 것 유지하되 UUID 저장
+                if (centerNode) {
+                    centerNode.nodeId = node.id; // UUID 저장
+                }
+                continue;
+            }
+
+            // 이미 존재하는 노드인지 확인
+            const exists = networkData.nodes.some(n =>
+                n.companyId === node.companyId || n.name === node.name
+            );
+            if (exists) continue;
+
+            networkData.nodes.push({
+                id: node.name, // D3용 ID는 이름 사용
+                nodeId: node.id, // DB UUID 저장
+                name: node.name,
+                type: node.isRegistered ? 'registered' : 'unregistered',
+                isRegistered: node.isRegistered,
+                companyId: node.companyId,
+                color: node.isRegistered ? '#4CAF50' : '#9E9E9E',
+                size: 40,
+                region: node.region,
+                address: node.address,
+                phone: node.phone
+            });
+        }
+
+        // 로드된 링크 추가
+        for (const link of graphData.links) {
+            // source/target을 노드 이름으로 변환
+            const sourceNode = graphData.nodes.find(n => n.id === link.source);
+            const targetNode = graphData.nodes.find(n => n.id === link.target);
+
+            if (!sourceNode || !targetNode) continue;
+
+            networkData.links.push({
+                id: link.id,
+                source: sourceNode.name,
+                target: targetNode.name,
+                type: link.type,
+                label: link.type,
+                directed: link.directed,
+                strength: link.strength,
+                status: link.status
+            });
+        }
+
+        // 차트 업데이트
+        updateChart();
+        showToast(`관계도 로드 완료! (${networkData.nodes.length}개 업체, ${networkData.links.length}개 관계)`, 'success');
+        console.log('✅ [V2] 통합 관계도 로드 완료');
+
     } catch (error) {
-        console.error('❌ 기존 네트워크 로드 오류:', error);
+        console.error('❌ [V2] 기존 네트워크 로드 오류:', error);
         // 오류가 발생해도 페이지는 정상 동작하도록 함
+        // RPC 함수가 없거나 중심 노드가 없는 경우는 정상 케이스
+        if (error.message && error.message.includes('Center node not found')) {
+            console.log('ℹ️ 중심 노드 없음 - 새로운 네트워크로 시작');
+        }
     }
 }
 

@@ -2691,6 +2691,279 @@ class DatabaseManager {
         }
     }
 
+    // ==================== 통합 업체 관계도 V2 (2026-01-08 추가) ====================
+
+    /**
+     * 통합 업체 관계도 저장 (V2)
+     * - company_nodes 테이블에 노드 upsert
+     * - company_relationships_v2 테이블에 엣지 upsert
+     * @param {string} userId - 사용자 ID
+     * @param {Object} networkData - 네트워크 데이터 { nodes: [], links: [] }
+     */
+    async saveCompanyNetworkV2(userId, networkData) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            console.log('💾 [V2] 통합 업체 관계도 저장 시작:', {
+                userId,
+                nodesCount: networkData.nodes?.length,
+                linksCount: networkData.links?.length
+            });
+
+            const userIdStr = String(userId);
+            const savedNodes = new Map(); // name -> node_id 매핑
+
+            // 1) 노드 저장 (upsert)
+            for (const node of (networkData.nodes || [])) {
+                const isRegistered = node.isRegistered === true || node.is_registered === true;
+                const companyId = node.companyId || node.company_id || null;
+                const displayName = node.name || node.label || '미상';
+
+                let existingNode = null;
+
+                if (isRegistered && companyId) {
+                    // 등록 업체: company_id로 조회
+                    const { data } = await this.client
+                        .from('company_nodes')
+                        .select('id')
+                        .eq('user_id', userIdStr)
+                        .eq('is_registered', true)
+                        .eq('company_id', companyId)
+                        .single();
+                    existingNode = data;
+                } else {
+                    // 미등록 업체: display_name_norm으로 조회
+                    const { data } = await this.client
+                        .from('company_nodes')
+                        .select('id')
+                        .eq('user_id', userIdStr)
+                        .eq('is_registered', false)
+                        .eq('display_name_norm', displayName.toLowerCase().trim())
+                        .single();
+                    existingNode = data;
+                }
+
+                if (existingNode) {
+                    // 기존 노드 업데이트
+                    await this.client
+                        .from('company_nodes')
+                        .update({ display_name: displayName, updated_at: new Date().toISOString() })
+                        .eq('id', existingNode.id);
+                    savedNodes.set(node.id || displayName, existingNode.id);
+                    console.log('📝 노드 업데이트:', displayName, existingNode.id);
+                } else {
+                    // 새 노드 생성
+                    const { data: newNode, error } = await this.client
+                        .from('company_nodes')
+                        .insert({
+                            user_id: userIdStr,
+                            is_registered: isRegistered,
+                            company_id: isRegistered ? companyId : null,
+                            display_name: displayName
+                        })
+                        .select('id')
+                        .single();
+
+                    if (error) {
+                        console.warn('노드 생성 오류 (중복일 수 있음):', error);
+                        // 중복 에러일 경우 다시 조회
+                        const { data: retryNode } = await this.client
+                            .from('company_nodes')
+                            .select('id')
+                            .eq('user_id', userIdStr)
+                            .eq('display_name_norm', displayName.toLowerCase().trim())
+                            .single();
+                        if (retryNode) {
+                            savedNodes.set(node.id || displayName, retryNode.id);
+                        }
+                    } else {
+                        savedNodes.set(node.id || displayName, newNode.id);
+                        console.log('✅ 노드 생성:', displayName, newNode.id);
+                    }
+                }
+            }
+
+            // 2) 엣지 저장 (upsert)
+            let savedEdges = 0;
+            for (const link of (networkData.links || [])) {
+                const sourceId = link.source?.id || link.source;
+                const targetId = link.target?.id || link.target;
+
+                const fromNodeId = savedNodes.get(sourceId);
+                const toNodeId = savedNodes.get(targetId);
+
+                if (!fromNodeId || !toNodeId) {
+                    console.warn('엣지 저장 스킵 - 노드 없음:', sourceId, '->', targetId);
+                    continue;
+                }
+
+                if (fromNodeId === toNodeId) {
+                    console.warn('엣지 저장 스킵 - 자기 참조:', sourceId);
+                    continue;
+                }
+
+                const relationshipType = link.type || link.relationship_type || '협력';
+                const directed = link.directed !== false; // 기본값 true
+                const strength = link.strength || 3;
+                const properties = link.properties || {};
+                const fromPosition = link.fromPosition || link.source_position || null;
+                const toPosition = link.toPosition || link.target_position || null;
+
+                // upsert 시도 (중복 시 업데이트)
+                const { error } = await this.client
+                    .from('company_relationships_v2')
+                    .upsert({
+                        user_id: userIdStr,
+                        from_node_id: fromNodeId,
+                        to_node_id: toNodeId,
+                        relationship_type: relationshipType,
+                        directed: directed,
+                        strength: strength,
+                        status: 'active',
+                        properties: properties,
+                        from_position: fromPosition,
+                        to_position: toPosition,
+                        updated_at: new Date().toISOString()
+                    }, {
+                        onConflict: directed
+                            ? 'user_id,from_node_id,to_node_id,relationship_type'
+                            : 'user_id,a_node_id,b_node_id,relationship_type',
+                        ignoreDuplicates: false
+                    });
+
+                if (error) {
+                    console.warn('엣지 저장 오류:', error);
+                } else {
+                    savedEdges++;
+                }
+            }
+
+            console.log('✅ [V2] 저장 완료 - 노드:', savedNodes.size, '엣지:', savedEdges);
+            return {
+                success: true,
+                nodesCount: savedNodes.size,
+                edgesCount: savedEdges
+            };
+
+        } catch (error) {
+            console.error('❌ [V2] 통합 업체 관계도 저장 오류:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 통합 업체 관계도 조회 (V2) - RPC 함수 호출
+     * @param {string} userId - 사용자 ID (RLS에서 사용)
+     * @param {boolean} centerIsRegistered - 중심 업체 등록 여부
+     * @param {number|null} centerCompanyId - 중심 업체 ID (등록 업체인 경우)
+     * @param {string|null} centerCompanyName - 중심 업체 이름 (미등록인 경우)
+     * @param {boolean} includeInactive - 비활성 관계 포함 여부
+     * @param {number} hopLevel - 1 또는 2 (기본값: 1)
+     */
+    async getCompanyGraphV2(centerIsRegistered, centerCompanyId = null, centerCompanyName = null, includeInactive = false, hopLevel = 1) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            console.log('📊 [V2] 통합 업체 관계도 조회:', {
+                centerIsRegistered,
+                centerCompanyId,
+                centerCompanyName,
+                hopLevel
+            });
+
+            const rpcName = hopLevel === 2 ? 'get_company_graph_2hop' : 'get_company_graph_1hop';
+
+            const params = {
+                p_center_is_registered: centerIsRegistered,
+                p_center_company_id: centerCompanyId,
+                p_center_company_name: centerCompanyName,
+                p_include_inactive: includeInactive
+            };
+
+            if (hopLevel === 2) {
+                params.p_max_edges = 2000;
+            }
+
+            const { data, error } = await this.client.rpc(rpcName, params);
+
+            if (error) {
+                console.error('RPC 호출 오류:', error);
+                throw error;
+            }
+
+            console.log('✅ [V2] 그래프 조회 완료:', {
+                centerNodeId: data?.centerNodeId,
+                nodesCount: data?.nodes?.length,
+                edgesCount: data?.edges?.length
+            });
+
+            // D3.js 형식으로 변환
+            const nodes = (data?.nodes || []).map(n => ({
+                id: n.id,
+                name: n.name,
+                companyId: n.companyId,
+                isRegistered: n.isRegistered,
+                region: n.region,
+                address: n.address,
+                phone: n.phone,
+                isCenter: n.id === data?.centerNodeId
+            }));
+
+            const links = (data?.edges || []).map(e => ({
+                id: e.id,
+                source: e.from,
+                target: e.to,
+                type: e.type,
+                directed: e.directed,
+                strength: e.strength,
+                status: e.status,
+                properties: e.properties,
+                fromPosition: e.fromPosition,
+                toPosition: e.toPosition
+            }));
+
+            return {
+                centerNodeId: data?.centerNodeId,
+                nodes: nodes,
+                links: links
+            };
+
+        } catch (error) {
+            console.error('❌ [V2] 통합 업체 관계도 조회 오류:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 통합 업체 관계도에서 관계 삭제 (V2)
+     * @param {string} edgeId - 삭제할 관계 ID
+     */
+    async deleteCompanyRelationshipV2(edgeId) {
+        if (!this.client) {
+            throw new Error('데이터베이스 연결이 필요합니다.');
+        }
+
+        try {
+            const { error } = await this.client
+                .from('company_relationships_v2')
+                .delete()
+                .eq('id', edgeId);
+
+            if (error) throw error;
+
+            console.log('✅ [V2] 관계 삭제 완료:', edgeId);
+            return { success: true };
+
+        } catch (error) {
+            console.error('❌ [V2] 관계 삭제 오류:', error);
+            throw error;
+        }
+    }
+
     // ==================== PDF 파일 관리 ====================
     
     // 업체의 PDF 파일 존재 여부 확인
