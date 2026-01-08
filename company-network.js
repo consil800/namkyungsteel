@@ -1080,7 +1080,10 @@ async function loadExistingNetwork() {
 
         // 로드된 노드 추가 (중심 노드 제외)
         for (const node of graphData.nodes) {
-            if (node.isCenter) {
+            // centerNodeId와 비교하여 중심 노드 판별
+            const isCenter = node.id === graphData.centerNodeId;
+
+            if (isCenter) {
                 // 중심 노드는 기존 것 유지하되 UUID 저장
                 if (centerNode) {
                     centerNode.nodeId = node.id; // UUID 저장
@@ -1117,10 +1120,16 @@ async function loadExistingNetwork() {
 
             if (!sourceNode || !targetNode) continue;
 
+            // D3 노드 ID 매핑: 중심 노드는 company_${id}, 나머지는 이름 사용
+            const sourceIsCenter = link.source === graphData.centerNodeId;
+            const targetIsCenter = link.target === graphData.centerNodeId;
+            const sourceId = sourceIsCenter ? `company_${centerCompany.id}` : sourceNode.name;
+            const targetId = targetIsCenter ? `company_${centerCompany.id}` : targetNode.name;
+
             networkData.links.push({
                 id: link.id,
-                source: sourceNode.name,
-                target: targetNode.name,
+                source: sourceId,
+                target: targetId,
                 type: link.type,
                 label: link.type,
                 directed: link.directed,
