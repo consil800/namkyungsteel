@@ -473,9 +473,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             let companies = [];
-            
-            // 캐시된 업체 검색만 수행 (전체 목록 로드 제거)
-            if (region || companyName) {
+
+            // 캐시된 업체 검색 수행
+            if (region === 'all') {
+                // '전체 지역' 선택 시 모든 업체 로드
+                companies = await window.cachedDataLoader.searchCompanies('', companyName, currentUser.id);
+                console.log(`🔍 전체 지역 검색 결과: ${companies.length}개`);
+            } else if (region || companyName) {
                 companies = await window.cachedDataLoader.searchCompanies(region, companyName, currentUser.id);
                 console.log(`🔍 검색 결과: ${companies.length}개`);
             } else {

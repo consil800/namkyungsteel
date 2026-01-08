@@ -686,11 +686,12 @@ async function checkBusinessNoDuplicate(businessNo) {
     try {
         const normalized = normalizeBusinessNo(businessNo);
 
-        // Supabase에서 동일 사업자번호 검색
+        // Supabase에서 동일 사업자번호 검색 (같은 user_id 내에서만)
         const { data, error } = await window.db.client
             .from('client_companies')
             .select('id, company_name')
             .eq('business_no', normalized)
+            .eq('user_id', currentUser.id)
             .limit(1);
 
         if (error) {
