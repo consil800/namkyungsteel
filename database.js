@@ -2811,32 +2811,76 @@ class DatabaseManager {
                 const fromPosition = link.fromPosition || link.source_position || null;
                 const toPosition = link.toPosition || link.target_position || null;
 
-                // upsert 시도 (중복 시 업데이트)
-                const { error } = await this.client
-                    .from('company_relationships_v2')
-                    .upsert({
-                        user_id: userIdStr,
-                        from_node_id: fromNodeId,
-                        to_node_id: toNodeId,
-                        relationship_type: relationshipType,
-                        directed: directed,
-                        strength: strength,
-                        status: 'active',
-                        properties: properties,
-                        from_position: fromPosition,
-                        to_position: toPosition,
-                        updated_at: new Date().toISOString()
-                    }, {
-                        onConflict: directed
-                            ? 'user_id,from_node_id,to_node_id,relationship_type'
-                            : 'user_id,a_node_id,b_node_id,relationship_type',
-                        ignoreDuplicates: false
-                    });
+                // 기존 엣지 조회 후 insert/update (partial unique index 대응)
+                // directed 여부에 따라 중복 체크 방식이 다름
+                let existingEdge = null;
+
+                if (directed) {
+                    // 방향 관계: from→to 정확히 일치해야 중복
+                    const { data } = await this.client
+                        .from('company_relationships_v2')
+                        .select('id')
+                        .eq('user_id', userIdStr)
+                        .eq('from_node_id', fromNodeId)
+                        .eq('to_node_id', toNodeId)
+                        .eq('relationship_type', relationshipType)
+                        .eq('directed', true)
+                        .limit(1)
+                        .maybeSingle();
+                    existingEdge = data;
+                } else {
+                    // 무방향 관계: A-B == B-A (양방향 모두 체크)
+                    const { data } = await this.client
+                        .from('company_relationships_v2')
+                        .select('id')
+                        .eq('user_id', userIdStr)
+                        .eq('relationship_type', relationshipType)
+                        .eq('directed', false)
+                        .or(`and(from_node_id.eq.${fromNodeId},to_node_id.eq.${toNodeId}),and(from_node_id.eq.${toNodeId},to_node_id.eq.${fromNodeId})`)
+                        .limit(1)
+                        .maybeSingle();
+                    existingEdge = data;
+                }
+
+                let error = null;
+                if (existingEdge) {
+                    // UPDATE
+                    const { error: updateError } = await this.client
+                        .from('company_relationships_v2')
+                        .update({
+                            strength: strength,
+                            status: 'active',
+                            properties: properties,
+                            from_position: fromPosition,
+                            to_position: toPosition,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', existingEdge.id);
+                    error = updateError;
+                } else {
+                    // INSERT
+                    const { error: insertError } = await this.client
+                        .from('company_relationships_v2')
+                        .insert({
+                            user_id: userIdStr,
+                            from_node_id: fromNodeId,
+                            to_node_id: toNodeId,
+                            relationship_type: relationshipType,
+                            directed: directed,
+                            strength: strength,
+                            status: 'active',
+                            properties: properties,
+                            from_position: fromPosition,
+                            to_position: toPosition
+                        });
+                    error = insertError;
+                }
 
                 if (error) {
                     console.warn('엣지 저장 오류:', error);
                 } else {
                     savedEdges++;
+                    console.log('✅ 엣지 저장:', relationshipType, fromNodeId, '→', toNodeId);
                 }
             }
 

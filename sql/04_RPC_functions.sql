@@ -14,7 +14,7 @@ create or replace function resolve_center_node_id(
 language plpgsql
 as $$
 declare
-  v_user_id text := auth.uid()::text;
+  v_user_id text := get_app_user_id();
   v_node_id uuid;
 begin
   if v_user_id is null then
@@ -58,7 +58,7 @@ create or replace function get_company_graph_1hop(
 language plpgsql
 as $$
 declare
-  v_user_id text := auth.uid()::text;
+  v_user_id text := get_app_user_id();
   v_center uuid;
   v_edges jsonb;
   v_nodes jsonb;
@@ -160,7 +160,7 @@ create or replace function get_company_graph_2hop(
 language plpgsql
 as $$
 declare
-  v_user_id text := auth.uid()::text;
+  v_user_id text := get_app_user_id();
   v_center uuid;
   v_nodes jsonb;
   v_edges jsonb;
