@@ -76,6 +76,12 @@ const state = {
   // ===== v5.1 상태 변수 (2026-01-05 ChatGPT + Claude 협업) =====
   regionCooldown: new Map(),  // 지역별 마지막 배정일 (region -> dateIdx)
   monthlyVisits: new Map(),   // 업체별 월간 방문 횟수 (companyId -> count)
+  // ===== v6.2 고정 업체 기능 (2026-01-10 ChatGPT + Claude Ultra Think 협업) =====
+  pinnedMode: false,              // 고정 모드 활성화 여부
+  pinnedCompanies: [],            // [{companyId, date, companyName}]
+  pinnedByCompany: new Map(),     // companyId -> date (빠른 조회용)
+  pinnedByDate: new Map(),        // date -> Set<companyId> (날짜별 고정 업체)
+  pinDirty: false,                // 고정 데이터 변경 여부
 };
 
 // ===== DOM 요소 =====
@@ -343,6 +349,307 @@ function getMondayFridayNearbyBonus(date, region) {
  */
 function getMonthKey(dateStr) {
   return dateStr.substring(0, 7); // "2026-01-15" -> "2026-01"
+}
+
+// ===== v6.2 고정 업체 헬퍼 함수 (ChatGPT + Claude Ultra Think 협업 2026-01-10) =====
+
+/**
+ * 고정 업체 인덱스 재구성 (pinnedCompanies 배열 → Map 변환)
+ * 스케줄 생성 전 호출하여 빠른 조회 가능하게 함
+ */
+function rebuildPinIndex() {
+  state.pinnedByCompany.clear();
+  state.pinnedByDate.clear();
+
+  for (const pin of state.pinnedCompanies) {
+    // companyId -> date 매핑
+    state.pinnedByCompany.set(pin.companyId, pin.date);
+
+    // date -> Set<companyId> 매핑
+    if (!state.pinnedByDate.has(pin.date)) {
+      state.pinnedByDate.set(pin.date, new Set());
+    }
+    state.pinnedByDate.get(pin.date).add(pin.companyId);
+  }
+
+  console.log(`📌 고정 인덱스 구축: ${state.pinnedCompanies.length}개 업체`);
+}
+
+/**
+ * 고정 업체를 스케줄에 먼저 배정하고 후보에서 제외
+ * @param {Array} schedule - 스케줄 배열 [{date, companies, ...}]
+ * @param {Array} remainingPool - 남은 업체 풀
+ * @param {Map} companyMap - companyId -> company 객체 맵
+ * @returns {Array} - 고정 업체가 제외된 업체 풀
+ */
+function applyPinsToSchedule(schedule, remainingPool, companyMap) {
+  if (state.pinnedCompanies.length === 0) {
+    console.log('📌 고정 업체 없음 - 일반 알고리즘 진행');
+    return remainingPool;
+  }
+
+  console.log('');
+  console.log('📌 ===== 고정 업체 배정 시작 =====');
+
+  const pinnedIds = new Set();
+  let appliedCount = 0;
+
+  // 날짜별로 고정 업체 배정
+  for (const day of schedule) {
+    const pinnedForDate = state.pinnedByDate.get(day.date);
+    if (!pinnedForDate || pinnedForDate.size === 0) continue;
+
+    for (const companyId of pinnedForDate) {
+      const company = companyMap.get(companyId);
+      if (!company) {
+        console.warn(`  ⚠️ 고정 업체 ID ${companyId}를 찾을 수 없음 (필터에서 제외됨?)`);
+        continue;
+      }
+
+      // 이미 companies 배열이 없으면 초기화
+      if (!day.companies) {
+        day.companies = [];
+      }
+
+      // 중복 방지
+      if (!day.companies.find(c => c.id === companyId)) {
+        day.companies.push({
+          ...company,
+          _isPinned: true  // 고정 표시
+        });
+        pinnedIds.add(companyId);
+        appliedCount++;
+        console.log(`  📍 ${day.date}: ${company.company_name} (고정)`);
+      }
+    }
+  }
+
+  console.log(`📌 고정 업체 ${appliedCount}개 배정 완료`);
+  console.log('');
+
+  // 고정된 업체를 후보에서 제외
+  return remainingPool.filter(c => !pinnedIds.has(c.id));
+}
+
+/**
+ * 업체를 특정 날짜에 고정
+ * @param {number} companyId - 업체 ID
+ * @param {string} date - 날짜 (YYYY-MM-DD)
+ * @param {string} companyName - 업체명 (UI 표시용)
+ */
+function setPinned(companyId, date, companyName) {
+  // 이미 고정된 경우 날짜만 변경
+  const existingIdx = state.pinnedCompanies.findIndex(p => p.companyId === companyId);
+  if (existingIdx !== -1) {
+    state.pinnedCompanies[existingIdx].date = date;
+  } else {
+    state.pinnedCompanies.push({ companyId, date, companyName });
+  }
+
+  rebuildPinIndex();
+  state.pinDirty = true;
+  renderPinnedList();
+  updatePinBadge();
+
+  console.log(`📌 고정 설정: ${companyName} → ${date}`);
+  toast(`${companyName}을(를) ${date}에 고정했습니다.`);
+}
+
+/**
+ * 업체 고정 해제
+ * @param {number} companyId - 업체 ID
+ */
+function removePinned(companyId) {
+  const idx = state.pinnedCompanies.findIndex(p => p.companyId === companyId);
+  if (idx === -1) return;
+
+  const removed = state.pinnedCompanies.splice(idx, 1)[0];
+  rebuildPinIndex();
+  state.pinDirty = true;
+  renderPinnedList();
+  updatePinBadge();
+
+  console.log(`📌 고정 해제: ${removed.companyName}`);
+  toast(`${removed.companyName} 고정이 해제되었습니다.`);
+}
+
+/**
+ * 모든 고정 해제
+ */
+function clearAllPins() {
+  if (state.pinnedCompanies.length === 0) return;
+
+  const count = state.pinnedCompanies.length;
+  state.pinnedCompanies = [];
+  rebuildPinIndex();
+  state.pinDirty = true;
+  renderPinnedList();
+  updatePinBadge();
+
+  console.log(`📌 모든 고정 해제: ${count}개`);
+  toast(`${count}개 업체 고정이 해제되었습니다.`);
+}
+
+/**
+ * 고정 업체 목록 UI 렌더링
+ */
+function renderPinnedList() {
+  const container = document.getElementById('pinnedList');
+  if (!container) return;
+
+  if (state.pinnedCompanies.length === 0) {
+    container.innerHTML = '<div class="hint">고정된 업체가 없습니다.</div>';
+    return;
+  }
+
+  // 날짜순 정렬
+  const sorted = [...state.pinnedCompanies].sort((a, b) => a.date.localeCompare(b.date));
+
+  container.innerHTML = sorted.map(pin => `
+    <div class="pinned-item" data-company-id="${pin.companyId}">
+      <span class="pinned-date">${pin.date}</span>
+      <span class="pinned-name">${pin.companyName}</span>
+      <button class="btn-remove-pin" onclick="removePinned(${pin.companyId})" title="고정 해제">×</button>
+    </div>
+  `).join('');
+}
+
+/**
+ * 고정 개수 배지 업데이트
+ */
+function updatePinBadge() {
+  const badge = document.getElementById('pinBadge');
+  if (!badge) return;
+
+  const count = state.pinnedCompanies.length;
+  badge.textContent = count;
+  badge.style.display = count > 0 ? 'inline-block' : 'none';
+}
+
+/**
+ * 고정 모드 토글
+ */
+function togglePinMode() {
+  state.pinnedMode = !state.pinnedMode;
+
+  const btn = document.getElementById('btnPinMode');
+  if (btn) {
+    btn.classList.toggle('active', state.pinnedMode);
+    btn.textContent = state.pinnedMode ? '📌 고정 모드 ON' : '📌 고정 모드';
+  }
+
+  // 고정 모드일 때 날짜 선택 UI 표시
+  const dateSelector = document.getElementById('pinDateSelector');
+  if (dateSelector) {
+    dateSelector.style.display = state.pinnedMode ? 'block' : 'none';
+  }
+
+  // 업체 목록 표시/숨김
+  const companyList = document.getElementById('pinCompanyList');
+  if (companyList) {
+    companyList.style.display = state.pinnedMode ? 'block' : 'none';
+    if (state.pinnedMode) {
+      renderPinCompanyList();
+    }
+  }
+
+  console.log(`📌 고정 모드: ${state.pinnedMode ? 'ON' : 'OFF'}`);
+}
+
+/**
+ * 고정용 업체 목록 렌더링
+ */
+function renderPinCompanyList() {
+  const container = document.getElementById('pinCompanyList');
+  if (!container) return;
+
+  // 검색어 가져오기
+  const searchInput = document.getElementById('pinCompanySearch');
+  const keyword = (searchInput?.value || '').toLowerCase().trim();
+
+  // 필터링된 업체 가져오기 (현재 필터 기준 + 좌표 있는 업체)
+  let companies = state.companies.filter(c => c.latitude && c.longitude);
+
+  // 검색어 필터
+  if (keyword) {
+    companies = companies.filter(c =>
+      (c.company_name || '').toLowerCase().includes(keyword)
+    );
+  }
+
+  // 최대 50개만 표시
+  companies = companies.slice(0, 50);
+
+  if (companies.length === 0) {
+    container.innerHTML = '<div class="hint" style="padding:10px;">검색 결과가 없습니다.</div>';
+    return;
+  }
+
+  container.innerHTML = companies.map(c => {
+    const isPinned = state.pinnedByCompany.has(c.id);
+    const pinnedDate = state.pinnedByCompany.get(c.id);
+    const colorInfo = COLOR_MAP[c.color_code] || { cssClass: 'gray' };
+
+    return `
+      <div class="pin-company-item ${isPinned ? 'is-pinned' : ''}"
+           data-id="${c.id}"
+           data-name="${c.company_name}"
+           onclick="handlePinCompanyClick(${c.id}, '${(c.company_name || '').replace(/'/g, "\\'")}')">
+        <span class="dot ${colorInfo.cssClass}"></span>
+        <span class="company-name">${c.company_name}</span>
+        <span class="company-region">${c.region || ''}</span>
+        ${isPinned ? `<span style="color:#f59e0b;">📌 ${pinnedDate}</span>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+/**
+ * 고정용 업체 클릭 핸들러
+ */
+function handlePinCompanyClick(companyId, companyName) {
+  const pinDate = document.getElementById('pinDateInput')?.value;
+
+  if (!pinDate) {
+    toast('먼저 고정할 날짜를 선택하세요.');
+    return;
+  }
+
+  // 이미 해당 날짜에 고정되어 있으면 해제
+  const existing = state.pinnedCompanies.find(p => p.companyId === companyId);
+  if (existing && existing.date === pinDate) {
+    removePinned(companyId);
+  } else {
+    setPinned(companyId, pinDate, companyName);
+  }
+
+  // 목록 다시 렌더링
+  renderPinCompanyList();
+}
+
+/**
+ * 업체 카드 클릭 시 고정 처리 (고정 모드일 때만)
+ * @param {number} companyId - 업체 ID
+ * @param {string} companyName - 업체명
+ */
+function handleCompanyCardClick(companyId, companyName) {
+  if (!state.pinnedMode) return false;
+
+  const pinDate = document.getElementById('pinDateInput')?.value;
+  if (!pinDate) {
+    toast('먼저 고정할 날짜를 선택하세요.');
+    return true;  // 이벤트 처리됨
+  }
+
+  // 이미 해당 날짜에 고정되어 있으면 해제
+  const existing = state.pinnedCompanies.find(p => p.companyId === companyId);
+  if (existing && existing.date === pinDate) {
+    removePinned(companyId);
+  } else {
+    setPinned(companyId, pinDate, companyName);
+  }
+
+  return true;  // 이벤트 처리됨
 }
 
 // ===== v6.0 헬퍼 함수 (ChatGPT + Claude Ultra Think 협업 2026-01-05) =====
@@ -754,6 +1061,27 @@ async function generateScheduleV6() {
     let remainingPool = [...companiesWithCoords];
     const assignedIds = new Set();
     let totalAssigned = 0;
+
+    // ===== 4.5 고정 업체 처리 (v6.2 ChatGPT + Claude 협업) =====
+    // 고정 인덱스 재구성
+    rebuildPinIndex();
+
+    // 업체 ID → 객체 맵 생성 (applyPinsToSchedule에서 사용)
+    const companyMap = new Map();
+    companiesWithCoords.forEach(c => companyMap.set(c.id, c));
+
+    // 고정 업체를 스케줄에 먼저 배정하고 후보에서 제외
+    remainingPool = applyPinsToSchedule(allDays, remainingPool, companyMap);
+
+    // 고정된 업체는 assignedIds에 추가
+    for (const pin of state.pinnedCompanies) {
+      if (companyMap.has(pin.companyId)) {
+        assignedIds.add(pin.companyId);
+        totalAssigned++;
+      }
+    }
+
+    console.log(`📊 고정 후 남은 후보: ${remainingPool.length}개`);
 
     // ===== 5. 날짜별 배정 루프 =====
     for (let dayIdx = 0; dayIdx < workdays.length; dayIdx++) {
@@ -2439,11 +2767,16 @@ function renderCompanyItem(company, index = 0, prevCompany = null) {
     }
   }
 
+  // v6.2: 고정 업체 표시
+  const isPinned = company._isPinned || false;
+  const pinnedClass = isPinned ? 'pinned' : '';
+  const pinnedIcon = isPinned ? '<span class="pin-icon" title="고정된 업체">📌</span>' : '';
+
   return `
-    <li class="company-item" data-id="${company.id}" title="색상: ${colorInfo.name} | 마지막방문: ${company.last_visit_date || '없음'} | 횟수: ${visitCount}회">
+    <li class="company-item ${pinnedClass}" data-id="${company.id}" title="색상: ${colorInfo.name} | 마지막방문: ${company.last_visit_date || '없음'} | 횟수: ${visitCount}회${isPinned ? ' | 📌 고정' : ''}">
       <span class="order-num">${orderNum}</span>
       <span class="dot ${colorInfo.cssClass}"></span>
-      <span>${company.company_name}</span>
+      <span>${company.company_name}${pinnedIcon}</span>
       ${distanceInfo}
       <span class="visit-info">${visitInfo} (${visitCount}회)</span>
       <span class="sub">${company.region || ''}</span>
@@ -2631,21 +2964,27 @@ async function saveSchedule() {
 
     // 스케줄 데이터 정리 (필요한 필드만 저장)
     // ChatGPT 검증 반영: || null → ?? null (0 값 보존), day.companies ?? [] (방어적 코딩)
-    const scheduleData = state.schedule.map(day => ({
-      date: day.date,
-      isOff: day.isOff || false,
-      isWeekend: day.isWeekend || false,
-      isHoliday: day.isHoliday || false,
-      holidayName: day.holidayName ?? null,
-      companies: (day.companies ?? []).map(c => ({
-        id: c.id,
-        name: c.name,
-        region: c.region ?? null,
-        address: c.address ?? null,
-        color: c.color ?? null,
-        distance_km: c.distance_km ?? null  // 0km도 유효한 값이므로 ?? 사용
-      }))
-    }));
+    // v6.2: _isPinned 플래그 추가 (2026-01-10)
+    const scheduleData = {
+      version: '6.2-pinned',  // 버전 표시
+      days: state.schedule.map(day => ({
+        date: day.date,
+        isOff: day.isOff || false,
+        isWeekend: day.isWeekend || false,
+        isHoliday: day.isHoliday || false,
+        holidayName: day.holidayName ?? null,
+        companies: (day.companies ?? []).map(c => ({
+          id: c.id,
+          name: c.name,
+          region: c.region ?? null,
+          address: c.address ?? null,
+          color: c.color ?? null,
+          distance_km: c.distance_km ?? null,
+          _isPinned: c._isPinned || false  // v6.2: 고정 여부
+        }))
+      })),
+      pinnedCompanies: state.pinnedCompanies  // v6.2: 고정 업체 목록
+    };
 
     // 플랜 이름 생성 (년-월 형식)
     const planName = `${startDate.substring(0, 7)} 방문 스케줄`;
@@ -2884,7 +3223,26 @@ async function loadSelectedSchedule() {
 
 // 불러온 스케줄 데이터를 state에 적용
 function applyLoadedSchedule(plan) {
-  const scheduleData = plan.schedule_data;
+  const rawData = plan.schedule_data;
+
+  // v6.2: 신규 형식 (객체) vs 기존 형식 (배열) 호환
+  let scheduleData;
+  let savedPinnedCompanies = [];
+
+  if (Array.isArray(rawData)) {
+    // 기존 형식: 배열 그대로
+    scheduleData = rawData;
+    console.log('📁 기존 형식 스케줄 로드 (v6.1 이하)');
+  } else if (rawData && rawData.days) {
+    // v6.2 신규 형식: 객체
+    scheduleData = rawData.days;
+    savedPinnedCompanies = rawData.pinnedCompanies || [];
+    console.log(`📁 v6.2 형식 스케줄 로드 (고정 업체 ${savedPinnedCompanies.length}개)`);
+  } else {
+    console.error('❌ 알 수 없는 스케줄 형식:', rawData);
+    toast('스케줄 형식을 인식할 수 없습니다.');
+    return;
+  }
 
   // 날짜 범위 설정
   el.startDate.value = plan.start_date;
@@ -2900,7 +3258,8 @@ function applyLoadedSchedule(plan) {
         // 최신 업체 정보 사용 (좌표 등 포함)
         return {
           ...fullCompany,
-          distance_km: savedCompany.distance_km ?? fullCompany.distance_km ?? null
+          distance_km: savedCompany.distance_km ?? fullCompany.distance_km ?? null,
+          _isPinned: savedCompany._isPinned || false  // v6.2: 고정 여부 복원
         };
       }
       // 매칭 안되면 저장된 정보 그대로 사용
@@ -2916,6 +3275,13 @@ function applyLoadedSchedule(plan) {
       companies: companies
     };
   });
+
+  // v6.2: 고정 업체 복원
+  state.pinnedCompanies = savedPinnedCompanies;
+  rebuildPinIndex();
+  renderPinnedList();
+  updatePinBadge();
+  console.log(`📌 고정 업체 복원: ${savedPinnedCompanies.length}개`);
 
   // 미배정 업체 계산 (스케줄에 배정된 업체 제외)
   const assignedIds = new Set();

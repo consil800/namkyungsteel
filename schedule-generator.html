@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ko">
 <head>
-  <!-- CDN Cache Bust: 2026-01-03T18:50:00 -->
+  <!-- CDN Cache Bust: 2026-01-10T00:00:00 v6.2-pinned -->
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>업체 방문 스케줄 자동 생성</title>
@@ -353,6 +353,173 @@
       display:flex;
       flex-wrap:wrap;
       gap:8px;
+    }
+
+    /* ===== v6.2 고정 업체 UI (2026-01-10) ===== */
+    .pin-section{
+      background:#fffbeb;
+      border:1px solid #fcd34d;
+      border-radius:12px;
+      padding:12px;
+      margin-top:12px;
+    }
+    .pin-section .pin-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:10px;
+    }
+    .pin-section .pin-title{
+      font-weight:700;
+      font-size:14px;
+      color:#92400e;
+    }
+    .btn-pin-mode{
+      background:#fef3c7;
+      border:1px solid #fcd34d;
+      color:#92400e;
+      padding:6px 12px;
+      border-radius:8px;
+      cursor:pointer;
+      font-weight:600;
+      font-size:12px;
+      transition:all .2s;
+    }
+    .btn-pin-mode:hover{
+      background:#fde68a;
+    }
+    .btn-pin-mode.active{
+      background:#f59e0b;
+      color:#fff;
+      border-color:#d97706;
+    }
+    .pin-badge{
+      background:#ef4444;
+      color:#fff;
+      font-size:10px;
+      font-weight:700;
+      padding:2px 6px;
+      border-radius:999px;
+      margin-left:6px;
+      display:none;
+    }
+    .pin-date-selector{
+      display:none;
+      margin-top:10px;
+    }
+    .pin-date-selector label{
+      margin-bottom:4px;
+    }
+    .pinned-list{
+      margin-top:10px;
+      max-height:150px;
+      overflow-y:auto;
+    }
+    .pinned-item{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 8px;
+      background:#fff;
+      border:1px solid #e5e7eb;
+      border-radius:8px;
+      margin-bottom:6px;
+      font-size:12px;
+    }
+    .pinned-date{
+      color:#059669;
+      font-weight:600;
+      min-width:90px;
+    }
+    .pinned-name{
+      flex:1;
+      color:#374151;
+    }
+    .btn-remove-pin{
+      background:#fee2e2;
+      border:1px solid #fecaca;
+      color:#dc2626;
+      width:20px;
+      height:20px;
+      border-radius:50%;
+      cursor:pointer;
+      font-size:14px;
+      line-height:1;
+      padding:0;
+    }
+    .btn-remove-pin:hover{
+      background:#fecaca;
+    }
+    .btn-clear-pins{
+      background:#fee2e2;
+      border:1px solid #fecaca;
+      color:#dc2626;
+      padding:4px 10px;
+      border-radius:6px;
+      cursor:pointer;
+      font-size:11px;
+      font-weight:600;
+    }
+    .btn-clear-pins:hover{
+      background:#fecaca;
+    }
+    /* 고정된 업체 카드 표시 */
+    .company-card.pinned,
+    .company-item.pinned{
+      border-left:3px solid #f59e0b;
+      background:#fffbeb;
+    }
+    .company-card .pin-icon,
+    .company-item .pin-icon{
+      color:#f59e0b;
+      margin-left:4px;
+    }
+    /* 고정용 업체 목록 */
+    .pin-company-list{
+      max-height:200px;
+      overflow-y:auto;
+      border:1px solid #e5e7eb;
+      border-radius:8px;
+      margin-top:10px;
+      display:none;
+    }
+    .pin-company-item{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-bottom:1px solid #f3f4f6;
+      cursor:pointer;
+      font-size:12px;
+      transition:background .15s;
+    }
+    .pin-company-item:last-child{
+      border-bottom:none;
+    }
+    .pin-company-item:hover{
+      background:#fef3c7;
+    }
+    .pin-company-item.is-pinned{
+      background:#fef3c7;
+      border-left:3px solid #f59e0b;
+    }
+    .pin-company-item .company-name{
+      flex:1;
+      font-weight:500;
+    }
+    .pin-company-item .company-region{
+      color:#6b7280;
+      font-size:11px;
+    }
+    .pin-search-box{
+      margin-top:10px;
+    }
+    .pin-search-box input{
+      width:100%;
+      padding:8px 10px;
+      border:1px solid #e5e7eb;
+      border-radius:8px;
+      font-size:12px;
     }
 
     .toast{
@@ -835,6 +1002,43 @@
             기간/필터를 설정하면 "필요 일수 추정"이 표시됩니다.
           </div>
         </div>
+
+        <!-- ===== v6.2 고정 업체 섹션 (2026-01-10 ChatGPT + Claude 협업) ===== -->
+        <div class="section pin-section">
+          <div class="pin-header">
+            <span class="pin-title">📌 업체 고정 배정</span>
+            <div>
+              <button id="btnPinMode" class="btn-pin-mode" onclick="togglePinMode()">
+                📌 고정 모드
+              </button>
+              <span id="pinBadge" class="pin-badge">0</span>
+            </div>
+          </div>
+
+          <div id="pinDateSelector" class="pin-date-selector">
+            <label>고정할 날짜 선택</label>
+            <input type="date" id="pinDateInput" />
+            <div class="hint" style="margin-top:6px;">
+              날짜 선택 후 아래 업체 목록에서 업체를 클릭하면 해당 날짜에 고정됩니다.
+            </div>
+
+            <div class="pin-search-box">
+              <input type="text" id="pinCompanySearch" placeholder="업체명 검색..." oninput="renderPinCompanyList()" />
+            </div>
+
+            <div id="pinCompanyList" class="pin-company-list">
+              <!-- 업체 목록이 여기에 렌더링됨 -->
+            </div>
+          </div>
+
+          <div id="pinnedList" class="pinned-list">
+            <div class="hint">고정된 업체가 없습니다.</div>
+          </div>
+
+          <div style="margin-top:8px; display:flex; justify-content:flex-end;">
+            <button class="btn-clear-pins" onclick="clearAllPins()">전체 고정 해제</button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -891,6 +1095,6 @@
   <script src="shared-assets/js/auth.js?v=20260104d"></script>
   <script src="database.js?v=20260104d"></script>
   <script src="route-optimizer.js?v=20260104k"></script>
-  <script src="schedule-generator.js?v=20260105-v63"></script>
+  <script src="schedule-generator.js?v=20260110-v62-pinned"></script>
 </body>
 </html>
