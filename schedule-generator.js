@@ -1145,8 +1145,8 @@ async function generateScheduleV6() {
 
       // ===== 5.2 클러스터 우선 선택 + Nearest Neighbor + 2-opt =====
       // v6.2: 고정 업체가 있으면 고정 업체를 seed로 사용하고 그 근처 업체 선택
-      const dayObj = dayMap.get(dateKey);
-      const pinnedForToday = dayObj?.companies?.filter(c => c._isPinned) || [];
+      const pinnedDayObj = dayMap.get(dateKey);
+      const pinnedForToday = pinnedDayObj?.companies?.filter(c => c._isPinned) || [];
 
       let clusteredCandidates;
       let seed;
