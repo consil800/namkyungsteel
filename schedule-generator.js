@@ -1158,8 +1158,9 @@ async function generateScheduleV6() {
         console.log(`  📌 고정 업체 기준 배정: ${seed.company_name} (${pinnedRegion})`);
 
         // v6.2.1: 같은 지역 업체 우선 배정
-        // 1단계: 같은 지역 업체 필터링
-        const sameRegionCandidates = candidates.filter(c => c.region === pinnedRegion);
+        // 1단계: 같은 지역 업체를 remainingPool 전체에서 필터링 (candidates가 아님!)
+        // 이유: candidates는 거리 기준으로 이미 필터링된 16개뿐이라 먼 지역 업체가 누락됨
+        const sameRegionCandidates = remainingPool.filter(c => c.region === pinnedRegion);
         const otherRegionCandidates = candidates.filter(c => c.region !== pinnedRegion);
 
         // 2단계: 같은 지역 업체를 거리순 정렬

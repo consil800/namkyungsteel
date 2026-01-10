@@ -1,26 +1,19 @@
 Claude
 "
-약간 수정할게 추가로 있다.
-사업자번호를 넣어서 중복이면 알림으로 '중복입니다' 이렇게 나오게 하는게 좋겠다.
+https://namkyungsteel.com/company-network.html?id=862&name=%ED%83%9C%EC%9D%BC%EC%86%A1%ED%92%8D%EA%B8%B0
+이 페이지에서 '업체 관계도' 버튼을 클릭해서
+https://namkyungsteel.com/company-network.html?id=862&name=%ED%83%9C%EC%9D%BC%EC%86%A1%ED%92%8D%EA%B8%B0
+이 페이지로 이동했는데 
+업체 관계를 설정하고 저장을 했는데 저장이 안된다.
 
-https://namkyungsteel.com/company-register.html
-이 페이지에서는 '업체명 *' 밑에 '사업자번호'를 넣어줘.
+그리고 이 업체관계도는 개별 업체가 나오는게 아니라 전체 업체가 저장이 되어서
+내가 '태일송풍기' 에서 업체관계도로 들어가면 '태일송풍기'가 중심에 있게 해서  관계도가 나오고
+'와이제이산업' 에서  업체관계도로 들어가면 '태일송풍기'가 중심에 있게 해서 관계도에 나오게 해서 
+모든 업체가 하나의 관계도에 나와서 한눈에 관계도 그래프를 볼 수 있게 해줘.
 
-https://namkyungsteel.com/company-detail.html?id=850&referrer=worklog.html%3Fcompany%3D%25ED%2595%2598%25EC%259D%25B4%25EC%25A7%2584%26exclude%3Dtrue
-이 페이지에서는 '업체명:' 밑에 '사업자번호:' 를 만들어서 사업자번호를 넣어줘.
+우선 너의 의견은 어떠냐?
 
-다시 한번 챗GPT와 협업해서 문서 작성해줘.
-
-지난 질문
-https://namkyungsteel.com/company-register.html
-이 페이지 '업체명 *' 위에 드레그 앤 드롭 할수 있는 공간을 만들어서 
-거기에 PDF파일을 드롭하면 자동으로
-방금과 같은 형식으로 업체명, 지역, 주소, 전화번호 가 입력되고 
-
-https://namkyungsteel.com/company-detail.html?id=850&referrer=worklog.html%3Fcompany%3D%25ED%2595%2598%25EC%259D%25B4%25EC%25A7%2584%26exclude%3Dtrue
-
-이 페이지처럼 'PDF 파일:' /html/body/div[1]/main/section[1]/div/div[17]
- 부분에 자동으로 방금 올린 PDF파일이 업로드 되게 할 수 있어?
-
-다시 챗GPT와 협업해서 알려줘.
+너랑 챗GPT가 협업해서 잘 생각해줘.
+챗GPT가 답변하면 넌 그게 맞는지 확인해서 나에게 말해줘
+Ultra Think해줘.
 "
