@@ -1144,20 +1144,53 @@ async function generateScheduleV6() {
       }
 
       // ===== 5.2 클러스터 우선 선택 + Nearest Neighbor + 2-opt =====
-      // v6.1: 같은 지역 업체 우선 배정 (ChatGPT 권장)
-      const clusteredCandidates = selectByClusterPriority(candidates, max);
+      // v6.2: 고정 업체가 있으면 고정 업체를 seed로 사용하고 그 근처 업체 선택
+      const dayObj = dayMap.get(dateKey);
+      const pinnedForToday = dayObj?.companies?.filter(c => c._isPinned) || [];
 
-      // Seed 선택: 클러스터 우선 후보 중 v6 점수가 가장 낮은 업체
-      clusteredCandidates.sort((a, b) => a._v6Score - b._v6Score);
-      const seed = clusteredCandidates[0];
-      todayAssigned.push(seed);
-      assignedIds.add(seed.id);
+      let clusteredCandidates;
+      let seed;
+
+      if (pinnedForToday.length > 0) {
+        // 고정 업체가 있는 경우: 고정 업체 중 첫 번째를 seed로 사용
+        seed = pinnedForToday[0];
+        console.log(`  📌 고정 업체 기준 배정: ${seed.company_name} (${seed.region})`);
+
+        // 후보 업체들을 고정 업체와의 거리 순으로 정렬
+        candidates.sort((a, b) => {
+          const distA = haversineDistance(
+            parseFloat(seed.latitude), parseFloat(seed.longitude),
+            parseFloat(a.latitude), parseFloat(a.longitude)
+          );
+          const distB = haversineDistance(
+            parseFloat(seed.latitude), parseFloat(seed.longitude),
+            parseFloat(b.latitude), parseFloat(b.longitude)
+          );
+          return distA - distB;
+        });
+
+        // 가까운 업체들만 선택 (max개까지)
+        clusteredCandidates = candidates.slice(0, max * 2);
+        console.log(`    → 고정 업체 근처 후보: ${clusteredCandidates.slice(0, 3).map(c => `${c.company_name}(${c.region})`).join(', ')}...`);
+      } else {
+        // 고정 업체가 없는 경우: 기존 로직 (v6.1 클러스터 우선)
+        clusteredCandidates = selectByClusterPriority(candidates, max);
+
+        // Seed 선택: 클러스터 우선 후보 중 v6 점수가 가장 낮은 업체
+        clusteredCandidates.sort((a, b) => a._v6Score - b._v6Score);
+        seed = clusteredCandidates[0];
+        todayAssigned.push(seed);
+        assignedIds.add(seed.id);
+      }
 
       // Nearest Neighbor로 나머지 채우기 (클러스터 우선 후보에서)
       let remaining = clusteredCandidates.filter(c => c.id !== seed.id);
       let current = seed;
 
-      while (todayAssigned.length < max && remaining.length > 0) {
+      // v6.2: 고정 업체 수만큼 배정 목표 조정
+      const adjustedMax = max - pinnedForToday.length;
+
+      while (todayAssigned.length < adjustedMax && remaining.length > 0) {
         // 거리 + v6 점수를 결합한 effectiveCost 계산
         let bestIdx = 0;
         let bestCost = Infinity;
