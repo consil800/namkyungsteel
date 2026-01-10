@@ -1154,10 +1154,16 @@ async function generateScheduleV6() {
       if (pinnedForToday.length > 0) {
         // 고정 업체가 있는 경우: 고정 업체 중 첫 번째를 seed로 사용
         seed = pinnedForToday[0];
-        console.log(`  📌 고정 업체 기준 배정: ${seed.company_name} (${seed.region})`);
+        const pinnedRegion = seed.region;
+        console.log(`  📌 고정 업체 기준 배정: ${seed.company_name} (${pinnedRegion})`);
 
-        // 후보 업체들을 고정 업체와의 거리 순으로 정렬
-        candidates.sort((a, b) => {
+        // v6.2.1: 같은 지역 업체 우선 배정
+        // 1단계: 같은 지역 업체 필터링
+        const sameRegionCandidates = candidates.filter(c => c.region === pinnedRegion);
+        const otherRegionCandidates = candidates.filter(c => c.region !== pinnedRegion);
+
+        // 2단계: 같은 지역 업체를 거리순 정렬
+        sameRegionCandidates.sort((a, b) => {
           const distA = haversineDistance(
             parseFloat(seed.latitude), parseFloat(seed.longitude),
             parseFloat(a.latitude), parseFloat(a.longitude)
@@ -1169,9 +1175,31 @@ async function generateScheduleV6() {
           return distA - distB;
         });
 
-        // 가까운 업체들만 선택 (max개까지)
-        clusteredCandidates = candidates.slice(0, max * 2);
-        console.log(`    → 고정 업체 근처 후보: ${clusteredCandidates.slice(0, 3).map(c => `${c.company_name}(${c.region})`).join(', ')}...`);
+        // 3단계: 다른 지역 업체도 거리순 정렬 (같은 지역 부족할 경우 대비)
+        otherRegionCandidates.sort((a, b) => {
+          const distA = haversineDistance(
+            parseFloat(seed.latitude), parseFloat(seed.longitude),
+            parseFloat(a.latitude), parseFloat(a.longitude)
+          );
+          const distB = haversineDistance(
+            parseFloat(seed.latitude), parseFloat(seed.longitude),
+            parseFloat(b.latitude), parseFloat(b.longitude)
+          );
+          return distA - distB;
+        });
+
+        // 4단계: 같은 지역 우선 + 부족하면 가까운 다른 지역 추가
+        if (sameRegionCandidates.length >= max) {
+          // 같은 지역 업체가 충분함
+          clusteredCandidates = sameRegionCandidates.slice(0, max * 2);
+          console.log(`    → 같은 지역(${pinnedRegion}) 우선: ${clusteredCandidates.slice(0, 3).map(c => `${c.company_name}(${c.region})`).join(', ')}...`);
+        } else {
+          // 같은 지역 업체 부족 → 가까운 다른 지역 추가
+          const needed = (max * 2) - sameRegionCandidates.length;
+          clusteredCandidates = [...sameRegionCandidates, ...otherRegionCandidates.slice(0, needed)];
+          console.log(`    → 같은 지역(${pinnedRegion}) ${sameRegionCandidates.length}개 + 인근 지역 ${Math.min(needed, otherRegionCandidates.length)}개`);
+          console.log(`    → 후보: ${clusteredCandidates.slice(0, 3).map(c => `${c.company_name}(${c.region})`).join(', ')}...`);
+        }
       } else {
         // 고정 업체가 없는 경우: 기존 로직 (v6.1 클러스터 우선)
         clusteredCandidates = selectByClusterPriority(candidates, max);
