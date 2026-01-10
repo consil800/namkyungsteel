@@ -1273,7 +1273,9 @@ async function generateScheduleV6() {
       // dayMap을 통해 해당 날짜의 day 객체를 찾아 companies에 할당
       const dayObj = dayMap.get(dateKey);
       if (dayObj) {
-        dayObj.companies = todayAssigned;
+        // v6.2 버그 수정: 고정 업체 보존 (기존 고정 업체 + 새로 배정된 업체)
+        const existingPinned = (dayObj.companies || []).filter(c => c._isPinned);
+        dayObj.companies = [...existingPinned, ...todayAssigned];
       }
 
       // 지역 쿨다운 갱신
