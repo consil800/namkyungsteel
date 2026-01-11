@@ -622,6 +622,12 @@ const GlobalSearch = {
      * 모달 DOM 생성
      */
     createModal() {
+        // Bootstrap Modal이 없으면 모달을 생성하지 않음
+        if (typeof bootstrap === 'undefined' || typeof bootstrap.Modal === 'undefined') {
+            console.log('Bootstrap Modal이 없어서 GlobalSearch 모달을 생성하지 않습니다.');
+            return;
+        }
+
         const modalHtml = `
             <div class="modal fade" id="globalSearchModal" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog modal-lg modal-dialog-scrollable">
