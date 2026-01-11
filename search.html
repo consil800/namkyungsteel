@@ -509,7 +509,8 @@
         // 페이지 초기화
         document.addEventListener('DOMContentLoaded', async () => {
             // 인증 확인
-            const session = await window.supabase.auth.getSession();
+            const supabase = getSupabaseClient();
+            const session = await supabase.auth.getSession();
             if (!session?.data?.session) {
                 window.location.href = 'login.html';
                 return;
@@ -542,7 +543,7 @@
 
             // 로그아웃 버튼
             document.getElementById('logoutBtn').addEventListener('click', async () => {
-                await window.supabase.auth.signOut();
+                await supabase.auth.signOut();
                 window.location.href = 'login.html';
             });
 
