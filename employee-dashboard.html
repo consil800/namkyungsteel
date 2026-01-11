@@ -24,6 +24,8 @@
     <!-- auth.js는 아래에 올바른 경로로 이미 포함됨 -->
     <!-- Employee Dashboard Scripts -->
     <script src="employee-dashboard.js"></script>
+    <!-- Unified Search (Ctrl+K 단축키) -->
+    <script src="shared-assets/js/search-utils.js"></script>
     <style>
         body {
             margin: 0;
@@ -688,6 +690,9 @@
                 <a href="#" class="header-btn" onclick="goToHomepage()" title="홈페이지">
                     <i class="fas fa-home"></i> <span>홈페이지</span>
                 </a>
+                <a href="search.html" class="header-btn" title="통합검색">
+                    <i class="fas fa-search"></i> <span>통합검색</span>
+                </a>
                 <button class="header-btn" id="approvalNotificationBtn" onclick="openApprovalNotifications()" style="position: relative;" title="알림">
                     <i class="fas fa-bell"></i> <span>알림</span>
                     <span id="approvalNotificationBadgeHeader" class="notification-badge-header" style="display: none;">0</span>
@@ -1114,5 +1119,15 @@
     </style>
 
 <!-- 기존 인라인 스크립트를 employee-dashboard.js로 이동했습니다 -->
+
+<!-- 통합검색 Ctrl+K 단축키 초기화 -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // GlobalSearch 초기화 (Ctrl+K로 검색 모달 열기)
+        if (typeof GlobalSearch !== 'undefined') {
+            GlobalSearch.init();
+        }
+    });
+</script>
 </body>
 </html>

@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>통합 검색 - 남경스틸(주)</title>
+
+    <!-- Favicons -->
+    <link href="logo.jpg" rel="icon">
+    <link href="logo.jpg" rel="apple-touch-icon">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="shared-assets/css/main.css">
+    <link rel="stylesheet" href="shared-assets/css/platform.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #f5f7fa;
+            min-height: 100vh;
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        /* 헤더 스타일 */
+        .search-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 3rem 0;
+            text-align: center;
+        }
+
+        .search-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .search-header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+
+        /* 검색 박스 */
+        .search-box {
+            max-width: 700px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .search-input-wrapper {
+            display: flex;
+            background: white;
+            border-radius: 50px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .search-input-wrapper input {
+            flex: 1;
+            padding: 1.2rem 2rem;
+            border: none;
+            font-size: 1.1rem;
+            outline: none;
+        }
+
+        .search-input-wrapper button {
+            padding: 1.2rem 2rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            color: white;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .search-input-wrapper button:hover {
+            opacity: 0.9;
+        }
+
+        /* 자동완성 드롭다운 */
+        .autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            margin-top: 10px;
+            z-index: 1000;
+            overflow: hidden;
+        }
+
+        .autocomplete-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.2s;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .autocomplete-item:hover {
+            background: #f8f9fa;
+        }
+
+        .autocomplete-item i {
+            width: 30px;
+            color: #667eea;
+        }
+
+        /* 메인 콘텐츠 */
+        .search-content {
+            max-width: 1000px;
+            margin: 3rem auto;
+            padding: 0 2rem;
+        }
+
+        /* 필터 섹션 */
+        .filter-section {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 10px 20px;
+            border: 2px solid #e9ecef;
+            background: white;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .filter-btn:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-color: transparent;
+            color: white;
+        }
+
+        .filter-btn i {
+            margin-right: 5px;
+        }
+
+        /* 검색 결과 */
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .results-count {
+            font-size: 1.1rem;
+            color: #495057;
+        }
+
+        .results-count strong {
+            color: #667eea;
+        }
+
+        /* 결과 카드 */
+        .result-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s;
+            cursor: pointer;
+            border-left: 4px solid transparent;
+        }
+
+        .result-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border-left-color: #667eea;
+        }
+
+        .result-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .result-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea20, #764ba220);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .result-icon i {
+            font-size: 1.3rem;
+            color: #667eea;
+        }
+
+        .result-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .result-type {
+            display: inline-block;
+            padding: 3px 10px;
+            background: #e9ecef;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+
+        .result-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #212529;
+            margin-bottom: 5px;
+        }
+
+        .result-preview {
+            color: #6c757d;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .result-meta {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            font-size: 0.8rem;
+            color: #adb5bd;
+        }
+
+        .result-meta i {
+            margin-right: 5px;
+        }
+
+        .result-tags {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .result-tag {
+            padding: 3px 8px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            font-size: 0.75rem;
+            color: #495057;
+        }
+
+        /* 하이라이트 */
+        .search-highlight {
+            background: #fff3cd;
+            padding: 1px 3px;
+            border-radius: 3px;
+        }
+
+        /* 빈 상태 */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #adb5bd;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            color: #dee2e6;
+        }
+
+        .empty-state h3 {
+            color: #495057;
+            margin-bottom: 0.5rem;
+        }
+
+        /* 로딩 */
+        .loading-state {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 네비게이션 바 */
+        .nav-bar {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: #212529;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        .nav-logo img {
+            height: 40px;
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .nav-btn {
+            padding: 8px 16px;
+            border: none;
+            background: #f8f9fa;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #495057;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .nav-btn:hover {
+            background: #e9ecef;
+        }
+
+        .nav-btn.primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        /* 반응형 */
+        @media (max-width: 768px) {
+            .search-header h1 {
+                font-size: 1.8rem;
+            }
+
+            .search-input-wrapper input {
+                padding: 1rem 1.5rem;
+                font-size: 1rem;
+            }
+
+            .filter-section {
+                justify-content: center;
+            }
+
+            .result-header {
+                flex-direction: column;
+            }
+
+            .result-icon {
+                width: 40px;
+                height: 40px;
+            }
+        }
+
+        /* 키보드 단축키 힌트 */
+        .shortcut-hint {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 1rem;
+        }
+
+        .shortcut-hint kbd {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <!-- 네비게이션 바 -->
+    <nav class="nav-bar">
+        <a href="employee-dashboard.html" class="nav-logo">
+            <img src="logo.jpg" alt="남경스틸">
+            <span>남경스틸(주)</span>
+        </a>
+        <div class="nav-actions">
+            <a href="employee-dashboard.html" class="nav-btn">
+                <i class="fas fa-home"></i> 대시보드
+            </a>
+            <a href="notifications.html" class="nav-btn">
+                <i class="fas fa-bell"></i>
+            </a>
+            <button class="nav-btn" id="logoutBtn">
+                <i class="fas fa-sign-out-alt"></i> 로그아웃
+            </button>
+        </div>
+    </nav>
+
+    <!-- 검색 헤더 -->
+    <header class="search-header">
+        <h1><i class="fas fa-search me-2"></i> 통합 검색</h1>
+        <p>사용자, 문서, 거래처, 업무일지를 한 번에 검색하세요</p>
+
+        <div class="search-box">
+            <div class="search-input-wrapper">
+                <input type="text"
+                       id="search-input"
+                       placeholder="검색어를 입력하세요..."
+                       autocomplete="off">
+                <button id="search-button">
+                    <i class="fas fa-search"></i> 검색
+                </button>
+            </div>
+
+            <!-- 자동완성 드롭다운 -->
+            <div class="autocomplete-dropdown" id="search-autocomplete" style="display: none;"></div>
+        </div>
+
+        <p class="shortcut-hint">
+            <kbd>Ctrl</kbd> + <kbd>K</kbd> 로 어디서든 빠르게 검색
+        </p>
+    </header>
+
+    <!-- 메인 콘텐츠 -->
+    <main class="search-content">
+        <!-- 필터 섹션 -->
+        <div class="filter-section">
+            <button class="filter-btn active search-filter-btn" data-filter="all">
+                <i class="fas fa-globe"></i> 전체
+            </button>
+            <button class="filter-btn search-filter-btn" data-filter="user">
+                <i class="fas fa-user"></i> 사용자
+            </button>
+            <button class="filter-btn search-filter-btn" data-filter="document">
+                <i class="fas fa-file-alt"></i> 문서
+            </button>
+            <button class="filter-btn search-filter-btn" data-filter="company">
+                <i class="fas fa-building"></i> 거래처
+            </button>
+            <button class="filter-btn search-filter-btn" data-filter="worklog">
+                <i class="fas fa-clipboard-list"></i> 업무일지
+            </button>
+        </div>
+
+        <!-- 검색 결과 영역 -->
+        <div id="search-results">
+            <div class="empty-state">
+                <i class="fas fa-search"></i>
+                <h3>검색어를 입력해주세요</h3>
+                <p>사용자, 문서, 거래처, 업무일지를 통합 검색합니다</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- 푸터 -->
+    <footer style="text-align: center; padding: 2rem; color: #adb5bd; font-size: 0.9rem;">
+        <p>&copy; 2026 남경스틸(주). All rights reserved.</p>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="database.js"></script>
+    <script src="shared-assets/js/auth.js"></script>
+    <script src="shared-assets/js/search-utils.js"></script>
+
+    <script>
+        // 페이지 초기화
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 인증 확인
+            const session = await window.supabase.auth.getSession();
+            if (!session?.data?.session) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // SearchUI 초기화
+            SearchUI.init({
+                searchInput: '#search-input',
+                searchButton: '#search-button',
+                resultsContainer: '#search-results',
+                autocompleteDropdown: '#search-autocomplete',
+                filterButtons: '.search-filter-btn'
+            });
+
+            // 필터 버튼 스타일 커스터마이징
+            document.querySelectorAll('.search-filter-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.search-filter-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                });
+            });
+
+            // URL 파라미터에서 검색어 가져오기
+            const urlParams = new URLSearchParams(window.location.search);
+            const query = urlParams.get('q');
+            if (query) {
+                document.getElementById('search-input').value = query;
+                SearchUI.performSearch();
+            }
+
+            // 로그아웃 버튼
+            document.getElementById('logoutBtn').addEventListener('click', async () => {
+                await window.supabase.auth.signOut();
+                window.location.href = 'login.html';
+            });
+
+            // Ctrl+K 단축키 (페이지 내에서도 작동)
+            document.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                    e.preventDefault();
+                    document.getElementById('search-input').focus();
+                    document.getElementById('search-input').select();
+                }
+            });
+
+            console.log('통합 검색 페이지 초기화 완료');
+        });
+
+        // 커스텀 결과 렌더링 (SearchUI 확장)
+        const originalRenderResults = SearchUI.renderResults.bind(SearchUI);
+        SearchUI.renderResults = function(result) {
+            if (!this.elements.resultsContainer) return;
+
+            const { results, total, query } = result;
+
+            if (results.length === 0) {
+                this.elements.resultsContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-search"></i>
+                        <h3>검색 결과가 없습니다</h3>
+                        <p>"${SearchUtils.escapeHtml(query)}"에 대한 검색 결과가 없습니다.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const html = `
+                <div class="results-header">
+                    <span class="results-count">
+                        "<strong>${SearchUtils.escapeHtml(query)}</strong>" 검색 결과:
+                        <strong>${total}</strong>건
+                    </span>
+                </div>
+                <div class="results-list">
+                    ${results.map(item => this.renderResultItem(item)).join('')}
+                </div>
+            `;
+
+            this.elements.resultsContainer.innerHTML = html;
+
+            // 결과 항목 클릭 이벤트
+            this.elements.resultsContainer.querySelectorAll('.result-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const link = card.dataset.link;
+                    if (link && link !== '#') {
+                        window.location.href = link;
+                    }
+                });
+            });
+        };
+
+        // 커스텀 결과 항목 렌더링
+        SearchUI.renderResultItem = function(item) {
+            const iconMap = {
+                'user': 'fa-user',
+                'document': 'fa-file-alt',
+                'company': 'fa-building',
+                'worklog': 'fa-clipboard-list'
+            };
+
+            return `
+                <div class="result-card" data-link="${item.link}">
+                    <div class="result-header">
+                        <div class="result-icon">
+                            <i class="fas ${iconMap[item.source_type] || 'fa-search'}"></i>
+                        </div>
+                        <div class="result-content">
+                            <span class="result-type">${item.sourceTypeKorean}</span>
+                            <h4 class="result-title">${item.titleHighlight}</h4>
+                            <p class="result-preview">${item.contentHighlight}</p>
+                            ${item.tags && item.tags.filter(t => t).length > 0 ? `
+                                <div class="result-tags">
+                                    ${item.tags.filter(t => t).map(tag =>
+                                        `<span class="result-tag">${SearchUtils.escapeHtml(tag)}</span>`
+                                    ).join('')}
+                                </div>
+                            ` : ''}
+                            <div class="result-meta">
+                                <span><i class="fas fa-calendar"></i> ${new Date(item.created_at).toLocaleDateString('ko-KR')}</span>
+                                <span><i class="fas fa-star"></i> 관련도: ${Math.round(item.relevance * 10) / 10}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
+        // 커스텀 로딩 상태
+        SearchUI.showLoading = function() {
+            if (this.elements.resultsContainer) {
+                this.elements.resultsContainer.innerHTML = `
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <p>검색 중...</p>
+                    </div>
+                `;
+            }
+        };
+    </script>
+</body>
+</html>
