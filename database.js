@@ -259,7 +259,11 @@ class DatabaseManager {
             phone: userData.phone || '',
             department: userData.department || '',
             position: userData.position || '',
-            role: userData.role || 'employee',
+            // 2026-01-10: role과 is_approved null/false 허용 수정
+            // 기존: role: userData.role || 'employee' → null이 'employee'로 변환되는 버그
+            // 수정: 'in' 연산자로 속성 존재 여부 확인하여 null 명시 허용
+            role: 'role' in userData ? userData.role : 'employee',
+            is_approved: 'is_approved' in userData ? userData.is_approved : true,
             company_domain: userData.company_domain || this.currentDomain || 'namkyungsteel.com',
             company_name: userData.company_name || '남경스틸(주)',
             is_active: true,

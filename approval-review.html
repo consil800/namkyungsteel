@@ -7,6 +7,11 @@
     <!-- Favicons -->
     <link href="logo.jpg" rel="icon">
     <link href="logo.jpg" rel="apple-touch-icon">
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Database & Security Scripts -->
+    <script src="database.js"></script>
+    <script src="security-utils.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
@@ -428,10 +433,42 @@
             return urlParams.get('id');
         }
 
-        // 현재 로그인 사용자 정보 가져오기
-        function getCurrentUser() {
+        // 현재 로그인 사용자 정보 가져오기 (보안 강화)
+        // 2026-01-11: 보안문제 1 수정 - localStorage 위조 방지
+        async function getCurrentUser() {
             try {
-                return JSON.parse(localStorage.getItem('currentUser'));
+                // 1순위: SecurityUtils의 검증된 사용자 정보 사용
+                if (window.SecurityUtils) {
+                    const verified = await window.SecurityUtils.getVerifiedCurrentUser();
+
+                    if (verified.verified && verified.user) {
+                        console.log('✅ 검증된 사용자:', verified.source);
+                        return verified.user;
+                    }
+
+                    if (verified.source === 'local_storage_insecure') {
+                        console.warn('🚨 보안 경고: localStorage 사용 - 재로그인 권장');
+                        // 경고 표시하고 일단 진행
+                        return verified.user;
+                    }
+                }
+
+                // 2순위: sessionStorage 확인
+                const sessionUser = JSON.parse(sessionStorage.getItem('currentUser') || 'null');
+                if (sessionUser) {
+                    console.log('📋 sessionStorage에서 사용자 로드');
+                    return sessionUser;
+                }
+
+                // 3순위: localStorage 확인 (보안 취약 - 경고 표시)
+                const localUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+                if (localUser) {
+                    console.warn('🚨 보안 경고: localStorage 사용자 - 위조 가능성 있음');
+                    return localUser;
+                }
+
+                return null;
+
             } catch (error) {
                 console.error('사용자 정보 로드 오류:', error);
                 return null;
@@ -490,11 +527,23 @@
         }
 
         // 모든 직원 목록 가져오기 (현재 사용자와 이미 승인한 사람 제외)
-        function getAvailableApprovers() {
+        // 2026-01-11: 보안문제 3 수정 - 역할 기반 승인자 후보 풀 제한
+        async function getAvailableApprovers() {
+            // 보안 유틸리티 사용 가능 시 역할 기반 필터링
+            if (window.SecurityUtils) {
+                const result = await window.SecurityUtils.getApproverCandidates(currentDocument, currentUser);
+                if (result.success) {
+                    console.log('✅ 역할 기반 승인자 후보 사용:', result.candidates.length, '명');
+                    return result.candidates;
+                }
+            }
+
+            // 폴백: 기존 방식 (역할 제한 없음 - 보안 취약)
+            console.warn('⚠️ 역할 기반 필터링 불가, 전체 직원 목록 사용');
             const employees = JSON.parse(localStorage.getItem('employees') || '[]');
             const approvedUserIds = currentDocument.signatures.map(sig => sig.approverId);
             const approvalChainUserIds = currentDocument.approvalChain.map(approval => approval.approverId);
-            
+
             // 신청자, 현재 사용자, 이미 승인한 사람들을 제외
             const excludedIds = [
                 currentDocument.requesterId,  // 신청자 ID
@@ -505,22 +554,23 @@
                 ...approvedUserIds,          // 이미 승인한 사람들
                 ...approvalChainUserIds      // 결재선에 있는 사람들
             ].filter(id => id); // null/undefined 제거
-            
+
             // 제외 대상이 아닌 직원들만 반환
-            return employees.filter(emp => 
-                !excludedIds.includes(emp.id) && 
-                !excludedIds.includes(emp.name) && 
+            return employees.filter(emp =>
+                !excludedIds.includes(emp.id) &&
+                !excludedIds.includes(emp.name) &&
                 !excludedIds.includes(emp.email)
             );
         }
 
         // 문서 로드
-        function loadDocument() {
+        // 2026-01-11: async로 변경 - getCurrentUser가 async가 됨
+        async function loadDocument() {
             console.log('📄 문서 로드 시작...');
-            
+
             const documentId = getDocumentId();
             console.log('🆔 문서 ID:', documentId);
-            
+
             if (!documentId) {
                 console.error('❌ 문서 ID가 없습니다!');
                 alert('문서 ID가 없습니다.');
@@ -530,7 +580,7 @@
 
             const approvalRequests = JSON.parse(localStorage.getItem('approvalRequests') || '[]');
             console.log('📋 전체 승인 요청 목록:', approvalRequests.length, '개');
-            
+
             currentDocument = approvalRequests.find(doc => doc.id === documentId);
             console.log('📄 찾은 문서:', currentDocument);
 
@@ -542,14 +592,24 @@
                 return;
             }
 
-            currentUser = getCurrentUser();
+            // 2026-01-11: 보안문제 1 수정 - async getCurrentUser 사용
+            currentUser = await getCurrentUser();
             console.log('👤 현재 사용자:', currentUser);
-            
+
             if (!currentUser) {
                 console.error('❌ 로그인 정보가 없습니다!');
                 alert('로그인 정보를 확인할 수 없습니다.');
                 goBack();
                 return;
+            }
+
+            // 2026-01-11: 보안문제 5 - 문서 무결성 검증
+            if (window.SecurityUtils && currentDocument.contentHash) {
+                const integrity = await window.SecurityUtils.verifyContentIntegrity(currentDocument, currentDocument.contentHash);
+                if (!integrity.valid) {
+                    console.error('🚨 문서 변조 감지!');
+                    alert('⚠️ 경고: 문서가 변조된 것으로 감지되었습니다. 관리자에게 문의하세요.');
+                }
             }
 
             console.log('✅ 문서 로드 완료, 렌더링 시작...');
@@ -2227,16 +2287,32 @@
         }
 
         // 문서 반려
-        function rejectDocument() {
+        // 2026-01-11: 보안문제 6 수정 - 반려 사유 검증 및 재제출 워크플로우 지원
+        async function rejectDocument() {
             const comment = document.getElementById('comment').value.trim();
 
-            if (!comment) {
+            // 보안문제 6: 반려 사유 검증 (10자 이상, 500자 이하)
+            if (window.SecurityUtils) {
+                const validation = window.SecurityUtils.validateRejectionReason(comment);
+                if (!validation.valid) {
+                    alert(validation.error);
+                    return;
+                }
+            } else if (!comment) {
                 alert('반려 사유를 입력해주세요.');
                 return;
             }
 
+            // 감사 로그 기록
+            if (window.SecurityUtils) {
+                await window.SecurityUtils.logApprovalEvent('document_rejected', currentDocument.id, currentUser.id, {
+                    rejectedBy: currentUser.name,
+                    reason: comment
+                });
+            }
+
             // 현재 승인 단계 반려 처리
-            const currentApprovalIndex = currentDocument.approvalChain.findIndex(approval => 
+            const currentApprovalIndex = currentDocument.approvalChain.findIndex(approval =>
                 approval.status === 'pending' && approval.approverId === currentUser.id
             );
 
@@ -2247,17 +2323,22 @@
             }
 
             currentDocument.status = 'rejected';
+            // 보안문제 6: 재제출 가능 여부 표시
+            currentDocument.canResubmit = true;
+            currentDocument.rejectedAt = new Date().toISOString();
+            currentDocument.rejectionReason = comment;
 
-            // 신청자에게 반려 알림
+            // 신청자에게 반려 알림 (재제출 안내 포함)
             createNotification(currentDocument.requesterId, {
                 type: 'approval_rejected',
                 title: '결재 서류 반려',
-                message: `귀하가 신청한 ${getDocumentTypeName(currentDocument.documentType)}이 반려되었습니다.`,
+                message: `귀하가 신청한 ${getDocumentTypeName(currentDocument.documentType)}이 반려되었습니다. 수정 후 재제출하실 수 있습니다.`,
                 documentId: currentDocument.id,
                 documentType: currentDocument.documentType,
                 requesterId: currentDocument.requesterId,
                 requesterName: currentDocument.requesterName,
                 comment: comment,
+                canResubmit: true,
                 createdAt: new Date().toISOString()
             });
 
@@ -2267,7 +2348,7 @@
             // 로컬 스토리지 업데이트
             updateApprovalRequests();
 
-            alert('문서가 반려되었습니다.');
+            alert('문서가 반려되었습니다.\n신청자는 수정 후 재제출할 수 있습니다.');
             goBack();
         }
 

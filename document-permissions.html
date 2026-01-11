@@ -11,8 +11,9 @@
     
     <!-- Supabase JS CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Database Scripts -->
+    <!-- Database & Security Scripts -->
     <script src="database.js"></script>
+    <script src="security-utils.js"></script>
     
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -930,27 +931,50 @@
             }
         }
 
-        // 직원의 문서 권한 확인 (OR 조건)
+        // 직원의 문서 권한 확인 (OR 조건) - 보안 강화 버전 (2026-01-11)
+        // 보안문제 2: OR 조건에서 null/undefined 처리로 전체 접근 위험 방지
         function checkEmployeePermission(docId, employee) {
             const permissions = documentPermissions[docId];
+
+            // 보안: SecurityUtils 사용 시 안전한 검사 수행
+            if (window.SecurityUtils) {
+                return window.SecurityUtils.checkEmployeePermissionSafe(permissions, employee);
+            }
+
+            // 레거시 폴백 (SecurityUtils 로드 실패 시)
+            console.warn('[보안 경고] SecurityUtils가 로드되지 않아 레거시 권한 검사 사용');
+
             if (!permissions) return false;
-            
-            // 1. 부서별 권한 확인
-            if (permissions.departments.includes(employee.department)) {
+
+            // 보안: null/undefined 체크 강화
+            if (!employee || typeof employee !== 'object') {
+                console.error('[보안] 유효하지 않은 직원 객체');
+                return false;
+            }
+
+            // 1. 부서별 권한 확인 (null 체크 추가)
+            if (employee.department &&
+                Array.isArray(permissions.departments) &&
+                permissions.departments.includes(employee.department)) {
                 return true;
             }
-            
-            // 2. 직급별 권한 확인
-            if (permissions.positions.includes(employee.position)) {
+
+            // 2. 직급별 권한 확인 (null 체크 추가)
+            if (employee.position &&
+                Array.isArray(permissions.positions) &&
+                permissions.positions.includes(employee.position)) {
                 return true;
             }
-            
-            // 3. 개인별 권한 확인
+
+            // 3. 개인별 권한 확인 (null 체크 추가)
             const employeeId = employee.id || employee.name;
-            if (permissions.individuals.includes(employeeId)) {
+            if (employeeId &&
+                Array.isArray(permissions.individuals) &&
+                permissions.individuals.includes(employeeId)) {
                 return true;
             }
-            
+
+            // 보안: 기본값은 항상 거부
             return false;
         }
 
