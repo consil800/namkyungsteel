@@ -395,6 +395,9 @@ const SecurityUtils = {
             requesterId: document.requesterId,
             requesterName: document.requesterName,
             createdAt: document.createdAt,
+            // 공통 필드 (일반 문서)
+            title: document.title,
+            content: document.content,
             // 문서 타입별 핵심 필드
             ...(document.documentType === 'leave' && {
                 startDate: document.startDate,
