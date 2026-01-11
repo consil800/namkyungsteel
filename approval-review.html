@@ -612,6 +612,12 @@
                 }
             }
 
+            // 2026-01-11: 문서 열람 감사 로그 기록
+            if (window.SecurityUtils) {
+                await window.SecurityUtils.logDocumentView(currentDocument.id, currentUser.id);
+                console.log('📋 문서 열람 로그 기록됨');
+            }
+
             console.log('✅ 문서 로드 완료, 렌더링 시작...');
             renderDocument();
             checkApprovalPermission();
@@ -2196,7 +2202,8 @@
         }
 
         // 문서 승인
-        function approveDocument() {
+        // 2026-01-11: 보안문제 4,5 수정 - RPC 기반 서버 측 원자적 처리 + 콘텐츠 해시
+        async function approveDocument() {
             const signature = document.getElementById('signature').value.trim();
             const comment = document.getElementById('comment').value.trim();
             const nextApprover = document.getElementById('nextApprover').value;
@@ -2214,80 +2221,172 @@
                 return;
             }
 
-            // 현재 승인 단계 완료 처리
-            const currentApprovalIndex = currentDocument.approvalChain.findIndex(approval => 
-                approval.status === 'pending' && approval.approverId === currentUser.id
-            );
-
-            if (currentApprovalIndex !== -1) {
-                currentDocument.approvalChain[currentApprovalIndex].status = 'approved';
-                currentDocument.approvalChain[currentApprovalIndex].approvedAt = new Date().toISOString();
-                currentDocument.approvalChain[currentApprovalIndex].comment = comment;
+            // 보안문제 1: 권한 검증 (서버 측)
+            if (window.SecurityUtils && currentDocument.id && typeof currentDocument.id === 'number') {
+                console.log('🔐 서버 측 권한 검증 시작...');
+                const permCheck = await window.SecurityUtils.verifyApprovalPermission(currentUser.id, currentDocument.id);
+                if (!permCheck.authorized && permCheck.reason !== 'document_not_found') {
+                    alert('승인 권한이 없습니다.');
+                    console.error('❌ 권한 검증 실패:', permCheck);
+                    return;
+                }
             }
 
-            // 서명 추가
-            currentDocument.signatures.push({
-                approverId: currentUser.id,
-                approverName: currentUser.name,
-                signature: signature,
-                comment: comment,
-                approvedAt: new Date().toISOString()
-            });
+            // 보안문제 5: 콘텐츠 해시 생성 (위변조 방지)
+            let contentHash = null;
+            if (window.SecurityUtils) {
+                try {
+                    contentHash = await window.SecurityUtils.generateContentHash(currentDocument);
+                    console.log('🔒 콘텐츠 해시 생성:', contentHash?.substring(0, 16) + '...');
+                } catch (hashError) {
+                    console.warn('⚠️ 해시 생성 실패:', hashError);
+                }
+            }
 
-            // 다음 승인자가 있는 경우 승인 체인에 추가
-            if (nextApprover) {
-                const nextEmployee = getEmployee(nextApprover);
-                currentDocument.approvalChain.push({
-                    approverId: nextApprover,
-                    approverName: nextEmployee.name,
-                    status: 'pending',
-                    level: currentDocument.approvalChain.length + 1,
-                    requestedAt: new Date().toISOString()
-                });
+            // 보안문제 4: RPC 기반 서버 측 승인 처리 시도
+            let rpcSuccess = false;
+            if (window.SecurityUtils && currentDocument.id && typeof currentDocument.id === 'number') {
+                console.log('📤 RPC 승인 처리 시도...');
+                const rpcResult = await window.SecurityUtils.processApprovalSecure(
+                    currentDocument.id,
+                    currentUser.id,
+                    signature,
+                    comment,
+                    nextApprover ? parseInt(nextApprover) : null
+                );
 
-                // 다음 승인자에게 알림 생성
-                createNotification(nextApprover, {
-                    type: 'approval_request',
-                    title: '결재 서류 승인 요청',
-                    message: `${currentUser.name}님이 결재 서류를 승인하여 귀하의 검토가 필요합니다.`,
-                    documentId: currentDocument.id,
-                    documentType: currentDocument.documentType,
-                    requesterId: currentDocument.requesterId,
-                    requesterName: currentDocument.requesterName,
-                    createdAt: new Date().toISOString()
-                });
+                if (rpcResult.success) {
+                    console.log('✅ RPC 승인 처리 완료:', rpcResult);
+                    rpcSuccess = true;
 
-                currentDocument.status = 'pending';
-            } else {
-                // 최종 승인 완료
-                currentDocument.status = 'approved';
-                currentDocument.finalApprovedAt = new Date().toISOString();
+                    // 알림 생성 (클라이언트에서 처리)
+                    if (nextApprover) {
+                        const nextEmployee = getEmployee(nextApprover);
+                        createNotification(nextApprover, {
+                            type: 'approval_request',
+                            title: '결재 서류 승인 요청',
+                            message: `${currentUser.name}님이 결재 서류를 승인하여 귀하의 검토가 필요합니다.`,
+                            documentId: currentDocument.id,
+                            documentType: currentDocument.documentType,
+                            requesterId: currentDocument.requesterId,
+                            requesterName: currentDocument.requesterName,
+                            createdAt: new Date().toISOString()
+                        });
+                    } else {
+                        createNotification(currentDocument.requesterId, {
+                            type: 'approval_completed',
+                            title: '결재 서류 승인 완료',
+                            message: `귀하가 신청한 ${getDocumentTypeName(currentDocument.documentType)}이 최종 승인되었습니다.`,
+                            documentId: currentDocument.id,
+                            documentType: currentDocument.documentType,
+                            requesterId: currentDocument.requesterId,
+                            requesterName: currentDocument.requesterName,
+                            createdAt: new Date().toISOString()
+                        });
+                    }
+                } else if (rpcResult.fallback) {
+                    console.warn('⚠️ RPC 미설치, 클라이언트 측 처리로 전환');
+                } else {
+                    console.error('❌ RPC 승인 실패:', rpcResult.error);
+                    alert('승인 처리 중 오류가 발생했습니다: ' + (rpcResult.error || '알 수 없는 오류'));
+                    return;
+                }
+            }
 
-                // 신청자에게 완료 알림
-                createNotification(currentDocument.requesterId, {
-                    type: 'approval_completed',
-                    title: '결재 서류 승인 완료',
-                    message: `귀하가 신청한 ${getDocumentTypeName(currentDocument.documentType)}이 최종 승인되었습니다.`,
-                    documentId: currentDocument.id,
-                    documentType: currentDocument.documentType,
-                    requesterId: currentDocument.requesterId,
-                    requesterName: currentDocument.requesterName,
-                    createdAt: new Date().toISOString()
-                });
+            // RPC 실패 시 클라이언트 측 처리 (fallback)
+            if (!rpcSuccess) {
+                console.log('📝 클라이언트 측 승인 처리...');
+
+                // 현재 승인 단계 완료 처리
+                const currentApprovalIndex = currentDocument.approvalChain.findIndex(approval =>
+                    approval.status === 'pending' && approval.approverId === currentUser.id
+                );
+
+                if (currentApprovalIndex !== -1) {
+                    currentDocument.approvalChain[currentApprovalIndex].status = 'approved';
+                    currentDocument.approvalChain[currentApprovalIndex].approvedAt = new Date().toISOString();
+                    currentDocument.approvalChain[currentApprovalIndex].comment = comment;
+                }
+
+                // 서명 추가 (콘텐츠 해시 포함)
+                const signatureData = window.SecurityUtils
+                    ? await window.SecurityUtils.createSignatureData(currentUser.id, currentUser.name, signature, currentDocument)
+                    : {
+                        approverId: currentUser.id,
+                        approverName: currentUser.name,
+                        signature: signature,
+                        comment: comment,
+                        approvedAt: new Date().toISOString()
+                    };
+
+                currentDocument.signatures.push(signatureData);
+
+                // 다음 승인자가 있는 경우 승인 체인에 추가
+                if (nextApprover) {
+                    const nextEmployee = getEmployee(nextApprover);
+                    currentDocument.approvalChain.push({
+                        approverId: nextApprover,
+                        approverName: nextEmployee.name,
+                        status: 'pending',
+                        level: currentDocument.approvalChain.length + 1,
+                        requestedAt: new Date().toISOString()
+                    });
+
+                    // 다음 승인자에게 알림 생성
+                    createNotification(nextApprover, {
+                        type: 'approval_request',
+                        title: '결재 서류 승인 요청',
+                        message: `${currentUser.name}님이 결재 서류를 승인하여 귀하의 검토가 필요합니다.`,
+                        documentId: currentDocument.id,
+                        documentType: currentDocument.documentType,
+                        requesterId: currentDocument.requesterId,
+                        requesterName: currentDocument.requesterName,
+                        createdAt: new Date().toISOString()
+                    });
+
+                    currentDocument.status = 'pending';
+                } else {
+                    // 최종 승인 완료
+                    currentDocument.status = 'approved';
+                    currentDocument.finalApprovedAt = new Date().toISOString();
+                    currentDocument.lastContentHash = contentHash;
+
+                    // 신청자에게 완료 알림
+                    createNotification(currentDocument.requesterId, {
+                        type: 'approval_completed',
+                        title: '결재 서류 승인 완료',
+                        message: `귀하가 신청한 ${getDocumentTypeName(currentDocument.documentType)}이 최종 승인되었습니다.`,
+                        documentId: currentDocument.id,
+                        documentType: currentDocument.documentType,
+                        requesterId: currentDocument.requesterId,
+                        requesterName: currentDocument.requesterName,
+                        createdAt: new Date().toISOString()
+                    });
+                }
+
+                // 감사 로그 기록
+                if (window.SecurityUtils) {
+                    await window.SecurityUtils.logApprovalEvent('approved', currentDocument.id, currentUser.id, {
+                        signature: 'provided',
+                        comment,
+                        nextApproverId: nextApprover,
+                        contentHash
+                    });
+                }
+
+                // 로컬 스토리지 업데이트
+                updateApprovalRequests();
             }
 
             // 현재 승인자의 알림을 읽음으로 표시
             markRelatedNotificationsAsRead();
-
-            // 로컬 스토리지 업데이트
-            updateApprovalRequests();
 
             alert(nextApprover ? '승인이 완료되었습니다. 다음 승인자에게 전달됩니다.' : '최종 승인이 완료되었습니다.');
             goBack();
         }
 
         // 문서 반려
-        // 2026-01-11: 보안문제 6 수정 - 반려 사유 검증 및 재제출 워크플로우 지원
+        // 2026-01-11: 보안문제 4,6 수정 - RPC 기반 서버 측 원자적 처리 + 재제출 워크플로우
         async function rejectDocument() {
             const comment = document.getElementById('comment').value.trim();
 
@@ -2303,50 +2402,102 @@
                 return;
             }
 
-            // 감사 로그 기록
-            if (window.SecurityUtils) {
-                await window.SecurityUtils.logApprovalEvent('document_rejected', currentDocument.id, currentUser.id, {
-                    rejectedBy: currentUser.name,
-                    reason: comment
+            // 보안문제 1: 권한 검증 (서버 측)
+            if (window.SecurityUtils && currentDocument.id && typeof currentDocument.id === 'number') {
+                console.log('🔐 서버 측 권한 검증 시작...');
+                const permCheck = await window.SecurityUtils.verifyApprovalPermission(currentUser.id, currentDocument.id);
+                if (!permCheck.authorized && permCheck.reason !== 'document_not_found') {
+                    alert('반려 권한이 없습니다.');
+                    console.error('❌ 권한 검증 실패:', permCheck);
+                    return;
+                }
+            }
+
+            // 보안문제 4: RPC 기반 서버 측 반려 처리 시도
+            let rpcSuccess = false;
+            if (window.SecurityUtils && currentDocument.id && typeof currentDocument.id === 'number') {
+                console.log('📤 RPC 반려 처리 시도...');
+                const rpcResult = await window.SecurityUtils.processRejectionSecure(
+                    currentDocument.id,
+                    currentUser.id,
+                    comment
+                );
+
+                if (rpcResult.success) {
+                    console.log('✅ RPC 반려 처리 완료:', rpcResult);
+                    rpcSuccess = true;
+
+                    // 신청자에게 반려 알림 (재제출 안내 포함)
+                    createNotification(currentDocument.requesterId, {
+                        type: 'approval_rejected',
+                        title: '결재 서류 반려',
+                        message: `귀하가 신청한 ${getDocumentTypeName(currentDocument.documentType)}이 반려되었습니다. 수정 후 재제출하실 수 있습니다.`,
+                        documentId: currentDocument.id,
+                        documentType: currentDocument.documentType,
+                        requesterId: currentDocument.requesterId,
+                        requesterName: currentDocument.requesterName,
+                        comment: comment,
+                        canResubmit: rpcResult.canResubmit,
+                        createdAt: new Date().toISOString()
+                    });
+                } else if (rpcResult.fallback) {
+                    console.warn('⚠️ RPC 미설치, 클라이언트 측 처리로 전환');
+                } else {
+                    console.error('❌ RPC 반려 실패:', rpcResult.error);
+                    alert('반려 처리 중 오류가 발생했습니다: ' + (rpcResult.error || '알 수 없는 오류'));
+                    return;
+                }
+            }
+
+            // RPC 실패 시 클라이언트 측 처리 (fallback)
+            if (!rpcSuccess) {
+                console.log('📝 클라이언트 측 반려 처리...');
+
+                // 감사 로그 기록
+                if (window.SecurityUtils) {
+                    await window.SecurityUtils.logApprovalEvent('rejected', currentDocument.id, currentUser.id, {
+                        rejectedBy: currentUser.name,
+                        reason: comment
+                    });
+                }
+
+                // 현재 승인 단계 반려 처리
+                const currentApprovalIndex = currentDocument.approvalChain.findIndex(approval =>
+                    approval.status === 'pending' && approval.approverId === currentUser.id
+                );
+
+                if (currentApprovalIndex !== -1) {
+                    currentDocument.approvalChain[currentApprovalIndex].status = 'rejected';
+                    currentDocument.approvalChain[currentApprovalIndex].rejectedAt = new Date().toISOString();
+                    currentDocument.approvalChain[currentApprovalIndex].comment = comment;
+                }
+
+                currentDocument.status = 'rejected';
+                // 보안문제 6: 재제출 가능 여부 표시
+                currentDocument.canResubmit = true;
+                currentDocument.rejectedAt = new Date().toISOString();
+                currentDocument.rejectionReason = comment;
+
+                // 신청자에게 반려 알림 (재제출 안내 포함)
+                createNotification(currentDocument.requesterId, {
+                    type: 'approval_rejected',
+                    title: '결재 서류 반려',
+                    message: `귀하가 신청한 ${getDocumentTypeName(currentDocument.documentType)}이 반려되었습니다. 수정 후 재제출하실 수 있습니다.`,
+                    documentId: currentDocument.id,
+                    documentType: currentDocument.documentType,
+                    requesterId: currentDocument.requesterId,
+                    requesterName: currentDocument.requesterName,
+                    comment: comment,
+                    canResubmit: true,
+                    createdAt: new Date().toISOString()
                 });
+
+                // 로컬 스토리지 업데이트
+                updateApprovalRequests();
             }
-
-            // 현재 승인 단계 반려 처리
-            const currentApprovalIndex = currentDocument.approvalChain.findIndex(approval =>
-                approval.status === 'pending' && approval.approverId === currentUser.id
-            );
-
-            if (currentApprovalIndex !== -1) {
-                currentDocument.approvalChain[currentApprovalIndex].status = 'rejected';
-                currentDocument.approvalChain[currentApprovalIndex].rejectedAt = new Date().toISOString();
-                currentDocument.approvalChain[currentApprovalIndex].comment = comment;
-            }
-
-            currentDocument.status = 'rejected';
-            // 보안문제 6: 재제출 가능 여부 표시
-            currentDocument.canResubmit = true;
-            currentDocument.rejectedAt = new Date().toISOString();
-            currentDocument.rejectionReason = comment;
-
-            // 신청자에게 반려 알림 (재제출 안내 포함)
-            createNotification(currentDocument.requesterId, {
-                type: 'approval_rejected',
-                title: '결재 서류 반려',
-                message: `귀하가 신청한 ${getDocumentTypeName(currentDocument.documentType)}이 반려되었습니다. 수정 후 재제출하실 수 있습니다.`,
-                documentId: currentDocument.id,
-                documentType: currentDocument.documentType,
-                requesterId: currentDocument.requesterId,
-                requesterName: currentDocument.requesterName,
-                comment: comment,
-                canResubmit: true,
-                createdAt: new Date().toISOString()
-            });
 
             // 현재 승인자의 알림을 읽음으로 표시
             markRelatedNotificationsAsRead();
-
-            // 로컬 스토리지 업데이트
-            updateApprovalRequests();
 
             alert('문서가 반려되었습니다.\n신청자는 수정 후 재제출할 수 있습니다.');
             goBack();
