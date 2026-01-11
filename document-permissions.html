@@ -546,6 +546,18 @@
                                     <i class="fas fa-plus"></i> 추가
                                 </button>
                             </div>
+                            <!-- 전체 직원 추가 기능 -->
+                            <div class="permission-row" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px dashed #ddd;">
+                                <span class="permission-type">일괄 추가:</span>
+                                <select class="permission-select" id="dept-select-${doc.id}">
+                                    <option value="">부서 선택</option>
+                                    <option value="ALL">📋 전체 직원</option>
+                                    ${departments.map(dept => `<option value="${dept}">${dept} 부서</option>`).join('')}
+                                </select>
+                                <button class="add-permission-btn" style="background: linear-gradient(135deg, #667eea, #764ba2);" onclick="addAllEmployeesByDept('${doc.id}')">
+                                    <i class="fas fa-users"></i> 일괄 추가
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -681,6 +693,73 @@
             
             select.value = '';
             console.log(`개인 권한 추가: ${docId} - ${employee.name}`);
+        }
+
+        // 부서별 전체 직원 일괄 추가
+        function addAllEmployeesByDept(docId) {
+            const deptSelect = document.getElementById(`dept-select-${docId}`);
+            const selectedDept = deptSelect.value;
+
+            if (!selectedDept) {
+                alert('부서를 선택해주세요.');
+                return;
+            }
+
+            // 추가할 직원 목록 필터링
+            let employeesToAdd = [];
+            if (selectedDept === 'ALL') {
+                // 전체 직원
+                employeesToAdd = employees;
+            } else {
+                // 선택한 부서의 직원만
+                employeesToAdd = employees.filter(emp => emp.department === selectedDept);
+            }
+
+            if (employeesToAdd.length === 0) {
+                alert('추가할 직원이 없습니다.');
+                return;
+            }
+
+            const container = document.getElementById(`ind-${docId}`);
+            let addedCount = 0;
+            let skippedCount = 0;
+
+            employeesToAdd.forEach(emp => {
+                const empId = emp.id || emp.name;
+
+                // 이미 추가된 직원은 스킵
+                if (documentPermissions[docId].individuals.includes(empId)) {
+                    skippedCount++;
+                    return;
+                }
+
+                // 권한 목록에 추가
+                documentPermissions[docId].individuals.push(empId);
+                addedCount++;
+
+                // UI 업데이트
+                const newRow = document.createElement('div');
+                newRow.className = 'permission-row';
+                newRow.innerHTML = `
+                    <span class="permission-type">직원:</span>
+                    <span style="flex: 1; color: #10b981; font-weight: 500;">${emp.name} (${emp.department} - ${emp.position})</span>
+                    <button class="remove-permission-btn" onclick="removeIndividualPermission('${docId}', '${empId}')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                container.appendChild(newRow);
+            });
+
+            // 결과 알림
+            const deptName = selectedDept === 'ALL' ? '전체' : selectedDept;
+            if (addedCount > 0) {
+                alert(`${deptName} 직원 ${addedCount}명이 추가되었습니다.${skippedCount > 0 ? `\n(이미 추가된 ${skippedCount}명 제외)` : ''}`);
+            } else {
+                alert('모든 직원이 이미 추가되어 있습니다.');
+            }
+
+            deptSelect.value = '';
+            console.log(`부서별 일괄 추가: ${docId} - ${deptName} 부서 ${addedCount}명 추가`);
         }
 
         // 승인 단계 추가
