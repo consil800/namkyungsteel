@@ -24,6 +24,19 @@ async function initSupabase() {
     return supabaseClient;
 }
 
+// Supabase 클라이언트 가져오기 (동기 함수 - 이미 초기화된 경우)
+function getSupabaseClient() {
+    if (!supabaseClient) {
+        if (typeof supabase !== 'undefined') {
+            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        } else {
+            console.error('Supabase 라이브러리가 로드되지 않았습니다.');
+            return null;
+        }
+    }
+    return supabaseClient;
+}
+
 // 데이터베이스 매니저 클래스 (멀티 테넌트 지원)
 class DatabaseManager {
     constructor() {
