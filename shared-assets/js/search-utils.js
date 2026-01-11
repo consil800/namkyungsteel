@@ -48,7 +48,8 @@ const SearchUtils = {
             }
 
             // Supabase RPC 호출
-            const { data, error } = await window.supabase.rpc('unified_search', {
+            const supabase = getSupabaseClient();
+            const { data, error } = await supabase.rpc('unified_search', {
                 p_query: query.trim(),
                 p_user_id: user.id,
                 p_company_domain: user.company_domain,
@@ -114,7 +115,8 @@ const SearchUtils = {
             const user = await this.getCurrentUser();
             if (!user) return [];
 
-            const { data, error } = await window.supabase.rpc('search_autocomplete', {
+            const supabase = getSupabaseClient();
+            const { data, error } = await supabase.rpc('search_autocomplete', {
                 p_query: query.trim(),
                 p_user_id: user.id,
                 p_company_domain: user.company_domain,
@@ -251,11 +253,12 @@ const SearchUtils = {
         }
 
         // Supabase 세션에서 가져오기
-        const { data: { session } } = await window.supabase.auth.getSession();
+        const supabase = getSupabaseClient();
+        const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user) return null;
 
         // users 테이블에서 상세 정보 조회
-        const { data: userData } = await window.supabase
+        const { data: userData } = await supabase
             .from('users')
             .select('id, name, email, company_domain, role')
             .eq('email', session.user.email)
@@ -273,7 +276,8 @@ const SearchUtils = {
      */
     async rebuildIndex() {
         try {
-            const { data, error } = await window.supabase.rpc('rebuild_search_index');
+            const supabase = getSupabaseClient();
+            const { data, error } = await supabase.rpc('rebuild_search_index');
 
             if (error) throw error;
 
