@@ -1214,16 +1214,19 @@ function checkMenuPermissions() {
 
     const menuCards = document.querySelectorAll('.menu-card');
     const notificationBtn = document.getElementById('approvalNotificationBtn');
-    
+    const adminDashboardBtn = document.getElementById('adminDashboardBtn');
+
     // 역할별 메뉴 표시/숨김 처리
     switch (currentUser.role) {
         case 'master':
             // 마스터는 모든 메뉴 접근 가능
+            if (adminDashboardBtn) adminDashboardBtn.style.display = '';
             break;
-            
+
         case 'company_admin':
         case 'company_manager':
             // 관리자는 대부분 메뉴 접근 가능
+            if (adminDashboardBtn) adminDashboardBtn.style.display = '';
             break;
             
         case 'employee':
