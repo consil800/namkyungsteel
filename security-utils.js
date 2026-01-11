@@ -275,21 +275,48 @@ const SecurityUtils = {
     },
 
     // ========================================
-    // 보안문제 4: 원자적 트랜잭션 처리
+    // 보안문제 4: 원자적 트랜잭션 처리 (RPC 연동)
     // ========================================
 
     /**
      * 서버 측 승인 처리 (RPC 함수 호출)
-     * 클라이언트에서 직접 상태 변경하지 않고 서버에서 처리
+     * 클라이언트에서 직접 상태 변경하지 않고 서버에서 원자적 처리
+     *
+     * @param {number} documentId - 문서 ID
+     * @param {number} approverId - 승인자 ID
+     * @param {string} signature - 서명 데이터 (Base64)
+     * @param {string} comment - 승인 코멘트 (선택)
+     * @param {number} nextApproverId - 다음 승인자 ID (선택)
+     * @returns {Promise<{success: boolean, data?: object, error?: string}>}
      */
-    async processApprovalSecure(documentId, approverId, signature, comment, nextApproverId) {
+    async processApprovalSecure(documentId, approverId, signature, comment = null, nextApproverId = null) {
+        // DB 연결 확인
         if (!window.db || !window.db.client) {
+            console.error('❌ DB 연결 없음');
             return { success: false, error: 'no_db_connection' };
         }
 
         try {
-            // 콘텐츠 해시 생성
-            const contentHash = await this.generateContentHash(documentId);
+            // 1. 문서 조회하여 콘텐츠 해시 생성
+            let contentHash = null;
+            try {
+                const { data: docData } = await window.db.client
+                    .from('document_requests')
+                    .select('*')
+                    .eq('id', documentId)
+                    .single();
+
+                if (docData) {
+                    contentHash = await this.generateContentHash(docData);
+                }
+            } catch (hashError) {
+                console.warn('⚠️ 콘텐츠 해시 생성 실패:', hashError.message);
+            }
+
+            // 2. RPC 함수 호출 (서버 측 원자적 처리)
+            console.log('📤 RPC 호출: process_document_approval', {
+                documentId, approverId, hasSignature: !!signature, nextApproverId
+            });
 
             const { data, error } = await window.db.client.rpc('process_document_approval', {
                 p_document_id: documentId,
@@ -301,49 +328,203 @@ const SecurityUtils = {
                 p_approved_at: new Date().toISOString()
             });
 
+            // 3. RPC 에러 처리
             if (error) {
-                // RPC 함수가 없는 경우 경고
-                console.warn('⚠️ RPC 함수 없음, 클라이언트 측 처리 필요');
+                console.error('❌ RPC 에러:', error);
+
+                // RPC 함수가 없는 경우 fallback 플래그 반환
+                if (error.code === '42883' || error.message.includes('does not exist')) {
+                    console.warn('⚠️ RPC 함수 미설치 - 클라이언트 fallback 필요');
+                    return { success: false, fallback: true, error: 'rpc_not_found' };
+                }
+
+                return { success: false, error: error.message, code: error.code };
+            }
+
+            // 4. RPC 응답 처리
+            if (data && data.success === false) {
+                console.warn('⚠️ 승인 처리 실패:', data.error);
                 return {
                     success: false,
-                    fallback: true,
-                    error: error.message
+                    error: data.error,
+                    reason: data.reason,
+                    currentStatus: data.current_status
                 };
             }
 
-            return { success: true, data };
+            // 5. 성공 시 감사 로그 기록
+            await this.logApprovalEvent('approved', documentId, approverId, {
+                signature: signature ? 'provided' : 'none',
+                comment,
+                nextApproverId,
+                contentHash,
+                newStatus: data?.new_status
+            });
+
+            console.log('✅ 승인 처리 완료:', data);
+            return {
+                success: true,
+                data,
+                documentId: data?.document_id,
+                newStatus: data?.new_status,
+                nextApproverId: data?.next_approver_id
+            };
 
         } catch (error) {
-            console.error('승인 처리 오류:', error);
+            console.error('❌ 승인 처리 오류:', error);
             return { success: false, error: error.message };
         }
     },
 
     /**
      * 서버 측 반려 처리 (RPC 함수 호출)
+     *
+     * @param {number} documentId - 문서 ID
+     * @param {number} approverId - 반려자 ID
+     * @param {string} reason - 반려 사유 (10자 이상 필수)
+     * @returns {Promise<{success: boolean, data?: object, error?: string}>}
      */
     async processRejectionSecure(documentId, approverId, reason) {
+        // DB 연결 확인
         if (!window.db || !window.db.client) {
+            console.error('❌ DB 연결 없음');
+            return { success: false, error: 'no_db_connection' };
+        }
+
+        // 클라이언트 측 사유 검증 (서버에서도 검증하지만 빠른 피드백)
+        const validation = this.validateRejectionReason(reason);
+        if (!validation.valid) {
+            return { success: false, error: validation.error };
+        }
+
+        try {
+            // RPC 함수 호출
+            console.log('📤 RPC 호출: process_document_rejection', { documentId, approverId });
+
+            const { data, error } = await window.db.client.rpc('process_document_rejection', {
+                p_document_id: documentId,
+                p_approver_id: approverId,
+                p_reason: validation.reason,
+                p_rejected_at: new Date().toISOString()
+            });
+
+            // RPC 에러 처리
+            if (error) {
+                console.error('❌ RPC 에러:', error);
+
+                if (error.code === '42883' || error.message.includes('does not exist')) {
+                    console.warn('⚠️ RPC 함수 미설치 - 클라이언트 fallback 필요');
+                    return { success: false, fallback: true, error: 'rpc_not_found' };
+                }
+
+                return { success: false, error: error.message, code: error.code };
+            }
+
+            // RPC 응답 처리
+            if (data && data.success === false) {
+                console.warn('⚠️ 반려 처리 실패:', data.error);
+                return {
+                    success: false,
+                    error: data.error,
+                    reason: data.reason,
+                    message: data.message
+                };
+            }
+
+            // 성공 시 감사 로그 기록
+            await this.logApprovalEvent('rejected', documentId, approverId, {
+                rejectionReason: validation.reason,
+                canResubmit: data?.can_resubmit
+            });
+
+            console.log('✅ 반려 처리 완료:', data);
+            return {
+                success: true,
+                data,
+                documentId: data?.document_id,
+                canResubmit: data?.can_resubmit,
+                rejectionReason: data?.rejection_reason
+            };
+
+        } catch (error) {
+            console.error('❌ 반려 처리 오류:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    /**
+     * 서버 측 재제출 처리 (RPC 함수 호출)
+     *
+     * @param {number} originalDocumentId - 원본 문서 ID
+     * @param {number} requesterId - 신청자 ID
+     * @param {object} modifiedData - 수정된 데이터
+     * @returns {Promise<{success: boolean, newDocumentId?: number, error?: string}>}
+     */
+    async resubmitDocumentSecure(originalDocumentId, requesterId, modifiedData = {}) {
+        // DB 연결 확인
+        if (!window.db || !window.db.client) {
+            console.error('❌ DB 연결 없음');
             return { success: false, error: 'no_db_connection' };
         }
 
         try {
-            const { data, error } = await window.db.client.rpc('process_document_rejection', {
-                p_document_id: documentId,
-                p_approver_id: approverId,
-                p_reason: reason,
-                p_rejected_at: new Date().toISOString()
+            // RPC 함수 호출
+            console.log('📤 RPC 호출: resubmit_document', { originalDocumentId, requesterId });
+
+            const { data, error } = await window.db.client.rpc('resubmit_document', {
+                p_original_document_id: originalDocumentId,
+                p_requester_id: requesterId,
+                p_modified_data: modifiedData
             });
 
+            // RPC 에러 처리
             if (error) {
-                console.warn('⚠️ RPC 함수 없음, 클라이언트 측 처리 필요');
-                return { success: false, fallback: true, error: error.message };
+                console.error('❌ RPC 에러:', error);
+
+                if (error.code === '42883' || error.message.includes('does not exist')) {
+                    console.warn('⚠️ RPC 함수 미설치 - 클라이언트 fallback 사용');
+                    // fallback으로 클라이언트 측 재제출 처리
+                    return await this.resubmitDocument(originalDocumentId, modifiedData);
+                }
+
+                return { success: false, error: error.message, code: error.code };
             }
 
-            return { success: true, data };
+            // RPC 응답 처리
+            if (data && data.success === false) {
+                console.warn('⚠️ 재제출 실패:', data.error);
+
+                // 에러 코드별 메시지 매핑
+                const errorMessages = {
+                    'original_not_found': '원본 문서를 찾을 수 없습니다.',
+                    'not_owner': '문서 작성자만 재제출할 수 있습니다.',
+                    'not_rejected': '반려된 문서만 재제출할 수 있습니다.',
+                    'resubmit_not_allowed': '이 문서는 재제출이 허용되지 않습니다.'
+                };
+
+                return {
+                    success: false,
+                    error: data.error,
+                    message: errorMessages[data.error] || data.error,
+                    currentStatus: data.current_status
+                };
+            }
+
+            // 성공 시 감사 로그 기록
+            await this.logApprovalEvent('resubmitted', data.new_document_id, requesterId, {
+                originalDocumentId,
+                modifiedFields: Object.keys(modifiedData)
+            });
+
+            console.log('✅ 재제출 완료:', data);
+            return {
+                success: true,
+                newDocumentId: data.new_document_id,
+                originalDocumentId: data.original_document_id
+            };
 
         } catch (error) {
-            console.error('반려 처리 오류:', error);
+            console.error('❌ 재제출 오류:', error);
             return { success: false, error: error.message };
         }
     },
@@ -566,42 +747,135 @@ const SecurityUtils = {
     // ========================================
 
     /**
-     * 결재 이벤트 로그 기록
+     * 결재 이벤트 로그 기록 (서버 + 클라이언트)
+     *
+     * @param {string} eventType - 이벤트 타입 (approved, rejected, viewed, modified 등)
+     * @param {number} documentId - 문서 ID
+     * @param {number} userId - 사용자 ID
+     * @param {object} details - 추가 상세 정보
      */
     async logApprovalEvent(eventType, documentId, userId, details = {}) {
-        const logEntry = {
+        const timestamp = new Date().toISOString();
+
+        // 서버용 로그 데이터 (approval_logs 테이블 스키마에 맞춤)
+        const serverLogEntry = {
+            document_id: documentId,
+            user_id: userId,
+            action: eventType,
+            details: details,
+            created_at: timestamp
+        };
+
+        // 클라이언트용 로그 데이터 (localStorage 백업)
+        const clientLogEntry = {
             id: `log-${Date.now()}`,
             eventType,
             documentId,
             userId,
-            timestamp: new Date().toISOString(),
+            timestamp,
             details,
-            ipAddress: 'client', // 실제로는 서버에서 기록
             userAgent: navigator.userAgent
         };
 
         try {
-            // localStorage에 로그 저장 (백업)
-            const logs = JSON.parse(localStorage.getItem('approvalLogs') || '[]');
-            logs.push(logEntry);
+            // 1. 서버에 로그 저장 (우선)
+            if (window.db && window.db.client) {
+                const { error } = await window.db.client
+                    .from('approval_logs')
+                    .insert([serverLogEntry]);
 
-            // 최대 1000개 유지
+                if (error) {
+                    // RLS 정책으로 인한 에러 등은 무시 (로그는 최선의 노력)
+                    if (error.code !== 'PGRST301' && !error.message.includes('policy')) {
+                        console.warn('⚠️ 서버 로그 저장 실패:', error.message);
+                    }
+                } else {
+                    console.log(`📝 서버 감사 로그 기록: ${eventType}`);
+                }
+            }
+
+            // 2. localStorage에 백업 저장
+            const logs = JSON.parse(localStorage.getItem('approvalLogs') || '[]');
+            logs.push(clientLogEntry);
+
+            // 최대 1000개 유지 (FIFO)
             if (logs.length > 1000) {
                 logs.splice(0, logs.length - 1000);
             }
 
             localStorage.setItem('approvalLogs', JSON.stringify(logs));
-
-            // DB에도 저장 시도 (선택적)
-            if (window.db && window.db.client) {
-                await window.db.client.from('approval_logs').insert([logEntry]).catch(() => {});
-            }
-
-            console.log(`📝 감사 로그 기록: ${eventType}`);
+            console.log(`💾 로컬 감사 로그 백업: ${eventType}`);
 
         } catch (error) {
             console.error('로그 기록 오류:', error);
+            // 로그 실패는 주요 기능에 영향을 주지 않도록 무시
         }
+    },
+
+    /**
+     * 감사 로그 조회 (관리자용)
+     *
+     * @param {number} documentId - 문서 ID (선택)
+     * @param {number} limit - 조회 개수 (기본 100)
+     * @returns {Promise<{success: boolean, logs?: array, error?: string}>}
+     */
+    async getApprovalLogs(documentId = null, limit = 100) {
+        try {
+            if (!window.db || !window.db.client) {
+                // DB 없으면 localStorage에서 조회
+                const logs = JSON.parse(localStorage.getItem('approvalLogs') || '[]');
+                const filtered = documentId
+                    ? logs.filter(l => l.documentId === documentId)
+                    : logs;
+                return {
+                    success: true,
+                    logs: filtered.slice(-limit).reverse(),
+                    source: 'localStorage'
+                };
+            }
+
+            // 서버에서 조회
+            let query = window.db.client
+                .from('approval_logs')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(limit);
+
+            if (documentId) {
+                query = query.eq('document_id', documentId);
+            }
+
+            const { data, error } = await query;
+
+            if (error) {
+                console.warn('⚠️ 서버 로그 조회 실패:', error.message);
+                // fallback: localStorage
+                const logs = JSON.parse(localStorage.getItem('approvalLogs') || '[]');
+                return {
+                    success: true,
+                    logs: logs.slice(-limit).reverse(),
+                    source: 'localStorage'
+                };
+            }
+
+            return { success: true, logs: data, source: 'server' };
+
+        } catch (error) {
+            console.error('로그 조회 오류:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    /**
+     * 문서 조회 이벤트 기록 (열람 추적)
+     *
+     * @param {number} documentId - 문서 ID
+     * @param {number} userId - 조회자 ID
+     */
+    async logDocumentView(documentId, userId) {
+        await this.logApprovalEvent('viewed', documentId, userId, {
+            viewedAt: new Date().toISOString()
+        });
     }
 };
 
