@@ -4132,5 +4132,23 @@ async function init() {
   }
 }
 
+// v6.2.2e: bfcache(뒤로가기 캐시)에서 복원 시 스케줄 복원 (2026-01-12)
+// DOMContentLoaded는 bfcache에서 복원 시 발생하지 않음 → pageshow 이벤트 사용
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted) {
+    // bfcache에서 페이지 복원됨
+    console.log('📦 bfcache에서 페이지 복원됨, 스케줄 상태 확인 중...');
+    const restored = restoreScheduleStateAfterNav();
+    if (restored && state.schedule.length > 0) {
+      renderCalendar();
+      renderUnassigned();
+      renderPinnedList();
+      updateWorkdayCountUI();
+      updateEstimate();
+      toast('📦 이전 스케줄 복원됨');
+    }
+  }
+});
+
 // 실행
 init();
