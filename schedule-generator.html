@@ -312,6 +312,21 @@
       font-size:9px; color:#059669; font-weight:600;
       background:#d1fae5; padding:2px 6px; border-radius:8px;
     }
+    /* v6.2.2: 상세보기 버튼 스타일 (2026-01-12 ChatGPT + Claude 협업) */
+    .company-item .btn-detail{
+      cursor:pointer;
+      padding:0 6px;
+      opacity:0.5;
+      font-size:11px;
+      flex-shrink:0;
+      transition:opacity .15s;
+    }
+    .company-item .btn-detail:hover{
+      opacity:1;
+    }
+    .company-item:hover .btn-detail{
+      opacity:0.8;
+    }
 
     /* 날짜 카드 추가 스타일 */
     .day-date{ font-weight:900; }
@@ -1095,6 +1110,6 @@
   <script src="shared-assets/js/auth.js?v=20260104d"></script>
   <script src="database.js?v=20260104d"></script>
   <script src="route-optimizer.js?v=20260104k"></script>
-  <script src="schedule-generator.js?v=20260110-v621-fix"></script>
+  <script src="schedule-generator.js?v=20260112-v622"></script>
 </body>
 </html>

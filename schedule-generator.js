@@ -2800,6 +2800,37 @@ function formatKoreanLabel(dateStr) {
   return `${month}월 ${day}일 (${dayName})`;
 }
 
+// ===== v6.2.2: 업체 상세 페이지 이동 (2026-01-12 ChatGPT + Claude 협업) =====
+// ChatGPT 검증: SortableJS 충돌 방지를 위해 event 인자 필수
+function goToCompanyDetail(companyId, e, openInNewTab = true) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  const url = `company-detail.html?id=${encodeURIComponent(companyId)}&referrer=${encodeURIComponent(location.href)}`;
+  if (openInNewTab) {
+    window.open(url, '_blank', 'noopener');
+  } else {
+    location.href = url;
+  }
+}
+
+// ===== v6.2.2: 더블클릭 이벤트 위임 (컨테이너에 한 번만 바인딩) =====
+function initCompanyItemDblClick(containerEl) {
+  if (!containerEl) return;
+
+  containerEl.addEventListener('dblclick', (e) => {
+    // ℹ️ 버튼 더블클릭은 버튼 로직이 처리하므로 제외
+    if (e.target.closest('.btn-detail')) return;
+
+    const item = e.target.closest('.company-item');
+    if (!item) return;
+
+    const companyId = item.dataset.id;
+    goToCompanyDetail(companyId, e, true); // 더블클릭도 새 탭
+  });
+}
+
 // ===== 업체 아이템 HTML (v5.1: 순번 + 거리 표시 추가) =====
 function renderCompanyItem(company, index = 0, prevCompany = null) {
   const colorInfo = COLOR_MAP[company.color_code] || { cssClass: 'gray', name: '미지정' };
@@ -2836,6 +2867,7 @@ function renderCompanyItem(company, index = 0, prevCompany = null) {
   const pinnedClass = isPinned ? 'pinned' : '';
   const pinnedIcon = isPinned ? '<span class="pin-icon" title="고정된 업체">📌</span>' : '';
 
+  // v6.2.2: 상세보기 버튼 추가 (2026-01-12 ChatGPT + Claude 협업)
   return `
     <li class="company-item ${pinnedClass}" data-id="${company.id}" title="색상: ${colorInfo.name} | 마지막방문: ${company.last_visit_date || '없음'} | 횟수: ${visitCount}회${isPinned ? ' | 📌 고정' : ''}">
       <span class="order-num">${orderNum}</span>
@@ -2844,6 +2876,7 @@ function renderCompanyItem(company, index = 0, prevCompany = null) {
       ${distanceInfo}
       <span class="visit-info">${visitInfo} (${visitCount}회)</span>
       <span class="sub">${company.region || ''}</span>
+      <span class="btn-detail" onclick="goToCompanyDetail(${company.id}, event)" title="업체 상세보기 (더블클릭도 가능)">ℹ️</span>
     </li>
   `;
 }
@@ -2904,6 +2937,9 @@ function initSortable() {
       group: 'companies',
       animation: 150,
       ghostClass: 'sortable-ghost',
+      // v6.2.2: 상세보기 버튼에서 드래그 시작 차단 (ChatGPT 검증)
+      filter: '.btn-detail',
+      preventOnFilter: false, // 필터 요소의 클릭 기본동작 허용
       onEnd: (evt) => {
         handleDragEnd(evt);
       }
@@ -2918,6 +2954,9 @@ function initUnassignedSortable() {
     group: 'companies',
     animation: 150,
     ghostClass: 'sortable-ghost',
+    // v6.2.2: 상세보기 버튼에서 드래그 시작 차단 (ChatGPT 검증)
+    filter: '.btn-detail',
+    preventOnFilter: false,
     onEnd: (evt) => {
       handleDragEnd(evt);
     }
@@ -2929,6 +2968,9 @@ function initUnassignedSortable() {
     group: 'companies',
     animation: 150,
     ghostClass: 'sortable-ghost',
+    // v6.2.2: 상세보기 버튼에서 드래그 시작 차단 (ChatGPT 검증)
+    filter: '.btn-detail',
+    preventOnFilter: false,
     onAdd: (evt) => {
       handleOffDrop(evt);
     }
@@ -3987,6 +4029,10 @@ async function init() {
 
     // 이벤트 바인딩
     bindEvents();
+
+    // v6.2.2: 업체 더블클릭 → 상세 페이지 이동 (이벤트 위임)
+    initCompanyItemDblClick(el.calendar);
+    initCompanyItemDblClick(el.unassignedList);
 
     // Pre-flight 점검 이벤트 바인딩 (2026-01-04 추가)
     initPreflightEvents();
