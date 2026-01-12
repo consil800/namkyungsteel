@@ -4110,9 +4110,9 @@ async function init() {
     const restored = restoreScheduleStateAfterNav();
     if (restored && state.schedule.length > 0) {
       // 복원된 스케줄 렌더링
-      renderSchedule();
+      renderCalendar();
       renderUnassigned();
-      renderPinnedSummary();
+      renderPinnedList();
       updateWorkdayCountUI();
       updateEstimate();
       toast('📦 이전 스케줄 복원됨');
