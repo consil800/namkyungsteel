@@ -1,4 +1,4 @@
-# 스케줄 생성 알고리즘 v6.2.2
+# 스케줄 생성 알고리즘 v6.2.2f
 
 > schedule-generator.js 상세 설명
 
@@ -95,5 +95,39 @@ ChatGPT 검증 결과:
 - 이벤트 위임 방식으로 동적 DOM 대응
 ```
 
+### 4. 뒤로가기 시 스케줄 복원 (v6.2.2f)
+
+업체 상세 페이지에서 **뒤로가기**하면 스케줄이 자동 복원됩니다.
+
+| 기능 | 설명 |
+|------|------|
+| sessionStorage 저장 | 페이지 이동 전 스케줄 상태 저장 |
+| bfcache 지원 | 브라우저 뒤로가기 캐시에서 복원 시 자동 감지 |
+| 30분 유효기간 | 저장 후 30분 이내만 복원 (오래된 데이터 방지) |
+
+```javascript
+// 저장 키
+const SCHEDULE_NAV_KEY = 'schedule_nav_state';
+
+// 저장 데이터
+{
+  timestamp: Date.now(),
+  schedule: [...],      // 날짜별 배정 업체
+  unassigned: [...],    // 미배정 업체
+  pinnedCompanies: [...], // 고정 업체
+  startDate, endDate, visitOption
+}
+```
+
+**작동 흐름:**
+```
+1. 업체 더블클릭 → saveScheduleStateBeforeNav() 호출
+2. sessionStorage에 스케줄 상태 저장
+3. company-detail.html로 이동
+4. 뒤로가기 클릭
+5. bfcache 또는 DOMContentLoaded에서 복원
+6. 스케줄 자동 렌더링
+```
+
 ---
-*최종 업데이트: 2026-01-12 (v6.2.2 업체 상세보기 바로가기)*
+*최종 업데이트: 2026-01-12 (v6.2.2f 뒤로가기 스케줄 복원)*
