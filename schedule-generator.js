@@ -2802,13 +2802,83 @@ function formatKoreanLabel(dateStr) {
 
 // ===== v6.2.2: 업체 상세 페이지 이동 (2026-01-12 ChatGPT + Claude 협업) =====
 // v6.2.2b: 세션 유지를 위해 현재 탭에서 이동 (sessionStorage는 탭 간 공유 안됨)
+// v6.2.2c: 페이지 이동 전 스케줄 상태 저장 → 돌아올 때 복원
 function goToCompanyDetail(companyId, e) {
   if (e) {
     e.preventDefault();
     e.stopPropagation();
   }
+  // 스케줄 상태 저장 (뒤로가기 시 복원용)
+  saveScheduleStateBeforeNav();
   const url = `company-detail.html?id=${encodeURIComponent(companyId)}&referrer=${encodeURIComponent(location.href)}`;
   location.href = url;
+}
+
+// ===== v6.2.2c: 스케줄 상태 저장/복원 (2026-01-12) =====
+const SCHEDULE_NAV_KEY = 'schedule_nav_state';
+
+function saveScheduleStateBeforeNav() {
+  if (state.schedule.length === 0) return;
+
+  const navState = {
+    timestamp: Date.now(),
+    schedule: state.schedule,
+    unassigned: state.unassigned,
+    pinnedCompanies: state.pinnedCompanies,
+    startDate: el.startDate?.value,
+    endDate: el.endDate?.value,
+    visitOption: document.querySelector('input[name="visitOption"]:checked')?.value
+  };
+  sessionStorage.setItem(SCHEDULE_NAV_KEY, JSON.stringify(navState));
+  console.log('📦 스케줄 상태 저장됨 (페이지 이동 전)');
+}
+
+function restoreScheduleStateAfterNav() {
+  const saved = sessionStorage.getItem(SCHEDULE_NAV_KEY);
+  if (!saved) return false;
+
+  try {
+    const navState = JSON.parse(saved);
+    // 5분 이내 저장된 것만 복원 (오래된 데이터 방지)
+    if (Date.now() - navState.timestamp > 5 * 60 * 1000) {
+      sessionStorage.removeItem(SCHEDULE_NAV_KEY);
+      return false;
+    }
+
+    // 상태 복원
+    state.schedule = navState.schedule || [];
+    state.unassigned = navState.unassigned || [];
+    state.pinnedCompanies = navState.pinnedCompanies || [];
+
+    // 고정 업체 맵 재구성
+    state.pinnedByCompany.clear();
+    state.pinnedByDate.clear();
+    state.pinnedCompanies.forEach(p => {
+      state.pinnedByCompany.set(p.companyId, p.date);
+      if (!state.pinnedByDate.has(p.date)) {
+        state.pinnedByDate.set(p.date, new Set());
+      }
+      state.pinnedByDate.get(p.date).add(p.companyId);
+    });
+
+    // 날짜/옵션 복원
+    if (navState.startDate && el.startDate) el.startDate.value = navState.startDate;
+    if (navState.endDate && el.endDate) el.endDate.value = navState.endDate;
+    if (navState.visitOption) {
+      const radio = document.querySelector(`input[name="visitOption"][value="${navState.visitOption}"]`);
+      if (radio) radio.checked = true;
+    }
+
+    // 저장 데이터 삭제 (1회성)
+    sessionStorage.removeItem(SCHEDULE_NAV_KEY);
+
+    console.log('✅ 스케줄 상태 복원됨 (뒤로가기)');
+    return true;
+  } catch (err) {
+    console.error('스케줄 복원 실패:', err);
+    sessionStorage.removeItem(SCHEDULE_NAV_KEY);
+    return false;
+  }
 }
 
 // ===== v6.2.2: 더블클릭 이벤트 위임 (컨테이너에 한 번만 바인딩) =====
@@ -4036,9 +4106,21 @@ async function init() {
     // 좌표 통계 로드 (2026-01-04 추가)
     await refreshGeoStats();
 
-    // 초기 range 반영
-    updateWorkdayCountUI();
-    updateEstimate();
+    // v6.2.2c: 뒤로가기 시 스케줄 상태 복원
+    const restored = restoreScheduleStateAfterNav();
+    if (restored && state.schedule.length > 0) {
+      // 복원된 스케줄 렌더링
+      renderSchedule();
+      renderUnassigned();
+      renderPinnedSummary();
+      updateWorkdayCountUI();
+      updateEstimate();
+      toast('📦 이전 스케줄 복원됨');
+    } else {
+      // 초기 range 반영
+      updateWorkdayCountUI();
+      updateEstimate();
+    }
     el.rangeHint.textContent = '주말/공휴일은 자동 제외(근무일 계산)됩니다.';
 
     toast('준비 완료');
