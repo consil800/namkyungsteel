@@ -2835,12 +2835,17 @@ function saveScheduleStateBeforeNav() {
 
 function restoreScheduleStateAfterNav() {
   const saved = sessionStorage.getItem(SCHEDULE_NAV_KEY);
+  console.log('🔍 복원 시도: saved =', !!saved);
   if (!saved) return false;
 
   try {
     const navState = JSON.parse(saved);
-    // 5분 이내 저장된 것만 복원 (오래된 데이터 방지)
-    if (Date.now() - navState.timestamp > 5 * 60 * 1000) {
+    const ageMinutes = (Date.now() - navState.timestamp) / 60000;
+    console.log(`🔍 저장 후 ${ageMinutes.toFixed(1)}분 경과, schedule.length = ${navState.schedule?.length}`);
+
+    // 30분 이내 저장된 것만 복원 (5분 → 30분으로 연장, v6.2.2f)
+    if (Date.now() - navState.timestamp > 30 * 60 * 1000) {
+      console.log('⏰ 30분 초과로 복원 취소');
       sessionStorage.removeItem(SCHEDULE_NAV_KEY);
       return false;
     }
