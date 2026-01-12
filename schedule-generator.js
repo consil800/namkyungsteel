@@ -2801,18 +2801,14 @@ function formatKoreanLabel(dateStr) {
 }
 
 // ===== v6.2.2: 업체 상세 페이지 이동 (2026-01-12 ChatGPT + Claude 협업) =====
-// ChatGPT 검증: SortableJS 충돌 방지를 위해 event 인자 필수
-function goToCompanyDetail(companyId, e, openInNewTab = true) {
+// v6.2.2b: 세션 유지를 위해 현재 탭에서 이동 (sessionStorage는 탭 간 공유 안됨)
+function goToCompanyDetail(companyId, e) {
   if (e) {
     e.preventDefault();
     e.stopPropagation();
   }
   const url = `company-detail.html?id=${encodeURIComponent(companyId)}&referrer=${encodeURIComponent(location.href)}`;
-  if (openInNewTab) {
-    window.open(url, '_blank', 'noopener');
-  } else {
-    location.href = url;
-  }
+  location.href = url;
 }
 
 // ===== v6.2.2: 더블클릭 이벤트 위임 (컨테이너에 한 번만 바인딩) =====
@@ -2827,7 +2823,7 @@ function initCompanyItemDblClick(containerEl) {
     if (!item) return;
 
     const companyId = item.dataset.id;
-    goToCompanyDetail(companyId, e, true); // 더블클릭도 새 탭
+    goToCompanyDetail(companyId, e);
   });
 }
 
