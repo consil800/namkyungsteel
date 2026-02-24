@@ -410,21 +410,19 @@ function parseCretopPdf(text) {
         console.log(lightNorm.substring(0, 300));
 
         // 브리핑 형식 업체명 추출 패턴
+        // 실제 PDF.js 추출 구조: "기업브리핑보고서\n신우중공업 (주) -   기업명   :"
+        // "보고서" 또는 "브리핑" 다음 줄 시작부의 한글 이름을 추출
         const briefingNamePatterns = [
-            // (A) "브리핑\n회사명\n사업자번호" (2페이지, 중간줄 0~3줄 허용)
-            /브리핑\n(?:[^\n]*\n){0,3}([^\n]+?)\n\d{3}-?\d{2}-?\d{5}/,
-            // (B) "보고서\n회사명\n-" (1페이지, 중간줄 0~3줄 허용)
-            /보고서\n(?:[^\n]*\n){0,3}([^\n]+?)\n-(?:\n|$)/,
+            // (A) "보고서\n한글회사명" - 보고서/브리핑 다음 줄 첫 한글 단어
+            /(?:보고서|브리핑)\s*\n\s*([가-힣]{2,20})/,
+            // (B) "보고서\n(주)한글회사명" - (주) 접두사 포함
+            /(?:보고서|브리핑)\s*\n\s*(?:\(주\)|\(유\)|㈜)\s*([가-힣]{2,20})/,
         ];
 
         for (const pattern of briefingNamePatterns) {
             const match = lightNorm.match(pattern);
             if (match && match[1]) {
                 let companyName = match[1].trim();
-                // (주), (유), ㈜ 제거 (앞/뒤)
-                companyName = companyName.replace(/^(\([주유]\)|㈜)\s*/, '');
-                companyName = companyName.replace(/\s*(\([주유]\)|㈜)$/, '');
-                companyName = companyName.trim();
                 if (companyName.length > 1) {
                     result.companyName = companyName;
                     console.log('업체명 추출 (브리핑 형식):', result.companyName);
