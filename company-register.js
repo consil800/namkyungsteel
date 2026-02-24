@@ -370,6 +370,65 @@ function parseCretopPdf(text) {
     console.log('=== PDF 원본 텍스트 ===');
     console.log(text.substring(0, 500));
 
+    // === 1단계: "기업 브리핑 보고서" 형식 감지 및 업체명 추출 ===
+    // CRETOP 브리핑 PDF는 기존 CRETOP 형식과 다른 구조를 가짐
+    // "보고서\n회사명\n-" 또는 "브리핑\n회사명\n사업자번호" 형태
+    const isBriefingFormat =
+        /기업\s*브리핑/.test(text) ||
+        /(?:^|\n)\s*브리핑\s*(?:\n|$)/m.test(text) ||
+        /(?:^|\n)\s*보고서\s*(?:\n|$)/m.test(text);
+
+    if (isBriefingFormat) {
+        console.log('📋 기업 브리핑 보고서 형식 감지');
+
+        // 가벼운 정규화: 수평 공백만 제거 (줄바꿈 유지)
+        const lightNorm = text
+            .replace(/\u00A0/g, ' ')
+            .replace(/\r/g, '')
+            // 유니코드 특수 하이픈 통일 (‐‑‒–—―﹘﹣－ → -)
+            .replace(/[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/g, '-')
+            // 수평 공백만 제거 (줄바꿈 유지)
+            .replace(/([가-힣])[ \t]+([가-힣])/g, '$1$2')
+            .replace(/([가-힣])[ \t]+([가-힣])/g, '$1$2')
+            .replace(/([가-힣])[ \t]+([가-힣])/g, '$1$2')
+            .replace(/\(\s*주\s*\)/g, '(주)')
+            .replace(/\(\s*유\s*\)/g, '(유)')
+            .replace(/(\d)\s*-\s*(\d)/g, '$1-$2')
+            .replace(/(\d)\s*-\s*(\d)/g, '$1-$2')
+            .replace(/(\d)\s*-\s*(\d)/g, '$1-$2')
+            // 줄 끝 공백 제거
+            .replace(/[ \t]+\n/g, '\n')
+            .replace(/\n{2,}/g, '\n')
+            .trim();
+
+        console.log('=== 브리핑 가벼운 정규화 결과 ===');
+        console.log(lightNorm.substring(0, 300));
+
+        // 브리핑 형식 업체명 추출 패턴
+        const briefingNamePatterns = [
+            // (A) "브리핑\n회사명\n사업자번호" (2페이지, 중간줄 0~3줄 허용)
+            /브리핑\n(?:[^\n]*\n){0,3}([^\n]+?)\n\d{3}-?\d{2}-?\d{5}/,
+            // (B) "보고서\n회사명\n-" (1페이지, 중간줄 0~3줄 허용)
+            /보고서\n(?:[^\n]*\n){0,3}([^\n]+?)\n-(?:\n|$)/,
+        ];
+
+        for (const pattern of briefingNamePatterns) {
+            const match = lightNorm.match(pattern);
+            if (match && match[1]) {
+                let companyName = match[1].trim();
+                // (주), (유), ㈜ 제거 (앞/뒤)
+                companyName = companyName.replace(/^(\([주유]\)|㈜)\s*/, '');
+                companyName = companyName.replace(/\s*(\([주유]\)|㈜)$/, '');
+                companyName = companyName.trim();
+                if (companyName.length > 1) {
+                    result.companyName = companyName;
+                    console.log('업체명 추출 (브리핑 형식):', result.companyName);
+                    break;
+                }
+            }
+        }
+    }
+
     // PDF.js가 문자 사이에 공백을 넣어서 추출하는 경우 정규화
     // "기 업   종 합   보 고 서" -> "기업종합보고서"
     // "( 주 ) 하 이 진" -> "(주)하이진"
@@ -433,7 +492,9 @@ function parseCretopPdf(text) {
         }
     }
 
-    // 업체명 추출 - CRETOP 페이지2 테이블 형식 우선: "기업명 (주)하이진 영문기업명"
+    // 업체명 추출 - 브리핑 형식에서 이미 추출한 경우 스킵
+    if (!result.companyName) {
+    // CRETOP 페이지2 테이블 형식 우선: "기업명 (주)하이진 영문기업명"
     const companyPatterns = [
         // (A) 테이블형: "기업명 ... 영문기업명" 사이만 추출 (최우선 - lookahead)
         /기업명\s*([^\r\n]+?)(?=\s*영문기업명)/,
@@ -471,9 +532,11 @@ function parseCretopPdf(text) {
             }
         }
     }
+    } // end if (!result.companyName)
 
     // 주소 추출 - CRETOP 페이지2 형식: "주소 (50801)경남김해시생림면생림대로491(나전리)"
     const addressPatterns = [
+        /주소\(도로명\)\s*\((\d{5})\)([가-힣0-9\-\(\)\s]+?)(?=기업유형|전화번호|표준산업|$)/,  // "주소(도로명)(50319)경남..."
         /주소\s*\((\d{5})\)([가-힣0-9\-\(\)]+)/,  // "주소(50801)경남김해시..." 또는 "주소 (50801)..."
         /주소\s+(\d{5})([가-힣][가-힣0-9\-\(\)]+)/,  // "주소 50801경남김해시..."
         /주소\s+([가-힣][가-힣0-9\s\-\(\)]+?)(?=\s+표준산업분류|\s+전화번호|\s+홈페이지|$)/,
