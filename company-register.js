@@ -373,10 +373,15 @@ function parseCretopPdf(text) {
     // === 1단계: "기업 브리핑 보고서" 형식 감지 및 업체명 추출 ===
     // CRETOP 브리핑 PDF는 기존 CRETOP 형식과 다른 구조를 가짐
     // "보고서\n회사명\n-" 또는 "브리핑\n회사명\n사업자번호" 형태
+    // PDF.js가 글자 사이에 공백을 넣으므로 감지 전 사전 정규화 필요
+    const detectText = text
+        .replace(/([가-힣])[ \t]+([가-힣])/g, '$1$2')
+        .replace(/([가-힣])[ \t]+([가-힣])/g, '$1$2')
+        .replace(/([가-힣])[ \t]+([가-힣])/g, '$1$2');
     const isBriefingFormat =
-        /기업\s*브리핑/.test(text) ||
-        /(?:^|\n)\s*브리핑\s*(?:\n|$)/m.test(text) ||
-        /(?:^|\n)\s*보고서\s*(?:\n|$)/m.test(text);
+        /기업\s*브리핑/.test(detectText) ||
+        /(?:^|\n)\s*브리핑\s*(?:\n|$)/m.test(detectText) ||
+        /(?:^|\n)\s*보고서\s*(?:\n|$)/m.test(detectText);
 
     if (isBriefingFormat) {
         console.log('📋 기업 브리핑 보고서 형식 감지');
